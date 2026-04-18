@@ -7,6 +7,8 @@ export interface User {
   role: UserRole;
   company?: string;
   specialty?: string;
+  whatsapp?: string;
+  bio?: string;
 }
 
 export interface Event {
@@ -21,6 +23,7 @@ export interface Event {
   registeredCount: number;
   companyId: string;
   companyName: string;
+  companyWhatsapp?: string;
   imageUrl?: string;
   createdAt: string;
 }
@@ -34,6 +37,24 @@ export interface Product {
   imageUrl?: string;
   companyId: string;
   companyName: string;
+  companyWhatsapp?: string;
   availableFor: string;
+  createdAt: string;
+}
+
+export type CourseModality = 'online' | 'presencial' | 'hibrido';
+
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  modality: CourseModality;
+  duration: string;
+  instructor: string;
+  price?: string;
+  companyId: string;
+  companyName: string;
+  companyWhatsapp?: string;
   createdAt: string;
 }

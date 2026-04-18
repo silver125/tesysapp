@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { User, UserRole, Event, Product } from '../types';
+import type { User, UserRole, Event, Product, Course } from '../types';
 
 type StoredUser = User & { password: string };
 
@@ -20,6 +20,7 @@ const SEED_USERS: StoredUser[] = [
     password: '123456',
     role: 'empresa',
     company: 'Pharma Brasil Ltda.',
+    whatsapp: '5511999999999',
   },
 ];
 
@@ -36,6 +37,7 @@ const SEED_EVENTS: Event[] = [
     registeredCount: 87,
     companyId: '2',
     companyName: 'Pharma Brasil',
+    companyWhatsapp: '5511999999999',
     createdAt: new Date().toISOString(),
   },
   {
@@ -50,6 +52,7 @@ const SEED_EVENTS: Event[] = [
     registeredCount: 32,
     companyId: '2',
     companyName: 'Pharma Brasil',
+    companyWhatsapp: '5511999999999',
     createdAt: new Date().toISOString(),
   },
 ];
@@ -63,6 +66,7 @@ const SEED_PRODUCTS: Product[] = [
     price: 'Sob consulta',
     companyId: '2',
     companyName: 'Pharma Brasil',
+    companyWhatsapp: '5511999999999',
     availableFor: 'Médicos credenciados',
     createdAt: new Date().toISOString(),
   },
@@ -74,7 +78,39 @@ const SEED_PRODUCTS: Product[] = [
     price: 'Sob consulta',
     companyId: '2',
     companyName: 'Pharma Brasil',
+    companyWhatsapp: '5511999999999',
     availableFor: 'Oncologistas',
+    createdAt: new Date().toISOString(),
+  },
+];
+
+const SEED_COURSES: Course[] = [
+  {
+    id: 'c1',
+    title: 'Atualização em ECG',
+    description: 'Curso prático para leitura e interpretação de eletrocardiogramas. Voltado para médicos professores e residentes.',
+    category: 'Cardiologia',
+    modality: 'online',
+    duration: '20 horas',
+    instructor: 'Dra. Ana Paula Souza',
+    price: 'R$ 490',
+    companyId: '2',
+    companyName: 'Pharma Brasil',
+    companyWhatsapp: '5511999999999',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'c2',
+    title: 'Imunoterapia Aplicada',
+    description: 'Curso avançado em imunoterapia oncológica. Certificado ao final.',
+    category: 'Oncologia',
+    modality: 'hibrido',
+    duration: '40 horas',
+    instructor: 'Dr. Roberto Lima',
+    price: 'R$ 1.290',
+    companyId: '2',
+    companyName: 'Pharma Brasil',
+    companyWhatsapp: '5511999999999',
     createdAt: new Date().toISOString(),
   },
 ];
@@ -86,6 +122,8 @@ interface RegisterInput {
   role: UserRole;
   specialty?: string;
   company?: string;
+  whatsapp?: string;
+  bio?: string;
 }
 
 interface AuthContextType {
@@ -96,10 +134,13 @@ interface AuthContextType {
   logout: () => void;
   events: Event[];
   products: Product[];
+  courses: Course[];
   addEvent: (event: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => void;
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void;
+  addCourse: (course: Omit<Course, 'id' | 'createdAt'>) => void;
   deleteEvent: (id: string) => void;
   deleteProduct: (id: string) => void;
+  deleteCourse: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -119,10 +160,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [events, setEvents] = useState<Event[]>(() => load('tessy_events', SEED_EVENTS));
   const [products, setProducts] = useState<Product[]>(() => load('tessy_products', SEED_PRODUCTS));
+  const [courses, setCourses] = useState<Course[]>(() => load('tessy_courses', SEED_COURSES));
 
   useEffect(() => { localStorage.setItem('tessy_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('tessy_events', JSON.stringify(events)); }, [events]);
   useEffect(() => { localStorage.setItem('tessy_products', JSON.stringify(products)); }, [products]);
+  useEffect(() => { localStorage.setItem('tessy_courses', JSON.stringify(courses)); }, [courses]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -152,6 +195,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: input.role,
       specialty: input.specialty,
       company: input.company,
+      whatsapp: input.whatsapp,
+      bio: input.bio,
     };
     setUsers(prev => [...prev, newUser]);
     const { password: _pw, ...safe } = newUser;
@@ -181,12 +226,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
   };
 
+  const addCourse = (data: Omit<Course, 'id' | 'createdAt'>) => {
+    setCourses(prev => [
+      { ...data, id: `c${Date.now()}`, createdAt: new Date().toISOString() },
+      ...prev,
+    ]);
+  };
+
   const deleteEvent = (id: string) => setEvents(prev => prev.filter(e => e.id !== id));
   const deleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
+  const deleteCourse = (id: string) => setCourses(prev => prev.filter(c => c.id !== id));
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, register, logout, events, products, addEvent, addProduct, deleteEvent, deleteProduct }}
+      value={{
+        user, isLoading, login, register, logout,
+        events, products, courses,
+        addEvent, addProduct, addCourse,
+        deleteEvent, deleteProduct, deleteCourse,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -197,4 +255,11 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
   return ctx;
+}
+
+export function buildWhatsappLink(phone: string | undefined, message?: string) {
+  if (!phone) return '';
+  const clean = phone.replace(/\D/g, '');
+  const msg = message ? `?text=${encodeURIComponent(message)}` : '';
+  return `https://wa.me/${clean}${msg}`;
 }

@@ -1,18 +1,45 @@
 @import "tailwindcss";
 
+:root {
+  --bg: #0A0F1F;
+  --bg-soft: #0F172A;
+  --surface: #131B2E;
+  --surface-hi: #1B2540;
+  --border: #1F2A44;
+  --border-hi: #2B3A5C;
+  --text: #E6ECF5;
+  --text-muted: #8A96B2;
+  --accent: #4F8CFF;
+  --accent-hi: #6FA4FF;
+  --accent-soft: rgba(79, 140, 255, 0.12);
+  --whats: #25D366;
+  --whats-hi: #34E178;
+  --danger: #F87171;
+  --success: #34D399;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  color-scheme: dark;
+}
+
 body {
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background-color: #F8FAFC;
-  color: #0F172A;
   min-height: 100vh;
   display: block;
   -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(1100px 600px at 85% -10%, rgba(79, 140, 255, 0.14), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(124, 58, 237, 0.10), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
 }
 
 #root {
@@ -21,8 +48,34 @@ body {
 
 input, button, select, textarea {
   font-family: inherit;
+  color: inherit;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #5A6886;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+  caret-color: var(--text);
+}
+
+select {
+  background-color: var(--surface);
+}
+
+select option {
+  background: var(--surface);
+  color: var(--text);
 }
 
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.glow {
+  box-shadow: 0 0 0 1px rgba(79,140,255,0.25), 0 12px 40px -12px rgba(79,140,255,0.45);
 }
