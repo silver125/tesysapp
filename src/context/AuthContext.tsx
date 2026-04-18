@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { User, Event, Product } from '../types';
+import type { User, UserRole, Event, Product } from '../types';
 
-const MOCK_USERS: (User & { password: string })[] = [
+type StoredUser = User & { password: string };
+
+const SEED_USERS: StoredUser[] = [
   {
     id: '1',
     name: 'Dr. Carlos Mendes',
@@ -21,14 +23,14 @@ const MOCK_USERS: (User & { password: string })[] = [
   },
 ];
 
-const SAMPLE_EVENTS: Event[] = [
+const SEED_EVENTS: Event[] = [
   {
     id: 'e1',
     title: 'Simpósio de Cardiologia 2025',
-    description: 'Evento focado nas últimas tendências em cardiologia interventiva, com palestras de especialistas nacionais e internacionais.',
+    description: 'Palestras com especialistas sobre cardiologia intervencionista.',
     date: '2025-06-15',
     time: '08:00',
-    location: 'São Paulo, SP — Hotel Grand Hyatt',
+    location: 'São Paulo, SP',
     category: 'Congresso',
     maxParticipants: 200,
     registeredCount: 87,
@@ -39,10 +41,10 @@ const SAMPLE_EVENTS: Event[] = [
   {
     id: 'e2',
     title: 'Workshop: Novas Terapias em Oncologia',
-    description: 'Workshop prático com foco em imunoterapia e terapias-alvo para oncologistas e clínicos.',
+    description: 'Imunoterapia e terapias-alvo para oncologistas.',
     date: '2025-07-20',
     time: '09:00',
-    location: 'Rio de Janeiro, RJ — Centro de Convenções',
+    location: 'Rio de Janeiro, RJ',
     category: 'Workshop',
     maxParticipants: 50,
     registeredCount: 32,
@@ -52,11 +54,11 @@ const SAMPLE_EVENTS: Event[] = [
   },
 ];
 
-const SAMPLE_PRODUCTS: Product[] = [
+const SEED_PRODUCTS: Product[] = [
   {
     id: 'p1',
     name: 'CardioPlus 10mg',
-    description: 'Medicamento para tratamento de hipertensão arterial e insuficiência cardíaca. Indicado para pacientes adultos.',
+    description: 'Medicamento para hipertensão arterial.',
     category: 'Cardiologia',
     price: 'Sob consulta',
     companyId: '2',
@@ -67,7 +69,7 @@ const SAMPLE_PRODUCTS: Product[] = [
   {
     id: 'p2',
     name: 'OncoVital Infusion',
-    description: 'Solução para infusão em terapias oncológicas de suporte. Formulação estéril de alta pureza.',
+    description: 'Solução para infusão em terapias oncológicas.',
     category: 'Oncologia',
     price: 'Sob consulta',
     companyId: '2',
@@ -77,10 +79,20 @@ const SAMPLE_PRODUCTS: Product[] = [
   },
 ];
 
+interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  specialty?: string;
+  company?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (input: RegisterInput) => Promise<User>;
   logout: () => void;
   events: Event[];
   products: Product[];
@@ -92,46 +104,62 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-function loadFromStorage<T>(key: string, fallback: T): T {
+function load<T>(key: string, fallback: T): T {
   try {
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() =>
-    loadFromStorage('tessy_user', null)
-  );
+  const [users, setUsers] = useState<StoredUser[]>(() => load('tessy_users', SEED_USERS));
+  const [user, setUser] = useState<User | null>(() => load<User | null>('tessy_user', null));
   const [isLoading, setIsLoading] = useState(false);
-  const [events, setEvents] = useState<Event[]>(() =>
-    loadFromStorage('tessy_events', SAMPLE_EVENTS)
-  );
-  const [products, setProducts] = useState<Product[]>(() =>
-    loadFromStorage('tessy_products', SAMPLE_PRODUCTS)
-  );
+  const [events, setEvents] = useState<Event[]>(() => load('tessy_events', SEED_EVENTS));
+  const [products, setProducts] = useState<Product[]>(() => load('tessy_products', SEED_PRODUCTS));
 
-  useEffect(() => {
-    localStorage.setItem('tessy_events', JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    localStorage.setItem('tessy_products', JSON.stringify(products));
-  }, [products]);
+  useEffect(() => { localStorage.setItem('tessy_users', JSON.stringify(users)); }, [users]);
+  useEffect(() => { localStorage.setItem('tessy_events', JSON.stringify(events)); }, [events]);
+  useEffect(() => { localStorage.setItem('tessy_products', JSON.stringify(products)); }, [products]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const found = MOCK_USERS.find(
-      u => u.email === email && u.password === password
-    );
+    await new Promise(r => setTimeout(r, 400));
+    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     setIsLoading(false);
     if (!found) throw new Error('E-mail ou senha incorretos.');
-    const { password: _, ...userData } = found;
-    setUser(userData);
-    localStorage.setItem('tessy_user', JSON.stringify(userData));
+    const { password: _pw, ...safe } = found;
+    void _pw;
+    setUser(safe);
+    localStorage.setItem('tessy_user', JSON.stringify(safe));
+  };
+
+  const register = async (input: RegisterInput): Promise<User> => {
+    setIsLoading(true);
+    await new Promise(r => setTimeout(r, 400));
+    const exists = users.some(u => u.email.toLowerCase() === input.email.toLowerCase());
+    if (exists) {
+      setIsLoading(false);
+      throw new Error('Este e-mail já está cadastrado.');
+    }
+    const newUser: StoredUser = {
+      id: `u${Date.now()}`,
+      name: input.name.trim(),
+      email: input.email.trim(),
+      password: input.password,
+      role: input.role,
+      specialty: input.specialty,
+      company: input.company,
+    };
+    setUsers(prev => [...prev, newUser]);
+    const { password: _pw, ...safe } = newUser;
+    void _pw;
+    setUser(safe);
+    localStorage.setItem('tessy_user', JSON.stringify(safe));
+    setIsLoading(false);
+    return safe;
   };
 
   const logout = () => {
@@ -139,23 +167,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('tessy_user');
   };
 
-  const addEvent = (eventData: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
-    const newEvent: Event = {
-      ...eventData,
-      id: `e${Date.now()}`,
-      registeredCount: 0,
-      createdAt: new Date().toISOString(),
-    };
-    setEvents(prev => [newEvent, ...prev]);
+  const addEvent = (data: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
+    setEvents(prev => [
+      { ...data, id: `e${Date.now()}`, registeredCount: 0, createdAt: new Date().toISOString() },
+      ...prev,
+    ]);
   };
 
-  const addProduct = (productData: Omit<Product, 'id' | 'createdAt'>) => {
-    const newProduct: Product = {
-      ...productData,
-      id: `p${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    setProducts(prev => [newProduct, ...prev]);
+  const addProduct = (data: Omit<Product, 'id' | 'createdAt'>) => {
+    setProducts(prev => [
+      { ...data, id: `p${Date.now()}`, createdAt: new Date().toISOString() },
+      ...prev,
+    ]);
   };
 
   const deleteEvent = (id: string) => setEvents(prev => prev.filter(e => e.id !== id));
@@ -163,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, logout, events, products, addEvent, addProduct, deleteEvent, deleteProduct }}
+      value={{ user, isLoading, login, register, logout, events, products, addEvent, addProduct, deleteEvent, deleteProduct }}
     >
       {children}
     </AuthContext.Provider>

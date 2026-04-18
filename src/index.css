@@ -8,10 +8,11 @@
 
 body {
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background-color: #F1F5F9;
-  color: #1E293B;
+  background-color: #F8FAFC;
+  color: #0F172A;
   min-height: 100vh;
   display: block;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
@@ -20,4 +21,8 @@ body {
 
 input, button, select, textarea {
   font-family: inherit;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }

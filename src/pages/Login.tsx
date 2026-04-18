@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<'medico' | 'empresa'>('medico');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,159 +14,100 @@ export default function Login() {
     setError('');
     try {
       await login(email, password);
-      navigate(role === 'medico' ? '/medico' : '/empresa');
-    } catch (err: unknown) {
+      navigate('/', { replace: true });
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao entrar.');
     }
   };
 
-  const fillDemo = () => {
-    if (role === 'medico') {
-      setEmail('medico@teste.com');
-      setPassword('123456');
-    } else {
-      setEmail('empresa@teste.com');
-      setPassword('123456');
-    }
+  const fillDemo = (kind: 'medico' | 'empresa') => {
+    setEmail(kind === 'medico' ? 'medico@teste.com' : 'empresa@teste.com');
+    setPassword('123456');
+    setError('');
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #1E40AF 40%, #2563EB 100%)' }}>
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
-        <div style={{ position: 'absolute', bottom: '-120px', left: '-60px', width: '500px', height: '500px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
-      </div>
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">T</div>
+          <span className="font-semibold text-slate-800 text-lg">Tessy</span>
+        </Link>
+        <Link to="/cadastro" className="text-sm font-medium text-blue-600">Criar conta</Link>
+      </header>
 
-      <div className="relative w-full max-w-md px-4">
-        {/* Logo / Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style={{ background: 'rgba(255,255,255,0.15)' }}>
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <path d="M16 4C9.37 4 4 9.37 4 16s5.37 12 12 12 12-5.37 12-12S22.63 4 16 4zm0 2c5.52 0 10 4.48 10 10s-4.48 10-10 10S6 21.52 6 16 10.48 6 16 6zm-1 4v5h-5v2h5v5h2v-5h5v-2h-5V10h-2z" fill="white"/>
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Tessy</h1>
-          <p className="text-blue-200 mt-1 text-sm">Plataforma de oportunidades médicas</p>
-        </div>
+      <main className="flex-1 flex items-start justify-center px-5 py-8">
+        <div className="w-full max-w-md">
+          <h1 className="text-2xl font-bold text-slate-900">Entrar</h1>
+          <p className="text-slate-500 text-sm mt-1">Acesse sua conta Tessy.</p>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Role tabs */}
-          <div className="flex">
+          {error && (
+            <div className="mt-5 px-4 py-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-100">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">E-mail</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="voce@exemplo.com"
+                autoComplete="email"
+                className="w-full px-4 py-3 rounded-xl text-sm text-slate-900 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Senha</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••"
+                autoComplete="current-password"
+                className="w-full px-4 py-3 rounded-xl text-sm text-slate-900 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none transition"
+              />
+            </div>
+
             <button
-              type="button"
-              onClick={() => { setRole('medico'); setError(''); }}
-              className="flex-1 py-4 text-sm font-semibold transition-colors"
-              style={{
-                background: role === 'medico' ? '#2563EB' : '#F8FAFC',
-                color: role === 'medico' ? 'white' : '#64748B',
-                borderBottom: role === 'medico' ? 'none' : '2px solid #E2E8F0',
-              }}
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition disabled:opacity-70"
             >
-              Sou Médico
+              {isLoading ? 'Entrando...' : 'Entrar'}
             </button>
-            <button
-              type="button"
-              onClick={() => { setRole('empresa'); setError(''); }}
-              className="flex-1 py-4 text-sm font-semibold transition-colors"
-              style={{
-                background: role === 'empresa' ? '#7C3AED' : '#F8FAFC',
-                color: role === 'empresa' ? 'white' : '#64748B',
-                borderBottom: role === 'empresa' ? 'none' : '2px solid #E2E8F0',
-              }}
-            >
-              Sou Empresa
-            </button>
-          </div>
+          </form>
 
-          {/* Form */}
-          <div className="p-8">
-            <h2 className="text-xl font-semibold text-slate-800 mb-1">
-              {role === 'medico' ? 'Acesso do Médico' : 'Acesso da Empresa'}
-            </h2>
-            <p className="text-slate-500 text-sm mb-6">
-              {role === 'medico'
-                ? 'Visualize eventos e oportunidades de empresas parceiras'
-                : 'Gerencie eventos e produtos para médicos'}
-            </p>
-
-            {error && (
-              <div className="mb-4 px-4 py-3 rounded-lg text-sm font-medium" style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  E-mail
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder={role === 'medico' ? 'medico@teste.com' : 'empresa@teste.com'}
-                  className="w-full px-4 py-3 rounded-xl text-slate-800 text-sm transition-colors"
-                  style={{ border: '1.5px solid #E2E8F0', outline: 'none', background: '#F8FAFC' }}
-                  onFocus={e => (e.target.style.borderColor = role === 'medico' ? '#2563EB' : '#7C3AED')}
-                  onBlur={e => (e.target.style.borderColor = '#E2E8F0')}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Senha
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••"
-                  className="w-full px-4 py-3 rounded-xl text-slate-800 text-sm transition-colors"
-                  style={{ border: '1.5px solid #E2E8F0', outline: 'none', background: '#F8FAFC' }}
-                  onFocus={e => (e.target.style.borderColor = role === 'medico' ? '#2563EB' : '#7C3AED')}
-                  onBlur={e => (e.target.style.borderColor = '#E2E8F0')}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3.5 rounded-xl text-white font-semibold text-sm transition-opacity mt-2"
-                style={{
-                  background: role === 'medico'
-                    ? 'linear-gradient(135deg, #2563EB, #1D4ED8)'
-                    : 'linear-gradient(135deg, #7C3AED, #6D28D9)',
-                  opacity: isLoading ? 0.7 : 1,
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {isLoading ? 'Entrando...' : 'Entrar'}
-              </button>
-            </form>
-
-            {/* Demo hint */}
-            <div className="mt-5 pt-5" style={{ borderTop: '1px solid #F1F5F9' }}>
-              <p className="text-xs text-slate-400 text-center mb-2">Demonstração</p>
+          <div className="mt-6 pt-6 border-t border-slate-100">
+            <p className="text-xs text-slate-400 text-center mb-2">Usar conta de demonstração</p>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={fillDemo}
-                className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors"
-                style={{ background: '#F1F5F9', color: '#475569' }}
+                onClick={() => fillDemo('medico')}
+                className="py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
               >
-                Preencher credenciais de demo
+                Médico
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemo('empresa')}
+                className="py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+              >
+                Empresa
               </button>
             </div>
           </div>
-        </div>
 
-        <p className="text-center text-blue-200 text-xs mt-6">
-          © 2025 Tessy — Todos os direitos reservados
-        </p>
-      </div>
+          <p className="text-center text-sm text-slate-500 mt-6">
+            Novo no Tessy?{' '}
+            <Link to="/cadastro" className="font-medium text-blue-600">Criar conta</Link>
+          </p>
+        </div>
+      </main>
     </div>
   );
 }
