@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: #F1F5F9;
+  color: #1E293B;
+  min-height: 100vh;
+  display: block;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+input, button, select, textarea {
+  font-family: inherit;
+}
