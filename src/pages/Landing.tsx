@@ -44,13 +44,13 @@ export default function Landing() {
           backgroundImage: 'url(/hero-bg.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center 15%',
-          opacity: 0.30,
+          opacity: 0.50,
           zIndex: 0,
         }} />
         {/* Gradiente azul escuro por cima da imagem */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(180deg, rgba(11,14,22,0.55) 0%, rgba(11,14,22,0.80) 80%, rgba(11,14,22,1) 100%)',
+          background: 'linear-gradient(180deg, rgba(11,14,22,0.35) 0%, rgba(11,14,22,0.65) 80%, rgba(11,14,22,1) 100%)',
           zIndex: 1,
         }} />
 
