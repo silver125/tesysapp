@@ -189,54 +189,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Cadastro ──
   const register = async (input: RegisterInput): Promise<User> => {
     setIsLoading(true);
-    // 1. Cria usuário no Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: input.email,
-      password: input.password,
-    });
-    if (authError || !authData.user) {
+    try {
+      // 1. Cria usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: input.email,
+        password: input.password,
+      });
+
+      if (authError) {
+        const msg = authError.message.toLowerCase().includes('already registered')
+          ? 'Este e-mail já está cadastrado. Faça login.'
+          : authError.message || 'Erro ao criar conta.';
+        throw new Error(msg);
+      }
+
+      if (!authData.user) {
+        throw new Error('Erro ao criar conta. Tente novamente.');
+      }
+
+      // Se email confirmation está ativo no Supabase, não há sessão imediata
+      if (!authData.session) {
+        throw new Error(
+          'Confirme seu e-mail antes de continuar — verifique sua caixa de entrada.'
+        );
+      }
+
+      const uid = authData.user.id;
+
+      // 2. Cria perfil na tabela profiles
+      // Nota: não inclui "bio" pois a coluna pode não existir na tabela
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id:           uid,
+        name:         input.name.trim(),
+        first_name:   input.name.trim(),
+        last_name:    '',
+        email:        input.email,
+        role:         input.role,
+        specialty:    input.specialty ?? null,
+        crm:          input.crm ?? null,
+        crm_state:    input.crmState ?? null,
+        company:      input.company ?? null,
+        company_name: input.company ?? null,
+        whatsapp:     input.whatsapp ?? null,
+      });
+
+      if (profileError) {
+        throw new Error('Erro ao salvar perfil: ' + profileError.message);
+      }
+
+      const newUser: User = {
+        id: uid,
+        name: input.name.trim(),
+        email: input.email,
+        role: input.role,
+        specialty: input.specialty,
+        crm: input.crm,
+        crmState: input.crmState,
+        company: input.company,
+        whatsapp: input.whatsapp,
+      };
+      setUser(newUser);
+      return newUser;
+    } finally {
+      // Garante que isLoading sempre volta a false,
+      // mesmo se uma exceção inesperada for lançada
       setIsLoading(false);
-      throw new Error(authError?.message ?? 'Erro ao criar conta.');
     }
-
-    const uid = authData.user.id;
-
-    // 2. Cria perfil na tabela profiles (compatível com ambos schemas)
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id:           uid,
-      name:         input.name.trim(),
-      first_name:   input.name.trim(),
-      last_name:    '',
-      email:        input.email,
-      role:         input.role,
-      specialty:    input.specialty ?? null,
-      crm:          input.crm ?? null,
-      crm_state:    input.crmState ?? null,
-      company:      input.company ?? null,
-      company_name: input.company ?? null,
-      whatsapp:     input.whatsapp ?? null,
-      bio:          input.bio ?? null,
-    });
-
-    if (profileError) {
-      setIsLoading(false);
-      throw new Error('Erro ao salvar perfil: ' + profileError.message);
-    }
-
-    const newUser: User = {
-      id: uid,
-      name: input.name.trim(),
-      email: input.email,
-      role: input.role,
-      specialty: input.specialty,
-      crm: input.crm,
-      crmState: input.crmState,
-      company: input.company,
-      whatsapp: input.whatsapp,
-    };
-    setUser(newUser);
-    setIsLoading(false);
-    return newUser;
   };
 
   // ── Logout ──
