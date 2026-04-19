@@ -14,17 +14,31 @@ export function companyTint(name: string): string {
 
 export function categoryTint(cat: string): [string, string] {
   const map: Record<string, [string, string]> = {
-    Congresso:    ['#2E7BFF', '#1A46B8'],
-    Workshop:     ['#1EA97C', '#0D6B4E'],
-    Simpósio:     ['#F58220', '#9E4E0A'],
-    Webinar:      ['#5F2C82', '#3A1650'],
-    Treinamento:  ['#F25C54', '#9E2B25'],
-    Cardiologia:  ['#E63946', '#8B1A22'],
-    Oncologia:    ['#5F2C82', '#3A1650'],
-    Neurologia:   ['#2E7BFF', '#1A46B8'],
-    Ortopedia:    ['#1EA97C', '#0D6B4E'],
-    Pediatria:    ['#F58220', '#9E4E0A'],
-    'Clínica Médica': ['#4F46E5', '#2D2898'],
+    /* ── Tipos de evento ── */
+    Congresso:          ['#2E7BFF', '#1A46B8'],
+    Workshop:           ['#1EA97C', '#0D6B4E'],
+    Simpósio:           ['#F58220', '#9E4E0A'],
+    Webinar:            ['#5F2C82', '#3A1650'],
+    Treinamento:        ['#F25C54', '#9E2B25'],
+    /* ── Especialidades médicas ── */
+    Nutrologia:         ['#F58220', '#9E4E0A'],
+    Endocrinologia:     ['#1EA97C', '#0D6B4E'],
+    Dermatologia:       ['#E63E8C', '#8B1A50'],
+    'Cirurgia Plástica':['#8B5CF6', '#5B21B6'],
+    Cardiologia:        ['#E63946', '#8B1A22'],
+    Oncologia:          ['#5F2C82', '#3A1650'],
+    Neurologia:         ['#2E7BFF', '#1A46B8'],
+    Ortopedia:          ['#0F7B8C', '#074E5A'],
+    Pediatria:          ['#F58220', '#9E4E0A'],
+    Gastroenterologia:  ['#1EA97C', '#0D6B4E'],
+    Ginecologia:        ['#E63E8C', '#8B1A50'],
+    Oftalmologia:       ['#4F46E5', '#2D2898'],
+    Psiquiatria:        ['#5F2C82', '#3A1650'],
+    Reumatologia:       ['#F25C54', '#9E2B25'],
+    Urologia:           ['#2E7BFF', '#1A46B8'],
+    Pneumologia:        ['#0F7B8C', '#074E5A'],
+    'Clínica Médica':   ['#4F46E5', '#2D2898'],
+    Outros:             ['#6F7A90', '#3A4255'],
   };
   return map[cat] ?? ['#2E7BFF', '#1A46B8'];
 }

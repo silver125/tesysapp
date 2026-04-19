@@ -54,11 +54,16 @@ export default function DoctorDashboard() {
   const [tab, setTab] = useState<Tab>('home');
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
+  const [courseFilter, setCourseFilter] = useState('all');
 
   const q = search.toLowerCase();
   const filtEvents   = events.filter(e => !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q));
   const filtProducts = products.filter(p => !q || p.name.toLowerCase().includes(q) || p.companyName.toLowerCase().includes(q));
-  const filtCourses  = courses.filter(c => !q || c.title.toLowerCase().includes(q) || c.companyName.toLowerCase().includes(q));
+  const filtCourses  = courses.filter(c => {
+    const matchQ = !q || c.title.toLowerCase().includes(q) || c.companyName.toLowerCase().includes(q);
+    const matchCat = courseFilter === 'all' || c.category.toLowerCase() === courseFilter.toLowerCase();
+    return matchQ && matchCat;
+  });
 
   const today = new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
     .replace('.', '').toUpperCase();
@@ -175,6 +180,29 @@ export default function DoctorDashboard() {
             Para médicos professores e especialistas.
           </p>
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar cursos..." />
+          <FilterChips
+            tabs={[
+              ['all','TODOS'],
+              ['Nutrologia','NUTROLOGIA'],
+              ['Endocrinologia','ENDOCRINOLOGIA'],
+              ['Dermatologia','DERMATOLOGIA'],
+              ['Cirurgia Plástica','CIR. PLÁSTICA'],
+              ['Cardiologia','CARDIOLOGIA'],
+              ['Oncologia','ONCOLOGIA'],
+              ['Neurologia','NEUROLOGIA'],
+              ['Ortopedia','ORTOPEDIA'],
+              ['Pediatria','PEDIATRIA'],
+              ['Gastroenterologia','GASTRO'],
+              ['Ginecologia','GINECOLOGIA'],
+              ['Oftalmologia','OFTALMOLOGIA'],
+              ['Psiquiatria','PSIQUIATRIA'],
+              ['Pneumologia','PNEUMOLOGIA'],
+              ['Clínica Médica','CLÍNICA MÉD.'],
+              ['Outros','OUTROS'],
+            ]}
+            active={courseFilter}
+            onChange={setCourseFilter}
+          />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filtCourses.length === 0
               ? <Empty text="Nenhum curso encontrado." />

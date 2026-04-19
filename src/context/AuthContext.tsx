@@ -132,6 +132,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<User>;
   logout: () => void;
+  updateProfile: (data: { name?: string; company?: string; whatsapp?: string }) => void;
   events: Event[];
   products: Product[];
   courses: Course[];
@@ -237,10 +238,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
   const deleteCourse = (id: string) => setCourses(prev => prev.filter(c => c.id !== id));
 
+  const updateProfile = (data: { name?: string; company?: string; whatsapp?: string }) => {
+    if (!user) return;
+    const updated: User = {
+      ...user,
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.company !== undefined ? { company: data.company } : {}),
+      ...(data.whatsapp !== undefined ? { whatsapp: data.whatsapp } : {}),
+    };
+    setUser(updated);
+    localStorage.setItem('tessy_user', JSON.stringify(updated));
+    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...data } : u));
+  };
+
   return (
     <AuthContext.Provider
       value={{
-        user, isLoading, login, register, logout,
+        user, isLoading, login, register, logout, updateProfile,
         events, products, courses,
         addEvent, addProduct, addCourse,
         deleteEvent, deleteProduct, deleteCourse,

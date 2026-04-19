@@ -4,7 +4,7 @@ import type { NavItem } from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
 import {
   CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
-  categoryTint, companyTint,
+  categoryTint, companyTint, buildWhatsappLink,
 } from '../../components/ui';
 import type { Event, Product, Course, CourseModality } from '../../types';
 
@@ -44,8 +44,13 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const EVENT_CATS   = ['Congresso', 'Workshop', 'Simpósio', 'Webinar', 'Treinamento'];
-const PRODUCT_CATS = ['Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria', 'Outros'];
-const COURSE_CATS  = ['Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria', 'Clínica Médica', 'Outros'];
+const PRODUCT_CATS = ['Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria', 'Dermatologia', 'Endocrinologia', 'Outros'];
+const COURSE_CATS  = [
+  'Nutrologia', 'Endocrinologia', 'Dermatologia', 'Cirurgia Plástica',
+  'Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria',
+  'Gastroenterologia', 'Ginecologia', 'Oftalmologia', 'Psiquiatria',
+  'Reumatologia', 'Urologia', 'Pneumologia', 'Clínica Médica', 'Outros',
+];
 const MODALITIES: { value: CourseModality; label: string; icon: string }[] = [
   { value: 'online',     label: 'Online',     icon: '◎' },
   { value: 'presencial', label: 'Presencial', icon: '📍' },
@@ -58,10 +63,28 @@ function fmt(d: string) {
   return `${dd}/${m}`;
 }
 
+function fmtPhone(raw: string) {
+  const d = raw.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+function formatDisplayPhone(raw: string) {
+  // stored as 5511999999999 → (11) 99999-9999
+  const d = raw.replace(/\D/g, '');
+  const local = d.startsWith('55') ? d.slice(2) : d;
+  return fmtPhone(local);
+}
+
 export default function CompanyDashboard() {
-  const { user, events, products, courses, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse } = useAuth();
+  const { user, events, products, courses, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editWa, setEditWa] = useState('');
 
   const myEvents   = events.filter(e => e.companyId === user?.id);
   const myProducts = products.filter(p => p.companyId === user?.id);
@@ -82,16 +105,115 @@ export default function CompanyDashboard() {
       {tab === 'home' && (
         <div>
           {/* Company header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24, padding: '14px 0' }}>
-            <CompanyMark code={code} tint={tint} size={60} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-                {user?.company ?? user?.name}<span style={{ color: '#2E7BFF' }}>.</span>
-              </h1>
-              {user?.whatsapp && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, color: '#25D366', fontSize: 13, fontWeight: 600 }}>
-                  <WaIcon size={14} /> {user.whatsapp}
+          <div style={{ marginBottom: 24, padding: '14px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <CompanyMark code={code} tint={tint} size={60} />
+              {!editingProfile ? (
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                    {user?.company ?? user?.name}<span style={{ color: '#2E7BFF' }}>.</span>
+                  </h1>
+                  {user?.whatsapp ? (
+                    <a
+                      href={buildWhatsappLink(user.whatsapp)}
+                      target="_blank" rel="noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, color: '#25D366', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
+                    >
+                      <WaIcon size={14} /> {user.whatsapp}
+                    </a>
+                  ) : (
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>WhatsApp não configurado</div>
+                  )}
                 </div>
+              ) : (
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
+                      NOME DA EMPRESA
+                    </div>
+                    <input
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      placeholder="Nome da empresa"
+                      style={{
+                        width: '100%', padding: '9px 12px', borderRadius: 8,
+                        background: 'var(--bg)', border: '1.5px solid #2E7BFF',
+                        color: 'var(--ink)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
+                      WHATSAPP
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#25D366', display: 'flex' }}>
+                        <WaIcon size={14} />
+                      </span>
+                      <input
+                        value={editWa}
+                        onChange={e => setEditWa(fmtPhone(e.target.value))}
+                        placeholder="(11) 99999-9999"
+                        type="tel"
+                        style={{
+                          width: '100%', padding: '9px 12px 9px 32px', borderRadius: 8,
+                          background: 'var(--bg)', border: '1.5px solid #25D366',
+                          color: 'var(--ink)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => setEditingProfile(false)}
+                      style={{
+                        flex: 1, padding: '9px', borderRadius: 8,
+                        background: 'var(--chip)', border: '1px solid var(--line)',
+                        color: 'var(--ink-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      }}
+                    >Cancelar</button>
+                    <button
+                      onClick={() => {
+                        const trimName = editName.trim();
+                        const rawWa = editWa.replace(/\D/g, '');
+                        if (trimName.length > 1) {
+                          updateProfile({
+                            name: trimName, company: trimName,
+                            whatsapp: rawWa ? (rawWa.startsWith('55') ? rawWa : `55${rawWa}`) : user?.whatsapp,
+                          });
+                        }
+                        setEditingProfile(false);
+                      }}
+                      style={{
+                        flex: 2, padding: '9px', borderRadius: 8, border: 'none',
+                        background: '#2E7BFF', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                        boxShadow: '0 4px 16px rgba(46,123,255,0.3)',
+                      }}
+                    >Salvar</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit toggle */}
+              {!editingProfile && (
+                <button
+                  onClick={() => {
+                    setEditName(user?.company ?? user?.name ?? '');
+                    setEditWa(user?.whatsapp ? formatDisplayPhone(user.whatsapp) : '');
+                    setEditingProfile(true);
+                  }}
+                  title="Editar perfil"
+                  style={{
+                    width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                    background: 'var(--chip)', border: '1px solid var(--line)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', color: 'var(--muted)',
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M10.5 1.5L13.5 4.5L5 13H2V10L10.5 1.5Z" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
               )}
             </div>
           </div>
