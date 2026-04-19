@@ -1,119 +1,28 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { User, UserRole, Event, Product, Course } from '../types';
+import { supabase } from '../lib/supabase';
 
-type StoredUser = User & { password: string };
-
-const SEED_USERS: StoredUser[] = [
-  {
-    id: '1',
-    name: 'Dr. Carlos Mendes',
-    email: 'medico@teste.com',
-    password: '123456',
-    role: 'medico',
-    specialty: 'Cardiologia',
-  },
-  {
-    id: '2',
-    name: 'Pharma Brasil',
-    email: 'empresa@teste.com',
-    password: '123456',
-    role: 'empresa',
-    company: 'Pharma Brasil Ltda.',
-    whatsapp: '5511999999999',
-  },
-];
-
-const SEED_EVENTS: Event[] = [
-  {
-    id: 'e1',
-    title: 'Simpósio de Cardiologia 2025',
-    description: 'Palestras com especialistas sobre cardiologia intervencionista.',
-    date: '2025-06-15',
-    time: '08:00',
-    location: 'São Paulo, SP',
-    category: 'Congresso',
-    maxParticipants: 200,
-    registeredCount: 87,
-    companyId: '2',
-    companyName: 'Pharma Brasil',
-    companyWhatsapp: '5511999999999',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'e2',
-    title: 'Workshop: Novas Terapias em Oncologia',
-    description: 'Imunoterapia e terapias-alvo para oncologistas.',
-    date: '2025-07-20',
-    time: '09:00',
-    location: 'Rio de Janeiro, RJ',
-    category: 'Workshop',
-    maxParticipants: 50,
-    registeredCount: 32,
-    companyId: '2',
-    companyName: 'Pharma Brasil',
-    companyWhatsapp: '5511999999999',
-    createdAt: new Date().toISOString(),
-  },
-];
-
-const SEED_PRODUCTS: Product[] = [
-  {
-    id: 'p1',
-    name: 'CardioPlus 10mg',
-    description: 'Medicamento para hipertensão arterial.',
-    category: 'Cardiologia',
-    price: 'Sob consulta',
-    companyId: '2',
-    companyName: 'Pharma Brasil',
-    companyWhatsapp: '5511999999999',
-    availableFor: 'Médicos credenciados',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'p2',
-    name: 'OncoVital Infusion',
-    description: 'Solução para infusão em terapias oncológicas.',
-    category: 'Oncologia',
-    price: 'Sob consulta',
-    companyId: '2',
-    companyName: 'Pharma Brasil',
-    companyWhatsapp: '5511999999999',
-    availableFor: 'Oncologistas',
-    createdAt: new Date().toISOString(),
-  },
-];
-
-const SEED_COURSES: Course[] = [
-  {
-    id: 'c1',
-    title: 'Atualização em ECG',
-    description: 'Curso prático para leitura e interpretação de eletrocardiogramas. Voltado para médicos professores e residentes.',
-    category: 'Cardiologia',
-    modality: 'online',
-    duration: '20 horas',
-    instructor: 'Dra. Ana Paula Souza',
-    price: 'R$ 490',
-    companyId: '2',
-    companyName: 'Pharma Brasil',
-    companyWhatsapp: '5511999999999',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'c2',
-    title: 'Imunoterapia Aplicada',
-    description: 'Curso avançado em imunoterapia oncológica. Certificado ao final.',
-    category: 'Oncologia',
-    modality: 'hibrido',
-    duration: '40 horas',
-    instructor: 'Dr. Roberto Lima',
-    price: 'R$ 1.290',
-    companyId: '2',
-    companyName: 'Pharma Brasil',
-    companyWhatsapp: '5511999999999',
-    createdAt: new Date().toISOString(),
-  },
-];
+// ── Tipo do contexto ──────────────────────────────────────────────────────────
+interface AuthContextType {
+  user: User | null;
+  isLoading: boolean;
+  authReady: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (input: RegisterInput) => Promise<User>;
+  logout: () => Promise<void>;
+  updateProfile: (data: { name?: string; company?: string; whatsapp?: string }) => Promise<void>;
+  events: Event[];
+  products: Product[];
+  courses: Course[];
+  addEvent: (event: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => Promise<void>;
+  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
+  addCourse: (course: Omit<Course, 'id' | 'createdAt'>) => Promise<void>;
+  deleteEvent: (id: string) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  deleteCourse: (id: string) => Promise<void>;
+  refreshData: () => Promise<void>;
+}
 
 interface RegisterInput {
   name: string;
@@ -128,142 +37,284 @@ interface RegisterInput {
   bio?: string;
 }
 
-interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (input: RegisterInput) => Promise<User>;
-  logout: () => void;
-  updateProfile: (data: { name?: string; company?: string; whatsapp?: string }) => void;
-  events: Event[];
-  products: Product[];
-  courses: Course[];
-  addEvent: (event: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => void;
-  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void;
-  addCourse: (course: Omit<Course, 'id' | 'createdAt'>) => void;
-  deleteEvent: (id: string) => void;
-  deleteProduct: (id: string) => void;
-  deleteCourse: (id: string) => void;
-}
-
 const AuthContext = createContext<AuthContextType | null>(null);
 
-function load<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+// ── Helpers de conversão DB → App ────────────────────────────────────────────
+function dbToUser(profile: Record<string, unknown>, email: string): User {
+  return {
+    id:        profile.id        as string,
+    name:      profile.name      as string,
+    email,
+    role:      profile.role      as UserRole,
+    specialty: profile.specialty as string | undefined,
+    crm:       profile.crm       as string | undefined,
+    crmState:  profile.crm_state as string | undefined,
+    company:   profile.company   as string | undefined,
+    whatsapp:  profile.whatsapp  as string | undefined,
+    bio:       profile.bio       as string | undefined,
+  };
 }
 
+function dbToEvent(row: Record<string, unknown>): Event {
+  return {
+    id:               row.id               as string,
+    title:            row.title            as string,
+    description:      row.description      as string,
+    date:             row.date             as string,
+    time:             row.time             as string,
+    location:         row.location         as string,
+    category:         row.category         as string,
+    maxParticipants:  row.max_participants  as number,
+    registeredCount:  row.registered_count as number,
+    companyId:        row.company_id       as string,
+    companyName:      row.company_name     as string,
+    companyWhatsapp:  row.company_whatsapp as string | undefined,
+    createdAt:        row.created_at       as string,
+  };
+}
+
+function dbToProduct(row: Record<string, unknown>): Product {
+  return {
+    id:              row.id              as string,
+    name:            row.name            as string,
+    description:     row.description     as string,
+    category:        row.category        as string,
+    price:           row.price           as string | undefined,
+    companyId:       row.company_id      as string,
+    companyName:     row.company_name    as string,
+    companyWhatsapp: row.company_whatsapp as string | undefined,
+    availableFor:    row.available_for   as string,
+    createdAt:       row.created_at      as string,
+  };
+}
+
+function dbToCourse(row: Record<string, unknown>): Course {
+  return {
+    id:              row.id               as string,
+    title:           row.title            as string,
+    description:     row.description      as string,
+    category:        row.category         as string,
+    modality:        row.modality         as 'online' | 'presencial' | 'hibrido',
+    duration:        row.duration         as string,
+    instructor:      row.instructor       as string,
+    price:           row.price            as string | undefined,
+    companyId:       row.company_id       as string,
+    companyName:     row.company_name     as string,
+    companyWhatsapp: row.company_whatsapp as string | undefined,
+    createdAt:       row.created_at       as string,
+  };
+}
+
+// ── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<StoredUser[]>(() => load('tessy_users', SEED_USERS));
-  const [user, setUser] = useState<User | null>(() => load<User | null>('tessy_user', null));
+  const [user, setUser]       = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [events, setEvents] = useState<Event[]>(() => load('tessy_events', SEED_EVENTS));
-  const [products, setProducts] = useState<Product[]>(() => load('tessy_products', SEED_PRODUCTS));
-  const [courses, setCourses] = useState<Course[]>(() => load('tessy_courses', SEED_COURSES));
+  const [authReady, setAuthReady] = useState(false);
+  const [events,   setEvents]   = useState<Event[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [courses,  setCourses]  = useState<Course[]>([]);
 
-  useEffect(() => { localStorage.setItem('tessy_users', JSON.stringify(users)); }, [users]);
-  useEffect(() => { localStorage.setItem('tessy_events', JSON.stringify(events)); }, [events]);
-  useEffect(() => { localStorage.setItem('tessy_products', JSON.stringify(products)); }, [products]);
-  useEffect(() => { localStorage.setItem('tessy_courses', JSON.stringify(courses)); }, [courses]);
+  // Carrega eventos/produtos/cursos públicos
+  const refreshData = useCallback(async () => {
+    const [evRes, prRes, coRes] = await Promise.all([
+      supabase.from('events').select('*').order('created_at', { ascending: false }),
+      supabase.from('products').select('*').order('created_at', { ascending: false }),
+      supabase.from('courses').select('*').order('created_at', { ascending: false }),
+    ]);
+    if (evRes.data) setEvents(evRes.data.map(r => dbToEvent(r as Record<string, unknown>)));
+    if (prRes.data) setProducts(prRes.data.map(r => dbToProduct(r as Record<string, unknown>)));
+    if (coRes.data) setCourses(coRes.data.map(r => dbToCourse(r as Record<string, unknown>)));
+  }, []);
 
+  // Busca perfil do usuário autenticado
+  async function fetchProfile(userId: string, email: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    if (error || !data) return null;
+    return dbToUser(data as Record<string, unknown>, email);
+  }
+
+  // Inicializa sessão e ouve mudanças de auth
+  useEffect(() => {
+    refreshData();
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const u = await fetchProfile(session.user.id, session.user.email ?? '');
+        setUser(u);
+      }
+      setAuthReady(true);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          const u = await fetchProfile(session.user.id, session.user.email ?? '');
+          setUser(u);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [refreshData]);
+
+  // ── Login ──
   const login = async (email: string, password: string) => {
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 400));
-    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setIsLoading(false);
-    if (!found) throw new Error('E-mail ou senha incorretos.');
-    const { password: _pw, ...safe } = found;
-    void _pw;
-    setUser(safe);
-    localStorage.setItem('tessy_user', JSON.stringify(safe));
+    if (error) throw new Error('E-mail ou senha incorretos.');
   };
 
+  // ── Cadastro ──
   const register = async (input: RegisterInput): Promise<User> => {
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 400));
-    const exists = users.some(u => u.email.toLowerCase() === input.email.toLowerCase());
-    if (exists) {
-      setIsLoading(false);
-      throw new Error('Este e-mail já está cadastrado.');
-    }
-    const newUser: StoredUser = {
-      id: `u${Date.now()}`,
-      name: input.name.trim(),
-      email: input.email.trim(),
+    // 1. Cria usuário no Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: input.email,
       password: input.password,
+    });
+    if (authError || !authData.user) {
+      setIsLoading(false);
+      throw new Error(authError?.message ?? 'Erro ao criar conta.');
+    }
+
+    const uid = authData.user.id;
+
+    // 2. Cria perfil na tabela profiles
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id:        uid,
+      name:      input.name.trim(),
+      role:      input.role,
+      specialty: input.specialty ?? null,
+      crm:       input.crm ?? null,
+      crm_state: input.crmState ?? null,
+      company:   input.company ?? null,
+      whatsapp:  input.whatsapp ?? null,
+      bio:       input.bio ?? null,
+    });
+
+    if (profileError) {
+      setIsLoading(false);
+      throw new Error('Erro ao salvar perfil: ' + profileError.message);
+    }
+
+    const newUser: User = {
+      id: uid,
+      name: input.name.trim(),
+      email: input.email,
       role: input.role,
       specialty: input.specialty,
       crm: input.crm,
       crmState: input.crmState,
       company: input.company,
       whatsapp: input.whatsapp,
-      bio: input.bio,
     };
-    setUsers(prev => [...prev, newUser]);
-    const { password: _pw, ...safe } = newUser;
-    void _pw;
-    setUser(safe);
-    localStorage.setItem('tessy_user', JSON.stringify(safe));
+    setUser(newUser);
     setIsLoading(false);
-    return safe;
+    return newUser;
   };
 
-  const logout = () => {
+  // ── Logout ──
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('tessy_user');
   };
 
-  const addEvent = (data: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
-    setEvents(prev => [
-      { ...data, id: `e${Date.now()}`, registeredCount: 0, createdAt: new Date().toISOString() },
-      ...prev,
-    ]);
-  };
-
-  const addProduct = (data: Omit<Product, 'id' | 'createdAt'>) => {
-    setProducts(prev => [
-      { ...data, id: `p${Date.now()}`, createdAt: new Date().toISOString() },
-      ...prev,
-    ]);
-  };
-
-  const addCourse = (data: Omit<Course, 'id' | 'createdAt'>) => {
-    setCourses(prev => [
-      { ...data, id: `c${Date.now()}`, createdAt: new Date().toISOString() },
-      ...prev,
-    ]);
-  };
-
-  const deleteEvent = (id: string) => setEvents(prev => prev.filter(e => e.id !== id));
-  const deleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
-  const deleteCourse = (id: string) => setCourses(prev => prev.filter(c => c.id !== id));
-
-  const updateProfile = (data: { name?: string; company?: string; whatsapp?: string }) => {
+  // ── Atualizar perfil ──
+  const updateProfile = async (data: { name?: string; company?: string; whatsapp?: string }) => {
     if (!user) return;
-    const updated: User = {
-      ...user,
-      ...(data.name !== undefined ? { name: data.name } : {}),
-      ...(data.company !== undefined ? { company: data.company } : {}),
-      ...(data.whatsapp !== undefined ? { whatsapp: data.whatsapp } : {}),
-    };
-    setUser(updated);
-    localStorage.setItem('tessy_user', JSON.stringify(updated));
-    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...data } : u));
+    const updates: Record<string, string | undefined> = {};
+    if (data.name)      { updates.name    = data.name;    }
+    if (data.company)   { updates.company = data.company; updates.name = data.company; }
+    if (data.whatsapp !== undefined) { updates.whatsapp = data.whatsapp; }
+
+    await supabase.from('profiles').update(updates).eq('id', user.id);
+    setUser(prev => prev ? { ...prev, ...data } : prev);
+  };
+
+  // ── Eventos ──
+  const addEvent = async (data: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
+    const { error } = await supabase.from('events').insert({
+      title:            data.title,
+      description:      data.description,
+      date:             data.date,
+      time:             data.time,
+      location:         data.location,
+      category:         data.category,
+      max_participants: data.maxParticipants,
+      registered_count: 0,
+      company_id:       data.companyId,
+      company_name:     data.companyName,
+      company_whatsapp: data.companyWhatsapp ?? null,
+    });
+    if (error) throw new Error(error.message);
+    await refreshData();
+  };
+
+  const deleteEvent = async (id: string) => {
+    await supabase.from('events').delete().eq('id', id);
+    setEvents(prev => prev.filter(e => e.id !== id));
+  };
+
+  // ── Produtos ──
+  const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
+    const { error } = await supabase.from('products').insert({
+      name:             data.name,
+      description:      data.description,
+      category:         data.category,
+      price:            data.price ?? null,
+      company_id:       data.companyId,
+      company_name:     data.companyName,
+      company_whatsapp: data.companyWhatsapp ?? null,
+      available_for:    data.availableFor,
+    });
+    if (error) throw new Error(error.message);
+    await refreshData();
+  };
+
+  const deleteProduct = async (id: string) => {
+    await supabase.from('products').delete().eq('id', id);
+    setProducts(prev => prev.filter(p => p.id !== id));
+  };
+
+  // ── Cursos ──
+  const addCourse = async (data: Omit<Course, 'id' | 'createdAt'>) => {
+    const { error } = await supabase.from('courses').insert({
+      title:            data.title,
+      description:      data.description,
+      category:         data.category,
+      modality:         data.modality,
+      duration:         data.duration,
+      instructor:       data.instructor,
+      price:            data.price ?? null,
+      company_id:       data.companyId,
+      company_name:     data.companyName,
+      company_whatsapp: data.companyWhatsapp ?? null,
+    });
+    if (error) throw new Error(error.message);
+    await refreshData();
+  };
+
+  const deleteCourse = async (id: string) => {
+    await supabase.from('courses').delete().eq('id', id);
+    setCourses(prev => prev.filter(c => c.id !== id));
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user, isLoading, login, register, logout, updateProfile,
-        events, products, courses,
-        addEvent, addProduct, addCourse,
-        deleteEvent, deleteProduct, deleteCourse,
-      }}
-    >
+    <AuthContext.Provider value={{
+      user, isLoading, authReady,
+      login, register, logout, updateProfile,
+      events, products, courses,
+      addEvent, addProduct, addCourse,
+      deleteEvent, deleteProduct, deleteCourse,
+      refreshData,
+    }}>
       {children}
     </AuthContext.Provider>
   );
