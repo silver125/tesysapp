@@ -13,8 +13,9 @@ export default function Login() {
     e.preventDefault();
     setError('');
     try {
-      await login(email, password);
-      navigate('/', { replace: true });
+      const u = await login(email, password);
+      // Navega direto ao dashboard correto sem passar pelo RootRedirect
+      navigate(u.role === 'medico' ? '/medico' : '/empresa', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao entrar.');
     }

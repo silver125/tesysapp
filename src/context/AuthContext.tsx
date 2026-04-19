@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   authReady: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (input: RegisterInput) => Promise<User>;
   logout: () => Promise<void>;
   updateProfile: (data: { name?: string; company?: string; whatsapp?: string }) => Promise<void>;
@@ -184,11 +184,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshData]);
 
   // ── Login ──
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setIsLoading(false);
-    if (error) throw new Error('E-mail ou senha incorretos.');
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error('E-mail ou senha incorretos.');
+      if (!data.user) throw new Error('Erro ao entrar. Tente novamente.');
+      // Busca perfil já dentro do login para poder navegar direto ao dashboard
+      const u = await fetchProfile(data.user.id, data.user.email ?? '');
+      if (!u) throw new Error('Perfil não encontrado. Entre em contato com o suporte.');
+      setUser(u);
+      return u;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // ── Cadastro ──

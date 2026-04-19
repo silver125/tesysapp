@@ -36,58 +36,84 @@ export default function Landing() {
         </Link>
       </header>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px 32px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 400, width: '100%' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7,
-            padding: '6px 12px', borderRadius: 999,
-            background: 'rgba(46,123,255,0.1)', border: '1px solid rgba(46,123,255,0.25)',
-            marginBottom: 28,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1EA97C', flexShrink: 0 }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#6FA4FF', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
-              plataforma médica
-            </span>
-          </div>
+      {/* ── Hero com imagem de fundo ── */}
+      <div style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Imagem de fundo a 30% */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'url(/hero-bg.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 15%',
+          opacity: 0.30,
+          zIndex: 0,
+        }} />
+        {/* Gradiente azul escuro por cima da imagem */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(180deg, rgba(11,14,22,0.55) 0%, rgba(11,14,22,0.80) 80%, rgba(11,14,22,1) 100%)',
+          zIndex: 1,
+        }} />
 
-          <h1 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, color: 'var(--ink)' }}>
-            Médicos e empresas
-            <br />
-            <span style={{
-              background: 'linear-gradient(90deg, #2E7BFF 0%, #8B5CF6 100%)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        {/* Conteúdo hero */}
+        <div style={{
+          position: 'relative', zIndex: 2,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', padding: '52px 24px 44px', textAlign: 'center',
+        }}>
+          <div style={{ maxWidth: 400, width: '100%' }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '6px 12px', borderRadius: 999,
+              background: 'rgba(46,123,255,0.1)', border: '1px solid rgba(46,123,255,0.25)',
+              marginBottom: 28,
             }}>
-              conectados.
-            </span>
-          </h1>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1EA97C', flexShrink: 0 }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#6FA4FF', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
+                plataforma médica
+              </span>
+            </div>
 
-          <p style={{ marginTop: 16, fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.6, maxWidth: 320, margin: '16px auto 0' }}>
-            Eventos, produtos e cursos das melhores empresas da saúde. Fale direto pelo WhatsApp, sem burocracia.
-          </p>
+            <h1 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, color: 'var(--ink)' }}>
+              Médicos e empresas
+              <br />
+              <span style={{
+                background: 'linear-gradient(90deg, #2E7BFF 0%, #8B5CF6 100%)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              }}>
+                conectados.
+              </span>
+            </h1>
 
-          <div style={{ marginTop: 36, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <Link to="/cadastro" style={{
-              display: 'block', padding: '15px 24px', borderRadius: 14,
-              background: '#2E7BFF', color: '#fff',
-              fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 15,
-              textDecoration: 'none', letterSpacing: '-0.01em',
-              boxShadow: '0 8px 32px rgba(46,123,255,0.35)',
-            }}>
-              Criar conta grátis →
-            </Link>
-            <Link to="/entrar" style={{
-              display: 'block', padding: '15px 24px', borderRadius: 14,
-              background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--ink-2)',
-              fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15,
-              textDecoration: 'none',
-            }}>
-              Já tenho conta
-            </Link>
+            <p style={{ marginTop: 16, fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.6, maxWidth: 320, margin: '16px auto 0' }}>
+              Eventos, produtos e cursos das melhores empresas da saúde. Fale direto pelo WhatsApp, sem burocracia.
+            </p>
+
+            <div style={{ marginTop: 36, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Link to="/cadastro" style={{
+                display: 'block', padding: '15px 24px', borderRadius: 14,
+                background: '#2E7BFF', color: '#fff',
+                fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 15,
+                textDecoration: 'none', letterSpacing: '-0.01em',
+                boxShadow: '0 8px 32px rgba(46,123,255,0.35)',
+              }}>
+                Criar conta grátis →
+              </Link>
+              <Link to="/entrar" style={{
+                display: 'block', padding: '15px 24px', borderRadius: 14,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--ink-2)',
+                fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15,
+                textDecoration: 'none', backdropFilter: 'blur(8px)',
+              }}>
+                Já tenho conta
+              </Link>
+            </div>
           </div>
         </div>
+      </div>
 
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px 32px', textAlign: 'center' }}>
         {/* Feature cards */}
-        <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, maxWidth: 400, width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, maxWidth: 400, width: '100%' }}>
           {[
             { icon: '📅', title: 'Eventos', desc: 'Congressos e workshops' },
             { icon: '💊', title: 'Produtos', desc: 'Catálogo farmacêutico' },
