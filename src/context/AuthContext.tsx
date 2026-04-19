@@ -168,8 +168,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event, session) => {
         if (session?.user) {
           const u = await fetchProfile(session.user.id, session.user.email ?? '');
-          setUser(u);
+          // Só atualiza se o perfil foi encontrado.
+          // Se não encontrou (perfil ainda sendo criado no cadastro), mantém estado atual.
+          if (u) setUser(u);
         } else {
+          // Sem sessão = logout real
           setUser(null);
         }
       }
@@ -234,6 +237,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (profileError) {
+        // Remove a sessão criada para não deixar o usuário "meio logado"
+        // o que causaria redirect para /medico (tela errada)
+        await supabase.auth.signOut();
         throw new Error('Erro ao salvar perfil: ' + profileError.message);
       }
 
