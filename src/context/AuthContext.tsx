@@ -121,6 +121,8 @@ interface RegisterInput {
   password: string;
   role: UserRole;
   specialty?: string;
+  crm?: string;
+  crmState?: string;
   company?: string;
   whatsapp?: string;
   bio?: string;
@@ -195,6 +197,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: input.password,
       role: input.role,
       specialty: input.specialty,
+      crm: input.crm,
+      crmState: input.crmState,
       company: input.company,
       whatsapp: input.whatsapp,
       bio: input.bio,

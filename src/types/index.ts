@@ -7,6 +7,8 @@ export interface User {
   role: UserRole;
   company?: string;
   specialty?: string;
+  crm?: string;
+  crmState?: string;
   whatsapp?: string;
   bio?: string;
 }

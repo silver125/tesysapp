@@ -7,6 +7,8 @@ import type { UserRole } from '../types';
 type FormData = {
   role: UserRole | null;
   name: string;
+  crm: string;
+  crmState: string;
   specialty: string;
   company: string;
   whatsapp: string;
@@ -15,8 +17,14 @@ type FormData = {
 };
 
 const INITIAL: FormData = {
-  role: null, name: '', specialty: '', company: '', whatsapp: '', email: '', password: '',
+  role: null, name: '', crm: '', crmState: '', specialty: '', company: '', whatsapp: '', email: '', password: '',
 };
+
+const BR_STATES = [
+  'SP','AC','AL','AP','AM','BA','CE','DF','ES','GO',
+  'MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ',
+  'RN','RS','RO','RR','SC','SE','TO',
+];
 
 const SPECIALTIES = [
   'Nutrologia', 'Endocrinologia', 'Dermatologia', 'Cirurgia Plástica',
@@ -40,7 +48,8 @@ export default function Register() {
   const canAdvance = () => {
     if (step === 0) return data.role !== null;
     if (step === 1) {
-      if (data.role === 'medico') return data.name.trim().length > 2;
+      if (data.role === 'medico')
+        return data.name.trim().length > 2 && data.crm.trim().length >= 4 && data.crmState !== '';
       return data.company.trim().length > 2 && normalizePhone(data.whatsapp).length >= 12;
     }
     if (step === 2) return /^\S+@\S+\.\S+$/.test(data.email) && data.password.length >= 6;
@@ -66,6 +75,8 @@ export default function Register() {
         password: data.password,
         role: data.role!,
         specialty: data.role === 'medico' ? data.specialty || undefined : undefined,
+        crm: data.role === 'medico' ? data.crm.trim() : undefined,
+        crmState: data.role === 'medico' ? data.crmState : undefined,
         company: data.role === 'empresa' ? data.company : undefined,
         whatsapp: data.role === 'empresa' ? normalizePhone(data.whatsapp) : undefined,
       });
@@ -225,13 +236,58 @@ export default function Register() {
               autoComplete="name"
             />
 
+            {/* CRM + Estado lado a lado */}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 10 }}>
+                  CRM <span style={{ color: '#F25C54', fontSize: 12 }}>*</span>
+                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={data.crm}
+                  onChange={e => update('crm', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="123456"
+                  style={{
+                    width: '100%', padding: '18px 16px', borderRadius: 14,
+                    border: '1.5px solid var(--line)', background: 'var(--card)',
+                    color: 'var(--ink)', fontSize: 16, outline: 'none',
+                    transition: 'border-color 0.15s', boxSizing: 'border-box',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#2E7BFF'}
+                  onBlur={e => e.target.style.borderColor = 'var(--line)'}
+                />
+              </div>
+              <div style={{ width: 90 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 10 }}>
+                  Estado <span style={{ color: '#F25C54', fontSize: 12 }}>*</span>
+                </div>
+                <select
+                  value={data.crmState}
+                  onChange={e => update('crmState', e.target.value)}
+                  style={{
+                    width: '100%', padding: '18px 8px', borderRadius: 14,
+                    border: '1.5px solid var(--line)', background: 'var(--card)',
+                    color: data.crmState ? 'var(--ink)' : 'var(--muted)',
+                    fontSize: 15, fontWeight: 700, outline: 'none',
+                    appearance: 'none', textAlign: 'center', cursor: 'pointer',
+                    transition: 'border-color 0.15s', boxSizing: 'border-box',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#2E7BFF'}
+                  onBlur={e => e.target.style.borderColor = 'var(--line)'}
+                >
+                  <option value="">UF</option>
+                  {BR_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Especialidade chips */}
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 12 }}>
                 Especialidade <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(opcional)</span>
               </div>
-              <div style={{
-                display: 'flex', flexWrap: 'wrap', gap: 8,
-              }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {SPECIALTIES.map(s => {
                   const sel = data.specialty === s;
                   return (
