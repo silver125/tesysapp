@@ -41,15 +41,23 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 // ── Helpers de conversão DB → App ────────────────────────────────────────────
 function dbToUser(profile: Record<string, unknown>, email: string): User {
+  // Suporta tanto schema novo (name, company) quanto existente (first_name, company_name)
+  const name = (profile.name ?? profile.first_name ?? '') as string;
+  const lastName = (profile.last_name ?? '') as string;
+  const fullName = lastName ? `${name} ${lastName}`.trim() : name;
+  const company = (profile.company ?? profile.company_name ?? undefined) as string | undefined;
+  // Normaliza role: "doctor" → "medico"
+  const rawRole = profile.role as string;
+  const role: UserRole = rawRole === 'doctor' ? 'medico' : rawRole as UserRole;
   return {
     id:        profile.id        as string,
-    name:      profile.name      as string,
+    name:      fullName,
     email,
-    role:      profile.role      as UserRole,
+    role,
     specialty: profile.specialty as string | undefined,
     crm:       profile.crm       as string | undefined,
     crmState:  profile.crm_state as string | undefined,
-    company:   profile.company   as string | undefined,
+    company,
     whatsapp:  profile.whatsapp  as string | undefined,
     bio:       profile.bio       as string | undefined,
   };
@@ -193,17 +201,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const uid = authData.user.id;
 
-    // 2. Cria perfil na tabela profiles
+    // 2. Cria perfil na tabela profiles (compatível com ambos schemas)
     const { error: profileError } = await supabase.from('profiles').insert({
-      id:        uid,
-      name:      input.name.trim(),
-      role:      input.role,
-      specialty: input.specialty ?? null,
-      crm:       input.crm ?? null,
-      crm_state: input.crmState ?? null,
-      company:   input.company ?? null,
-      whatsapp:  input.whatsapp ?? null,
-      bio:       input.bio ?? null,
+      id:           uid,
+      name:         input.name.trim(),
+      first_name:   input.name.trim(),
+      last_name:    '',
+      email:        input.email,
+      role:         input.role,
+      specialty:    input.specialty ?? null,
+      crm:          input.crm ?? null,
+      crm_state:    input.crmState ?? null,
+      company:      input.company ?? null,
+      company_name: input.company ?? null,
+      whatsapp:     input.whatsapp ?? null,
+      bio:          input.bio ?? null,
     });
 
     if (profileError) {
