@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { User, UserRole, Event, Product, Course } from '../types';
 import { supabase } from '../lib/supabase';
@@ -118,6 +118,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]       = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  // Ref para bloquear o listener de auth durante o cadastro,
+  // evitando que o trigger do Supabase (role: 'doctor') sobrescreva o role correto
+  const isRegistering = useRef(false);
   const [events,   setEvents]   = useState<Event[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [courses,  setCourses]  = useState<Course[]>([]);
@@ -166,13 +169,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        // Durante o cadastro, ignorar — o register() vai setar o user correto
+        if (isRegistering.current) return;
         if (session?.user) {
           const u = await fetchProfile(session.user.id, session.user.email ?? '');
-          // Só atualiza se o perfil foi encontrado.
-          // Se não encontrou (perfil ainda sendo criado no cadastro), mantém estado atual.
           if (u) setUser(u);
         } else {
-          // Sem sessão = logout real
           setUser(null);
         }
       }
@@ -191,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Cadastro ──
   const register = async (input: RegisterInput): Promise<User> => {
+    isRegistering.current = true;
     setIsLoading(true);
     try {
       // 1. Cria usuário no Supabase Auth
@@ -219,9 +222,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const uid = authData.user.id;
 
-      // 2. Cria perfil na tabela profiles
-      // Nota: não inclui "bio" pois a coluna pode não existir na tabela
-      const { error: profileError } = await supabase.from('profiles').insert({
+      // 2. Salva perfil — upsert para sobrescrever caso trigger já tenha criado
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id:           uid,
         name:         input.name.trim(),
         first_name:   input.name.trim(),
@@ -234,12 +236,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         company:      input.company ?? null,
         company_name: input.company ?? null,
         whatsapp:     input.whatsapp ?? null,
-      });
+      }, { onConflict: 'id' });
 
       if (profileError) {
-        // Remove a sessão criada para não deixar o usuário "meio logado"
-        // o que causaria redirect para /medico (tela errada)
-        await supabase.auth.signOut();
         throw new Error('Erro ao salvar perfil: ' + profileError.message);
       }
 
@@ -257,8 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(newUser);
       return newUser;
     } finally {
-      // Garante que isLoading sempre volta a false,
-      // mesmo se uma exceção inesperada for lançada
+      isRegistering.current = false;
       setIsLoading(false);
     }
   };
