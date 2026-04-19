@@ -141,11 +141,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshData();
 
+    // Timeout de segurança: se Supabase não responder em 5s, libera o app
+    const timeout = setTimeout(() => setAuthReady(true), 5000);
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(timeout);
       if (session?.user) {
         const u = await fetchProfile(session.user.id, session.user.email ?? '');
         setUser(u);
       }
+      setAuthReady(true);
+    }).catch(() => {
+      clearTimeout(timeout);
       setAuthReady(true);
     });
 
