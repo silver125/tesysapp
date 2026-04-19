@@ -2,66 +2,155 @@ import { useState } from 'react';
 import Layout from '../../components/Layout';
 import type { NavItem } from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
+import {
+  CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
+  categoryTint, companyTint,
+} from '../../components/ui';
 import type { Event, Product, Course, CourseModality } from '../../types';
 
-type Tab = 'home' | 'events' | 'products' | 'courses';
+type Tab = 'home' | 'events' | 'create' | 'products' | 'courses';
+
+function IcoHome(a: boolean) {
+  const c = a ? '#2E7BFF' : '#6F7A90';
+  return <svg width="20" height="19" viewBox="0 0 20 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M2 9l8-7 8 7v9H13v-5H7v5H2z" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+}
+function IcoCalendar(a: boolean) {
+  const c = a ? '#2E7BFF' : '#6F7A90';
+  return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><rect x="1.5" y="3.5" width="16" height="14" rx="2"/><path d="M13.5 2v3M5.5 2v3M1.5 8.5h16" strokeLinecap="round"/></svg>;
+}
+function IcoBox(a: boolean) {
+  const c = a ? '#2E7BFF' : '#6F7A90';
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
+}
+function IcoBook(a: boolean) {
+  const c = a ? '#2E7BFF' : '#6F7A90';
+  return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
+}
+function IcoBigCreate() {
+  return (
+    <svg width="52" height="52" viewBox="0 0 52 52">
+      <circle cx="26" cy="26" r="26" fill="#2E7BFF"/>
+      <path d="M26 14v24M14 26h24" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'home',     label: 'Início',   icon: <IcoHome /> },
-  { key: 'events',   label: 'Eventos',  icon: <IcoCalendar /> },
-  { key: 'products', label: 'Produtos', icon: <IcoBox /> },
-  { key: 'courses',  label: 'Cursos',   icon: <IcoBook /> },
+  { key: 'home',     label: 'Início',   icon: IcoHome },
+  { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
+  { key: 'create',   label: '',         icon: () => <IcoBigCreate />, big: true },
+  { key: 'products', label: 'Produtos', icon: IcoBox },
+  { key: 'courses',  label: 'Cursos',   icon: IcoBook },
 ];
 
-const EVENT_CATS    = ['Congresso', 'Workshop', 'Simpósio', 'Webinar', 'Treinamento'];
-const PRODUCT_CATS  = ['Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria', 'Outros'];
-const COURSE_CATS   = ['Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria', 'Clínica Médica', 'Outros'];
-const MODALITIES: CourseModality[] = ['online', 'presencial', 'hibrido'];
+const EVENT_CATS   = ['Congresso', 'Workshop', 'Simpósio', 'Webinar', 'Treinamento'];
+const PRODUCT_CATS = ['Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria', 'Outros'];
+const COURSE_CATS  = ['Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria', 'Clínica Médica', 'Outros'];
+const MODALITIES: { value: CourseModality; label: string; icon: string }[] = [
+  { value: 'online',     label: 'Online',     icon: '◎' },
+  { value: 'presencial', label: 'Presencial', icon: '📍' },
+  { value: 'hibrido',    label: 'Híbrido',    icon: '⚡' },
+];
 
 function fmt(d: string) {
   if (!d) return '';
-  const [y, m, dd] = d.split('-');
-  return `${dd}/${m}/${y}`;
+  const [, m, dd] = d.split('-');
+  return `${dd}/${m}`;
 }
 
-/* ─────────────────────────── Main ─────────────────────────── */
 export default function CompanyDashboard() {
   const { user, events, products, courses, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
-  const [modal, setModal] = useState<null | 'event' | 'product' | 'course'>(null);
+  const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
 
   const myEvents   = events.filter(e => e.companyId === user?.id);
   const myProducts = products.filter(p => p.companyId === user?.id);
   const myCourses  = courses.filter(c => c.companyId === user?.id);
-
+  const tint = companyTint(user?.company ?? user?.name ?? '');
+  const code = (user?.company ?? user?.name ?? 'EM').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
 
+  function goTab(k: string) {
+    if (k === 'create') { setTab('create'); return; }
+    setTab(k as Tab);
+  }
+
   return (
-    <Layout navItems={NAV_ITEMS} activeKey={tab} onNavChange={k => setTab(k as Tab)}>
+    <Layout navItems={NAV_ITEMS} activeKey={tab} onNavChange={goTab}>
+
       {/* ── HOME ── */}
       {tab === 'home' && (
         <div>
-          <div className="mb-6">
-            <p className="text-slate-400 text-sm">Olá,</p>
-            <h1 className="text-2xl font-bold tracking-tight">{user?.company ?? user?.name} 🏢</h1>
-            {user?.whatsapp && (
-              <p className="text-[#34E178] text-sm mt-0.5 flex items-center gap-1.5">
-                <WaIcon /> {user.whatsapp}
-              </p>
-            )}
+          {/* Company header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24, padding: '14px 0' }}>
+            <CompanyMark code={code} tint={tint} size={60} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                {user?.company ?? user?.name}<span style={{ color: '#2E7BFF' }}>.</span>
+              </h1>
+              {user?.whatsapp && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, color: '#25D366', fontSize: 13, fontWeight: 600 }}>
+                  <WaIcon size={14} /> {user.whatsapp}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <StatCard label="Eventos"  value={myEvents.length}   onClick={() => setTab('events')} />
-            <StatCard label="Produtos" value={myProducts.length} onClick={() => setTab('products')} />
-            <StatCard label="Cursos"   value={myCourses.length}  onClick={() => setTab('courses')} />
+          {/* Stats */}
+          <div style={{ display: 'flex', gap: 0, background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', marginBottom: 20, overflow: 'hidden' }}>
+            {[
+              { v: myEvents.length, l: 'eventos' },
+              { v: myProducts.length, l: 'produtos' },
+              { v: myCourses.length, l: 'cursos' },
+            ].map((s, i) => (
+              <div key={s.l} style={{
+                flex: 1, textAlign: 'center', padding: '16px 8px',
+                borderRight: i < 2 ? '1px solid var(--line)' : 'none',
+              }}>
+                <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em' }}>{s.v}</div>
+                <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>{s.l}</Mono>
+              </div>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <AddBtn label="+ Evento"  onClick={() => { setTab('events');   setModal('event'); }} />
-            <AddBtn label="+ Produto" onClick={() => { setTab('products'); setModal('product'); }} />
-            <AddBtn label="+ Curso"   onClick={() => { setTab('courses');  setModal('course'); }} />
+          {/* Quick create */}
+          <div style={{ marginBottom: 24 }}>
+            <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 10 }}>
+              Criar novo
+            </Mono>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              {(['event', 'product', 'course'] as const).map(k => {
+                const cfg = { event: { icon: '📅', label: 'Evento' }, product: { icon: '💊', label: 'Produto' }, course: { icon: '🎓', label: 'Curso' } }[k];
+                return (
+                  <button key={k} onClick={() => { setCreateKind(k); setTab('create'); }} style={{
+                    padding: '16px 8px', borderRadius: 14,
+                    background: 'var(--card)', border: '1px solid var(--line)',
+                    cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  }}>
+                    <span style={{ fontSize: 24 }}>{cfg.icon}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>{cfg.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Recent events timeline */}
+          {myEvents.length > 0 && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 16, fontWeight: 700 }}>Meus eventos</span>
+                <button onClick={() => setTab('events')} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+                  color: '#2E7BFF', letterSpacing: '0.1em', textTransform: 'uppercase',
+                }}>ver todos →</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {myEvents.slice(0, 3).map(e => <EventRowCompany key={e.id} ev={e} />)}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -69,13 +158,11 @@ export default function CompanyDashboard() {
       {tab === 'events' && (
         <ListTab
           title="Meus eventos"
-          onAdd={() => setModal('event')}
+          onAdd={() => { setCreateKind('event'); setTab('create'); }}
           empty={myEvents.length === 0}
           emptyText="Nenhum evento criado ainda."
         >
-          {myEvents.map(e => (
-            <EventCard key={e.id} event={e} onDelete={() => deleteEvent(e.id)} />
-          ))}
+          {myEvents.map(e => <EventCardCompany key={e.id} ev={e} onDelete={() => deleteEvent(e.id)} />)}
         </ListTab>
       )}
 
@@ -83,13 +170,11 @@ export default function CompanyDashboard() {
       {tab === 'products' && (
         <ListTab
           title="Meus produtos"
-          onAdd={() => setModal('product')}
+          onAdd={() => { setCreateKind('product'); setTab('create'); }}
           empty={myProducts.length === 0}
           emptyText="Nenhum produto criado ainda."
         >
-          {myProducts.map(p => (
-            <ProductCard key={p.id} product={p} onDelete={() => deleteProduct(p.id)} />
-          ))}
+          {myProducts.map(p => <ProductCardCompany key={p.id} product={p} onDelete={() => deleteProduct(p.id)} />)}
         </ListTab>
       )}
 
@@ -97,312 +182,387 @@ export default function CompanyDashboard() {
       {tab === 'courses' && (
         <ListTab
           title="Meus cursos"
-          onAdd={() => setModal('course')}
+          onAdd={() => { setCreateKind('course'); setTab('create'); }}
           empty={myCourses.length === 0}
           emptyText="Nenhum curso criado ainda."
         >
-          {myCourses.map(c => (
-            <CourseCard key={c.id} course={c} onDelete={() => deleteCourse(c.id)} />
-          ))}
+          {myCourses.map(c => <CourseCardCompany key={c.id} course={c} onDelete={() => deleteCourse(c.id)} />)}
         </ListTab>
       )}
 
-      {/* ── MODALS ── */}
-      {modal === 'event' && (
-        <EventForm
+      {/* ── CREATE WIZARD ── */}
+      {tab === 'create' && (
+        <CreateWizard
+          kind={createKind}
+          setKind={setCreateKind}
           company={companyInfo}
-          onClose={() => setModal(null)}
-          onSave={data => { addEvent(data); setModal(null); }}
-        />
-      )}
-      {modal === 'product' && (
-        <ProductForm
-          company={companyInfo}
-          onClose={() => setModal(null)}
-          onSave={data => { addProduct(data); setModal(null); }}
-        />
-      )}
-      {modal === 'course' && (
-        <CourseForm
-          company={companyInfo}
-          onClose={() => setModal(null)}
-          onSave={data => { addCourse(data); setModal(null); }}
+          onSaveEvent={data => { addEvent(data); setTab('events'); }}
+          onSaveProduct={data => { addProduct(data); setTab('products'); }}
+          onSaveCourse={data => { addCourse(data); setTab('courses'); }}
+          onCancel={() => setTab('home')}
         />
       )}
     </Layout>
   );
 }
 
-/* ─── Shared layout helpers ─── */
-function StatCard({ label, value, onClick }: { label: string; value: number; onClick: () => void }) {
+/* ─── Create wizard ─── */
+function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSaveCourse, onCancel }: {
+  kind: 'event' | 'product' | 'course';
+  setKind: (k: 'event' | 'product' | 'course') => void;
+  company: { id: string; name: string; whatsapp?: string };
+  onSaveEvent: (e: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => void;
+  onSaveProduct: (p: Omit<Product, 'id' | 'createdAt'>) => void;
+  onSaveCourse: (c: Omit<Course, 'id' | 'createdAt'>) => void;
+  onCancel: () => void;
+}) {
+  const [step, setStep] = useState(0);
+
+  // Event state
+  const [ev, setEv] = useState({ title: '', description: '', date: '', time: '09:00', location: '', category: EVENT_CATS[0], maxParticipants: '100' });
+  // Product state
+  const [pr, setPr] = useState({ name: '', description: '', category: PRODUCT_CATS[0], availableFor: 'Médicos credenciados', price: 'Sob consulta' });
+  // Course state
+  const [co, setCo] = useState({ title: '', description: '', instructor: '', category: COURSE_CATS[0], modality: 'online' as CourseModality, duration: '', price: '' });
+
+  const totalSteps = kind === 'event' ? 3 : kind === 'course' ? 3 : 2;
+
+  function handleSave() {
+    if (kind === 'event') {
+      onSaveEvent({ ...ev, maxParticipants: Number(ev.maxParticipants) || 100, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+    } else if (kind === 'product') {
+      onSaveProduct({ ...pr, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+    } else {
+      onSaveCourse({ ...co, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+    }
+  }
+
   return (
-    <button onClick={onClick} className="bg-[#131B2E] border border-[#1F2A44] rounded-xl p-3 text-left hover:border-[#4F8CFF]/50 transition w-full">
-      <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-slate-400 mt-0.5">{label}</p>
-    </button>
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <button onClick={onCancel} style={{
+          width: 40, height: 40, borderRadius: 12, border: '1px solid var(--line)',
+          background: 'var(--card)', cursor: 'pointer', color: 'var(--ink)', fontSize: 18,
+        }}>×</button>
+        <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+          novo {kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'curso'} · etapa {step + 1} de {totalSteps}
+        </Mono>
+        <div style={{ width: 40 }} />
+      </div>
+
+      {/* Progress */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 28 }}>
+        {Array.from({ length: totalSteps }, (_, i) => (
+          <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= step ? '#2E7BFF' : 'var(--line)', transition: 'background 0.3s' }} />
+        ))}
+      </div>
+
+      {/* Step 0: choose kind */}
+      {step === 0 && (
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            O que você quer criar<span style={{ color: '#2E7BFF' }}>?</span>
+          </h2>
+          <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24 }}>
+            Médicos verão no app deles imediatamente.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(['event', 'product', 'course'] as const).map(k => {
+              const cfg = {
+                event:   { icon: '📅', title: 'Evento', desc: 'Congresso, workshop, webinar' },
+                product: { icon: '💊', title: 'Produto', desc: 'Medicamento, solução, dispositivo' },
+                course:  { icon: '🎓', title: 'Curso', desc: 'Para médicos professores' },
+              }[k];
+              return (
+                <button key={k} onClick={() => setKind(k)} style={{
+                  padding: '16px', borderRadius: 16, cursor: 'pointer', textAlign: 'left',
+                  background: kind === k ? 'rgba(46,123,255,0.08)' : 'var(--card)',
+                  border: `2px solid ${kind === k ? '#2E7BFF' : 'var(--line)'}`,
+                  display: 'flex', alignItems: 'center', gap: 14,
+                }}>
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 12, background: 'var(--bg)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0,
+                  }}>{cfg.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>{cfg.title}</div>
+                    <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{cfg.desc}</div>
+                  </div>
+                  {kind === k && (
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#2E7BFF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>✓</div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Event steps */}
+      {kind === 'event' && step === 1 && (
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            Sobre o evento<span style={{ color: '#2E7BFF' }}>.</span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <WField label="TÍTULO" value={ev.title} onChange={v => setEv(p => ({ ...p, title: v }))} placeholder="Ex: Simpósio de Cardiologia 2025" />
+            <WField label="DESCRIÇÃO" value={ev.description} onChange={v => setEv(p => ({ ...p, description: v }))} placeholder="Descreva o evento..." as="textarea" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <WField label="CATEGORIA" value={ev.category} onChange={v => setEv(p => ({ ...p, category: v }))} as="select" options={EVENT_CATS} />
+              <WField label="VAGAS" value={ev.maxParticipants} onChange={v => setEv(p => ({ ...p, maxParticipants: v }))} type="number" />
+            </div>
+          </div>
+        </div>
+      )}
+      {kind === 'event' && step === 2 && (
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            Data e local<span style={{ color: '#2E7BFF' }}>.</span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <WField label="DATA" value={ev.date} onChange={v => setEv(p => ({ ...p, date: v }))} type="date" />
+              <WField label="HORA" value={ev.time} onChange={v => setEv(p => ({ ...p, time: v }))} type="time" />
+            </div>
+            <WField label="LOCAL" value={ev.location} onChange={v => setEv(p => ({ ...p, location: v }))} placeholder="São Paulo, SP" />
+          </div>
+        </div>
+      )}
+
+      {/* Product steps */}
+      {kind === 'product' && step === 1 && (
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            Sobre o produto<span style={{ color: '#2E7BFF' }}>.</span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <WField label="NOME" value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder="Ex: CardioPlus 10mg" />
+            <WField label="DESCRIÇÃO" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="Descreva o produto..." as="textarea" />
+            <WField label="CATEGORIA" value={pr.category} onChange={v => setPr(p => ({ ...p, category: v }))} as="select" options={PRODUCT_CATS} />
+            <WField label="DISPONÍVEL PARA" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Médicos credenciados" />
+            <WField label="PREÇO" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Sob consulta" />
+          </div>
+        </div>
+      )}
+
+      {/* Course steps */}
+      {kind === 'course' && step === 1 && (
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            Sobre o curso<span style={{ color: '#2E7BFF' }}>.</span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <WField label="TÍTULO" value={co.title} onChange={v => setCo(p => ({ ...p, title: v }))} placeholder="Ex: Atualização em ECG" />
+            <WField label="INSTRUTOR / PROFESSOR" value={co.instructor} onChange={v => setCo(p => ({ ...p, instructor: v }))} placeholder="Dr. João Silva" />
+            <WField label="DESCRIÇÃO" value={co.description} onChange={v => setCo(p => ({ ...p, description: v }))} placeholder="Descreva o curso..." as="textarea" />
+            <WField label="CATEGORIA" value={co.category} onChange={v => setCo(p => ({ ...p, category: v }))} as="select" options={COURSE_CATS} />
+          </div>
+        </div>
+      )}
+      {kind === 'course' && step === 2 && (
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            Formato e preço<span style={{ color: '#2E7BFF' }}>.</span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 10 }}>MODALIDADE</Mono>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                {MODALITIES.map(m => (
+                  <button key={m.value} onClick={() => setCo(p => ({ ...p, modality: m.value }))} style={{
+                    padding: '14px 8px', borderRadius: 12, cursor: 'pointer',
+                    background: co.modality === m.value ? 'rgba(46,123,255,0.08)' : 'var(--card)',
+                    border: `1.5px solid ${co.modality === m.value ? '#2E7BFF' : 'var(--line)'}`,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    fontSize: 12, fontWeight: 600, color: co.modality === m.value ? '#6FA4FF' : 'var(--ink-2)',
+                  }}>
+                    <span style={{ fontSize: 18 }}>{m.icon}</span>{m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <WField label="DURAÇÃO" value={co.duration} onChange={v => setCo(p => ({ ...p, duration: v }))} placeholder="Ex: 20 horas" />
+              <WField label="PREÇO" value={co.price} onChange={v => setCo(p => ({ ...p, price: v }))} placeholder="R$ 490" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nav buttons */}
+      <div style={{ display: 'flex', gap: 10, marginTop: 32 }}>
+        {step > 0 && (
+          <button onClick={() => setStep(s => s - 1)} style={{
+            width: 52, height: 52, borderRadius: 14, border: '1px solid var(--line)',
+            background: 'var(--card)', cursor: 'pointer', color: 'var(--ink)', fontSize: 20,
+          }}>←</button>
+        )}
+        {step < totalSteps - 1 ? (
+          <button onClick={() => setStep(s => s + 1)} style={{
+            flex: 1, height: 52, borderRadius: 14, border: 'none',
+            background: '#2E7BFF', color: '#fff', cursor: 'pointer',
+            fontSize: 15, fontWeight: 700,
+            boxShadow: '0 6px 24px rgba(46,123,255,0.3)',
+          }}>
+            Continuar →
+          </button>
+        ) : (
+          <button onClick={handleSave} style={{
+            flex: 1, height: 52, borderRadius: 14, border: 'none',
+            background: '#2E7BFF', color: '#fff', cursor: 'pointer',
+            fontSize: 15, fontWeight: 700,
+            boxShadow: '0 6px 24px rgba(46,123,255,0.3)',
+          }}>
+            Publicar {kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'curso'} ✓
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
-function AddBtn({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick}
-      className="py-3 rounded-xl text-sm font-semibold bg-[#4F8CFF] text-white hover:bg-[#6FA4FF] transition glow">
-      {label}
-    </button>
-  );
-}
-
+/* ─── List tab wrapper ─── */
 function ListTab({ title, onAdd, empty, emptyText, children }: {
   title: string; onAdd: () => void; empty: boolean; emptyText: string; children: React.ReactNode;
 }) {
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold tracking-tight">{title}</h1>
-        <button onClick={onAdd}
-          className="px-3 py-2 rounded-lg text-sm font-semibold bg-[#4F8CFF] text-white hover:bg-[#6FA4FF] transition">
-          + Novo
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
+          {title}<span style={{ color: '#2E7BFF' }}>.</span>
+        </h1>
+        <button onClick={onAdd} style={{
+          padding: '8px 16px', borderRadius: 10, border: 'none',
+          background: '#2E7BFF', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+        }}>+ Novo</button>
       </div>
       {empty
-        ? <div className="bg-[#131B2E] border border-[#1F2A44] rounded-xl p-10 text-center text-sm text-slate-500">{emptyText}</div>
-        : <div className="space-y-3">{children}</div>
+        ? <div style={{ padding: '48px 20px', textAlign: 'center', background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', color: 'var(--muted)', fontSize: 14 }}>{emptyText}</div>
+        : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
       }
     </div>
   );
 }
 
-/* ─── Item cards (company view) ─── */
-function EventCard({ event, onDelete }: { event: Event; onDelete: () => void }) {
+/* ─── Company view cards ─── */
+function EventRowCompany({ ev }: { ev: Event }) {
+  const [tint1, tint2] = categoryTint(ev.category);
   return (
-    <div className="bg-[#131B2E] border border-[#1F2A44] rounded-2xl p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#4F8CFF]/10 text-[#6FA4FF] border border-[#4F8CFF]/20">
-            {event.category}
-          </span>
-          <h3 className="font-semibold mt-2 text-slate-100">{event.title}</h3>
-          <p className="text-sm text-slate-400 mt-1 line-clamp-2">{event.description}</p>
-          <div className="text-xs text-slate-500 mt-2 space-y-0.5">
-            <div>📅 {fmt(event.date)} às {event.time}</div>
-            <div>📍 {event.location}</div>
-            <div>👥 {event.registeredCount}/{event.maxParticipants} inscritos</div>
-          </div>
+    <div style={{ display: 'flex', gap: 12, padding: 12, background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)' }}>
+      <div style={{
+        width: 50, flexShrink: 0, borderRadius: 10,
+        background: `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff',
+      }}>
+        <div style={{ fontSize: 9, fontWeight: 700 }}>{ev.date ? ev.date.split('-')[1] : ''}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1 }}>{ev.date ? ev.date.split('-')[2] : ''}</div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2 }}>{ev.title}</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{ev.location}</div>
+        <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
+          <Chip color="#2E7BFF">{ev.registeredCount}/{ev.maxParticipants}</Chip>
+          <Mono style={{ fontSize: 10, color: '#1EA97C', fontWeight: 700 }}>✓ ATIVO</Mono>
         </div>
-        <button onClick={onDelete}
-          className="text-xs font-medium text-red-400 hover:text-red-300 transition px-1 flex-shrink-0">
-          Excluir
-        </button>
       </div>
     </div>
   );
 }
 
-function ProductCard({ product, onDelete }: { product: Product; onDelete: () => void }) {
+function EventCardCompany({ ev, onDelete }: { ev: Event; onDelete: () => void }) {
+  const [tint1, tint2] = categoryTint(ev.category);
   return (
-    <div className="bg-[#131B2E] border border-[#1F2A44] rounded-2xl p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#4F8CFF]/10 text-[#6FA4FF] border border-[#4F8CFF]/20">
-            {product.category}
-          </span>
-          <h3 className="font-semibold mt-2 text-slate-100">{product.name}</h3>
-          <p className="text-sm text-slate-400 mt-1 line-clamp-2">{product.description}</p>
-          <div className="text-xs text-slate-500 mt-2 space-y-0.5">
-            <div>👤 {product.availableFor}</div>
-            {product.price && <div>💰 {product.price}</div>}
+    <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
+      <div style={{ height: 6, background: `linear-gradient(90deg, ${tint1}, ${tint2})` }} />
+      <div style={{ padding: '14px 16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Chip color={tint1}>{ev.category}</Chip>
+            <div style={{ fontSize: 15, fontWeight: 700, marginTop: 8, color: 'var(--ink)' }}>{ev.title}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{fmt(ev.date)} · {ev.location}</div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <Mono style={{ fontSize: 10, color: 'var(--ink-2)' }}>👥 {ev.registeredCount}/{ev.maxParticipants} inscritos</Mono>
+            </div>
           </div>
+          <button onClick={onDelete} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
+          }}>Excluir</button>
         </div>
-        <button onClick={onDelete}
-          className="text-xs font-medium text-red-400 hover:text-red-300 transition px-1 flex-shrink-0">
-          Excluir
-        </button>
       </div>
     </div>
   );
 }
 
-function CourseCard({ course, onDelete }: { course: Course; onDelete: () => void }) {
-  const modalityLabel = { online: 'Online', presencial: 'Presencial', hibrido: 'Híbrido' }[course.modality];
-  const modalityColor = {
-    online:     'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-    presencial: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-    hibrido:    'text-sky-400 bg-sky-400/10 border-sky-400/20',
-  }[course.modality];
-
+function ProductCardCompany({ product, onDelete }: { product: Product; onDelete: () => void }) {
+  const [tint1, tint2] = categoryTint(product.category);
   return (
-    <div className="bg-[#131B2E] border border-[#1F2A44] rounded-2xl p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#8B73FF]/10 text-[#A78BFF] border border-[#8B73FF]/20">
-              {course.category}
-            </span>
-            <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${modalityColor}`}>
-              {modalityLabel}
-            </span>
-          </div>
-          <h3 className="font-semibold mt-2 text-slate-100">{course.title}</h3>
-          <p className="text-sm text-slate-400 mt-1 line-clamp-2">{course.description}</p>
-          <div className="text-xs text-slate-500 mt-2 space-y-0.5">
-            <div>🎓 {course.instructor}</div>
-            <div>⏱ {course.duration}</div>
-            {course.price && <div>💰 {course.price}</div>}
+    <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
+      <div style={{ height: 6, background: `linear-gradient(90deg, ${tint1}, ${tint2})` }} />
+      <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Chip color={tint1}>{product.category}</Chip>
+          <div style={{ fontSize: 15, fontWeight: 700, marginTop: 8, color: 'var(--ink)' }}>{product.name}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3, lineHeight: 1.4 }}>{product.description}</div>
+          <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+            {product.price && <Chip color="#1EA97C">{product.price}</Chip>}
           </div>
         </div>
-        <button onClick={onDelete}
-          className="text-xs font-medium text-red-400 hover:text-red-300 transition px-1 flex-shrink-0">
-          Excluir
-        </button>
+        <button onClick={onDelete} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
+        }}>Excluir</button>
       </div>
     </div>
   );
 }
 
-/* ─── Modal shell ─── */
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () => void }) {
+  const [tint1, tint2] = categoryTint(course.category);
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
-      onClick={onClose}>
-      <div className="bg-[#0F172A] border border-[#1F2A44] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 bg-[#0F172A] border-b border-[#1F2A44] flex items-center justify-between px-5 py-4">
-          <h3 className="font-semibold text-slate-100">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-100 text-2xl leading-none w-8 h-8 flex items-center justify-center">×</button>
+    <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
+      <div style={{ height: 6, background: `linear-gradient(90deg, ${tint1}, ${tint2})` }} />
+      <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <Chip color={tint1}>{course.category}</Chip>
+            <ModalityBadge modality={course.modality} />
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginTop: 8, color: 'var(--ink)' }}>{course.title}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>🎓 {course.instructor} · ⏱ {course.duration}</div>
+          {course.price && <div style={{ marginTop: 8 }}><Chip color="#1EA97C">{course.price}</Chip></div>}
         </div>
-        <div className="p-5 space-y-4">{children}</div>
+        <button onClick={onDelete} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
+        }}>Excluir</button>
       </div>
     </div>
   );
 }
 
-function Field({
-  label, value, onChange, type = 'text', placeholder, as = 'input', options, required = true,
-}: {
+/* ─── Wizard field ─── */
+function WField({ label, value, onChange, type = 'text', placeholder, as = 'input', options }: {
   label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; as?: 'input' | 'textarea' | 'select'; options?: string[]; required?: boolean;
+  type?: string; placeholder?: string; as?: 'input' | 'textarea' | 'select'; options?: string[];
 }) {
-  const base = 'w-full px-4 py-3 rounded-xl text-sm text-slate-100 bg-[#1B2540] border border-[#2B3A5C] focus:border-[#4F8CFF] focus:outline-none focus:ring-2 focus:ring-[#4F8CFF]/20 transition';
+  const base = {
+    width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid var(--line)',
+    background: 'transparent', color: 'var(--ink)', fontSize: 16, fontWeight: 500,
+    outline: 'none', fontFamily: "'Inter', sans-serif",
+  } as const;
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-300 mb-1.5">{label}</label>
+      <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+        {label}
+      </Mono>
       {as === 'textarea'
-        ? <textarea required={required} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className={base} />
+        ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...base, resize: 'none' }} onFocus={e => e.target.style.borderBottomColor = '#2E7BFF'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
         : as === 'select'
-          ? <select required value={value} onChange={e => onChange(e.target.value)} className={base}>
-              {options?.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-          : <input required={required} type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={base} />
+          ? <select value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>{options?.map(o => <option key={o} value={o}>{o}</option>)}</select>
+          : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={base} onFocus={e => e.target.style.borderBottomColor = '#2E7BFF'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
       }
     </div>
   );
-}
-
-/* ─── Forms ─── */
-function EventForm({ company, onClose, onSave }: {
-  company: { id: string; name: string; whatsapp?: string };
-  onClose: () => void;
-  onSave: (e: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => void;
-}) {
-  const [f, setF] = useState({ title: '', description: '', date: '', time: '09:00', location: '', category: EVENT_CATS[0], maxParticipants: '100' });
-  const set = (k: keyof typeof f) => (v: string) => setF(p => ({ ...p, [k]: v }));
-
-  return (
-    <Modal title="Novo evento" onClose={onClose}>
-      <form onSubmit={e => { e.preventDefault(); onSave({ ...f, maxParticipants: Number(f.maxParticipants) || 100, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp }); }} className="space-y-4">
-        <Field label="Título" value={f.title} onChange={set('title')} placeholder="Ex: Simpósio de Cardiologia" />
-        <Field label="Descrição" value={f.description} onChange={set('description')} as="textarea" placeholder="Descreva o evento" />
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Data" value={f.date} onChange={set('date')} type="date" />
-          <Field label="Hora" value={f.time} onChange={set('time')} type="time" />
-        </div>
-        <Field label="Local" value={f.location} onChange={set('location')} placeholder="São Paulo, SP" />
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Categoria" value={f.category} onChange={set('category')} as="select" options={EVENT_CATS} />
-          <Field label="Vagas" value={f.maxParticipants} onChange={set('maxParticipants')} type="number" />
-        </div>
-        <button type="submit" className="w-full py-3.5 rounded-xl bg-[#4F8CFF] text-white font-semibold text-sm hover:bg-[#6FA4FF] transition glow">
-          Criar evento
-        </button>
-      </form>
-    </Modal>
-  );
-}
-
-function ProductForm({ company, onClose, onSave }: {
-  company: { id: string; name: string; whatsapp?: string };
-  onClose: () => void;
-  onSave: (p: Omit<Product, 'id' | 'createdAt'>) => void;
-}) {
-  const [f, setF] = useState({ name: '', description: '', category: PRODUCT_CATS[0], availableFor: 'Médicos credenciados', price: 'Sob consulta' });
-  const set = (k: keyof typeof f) => (v: string) => setF(p => ({ ...p, [k]: v }));
-
-  return (
-    <Modal title="Novo produto" onClose={onClose}>
-      <form onSubmit={e => { e.preventDefault(); onSave({ ...f, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp }); }} className="space-y-4">
-        <Field label="Nome" value={f.name} onChange={set('name')} placeholder="Ex: CardioPlus 10mg" />
-        <Field label="Descrição" value={f.description} onChange={set('description')} as="textarea" placeholder="Descreva o produto" />
-        <Field label="Categoria" value={f.category} onChange={set('category')} as="select" options={PRODUCT_CATS} />
-        <Field label="Disponível para" value={f.availableFor} onChange={set('availableFor')} placeholder="Ex: Médicos credenciados" />
-        <Field label="Preço" value={f.price} onChange={set('price')} placeholder="Sob consulta" required={false} />
-        <button type="submit" className="w-full py-3.5 rounded-xl bg-[#4F8CFF] text-white font-semibold text-sm hover:bg-[#6FA4FF] transition glow">
-          Criar produto
-        </button>
-      </form>
-    </Modal>
-  );
-}
-
-function CourseForm({ company, onClose, onSave }: {
-  company: { id: string; name: string; whatsapp?: string };
-  onClose: () => void;
-  onSave: (c: Omit<Course, 'id' | 'createdAt'>) => void;
-}) {
-  const [f, setF] = useState({ title: '', description: '', category: COURSE_CATS[0], modality: 'online' as CourseModality, duration: '', instructor: '', price: '' });
-  const set = (k: keyof typeof f) => (v: string) => setF(p => ({ ...p, [k]: v }));
-
-  return (
-    <Modal title="Novo curso" onClose={onClose}>
-      <form onSubmit={e => {
-        e.preventDefault();
-        onSave({ ...f, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
-      }} className="space-y-4">
-        <Field label="Título do curso" value={f.title} onChange={set('title')} placeholder="Ex: Atualização em ECG" />
-        <Field label="Descrição" value={f.description} onChange={set('description')} as="textarea" placeholder="Descreva o curso, público-alvo, objetivos..." />
-        <Field label="Instrutor / Professor" value={f.instructor} onChange={set('instructor')} placeholder="Ex: Dr. João Silva" />
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Categoria" value={f.category} onChange={set('category')} as="select" options={COURSE_CATS} />
-          <Field label="Modalidade" value={f.modality} onChange={v => setF(p => ({ ...p, modality: v as CourseModality }))} as="select" options={MODALITIES} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Duração" value={f.duration} onChange={set('duration')} placeholder="Ex: 20 horas" />
-          <Field label="Preço" value={f.price} onChange={set('price')} placeholder="Ex: R$ 490" required={false} />
-        </div>
-        <button type="submit" className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#8B73FF] to-[#4F8CFF] text-white font-semibold text-sm hover:opacity-90 transition glow">
-          Criar curso
-        </button>
-      </form>
-    </Modal>
-  );
-}
-
-/* ─── Icons ─── */
-function WaIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.889-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.886 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.304-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413"/>
-    </svg>
-  );
-}
-function IcoHome() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10l9-7 9 7v10a2 2 0 01-2 2h-3v-7h-8v7H5a2 2 0 01-2-2z"/></svg>;
-}
-function IcoCalendar() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>;
-}
-function IcoBox() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>;
-}
-function IcoBook() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>;
 }

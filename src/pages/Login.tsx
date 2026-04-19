@@ -27,64 +27,91 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-slate-100">
-      <header className="px-5 py-4 flex items-center justify-between border-b border-[#1F2A44]/70 backdrop-blur-sm sticky top-0 z-10 bg-[#0A0F1F]/70">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4F8CFF] to-[#8B73FF] flex items-center justify-center text-white font-bold shadow-lg shadow-[#4F8CFF]/30">T</div>
-          <span className="font-bold tracking-tight text-lg">Tessy</span>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', color: 'var(--ink)' }}>
+      <header style={{
+        padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        borderBottom: '1px solid var(--line)',
+        background: 'rgba(11,14,22,0.85)', backdropFilter: 'blur(12px)',
+      }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: 'linear-gradient(135deg,#2E7BFF 0%,#5F2C82 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 700, fontSize: 16,
+          }}>T</div>
+          <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
+            Tessy<span style={{ color: '#2E7BFF' }}>.</span>
+          </span>
         </Link>
-        <Link to="/cadastro" className="text-sm font-medium text-[#6FA4FF]">Criar conta</Link>
+        <Link to="/cadastro" style={{ fontSize: 13, fontWeight: 600, color: '#6FA4FF', textDecoration: 'none' }}>
+          Criar conta
+        </Link>
       </header>
 
-      <main className="flex-1 flex items-start sm:items-center justify-center px-5 py-8">
-        <div className="w-full max-w-md">
-          <div className="bg-[#131B2E] border border-[#1F2A44] rounded-2xl p-6 sm:p-8">
-            <h1 className="text-2xl font-bold tracking-tight">Bem-vindo de volta</h1>
-            <p className="text-slate-400 text-sm mt-1">Entre na sua conta Tessy.</p>
+      <main style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '32px 20px' }}>
+        <div style={{ width: '100%', maxWidth: 380 }}>
+          <div style={{ marginBottom: 28 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              Bem-vindo de volta<span style={{ color: '#2E7BFF' }}>.</span>
+            </h1>
+            <p style={{ marginTop: 8, fontSize: 14, color: 'var(--ink-2)' }}>Entre na sua conta Tessy.</p>
+          </div>
 
+          <div style={{
+            background: 'var(--card)', borderRadius: 20, border: '1px solid var(--line)',
+            padding: '24px 20px',
+          }}>
             {error && (
-              <div className="mt-5 px-4 py-3 rounded-lg text-sm bg-red-500/10 text-red-300 border border-red-500/30">
+              <div style={{
+                marginBottom: 16, padding: '12px 14px', borderRadius: 10,
+                background: 'rgba(242,92,84,0.1)', border: '1px solid rgba(242,92,84,0.3)',
+                color: '#F25C54', fontSize: 13,
+              }}>
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <Input label="E-mail" type="email" value={email} onChange={setEmail} placeholder="voce@exemplo.com" autoComplete="email" />
-              <Input label="Senha" type="password" value={password} onChange={setPassword} placeholder="••••••" autoComplete="current-password" />
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Field label="E-MAIL" type="email" value={email} onChange={setEmail} placeholder="voce@exemplo.com" autoComplete="email" />
+              <Field label="SENHA" type="password" value={password} onChange={setPassword} placeholder="••••••" autoComplete="current-password" />
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3.5 rounded-xl bg-[#4F8CFF] text-white font-semibold text-sm hover:bg-[#6FA4FF] transition disabled:opacity-70 glow"
-              >
+              <button type="submit" disabled={isLoading} style={{
+                marginTop: 4, padding: '14px', borderRadius: 12, border: 'none',
+                background: '#2E7BFF', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer',
+                fontSize: 15, fontWeight: 700, opacity: isLoading ? 0.6 : 1,
+                boxShadow: '0 6px 24px rgba(46,123,255,0.3)',
+              }}>
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-[#1F2A44]">
-              <p className="text-xs text-slate-500 text-center mb-2">Ou use uma conta de demonstração</p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => fillDemo('medico')}
-                  className="py-2.5 rounded-lg text-sm font-medium bg-[#1B2540] text-slate-200 border border-[#2B3A5C] hover:border-[#4F8CFF] transition"
-                >
-                  Médico
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemo('empresa')}
-                  className="py-2.5 rounded-lg text-sm font-medium bg-[#1B2540] text-slate-200 border border-[#2B3A5C] hover:border-[#4F8CFF] transition"
-                >
-                  Empresa
-                </button>
+            <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
+              <div style={{
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
+                color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase',
+                textAlign: 'center', marginBottom: 10,
+              }}>
+                Conta de demonstração
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {(['medico', 'empresa'] as const).map(kind => (
+                  <button key={kind} type="button" onClick={() => fillDemo(kind)} style={{
+                    padding: '10px', borderRadius: 10,
+                    background: 'var(--chip)', border: '1px solid var(--line)',
+                    color: 'var(--ink-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    fontFamily: "'Inter', sans-serif",
+                  }}>
+                    {kind === 'medico' ? '🩺 Médico' : '🏢 Empresa'}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          <p className="text-center text-sm text-slate-400 mt-6">
-            Novo por aqui?{' '}
-            <Link to="/cadastro" className="font-semibold text-[#6FA4FF]">Criar conta</Link>
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-2)', marginTop: 20 }}>
+            Novo no Tessy?{' '}
+            <Link to="/cadastro" style={{ color: '#6FA4FF', fontWeight: 600, textDecoration: 'none' }}>Criar conta</Link>
           </p>
         </div>
       </main>
@@ -92,27 +119,29 @@ export default function Login() {
   );
 }
 
-function Input({
-  label, type = 'text', value, onChange, placeholder, autoComplete,
-}: {
-  label: string;
-  type?: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  autoComplete?: string;
+function Field({ label, type = 'text', value, onChange, placeholder, autoComplete }: {
+  label: string; type?: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; autoComplete?: string;
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-300 mb-1.5">{label}</label>
+      <div style={{
+        fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
+        color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8,
+      }}>
+        {label}
+      </div>
       <input
-        required
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="w-full px-4 py-3 rounded-xl text-sm text-slate-100 bg-[#0F172A] border border-[#2B3A5C] focus:border-[#4F8CFF] focus:outline-none focus:ring-2 focus:ring-[#4F8CFF]/30 transition"
+        required type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} autoComplete={autoComplete}
+        style={{
+          width: '100%', padding: '12px 14px', borderRadius: 10,
+          background: 'var(--bg)', border: '1.5px solid var(--line)',
+          color: 'var(--ink)', fontSize: 14, outline: 'none',
+          transition: 'border-color 0.15s',
+        }}
+        onFocus={e => e.target.style.borderColor = '#2E7BFF'}
+        onBlur={e => e.target.style.borderColor = 'var(--line)'}
       />
     </div>
   );

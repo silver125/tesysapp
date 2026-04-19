@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { CompanyMark, companyTint } from './ui';
 
 export interface NavItem {
   label: string;
   key: string;
-  icon: ReactNode;
+  icon: (active: boolean) => ReactNode;
+  big?: boolean;
 }
 
 interface LayoutProps {
@@ -13,81 +15,138 @@ interface LayoutProps {
   navItems: NavItem[];
   activeKey: string;
   onNavChange: (key: string) => void;
-  title?: string;
 }
 
-export default function Layout({ children, navItems, activeKey, onNavChange, title }: LayoutProps) {
+export default function Layout({ children, navItems, activeKey, onNavChange }: LayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/', { replace: true });
-  };
-
-  const initials = user?.name
+  const code = user?.name
     ?.split(' ')
     .slice(0, 2)
     .map(n => n[0])
     .join('')
     .toUpperCase() ?? '??';
 
+  const tint = companyTint(user?.name ?? 'T');
+
   return (
-    <div className="min-h-screen flex flex-col text-slate-100">
-      <header className="sticky top-0 z-20 border-b border-[#1F2A44]/70 bg-[#0A0F1F]/80 backdrop-blur-md">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4F8CFF] to-[#8B73FF] flex items-center justify-center text-white font-bold shadow-lg shadow-[#4F8CFF]/30 flex-shrink-0">T</div>
-            <div className="leading-tight min-w-0">
-              <p className="font-semibold text-sm truncate">{title ?? 'Tessy'}</p>
-              <p className="text-xs text-slate-400 truncate">
-                {user?.role === 'medico' ? 'Área do médico' : 'Área da empresa'}
-              </p>
-            </div>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', color: 'var(--ink)' }}>
+      {/* Header */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 20,
+        background: 'rgba(11,14,22,0.85)', backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid var(--line)',
+      }}>
+        <div style={{
+          maxWidth: 480, margin: '0 auto', padding: '10px 18px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        }}>
+          {/* Brand */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 10,
+              background: 'linear-gradient(135deg,#2E7BFF 0%,#5F2C82 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontWeight: 700, fontSize: 16, letterSpacing: '-0.03em',
+            }}>T</div>
+            <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
+              Tessy<span style={{ color: 'var(--accent)' }}>.</span>
+            </span>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#131B2E] border border-[#1F2A44]">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#4F8CFF] to-[#8B73FF] text-white text-xs font-bold flex items-center justify-center">
-                {initials}
-              </div>
-              <span className="text-xs font-medium text-slate-300 max-w-[140px] truncate">{user?.name}</span>
+
+          {/* User + logout */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'none' }} className="sm:flex items-center gap-2">
+              <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: "'JetBrains Mono', monospace" }}>
+                {user?.role === 'medico' ? 'médico' : 'empresa'}
+              </span>
             </div>
+            <CompanyMark code={code} tint={tint} size={30} radius={8} />
             <button
-              onClick={handleLogout}
-              className="text-sm font-medium text-slate-400 hover:text-slate-100 px-3 py-1.5 rounded-lg hover:bg-[#131B2E] transition"
+              onClick={() => { logout(); navigate('/', { replace: true }); }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--muted)', fontSize: 12,
+                fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+              }}
             >
-              Sair
+              sair
             </button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-5 pb-28">
+      {/* Content */}
+      <main style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '20px 16px 96px' }}>
         {children}
       </main>
 
-      <nav className="fixed bottom-0 inset-x-0 z-20 border-t border-[#1F2A44]/70 bg-[#0A0F1F]/90 backdrop-blur-md safe-bottom">
-        <div
-          className="max-w-3xl mx-auto grid"
-          style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
-        >
+      {/* Bottom tab bar */}
+      <nav style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20,
+        background: 'rgba(11,14,22,0.95)', backdropFilter: 'blur(16px)',
+        borderTop: '1px solid var(--line)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}>
+        <div style={{
+          maxWidth: 480, margin: '0 auto',
+          display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+          padding: '6px 8px 4px',
+        }}>
           {navItems.map(item => {
             const active = item.key === activeKey;
+            const accent = '#2E7BFF';
+            const muted = '#6F7A90';
+
+            if (item.big) {
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => onNavChange(item.key)}
+                  style={{
+                    width: 52, height: 52, borderRadius: '50%',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    marginTop: -18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    filter: 'drop-shadow(0 6px 16px rgba(46,123,255,0.4))',
+                  }}
+                >
+                  {item.icon(active)}
+                </button>
+              );
+            }
+
             return (
               <button
                 key={item.key}
                 onClick={() => onNavChange(item.key)}
-                className="flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition relative"
-                style={{ color: active ? '#6FA4FF' : '#8A96B2' }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                  color: active ? accent : muted, padding: '4px 8px',
+                  position: 'relative',
+                }}
               >
                 {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 rounded-full bg-gradient-to-r from-[#4F8CFF] to-[#8B73FF]" />
+                  <span style={{
+                    position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+                    width: 20, height: 2.5, borderRadius: 999, background: accent,
+                  }} />
                 )}
-                <span>{item.icon}</span>
-                {item.label}
+                {item.icon(active)}
+                <span style={{
+                  fontSize: 10, fontWeight: 500,
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  {item.label}
+                </span>
               </button>
             );
           })}
+        </div>
+        {/* Home indicator */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 6 }}>
+          <div style={{ width: 100, height: 3.5, borderRadius: 999, background: 'rgba(255,255,255,0.45)' }} />
         </div>
       </nav>
     </div>

@@ -1,343 +1,551 @@
 import { useState } from 'react';
 import Layout from '../../components/Layout';
 import type { NavItem } from '../../components/Layout';
-import { useAuth, buildWhatsappLink } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import {
+  CompanyMark, VerifiedDot, Mono, BannerCard, RowCard, Chip, ModalityBadge,
+  WaIcon, companyTint, categoryTint, buildWhatsappLink,
+} from '../../components/ui';
 import type { Event, Product, Course } from '../../types';
 
-type Tab = 'home' | 'events' | 'products' | 'courses';
+type Tab = 'home' | 'events' | 'products' | 'courses' | 'connect';
+
+function IcoHome(a: boolean) {
+  const c = a ? '#2E7BFF' : '#6F7A90';
+  return <svg width="20" height="19" viewBox="0 0 20 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M2 9l8-7 8 7v9H13v-5H7v5H2z" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+}
+function IcoCalendar(a: boolean) {
+  const c = a ? '#2E7BFF' : '#6F7A90';
+  return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><rect x="1.5" y="3.5" width="16" height="14" rx="2"/><path d="M13.5 2v3M5.5 2v3M1.5 8.5h16" strokeLinecap="round"/></svg>;
+}
+function IcoBox(a: boolean) {
+  const c = a ? '#2E7BFF' : '#6F7A90';
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
+}
+function IcoBook(a: boolean) {
+  const c = a ? '#2E7BFF' : '#6F7A90';
+  return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
+}
+function IcoBigConnect() {
+  return (
+    <svg width="52" height="52" viewBox="0 0 52 52">
+      <circle cx="26" cy="26" r="26" fill="#2E7BFF"/>
+      <path d="M26 14v24M14 26h24" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'home',     label: 'Início',   icon: <IcoHome /> },
-  { key: 'events',   label: 'Eventos',  icon: <IcoCalendar /> },
-  { key: 'products', label: 'Produtos', icon: <IcoBox /> },
-  { key: 'courses',  label: 'Cursos',   icon: <IcoBook /> },
+  { key: 'home',     label: 'Início',   icon: IcoHome },
+  { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
+  { key: 'connect',  label: '',         icon: () => <IcoBigConnect />, big: true },
+  { key: 'products', label: 'Produtos', icon: IcoBox },
+  { key: 'courses',  label: 'Cursos',   icon: IcoBook },
 ];
 
-function fmt(date: string) {
-  if (!date) return '';
-  const [y, m, d] = date.split('-');
-  return `${d}/${m}/${y}`;
+function monthShort(d: string) {
+  if (!d) return '';
+  return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
 }
-
-function monthShort(date: string) {
-  if (!date) return '';
-  return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
-}
+function dayNum(d: string) { return d ? d.split('-')[2] : ''; }
 
 export default function DoctorDashboard() {
   const { user, events, products, courses } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [search, setSearch] = useState('');
+  const [evFilter, setEvFilter] = useState('all');
 
   const q = search.toLowerCase();
   const filtEvents   = events.filter(e => !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q));
   const filtProducts = products.filter(p => !q || p.name.toLowerCase().includes(q) || p.companyName.toLowerCase().includes(q));
   const filtCourses  = courses.filter(c => !q || c.title.toLowerCase().includes(q) || c.companyName.toLowerCase().includes(q));
 
+  const today = new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
+    .replace('.', '').toUpperCase();
+
+  const firstNameGreet = user?.name?.split(' ')[0] ?? 'Doutor';
+
+  function goTab(k: string) { setTab(k as Tab); setSearch(''); }
+
   return (
-    <Layout navItems={NAV_ITEMS} activeKey={tab} onNavChange={k => { setTab(k as Tab); setSearch(''); }}>
+    <Layout navItems={NAV_ITEMS} activeKey={tab} onNavChange={goTab}>
+
+      {/* ── HOME ── */}
       {tab === 'home' && (
         <div>
-          <div className="mb-6">
-            <p className="text-slate-400 text-sm">Bem-vindo,</p>
-            <h1 className="text-2xl font-bold tracking-tight">{user?.name?.split(' ')[0] ?? 'Doutor'} 👋</h1>
-            {user?.specialty && <p className="text-[#6FA4FF] text-sm mt-0.5">{user.specialty}</p>}
+          {/* Greeting */}
+          <div style={{ marginBottom: 24 }}>
+            <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+              {today}
+            </Mono>
+            <h1 style={{ marginTop: 10, fontSize: 30, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              Olá, {firstNameGreet}<span style={{ color: '#2E7BFF' }}>.</span>
+            </h1>
+            <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 6 }}>
+              <b style={{ color: 'var(--ink)' }}>{events.length}</b> eventos disponíveis para você esta semana.
+            </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <StatCard label="Eventos"  value={events.length}   onClick={() => setTab('events')} />
-            <StatCard label="Produtos" value={products.length} onClick={() => setTab('products')} />
-            <StatCard label="Cursos"   value={courses.length}  onClick={() => setTab('courses')} />
+          {/* Stats chips */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+            <StatChip label="Eventos" value={events.length} onClick={() => setTab('events')} />
+            <StatChip label="Produtos" value={products.length} onClick={() => setTab('products')} />
+            <StatChip label="Cursos" value={courses.length} onClick={() => setTab('courses')} />
           </div>
 
-          <HomeSection title="Próximos eventos" onSeeAll={() => setTab('events')} empty={events.length === 0}>
-            {events.slice(0, 3).map(e => <EventRow key={e.id} event={e} />)}
-          </HomeSection>
+          {/* Featured event */}
+          {events.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <SectionHeader title="Em destaque" onSeeAll={() => setTab('events')} />
+              <EventCard ev={events[0]} />
+            </div>
+          )}
 
-          <HomeSection title="Cursos disponíveis" onSeeAll={() => setTab('courses')} empty={courses.length === 0} className="mt-4">
-            {courses.slice(0, 2).map(c => <CourseRow key={c.id} course={c} />)}
-          </HomeSection>
+          {/* For you — compact rows */}
+          {events.length > 1 && (
+            <div style={{ marginBottom: 24 }}>
+              <SectionHeader title="Mais eventos" onSeeAll={() => setTab('events')} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {events.slice(1, 4).map(e => <EventRow key={e.id} ev={e} />)}
+              </div>
+            </div>
+          )}
 
-          <HomeSection title="Produtos em destaque" onSeeAll={() => setTab('products')} empty={products.length === 0} className="mt-4">
-            {products.slice(0, 2).map(p => <ProductRow key={p.id} product={p} />)}
-          </HomeSection>
+          {/* Courses highlight */}
+          {courses.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <SectionHeader title="Cursos para professores" onSeeAll={() => setTab('courses')} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {courses.slice(0, 2).map(c => <CourseRow key={c.id} course={c} />)}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {tab !== 'home' && (
+      {/* ── EVENTS ── */}
+      {tab === 'events' && (
         <div>
-          <h1 className="text-xl font-bold tracking-tight mb-4">
-            {tab === 'events' ? 'Eventos' : tab === 'products' ? 'Produtos' : 'Cursos'}
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
+            Eventos<span style={{ color: '#2E7BFF' }}>.</span>
           </h1>
-          <SearchBar value={search} onChange={setSearch}
-            placeholder={tab === 'events' ? 'Buscar eventos...' : tab === 'products' ? 'Buscar produtos...' : 'Buscar cursos...'} />
-
-          <div className="mt-4 space-y-3">
-            {tab === 'events'   && (filtEvents.length   === 0 ? <Empty text="Nenhum evento encontrado." />   : filtEvents.map(e   => <EventCard   key={e.id}   event={e} />))}
-            {tab === 'products' && (filtProducts.length === 0 ? <Empty text="Nenhum produto encontrado." /> : filtProducts.map(p => <ProductCard key={p.id}  product={p} />))}
-            {tab === 'courses'  && (filtCourses.length  === 0 ? <Empty text="Nenhum curso encontrado." />    : filtCourses.map(c  => <CourseCard  key={c.id}  course={c} />))}
+          <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
+            <b style={{ color: '#2E7BFF' }}>{events.length}</b> eventos disponíveis.
+          </p>
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos..." />
+          <FilterChips
+            tabs={[['all','TODOS'],['congresso','CONGRESSO'],['workshop','WORKSHOP'],['online','ONLINE']]}
+            active={evFilter} onChange={setEvFilter}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filtEvents.length === 0
+              ? <Empty text="Nenhum evento encontrado." />
+              : filtEvents.map(e => <EventCard key={e.id} ev={e} />)
+            }
           </div>
         </div>
+      )}
+
+      {/* ── PRODUCTS ── */}
+      {tab === 'products' && (
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
+            Produtos<span style={{ color: '#2E7BFF' }}>.</span>
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
+            Catálogo de produtos das empresas parceiras.
+          </p>
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar produtos..." />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filtProducts.length === 0
+              ? <Empty text="Nenhum produto encontrado." />
+              : filtProducts.map(p => <ProductCard key={p.id} product={p} />)
+            }
+          </div>
+        </div>
+      )}
+
+      {/* ── COURSES ── */}
+      {tab === 'courses' && (
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
+            Cursos<span style={{ color: '#2E7BFF' }}>.</span>
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
+            Para médicos professores e especialistas.
+          </p>
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar cursos..." />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filtCourses.length === 0
+              ? <Empty text="Nenhum curso encontrado." />
+              : filtCourses.map(c => <CourseCard key={c.id} course={c} />)
+            }
+          </div>
+        </div>
+      )}
+
+      {/* ── CONNECT (WhatsApp matches) ── */}
+      {tab === 'connect' && (
+        <ConnectView events={events} products={products} courses={courses} />
       )}
     </Layout>
   );
 }
 
-/* ─── Stat card ─── */
-function StatCard({ label, value, onClick }: { label: string; value: number; onClick: () => void }) {
+/* ─── Connect view ─── */
+function ConnectView({ events, products, courses }: { events: Event[]; products: Product[]; courses: Course[] }) {
+  // Unique companies with whatsapp
+  const companyMap = new Map<string, { name: string; whatsapp: string; events: number; products: number; courses: number }>();
+  events.forEach(e => {
+    if (e.companyWhatsapp) {
+      const ex = companyMap.get(e.companyId) ?? { name: e.companyName, whatsapp: e.companyWhatsapp, events: 0, products: 0, courses: 0 };
+      companyMap.set(e.companyId, { ...ex, events: ex.events + 1 });
+    }
+  });
+  products.forEach(p => {
+    if (p.companyWhatsapp) {
+      const ex = companyMap.get(p.companyId) ?? { name: p.companyName, whatsapp: p.companyWhatsapp, events: 0, products: 0, courses: 0 };
+      companyMap.set(p.companyId, { ...ex, products: ex.products + 1 });
+    }
+  });
+  courses.forEach(c => {
+    if (c.companyWhatsapp) {
+      const ex = companyMap.get(c.companyId) ?? { name: c.companyName, whatsapp: c.companyWhatsapp, events: 0, products: 0, courses: 0 };
+      companyMap.set(c.companyId, { ...ex, courses: ex.courses + 1 });
+    }
+  });
+
+  const companies = [...companyMap.entries()];
+
   return (
-    <button onClick={onClick} className="bg-[#131B2E] border border-[#1F2A44] rounded-xl p-3 text-left hover:border-[#4F8CFF]/50 transition w-full">
-      <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-slate-400 mt-0.5">{label}</p>
+    <div>
+      <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
+        Conectar<span style={{ color: '#2E7BFF' }}>.</span>
+      </h1>
+      <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 20 }}>
+        Fale direto com as empresas via WhatsApp.
+      </p>
+
+      {companies.length === 0 && <Empty text="Nenhuma empresa com WhatsApp cadastrado." />}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {companies.map(([id, co]) => {
+          const tint = companyTint(co.name);
+          const code = co.name.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
+          const waLink = buildWhatsappLink(co.whatsapp, `Olá ${co.name}, vim pelo Tessy e gostaria de saber mais sobre seus produtos e eventos.`);
+          return (
+            <div key={id} style={{
+              padding: 16, background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <CompanyMark code={code} tint={tint} size={48} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>{co.name}</span>
+                    <VerifiedDot />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                    {co.events > 0 && <Chip color="#2E7BFF">{co.events} evento{co.events > 1 ? 's' : ''}</Chip>}
+                    {co.products > 0 && <Chip color="#1EA97C">{co.products} produto{co.products > 1 ? 's' : ''}</Chip>}
+                    {co.courses > 0 && <Chip color="#5F2C82">{co.courses} curso{co.courses > 1 ? 's' : ''}</Chip>}
+                  </div>
+                </div>
+              </div>
+              <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+                marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '12px', borderRadius: 12,
+                background: 'rgba(37,211,102,0.1)', color: '#25D366',
+                border: '1px solid rgba(37,211,102,0.3)',
+                textDecoration: 'none', fontWeight: 700, fontSize: 14,
+              }}>
+                <WaIcon size={18} /> Falar no WhatsApp
+              </a>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─── EventCard (full banner) ─── */
+function EventCard({ ev }: { ev: Event }) {
+  const [tint1, tint2] = categoryTint(ev.category);
+  const pct = Math.min(100, Math.round((ev.registeredCount / ev.maxParticipants) * 100));
+  const full = pct >= 100;
+  const waLink = buildWhatsappLink(ev.companyWhatsapp, `Olá! Vi o evento "${ev.title}" no Tessy e tenho interesse.`);
+  const code = ev.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+  return (
+    <BannerCard tint1={tint1} tint2={tint2} month={monthShort(ev.date)} day={dayNum(ev.date)} format={ev.category}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <CompanyMark code={code} tint={companyTint(ev.companyName)} size={22} radius={6} />
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{ev.companyName}</span>
+        <VerifiedDot size={11} />
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.25, color: 'var(--ink)' }}>{ev.title}</div>
+      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{ev.location} · {ev.time}</div>
+
+      {/* seats */}
+      <div style={{ marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+          <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Vagas</Mono>
+          <Mono style={{ fontSize: 10, color: full ? '#F25C54' : 'var(--muted)' }}>{ev.registeredCount}/{ev.maxParticipants}</Mono>
+        </div>
+        <div style={{ height: 4, borderRadius: 999, background: 'var(--line)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', borderRadius: 999, background: full ? '#F25C54' : tint1, width: `${pct}%`, transition: 'width 0.3s' }} />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <button disabled={full} style={{
+          flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
+          background: full ? 'var(--chip)' : '#2E7BFF',
+          color: full ? 'var(--muted)' : '#fff',
+          fontSize: 13, fontWeight: 700, cursor: full ? 'not-allowed' : 'pointer',
+        }}>
+          {full ? 'Esgotado' : 'Tenho interesse'}
+        </button>
+        {waLink && (
+          <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '11px 0', borderRadius: 12, textDecoration: 'none',
+            background: 'rgba(37,211,102,0.1)', color: '#25D366',
+            border: '1px solid rgba(37,211,102,0.3)',
+            fontSize: 13, fontWeight: 700,
+          }}>
+            <WaIcon size={14} /> WhatsApp
+          </a>
+        )}
+      </div>
+    </BannerCard>
+  );
+}
+
+/* ─── EventRow (compact) ─── */
+function EventRow({ ev }: { ev: Event }) {
+  const [tint1, tint2] = categoryTint(ev.category);
+  return (
+    <RowCard>
+      <div style={{
+        width: 54, flexShrink: 0, borderRadius: 12,
+        background: `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        color: '#fff', padding: '6px 0',
+      }}>
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em' }}>{monthShort(ev.date)}</div>
+        <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1 }}>{dayNum(ev.date)}</div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.2, color: 'var(--ink)' }}>{ev.title}</span>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{ev.companyName} · {ev.location}</div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
+          <Chip color="#2E7BFF">{ev.category}</Chip>
+          <Mono style={{ fontSize: 10, color: 'var(--muted)' }}>{ev.registeredCount} inscritos</Mono>
+        </div>
+      </div>
+    </RowCard>
+  );
+}
+
+/* ─── ProductCard ─── */
+function ProductCard({ product }: { product: Product }) {
+  const [tint1, tint2] = categoryTint(product.category);
+  const code = product.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const waLink = buildWhatsappLink(product.companyWhatsapp, `Olá! Vi o produto "${product.name}" no Tessy e gostaria de mais informações.`);
+
+  return (
+    <BannerCard tint1={tint1} tint2={tint2} format={product.category}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <CompanyMark code={code} tint={companyTint(product.companyName)} size={22} radius={6} />
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{product.companyName}</span>
+        <VerifiedDot size={11} />
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>{product.name}</div>
+      <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 6, lineHeight: 1.5 }}>{product.description}</div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' }}>Disponível para</Mono>
+        <span style={{ fontSize: 12, color: 'var(--ink-2)' }}>{product.availableFor}</span>
+        {product.price && <Chip color="#1EA97C">{product.price}</Chip>}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <button style={{
+          flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
+          background: '#2E7BFF', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+        }}>
+          Solicitar info
+        </button>
+        {waLink && (
+          <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '11px 0', borderRadius: 12, textDecoration: 'none',
+            background: 'rgba(37,211,102,0.1)', color: '#25D366',
+            border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 700,
+          }}>
+            <WaIcon size={14} /> WhatsApp
+          </a>
+        )}
+      </div>
+    </BannerCard>
+  );
+}
+
+/* ─── CourseCard (full) ─── */
+function CourseCard({ course }: { course: Course }) {
+  const [tint1, tint2] = categoryTint(course.category);
+  const code = course.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const waLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Vi o curso "${course.title}" no Tessy e tenho interesse.`);
+
+  return (
+    <BannerCard tint1={tint1} tint2={tint2} format="CURSO">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+        <CompanyMark code={code} tint={companyTint(course.companyName)} size={22} radius={6} />
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{course.companyName}</span>
+        <ModalityBadge modality={course.modality} />
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>{course.title}</div>
+      <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.5 }}>{course.description}</div>
+      <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {[
+          { label: 'INSTRUTOR', val: course.instructor },
+          { label: 'DURAÇÃO', val: course.duration },
+          { label: 'PREÇO', val: course.price || 'Sob consulta' },
+        ].map(r => (
+          <div key={r.label} style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
+            <Mono style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em', flexShrink: 0 }}>
+              {r.label}
+            </Mono>
+            <span style={{ fontSize: 12, color: 'var(--ink-2)' }}>{r.val}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <button style={{
+          flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
+          background: 'linear-gradient(135deg, #5F2C82 0%, #2E7BFF 100%)',
+          color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+        }}>
+          Tenho interesse
+        </button>
+        {waLink && (
+          <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '11px 0', borderRadius: 12, textDecoration: 'none',
+            background: 'rgba(37,211,102,0.1)', color: '#25D366',
+            border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 700,
+          }}>
+            <WaIcon size={14} /> WhatsApp
+          </a>
+        )}
+      </div>
+    </BannerCard>
+  );
+}
+
+/* ─── CourseRow (compact) ─── */
+function CourseRow({ course }: { course: Course }) {
+  const [tint1, tint2] = categoryTint(course.category);
+  return (
+    <RowCard>
+      <div style={{
+        width: 54, flexShrink: 0, borderRadius: 12,
+        background: `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
+        fontSize: 24,
+      }}>🎓</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.2, color: 'var(--ink)' }}>{course.title}</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{course.instructor}</div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+          <ModalityBadge modality={course.modality} />
+          {course.price && <Chip color="#1EA97C">{course.price}</Chip>}
+        </div>
+      </div>
+    </RowCard>
+  );
+}
+
+/* ─── Shared ─── */
+function StatChip({ label, value, onClick }: { label: string; value: number; onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: '9px 14px', borderRadius: 12,
+      background: 'var(--card)', border: '1px solid var(--line)',
+      cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 6,
+    }}>
+      <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em' }}>{value}</span>
+      <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 500 }}>{label}</span>
     </button>
   );
 }
 
-/* ─── Home section ─── */
-function HomeSection({ title, onSeeAll, empty, children, className = '' }: {
-  title: string; onSeeAll: () => void; empty: boolean; children: React.ReactNode; className?: string;
-}) {
+function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
   return (
-    <div className={className}>
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="font-semibold text-sm text-slate-200">{title}</h2>
-        {!empty && <button onClick={onSeeAll} className="text-xs font-medium text-[#6FA4FF]">Ver todos</button>}
-      </div>
-      {empty
-        ? <div className="bg-[#131B2E] border border-[#1F2A44] rounded-xl p-4 text-sm text-slate-500 text-center">Nenhum cadastrado ainda.</div>
-        : <div className="bg-[#131B2E] border border-[#1F2A44] rounded-xl divide-y divide-[#1F2A44] overflow-hidden">{children}</div>
-      }
-    </div>
-  );
-}
-
-/* ─── Row components (home list) ─── */
-function EventRow({ event }: { event: Event }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <div className="w-10 h-10 rounded-lg bg-[#1B2540] flex flex-col items-center justify-center text-[#6FA4FF] flex-shrink-0">
-        <span className="font-bold text-sm leading-none">{event.date.split('-')[2]}</span>
-        <span className="text-[9px] uppercase">{monthShort(event.date)}</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">{event.title}</p>
-        <p className="text-xs text-slate-400 truncate">{event.companyName}</p>
-      </div>
-    </div>
-  );
-}
-
-function ProductRow({ product }: { product: Product }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <div className="w-10 h-10 rounded-lg bg-[#1B2540] flex items-center justify-center text-slate-400 flex-shrink-0">
-        <IcoBox />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">{product.name}</p>
-        <p className="text-xs text-slate-400 truncate">{product.companyName} · {product.category}</p>
-      </div>
-    </div>
-  );
-}
-
-function CourseRow({ course }: { course: Course }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <div className="w-10 h-10 rounded-lg bg-[#1B2540] flex items-center justify-center text-slate-400 flex-shrink-0">
-        <IcoBook />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">{course.title}</p>
-        <p className="text-xs text-slate-400 truncate">{course.companyName} · {course.duration}</p>
-      </div>
-      <ModalityBadge modality={course.modality} />
-    </div>
-  );
-}
-
-/* ─── Full card components ─── */
-function EventCard({ event }: { event: Event }) {
-  const pct = Math.min(100, Math.round((event.registeredCount / event.maxParticipants) * 100));
-  const full = pct >= 100;
-  const waLink = buildWhatsappLink(event.companyWhatsapp, `Olá! Vi o evento "${event.title}" na Tessy e tenho interesse.`);
-
-  return (
-    <div className="bg-[#131B2E] border border-[#1F2A44] rounded-2xl p-4 space-y-3">
-      <div className="flex items-start gap-2">
-        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#4F8CFF]/10 text-[#6FA4FF] border border-[#4F8CFF]/20">
-          {event.category}
-        </span>
-        {full && <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-500/10 text-red-400 border border-red-500/20">Esgotado</span>}
-      </div>
-
-      <div>
-        <h3 className="font-semibold text-slate-100 leading-snug">{event.title}</h3>
-        <p className="text-sm text-slate-400 mt-1 line-clamp-2">{event.description}</p>
-      </div>
-
-      <div className="text-xs text-slate-400 space-y-1">
-        <div className="flex items-center gap-1.5">📅 <span>{fmt(event.date)} às {event.time}</span></div>
-        <div className="flex items-center gap-1.5">📍 <span>{event.location}</span></div>
-        <div className="flex items-center gap-1.5">🏢 <span>{event.companyName}</span></div>
-      </div>
-
-      <div>
-        <div className="flex justify-between text-xs text-slate-500 mb-1">
-          <span>Vagas</span><span>{event.registeredCount}/{event.maxParticipants}</span>
-        </div>
-        <div className="h-1.5 rounded-full bg-[#1B2540] overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#4F8CFF] to-[#8B73FF]" style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        <button
-          disabled={full}
-          className="py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed bg-[#4F8CFF] text-white hover:bg-[#6FA4FF]"
-        >
-          {full ? 'Esgotado' : 'Tenho interesse'}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>{title}</span>
+      {onSeeAll && (
+        <button onClick={onSeeAll} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+          color: '#2E7BFF', letterSpacing: '0.1em', textTransform: 'uppercase',
+        }}>
+          ver todos →
         </button>
-        {waLink && (
-          <a href={waLink} target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold bg-[#25D366]/10 text-[#34E178] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition">
-            <WaIcon /> WhatsApp
-          </a>
-        )}
-      </div>
+      )}
     </div>
   );
-}
-
-function ProductCard({ product }: { product: Product }) {
-  const waLink = buildWhatsappLink(product.companyWhatsapp, `Olá! Vi o produto "${product.name}" na Tessy e gostaria de mais informações.`);
-
-  return (
-    <div className="bg-[#131B2E] border border-[#1F2A44] rounded-2xl p-4 space-y-3">
-      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#4F8CFF]/10 text-[#6FA4FF] border border-[#4F8CFF]/20">
-        {product.category}
-      </span>
-
-      <div>
-        <h3 className="font-semibold text-slate-100">{product.name}</h3>
-        <p className="text-sm text-slate-400 mt-1 line-clamp-3">{product.description}</p>
-      </div>
-
-      <div className="text-xs text-slate-400 space-y-1">
-        <div className="flex items-center gap-1.5">🏢 <span>{product.companyName}</span></div>
-        <div className="flex items-center gap-1.5">👤 <span>{product.availableFor}</span></div>
-        {product.price && <div className="flex items-center gap-1.5">💰 <span>{product.price}</span></div>}
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        <button className="py-2.5 rounded-xl text-sm font-semibold bg-[#4F8CFF] text-white hover:bg-[#6FA4FF] transition">
-          Solicitar info
-        </button>
-        {waLink && (
-          <a href={waLink} target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold bg-[#25D366]/10 text-[#34E178] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition">
-            <WaIcon /> WhatsApp
-          </a>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function CourseCard({ course }: { course: Course }) {
-  const waLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Vi o curso "${course.title}" na Tessy e tenho interesse.`);
-
-  return (
-    <div className="bg-[#131B2E] border border-[#1F2A44] rounded-2xl p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#8B73FF]/10 text-[#A78BFF] border border-[#8B73FF]/20">
-          {course.category}
-        </span>
-        <ModalityBadge modality={course.modality} />
-      </div>
-
-      <div>
-        <h3 className="font-semibold text-slate-100 leading-snug">{course.title}</h3>
-        <p className="text-sm text-slate-400 mt-1 line-clamp-2">{course.description}</p>
-      </div>
-
-      <div className="text-xs text-slate-400 space-y-1">
-        <div className="flex items-center gap-1.5">🎓 <span>{course.instructor}</span></div>
-        <div className="flex items-center gap-1.5">⏱ <span>{course.duration}</span></div>
-        <div className="flex items-center gap-1.5">🏢 <span>{course.companyName}</span></div>
-        {course.price && <div className="flex items-center gap-1.5">💰 <span>{course.price}</span></div>}
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        <button className="py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#8B73FF] to-[#4F8CFF] text-white hover:opacity-90 transition">
-          Tenho interesse
-        </button>
-        {waLink && (
-          <a href={waLink} target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold bg-[#25D366]/10 text-[#34E178] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition">
-            <WaIcon /> WhatsApp
-          </a>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Shared helpers ─── */
-function ModalityBadge({ modality }: { modality: string }) {
-  const map: Record<string, { label: string; color: string }> = {
-    online:     { label: 'Online',     color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
-    presencial: { label: 'Presencial', color: 'text-amber-400 bg-amber-400/10 border-amber-400/20' },
-    hibrido:    { label: 'Híbrido',    color: 'text-sky-400 bg-sky-400/10 border-sky-400/20' },
-  };
-  const { label, color } = map[modality] ?? { label: modality, color: 'text-slate-400 bg-slate-400/10 border-slate-400/20' };
-  return <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${color}`}>{label}</span>;
 }
 
 function SearchBar({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div className="relative">
-      <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" width="15" height="15" viewBox="0 0 24 24" fill="none">
-        <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-        <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <div style={{ position: 'relative', marginBottom: 12 }}>
+      <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}
+        width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="7" cy="7" r="5.5"/><path d="M11 11l3.5 3.5" strokeLinecap="round"/>
       </svg>
       <input
-        type="search"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-slate-100 bg-[#131B2E] border border-[#1F2A44] focus:border-[#4F8CFF] focus:outline-none focus:ring-2 focus:ring-[#4F8CFF]/20 transition"
+        type="search" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        style={{
+          width: '100%', paddingLeft: 36, paddingRight: 14, paddingTop: 11, paddingBottom: 11,
+          borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)',
+          color: 'var(--ink)', fontSize: 14, outline: 'none',
+        }}
+        onFocus={e => e.target.style.borderColor = '#2E7BFF'}
+        onBlur={e => e.target.style.borderColor = 'var(--line)'}
       />
+    </div>
+  );
+}
+
+function FilterChips({ tabs, active, onChange }: {
+  tabs: [string, string][]; active: string; onChange: (v: string) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 12, marginBottom: 4 }} className="no-scrollbar">
+      {tabs.map(([v, l]) => (
+        <button key={v} onClick={() => onChange(v)} style={{
+          padding: '8px 14px', borderRadius: 10, flexShrink: 0,
+          background: active === v ? '#2E7BFF' : 'var(--card)',
+          border: `1px solid ${active === v ? '#2E7BFF' : 'var(--line)'}`,
+          color: active === v ? '#fff' : 'var(--ink-2)',
+          fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 700,
+          letterSpacing: '0.08em', cursor: 'pointer',
+        }}>{l}</button>
+      ))}
     </div>
   );
 }
 
 function Empty({ text }: { text: string }) {
   return (
-    <div className="bg-[#131B2E] border border-[#1F2A44] rounded-xl p-10 text-center text-sm text-slate-500">
+    <div style={{
+      padding: '40px 20px', textAlign: 'center',
+      background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)',
+      color: 'var(--muted)', fontSize: 14,
+    }}>
       {text}
     </div>
   );
-}
-
-function WaIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.889-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.886 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.304-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413"/>
-    </svg>
-  );
-}
-
-/* ─── Icons ─── */
-function IcoHome() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10l9-7 9 7v10a2 2 0 01-2 2h-3v-7h-8v7H5a2 2 0 01-2-2z"/></svg>;
-}
-function IcoCalendar() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>;
-}
-function IcoBox() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>;
-}
-function IcoBook() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>;
 }
