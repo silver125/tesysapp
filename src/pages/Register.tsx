@@ -59,7 +59,6 @@ export default function Register() {
   const next = () => { setError(''); if (step < totalSteps - 1) setStep(s => s + 1); };
   const back = () => { setError(''); if (step > 0) setStep(s => s - 1); };
 
-  // Step 0: select role → auto-advance
   const pickRole = (r: UserRole) => {
     update('role', r);
     setError('');
@@ -92,17 +91,19 @@ export default function Register() {
     'Acesso',
   ];
 
+  const ready = canAdvance() && !isLoading;
+
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      color: 'var(--ink)', background: 'var(--bg)',
+      color: 'var(--ink)',
     }}>
 
       {/* ── Header ── */}
       <header style={{
         padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '1px solid var(--line)', position: 'sticky', top: 0, zIndex: 10,
-        background: 'rgba(11,14,22,0.9)', backdropFilter: 'blur(12px)',
+        background: 'rgba(247,245,250,0.88)', backdropFilter: 'blur(14px)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {step > 0 && (
@@ -119,16 +120,16 @@ export default function Register() {
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
             <div style={{
               width: 30, height: 30, borderRadius: 9,
-              background: 'linear-gradient(135deg,#2E7BFF 0%,#5F2C82 100%)',
+              background: 'linear-gradient(135deg,#5B6EF5 0%,#A855F7 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontWeight: 700, fontSize: 14,
             }}>T</div>
             <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
-              Tessy<span style={{ color: '#2E7BFF' }}>.</span>
+              Tessy<span style={{ color: 'var(--accent)' }}>.</span>
             </span>
           </Link>
         </div>
-        <Link to="/entrar" style={{ fontSize: 13, fontWeight: 600, color: '#6FA4FF', textDecoration: 'none' }}>
+        <Link to="/entrar" style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}>
           Entrar
         </Link>
       </header>
@@ -139,7 +140,7 @@ export default function Register() {
           <div key={i} style={{
             height: 4, borderRadius: 999,
             width: i === step ? 24 : 8,
-            background: i <= step ? '#2E7BFF' : 'var(--line)',
+            background: i <= step ? 'var(--accent)' : 'var(--line)',
             transition: 'width 0.3s ease, background 0.3s ease',
           }} />
         ))}
@@ -154,10 +155,10 @@ export default function Register() {
             Etapa {step + 1} de {totalSteps} · {stepLabels[step]}
           </p>
           <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-            {step === 0 && <>Como você<br />quer entrar<span style={{ color: '#2E7BFF' }}>?</span></>}
-            {step === 1 && data.role === 'medico' && <>Seus dados<br />profissionais<span style={{ color: '#2E7BFF' }}>.</span></>}
-            {step === 1 && data.role === 'empresa' && <>Dados da<br />empresa<span style={{ color: '#2E7BFF' }}>.</span></>}
-            {step === 2 && <>Quase<br />pronto<span style={{ color: '#2E7BFF' }}>!</span></>}
+            {step === 0 && <>Como você<br />quer entrar<span style={{ color: 'var(--accent)' }}>?</span></>}
+            {step === 1 && data.role === 'medico' && <>Seus dados<br />profissionais<span style={{ color: 'var(--accent)' }}>.</span></>}
+            {step === 1 && data.role === 'empresa' && <>Dados da<br />empresa<span style={{ color: 'var(--accent)' }}>.</span></>}
+            {step === 2 && <>Quase<br />pronto<span style={{ color: 'var(--accent)' }}>!</span></>}
           </h1>
         </div>
 
@@ -165,8 +166,8 @@ export default function Register() {
         {error && (
           <div style={{
             marginBottom: 20, padding: '14px 16px', borderRadius: 12,
-            background: 'rgba(242,92,84,0.1)', border: '1px solid rgba(242,92,84,0.25)',
-            color: '#F25C54', fontSize: 14,
+            background: 'rgba(232,69,69,0.08)', border: '1px solid rgba(232,69,69,0.22)',
+            color: 'var(--danger)', fontSize: 14,
           }}>
             {error}
           </div>
@@ -187,16 +188,17 @@ export default function Register() {
                   onClick={() => pickRole(opt.role)}
                   style={{
                     textAlign: 'left', padding: '20px 18px',
-                    borderRadius: 18, border: `2px solid ${active ? '#2E7BFF' : 'var(--line)'}`,
-                    background: active ? 'rgba(46,123,255,0.09)' : 'var(--card)',
+                    borderRadius: 18, border: `2px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
+                    background: active ? 'var(--accent-soft)' : 'var(--card)',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16,
                     transition: 'border-color 0.15s, background 0.15s',
                     WebkitTapHighlightColor: 'transparent',
+                    boxShadow: active ? '0 4px 16px rgba(91,110,245,0.15)' : '0 1px 4px rgba(90,80,130,0.06)',
                   }}
                 >
                   <div style={{
                     width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                    background: active ? 'rgba(46,123,255,0.15)' : 'var(--chip)',
+                    background: active ? 'rgba(91,110,245,0.12)' : 'var(--chip)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26,
                   }}>
                     {opt.emoji}
@@ -207,8 +209,8 @@ export default function Register() {
                   </div>
                   <div style={{
                     width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                    background: active ? '#2E7BFF' : 'transparent',
-                    border: `2px solid ${active ? '#2E7BFF' : 'var(--line)'}`,
+                    background: active ? 'var(--accent)' : 'transparent',
+                    border: `2px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: '#fff', fontSize: 13, fontWeight: 800,
                     transition: 'all 0.15s',
@@ -232,15 +234,14 @@ export default function Register() {
               type="text"
               value={data.name}
               onChange={v => update('name', v)}
-              placeholder="Dr. João Silva"
+              placeholder="Dra. Ana Silva"
               autoComplete="name"
             />
 
-            {/* CRM + Estado lado a lado */}
             <div style={{ display: 'flex', gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 10 }}>
-                  CRM <span style={{ color: '#F25C54', fontSize: 12 }}>*</span>
+                  CRM <span style={{ color: 'var(--danger)', fontSize: 12 }}>*</span>
                 </div>
                 <input
                   type="text"
@@ -254,13 +255,13 @@ export default function Register() {
                     color: 'var(--ink)', fontSize: 16, outline: 'none',
                     transition: 'border-color 0.15s', boxSizing: 'border-box',
                   }}
-                  onFocus={e => e.target.style.borderColor = '#2E7BFF'}
+                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--line)'}
                 />
               </div>
               <div style={{ width: 90 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 10 }}>
-                  Estado <span style={{ color: '#F25C54', fontSize: 12 }}>*</span>
+                  Estado <span style={{ color: 'var(--danger)', fontSize: 12 }}>*</span>
                 </div>
                 <select
                   value={data.crmState}
@@ -273,7 +274,7 @@ export default function Register() {
                     appearance: 'none', textAlign: 'center', cursor: 'pointer',
                     transition: 'border-color 0.15s', boxSizing: 'border-box',
                   }}
-                  onFocus={e => e.target.style.borderColor = '#2E7BFF'}
+                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--line)'}
                 >
                   <option value="">UF</option>
@@ -282,7 +283,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Especialidade chips */}
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 12 }}>
                 Especialidade <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(opcional)</span>
@@ -297,9 +297,9 @@ export default function Register() {
                       onClick={() => update('specialty', sel ? '' : s)}
                       style={{
                         padding: '8px 14px', borderRadius: 999,
-                        border: `1.5px solid ${sel ? '#2E7BFF' : 'var(--line)'}`,
-                        background: sel ? 'rgba(46,123,255,0.12)' : 'var(--chip)',
-                        color: sel ? '#6FA4FF' : 'var(--ink-2)',
+                        border: `1.5px solid ${sel ? 'var(--accent)' : 'var(--line)'}`,
+                        background: sel ? 'var(--accent-soft)' : 'var(--chip)',
+                        color: sel ? 'var(--accent)' : 'var(--ink-2)',
                         fontSize: 13, fontWeight: sel ? 700 : 500, cursor: 'pointer',
                         transition: 'all 0.15s',
                         WebkitTapHighlightColor: 'transparent',
@@ -392,20 +392,23 @@ export default function Register() {
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 10,
           padding: '16px 24px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
-          background: 'rgba(11,14,22,0.97)', backdropFilter: 'blur(16px)',
+          background: 'rgba(255,255,255,0.94)', backdropFilter: 'blur(16px)',
           borderTop: '1px solid var(--line)',
         }}>
           <div style={{ maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
               type="button"
               onClick={step < totalSteps - 1 ? next : submit}
-              disabled={!canAdvance() || isLoading}
+              disabled={!ready}
               style={{
                 width: '100%', padding: '18px', borderRadius: 16, border: 'none',
-                background: canAdvance() && !isLoading ? '#2E7BFF' : 'var(--chip)',
-                color: canAdvance() && !isLoading ? '#fff' : 'var(--muted)',
-                fontSize: 16, fontWeight: 700, cursor: canAdvance() && !isLoading ? 'pointer' : 'not-allowed',
-                boxShadow: canAdvance() ? '0 8px 32px rgba(46,123,255,0.35)' : 'none',
+                background: ready
+                  ? 'linear-gradient(135deg, #5B6EF5 0%, #A855F7 100%)'
+                  : 'var(--chip)',
+                color: ready ? '#fff' : 'var(--muted)',
+                fontSize: 16, fontWeight: 700,
+                cursor: ready ? 'pointer' : 'not-allowed',
+                boxShadow: ready ? '0 8px 24px rgba(91,110,245,0.28)' : 'none',
                 transition: 'all 0.2s',
                 WebkitTapHighlightColor: 'transparent',
               }}
@@ -415,7 +418,7 @@ export default function Register() {
             {step === totalSteps - 1 && (
               <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)' }}>
                 Já tem conta?{' '}
-                <Link to="/entrar" style={{ color: '#6FA4FF', fontWeight: 600, textDecoration: 'none' }}>Entrar</Link>
+                <Link to="/entrar" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Entrar</Link>
               </p>
             )}
           </div>
@@ -427,7 +430,7 @@ export default function Register() {
         <div style={{ textAlign: 'center', padding: '0 24px 32px', marginTop: 'auto' }}>
           <p style={{ fontSize: 13, color: 'var(--ink-2)' }}>
             Já tem conta?{' '}
-            <Link to="/entrar" style={{ color: '#6FA4FF', fontWeight: 600, textDecoration: 'none' }}>Entrar</Link>
+            <Link to="/entrar" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Entrar</Link>
           </p>
         </div>
       )}
@@ -435,7 +438,6 @@ export default function Register() {
   );
 }
 
-/* ── Big input field ── */
 function BigField({ label, type = 'text', value, onChange, placeholder, autoComplete, hint }: {
   label: string; type?: string; value: string; onChange: (v: string) => void;
   placeholder?: string; autoComplete?: string; hint?: string;
@@ -454,17 +456,16 @@ function BigField({ label, type = 'text', value, onChange, placeholder, autoComp
           color: 'var(--ink)', fontSize: 16, outline: 'none',
           transition: 'border-color 0.15s', boxSizing: 'border-box',
         }}
-        onFocus={e => e.target.style.borderColor = '#2E7BFF'}
+        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
         onBlur={e => e.target.style.borderColor = 'var(--line)'}
       />
       {hint && (
-        <div style={{ marginTop: 6, fontSize: 12, color: '#F25C54' }}>{hint}</div>
+        <div style={{ marginTop: 6, fontSize: 12, color: 'var(--danger)' }}>{hint}</div>
       )}
     </div>
   );
 }
 
-/* ── Helpers ── */
 function formatPhone(raw: string) {
   const d = raw.replace(/\D/g, '').slice(0, 11);
   if (d.length <= 2) return d;

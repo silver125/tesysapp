@@ -318,9 +318,9 @@ export default function CompanyDashboard() {
           kind={createKind}
           setKind={setCreateKind}
           company={companyInfo}
-          onSaveEvent={data => { addEvent(data); setTab('events'); }}
-          onSaveProduct={data => { addProduct(data); setTab('products'); }}
-          onSaveCourse={data => { addCourse(data); setTab('courses'); }}
+          onSaveEvent={async data => { await addEvent(data); setTab('events'); }}
+          onSaveProduct={async data => { await addProduct(data); setTab('products'); }}
+          onSaveCourse={async data => { await addCourse(data); setTab('courses'); }}
           onCancel={() => setTab('home')}
         />
       )}
@@ -333,12 +333,14 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
   kind: 'event' | 'product' | 'course';
   setKind: (k: 'event' | 'product' | 'course') => void;
   company: { id: string; name: string; whatsapp?: string };
-  onSaveEvent: (e: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => void;
-  onSaveProduct: (p: Omit<Product, 'id' | 'createdAt'>) => void;
-  onSaveCourse: (c: Omit<Course, 'id' | 'createdAt'>) => void;
+  onSaveEvent: (e: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => Promise<void>;
+  onSaveProduct: (p: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
+  onSaveCourse: (c: Omit<Course, 'id' | 'createdAt'>) => Promise<void>;
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   // Event state
   const [ev, setEv] = useState({ title: '', description: '', date: '', time: '09:00', location: '', category: EVENT_CATS[0], maxParticipants: '100' });
@@ -349,13 +351,49 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
 
   const totalSteps = kind === 'event' ? 3 : kind === 'course' ? 3 : 2;
 
-  function handleSave() {
+  // Validate required fields before advancing / finishing
+  function validate(): string {
+    if (step === 0) return ''; // kind selection, always valid
     if (kind === 'event') {
-      onSaveEvent({ ...ev, maxParticipants: Number(ev.maxParticipants) || 100, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
-    } else if (kind === 'product') {
-      onSaveProduct({ ...pr, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
-    } else {
-      onSaveCourse({ ...co, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+      if (step === 1 && !ev.title.trim()) return 'Informe o título do evento.';
+      if (step === 2 && !ev.date) return 'Selecione a data do evento.';
+      if (step === 2 && !ev.location.trim()) return 'Informe o local do evento.';
+    }
+    if (kind === 'product') {
+      if (step === 1 && !pr.name.trim()) return 'Informe o nome do produto.';
+      if (step === 1 && !pr.description.trim()) return 'Informe a descrição do produto.';
+    }
+    if (kind === 'course') {
+      if (step === 1 && !co.title.trim()) return 'Informe o título do curso.';
+      if (step === 1 && !co.instructor.trim()) return 'Informe o nome do instrutor.';
+      if (step === 2 && !co.duration.trim()) return 'Informe a duração do curso.';
+    }
+    return '';
+  }
+
+  function handleNext() {
+    const err = validate();
+    if (err) { setSaveError(err); return; }
+    setSaveError('');
+    setStep(s => s + 1);
+  }
+
+  async function handleFinish() {
+    const err = validate();
+    if (err) { setSaveError(err); return; }
+    setSaveError('');
+    setSaving(true);
+    try {
+      if (kind === 'event') {
+        await onSaveEvent({ ...ev, maxParticipants: Number(ev.maxParticipants) || 100, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+      } else if (kind === 'product') {
+        await onSaveProduct({ ...pr, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+      } else {
+        await onSaveCourse({ ...co, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+      }
+    } catch {
+      setSaveError('Erro ao publicar. Verifique sua conexão e tente novamente.');
+      setSaving(false);
     }
   }
 
@@ -512,16 +550,28 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
         </div>
       )}
 
+      {/* Validation / save error */}
+      {saveError && (
+        <div style={{
+          marginTop: 16, padding: '12px 14px', borderRadius: 10,
+          background: 'rgba(242,92,84,0.1)', border: '1px solid rgba(242,92,84,0.3)',
+          color: '#F25C54', fontSize: 13,
+        }}>
+          {saveError}
+        </div>
+      )}
+
       {/* Nav buttons */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 32 }}>
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
         {step > 0 && (
-          <button onClick={() => setStep(s => s - 1)} style={{
+          <button onClick={() => { setSaveError(''); setStep(s => s - 1); }} disabled={saving} style={{
             width: 52, height: 52, borderRadius: 14, border: '1px solid var(--line)',
-            background: 'var(--card)', cursor: 'pointer', color: 'var(--ink)', fontSize: 20,
+            background: 'var(--card)', cursor: saving ? 'not-allowed' : 'pointer',
+            color: 'var(--ink)', fontSize: 20, opacity: saving ? 0.5 : 1,
           }}>←</button>
         )}
         {step < totalSteps - 1 ? (
-          <button onClick={() => setStep(s => s + 1)} style={{
+          <button onClick={handleNext} style={{
             flex: 1, height: 52, borderRadius: 14, border: 'none',
             background: '#2E7BFF', color: '#fff', cursor: 'pointer',
             fontSize: 15, fontWeight: 700,
@@ -530,13 +580,16 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             Continuar →
           </button>
         ) : (
-          <button onClick={handleSave} style={{
+          <button onClick={handleFinish} disabled={saving} style={{
             flex: 1, height: 52, borderRadius: 14, border: 'none',
-            background: '#2E7BFF', color: '#fff', cursor: 'pointer',
-            fontSize: 15, fontWeight: 700,
+            background: saving ? '#1a5cbf' : '#2E7BFF', color: '#fff',
+            cursor: saving ? 'not-allowed' : 'pointer',
+            fontSize: 15, fontWeight: 700, opacity: saving ? 0.8 : 1,
             boxShadow: '0 6px 24px rgba(46,123,255,0.3)',
           }}>
-            Publicar {kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'curso'} ✓
+            {saving
+              ? 'Publicando...'
+              : `Publicar ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'curso'} ✓`}
           </button>
         )}
       </div>

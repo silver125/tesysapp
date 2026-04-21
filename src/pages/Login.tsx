@@ -14,7 +14,6 @@ export default function Login() {
     setError('');
     try {
       const u = await login(email, password);
-      // Navega direto ao dashboard correto sem passar pelo RootRedirect
       navigate(u.role === 'medico' ? '/medico' : '/empresa', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao entrar.');
@@ -32,20 +31,20 @@ export default function Login() {
       <header style={{
         padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '1px solid var(--line)',
-        background: 'rgba(11,14,22,0.85)', backdropFilter: 'blur(12px)',
+        background: 'rgba(247,245,250,0.88)', backdropFilter: 'blur(14px)',
       }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
           <div style={{
             width: 34, height: 34, borderRadius: 10,
-            background: 'linear-gradient(135deg,#2E7BFF 0%,#5F2C82 100%)',
+            background: 'linear-gradient(135deg,#5B6EF5 0%,#A855F7 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#fff', fontWeight: 700, fontSize: 16,
           }}>T</div>
           <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
-            Tessy<span style={{ color: '#2E7BFF' }}>.</span>
+            Tessy<span style={{ color: 'var(--accent)' }}>.</span>
           </span>
         </Link>
-        <Link to="/cadastro" style={{ fontSize: 13, fontWeight: 600, color: '#6FA4FF', textDecoration: 'none' }}>
+        <Link to="/cadastro" style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}>
           Criar conta
         </Link>
       </header>
@@ -54,7 +53,7 @@ export default function Login() {
         <div style={{ width: '100%', maxWidth: 380 }}>
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              Bem-vindo de volta<span style={{ color: '#2E7BFF' }}>.</span>
+              Bem-vinda de volta<span style={{ color: 'var(--accent)' }}>.</span>
             </h1>
             <p style={{ marginTop: 8, fontSize: 14, color: 'var(--ink-2)' }}>Entre na sua conta Tessy.</p>
           </div>
@@ -62,12 +61,13 @@ export default function Login() {
           <div style={{
             background: 'var(--card)', borderRadius: 20, border: '1px solid var(--line)',
             padding: '24px 20px',
+            boxShadow: '0 4px 20px rgba(90,80,130,0.08)',
           }}>
             {error && (
               <div style={{
                 marginBottom: 16, padding: '12px 14px', borderRadius: 10,
-                background: 'rgba(242,92,84,0.1)', border: '1px solid rgba(242,92,84,0.3)',
-                color: '#F25C54', fontSize: 13,
+                background: 'rgba(232,69,69,0.08)', border: '1px solid rgba(232,69,69,0.25)',
+                color: 'var(--danger)', fontSize: 13,
               }}>
                 {error}
               </div>
@@ -79,9 +79,10 @@ export default function Login() {
 
               <button type="submit" disabled={isLoading} style={{
                 marginTop: 4, padding: '14px', borderRadius: 12, border: 'none',
-                background: '#2E7BFF', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: 15, fontWeight: 700, opacity: isLoading ? 0.6 : 1,
-                boxShadow: '0 6px 24px rgba(46,123,255,0.3)',
+                background: 'linear-gradient(135deg, #5B6EF5 0%, #A855F7 100%)',
+                color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer',
+                fontSize: 15, fontWeight: 700, opacity: isLoading ? 0.7 : 1,
+                boxShadow: '0 6px 20px rgba(91,110,245,0.28)',
               }}>
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </button>
@@ -112,7 +113,7 @@ export default function Login() {
 
           <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-2)', marginTop: 20 }}>
             Novo no Tessy?{' '}
-            <Link to="/cadastro" style={{ color: '#6FA4FF', fontWeight: 600, textDecoration: 'none' }}>Criar conta</Link>
+            <Link to="/cadastro" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Criar conta</Link>
           </p>
         </div>
       </main>
@@ -141,7 +142,7 @@ function Field({ label, type = 'text', value, onChange, placeholder, autoComplet
           color: 'var(--ink)', fontSize: 14, outline: 'none',
           transition: 'border-color 0.15s',
         }}
-        onFocus={e => e.target.style.borderColor = '#2E7BFF'}
+        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
         onBlur={e => e.target.style.borderColor = 'var(--line)'}
       />
     </div>

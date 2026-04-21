@@ -35,7 +35,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
       {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 20,
-        background: 'rgba(11,14,22,0.85)', backdropFilter: 'blur(12px)',
+        background: 'rgba(247,245,250,0.88)', backdropFilter: 'blur(14px)',
         borderBottom: '1px solid var(--line)',
       }}>
         <div style={{
@@ -85,7 +85,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
       {/* Bottom tab bar */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20,
-        background: 'rgba(11,14,22,0.95)', backdropFilter: 'blur(16px)',
+        background: 'rgba(255,255,255,0.94)', backdropFilter: 'blur(16px)',
         borderTop: '1px solid var(--line)',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
@@ -146,7 +146,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
         </div>
         {/* Home indicator */}
         <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 6 }}>
-          <div style={{ width: 100, height: 3.5, borderRadius: 999, background: 'rgba(255,255,255,0.45)' }} />
+          <div style={{ width: 100, height: 3.5, borderRadius: 999, background: 'rgba(90,80,130,0.18)' }} />
         </div>
       </nav>
     </div>

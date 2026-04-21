@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import type { NavItem } from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
@@ -50,11 +50,16 @@ function monthShort(d: string) {
 function dayNum(d: string) { return d ? d.split('-')[2] : ''; }
 
 export default function DoctorDashboard() {
-  const { user, events, products, courses } = useAuth();
+  const { user, events, products, courses, refreshData } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
   const [courseFilter, setCourseFilter] = useState('all');
+
+  // Refresh data every time the doctor switches tabs so new items from companies appear
+  useEffect(() => {
+    refreshData();
+  }, [tab, refreshData]);
 
   const q = search.toLowerCase();
   const filtEvents   = events.filter(e => !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q));

@@ -7,18 +7,19 @@ export default function Landing() {
       <header style={{
         padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '1px solid var(--line)', position: 'sticky', top: 0, zIndex: 10,
-        background: 'rgba(11,14,22,0.85)', backdropFilter: 'blur(12px)',
+        background: 'rgba(247,245,250,0.88)', backdropFilter: 'blur(14px)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 12,
-            background: 'linear-gradient(135deg,#2E7BFF 0%,#5F2C82 100%)',
+            background: 'linear-gradient(135deg,#5B6EF5 0%,#A855F7 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#fff', fontWeight: 700, fontSize: 18,
+            boxShadow: '0 4px 12px rgba(91,110,245,0.25)',
           }}>T</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', lineHeight: 1 }}>
-              Tessy<span style={{ color: '#2E7BFF' }}>.</span>
+            <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--ink)' }}>
+              Tessy<span style={{ color: 'var(--accent)' }}>.</span>
             </div>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 1 }}>
               saúde + negócios
@@ -31,98 +32,140 @@ export default function Landing() {
           background: 'var(--card)', color: 'var(--ink-2)',
           fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
           textDecoration: 'none',
+          boxShadow: '0 1px 4px rgba(90,80,130,0.08)',
         }}>
           Entrar
         </Link>
       </header>
 
-      {/* ── Hero com imagem de fundo ── */}
+      {/* ── Hero ── */}
       <div style={{ position: 'relative', overflow: 'hidden' }}>
-        {/* Imagem de fundo a 30% */}
+        {/* Decorative blurred blobs */}
         <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: 'url(/hero-bg.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 15%',
-          opacity: 0.50,
-          zIndex: 0,
+          position: 'absolute', top: -80, left: -60,
+          width: 320, height: 320, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(168,85,247,0.28) 0%, rgba(168,85,247,0) 70%)',
+          filter: 'blur(20px)', zIndex: 0, pointerEvents: 'none',
         }} />
-        {/* Gradiente azul escuro por cima da imagem */}
         <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(180deg, rgba(11,14,22,0.35) 0%, rgba(11,14,22,0.65) 80%, rgba(11,14,22,1) 100%)',
-          zIndex: 1,
+          position: 'absolute', top: 40, right: -80,
+          width: 380, height: 380, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(91,110,245,0.30) 0%, rgba(91,110,245,0) 70%)',
+          filter: 'blur(20px)', zIndex: 0, pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -60, left: '20%',
+          width: 280, height: 280, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(244,114,182,0.22) 0%, rgba(244,114,182,0) 70%)',
+          filter: 'blur(24px)', zIndex: 0, pointerEvents: 'none',
         }} />
 
         {/* Conteúdo hero */}
         <div style={{
           position: 'relative', zIndex: 2,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', padding: '52px 24px 44px', textAlign: 'center',
+          justifyContent: 'center', padding: '60px 24px 52px', textAlign: 'center',
         }}>
           <div style={{ maxWidth: 400, width: '100%' }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '6px 12px', borderRadius: 999,
-              background: 'rgba(46,123,255,0.1)', border: '1px solid rgba(46,123,255,0.25)',
+              padding: '6px 14px', borderRadius: 999,
+              background: 'rgba(255,255,255,0.75)',
+              border: '1px solid rgba(91,110,245,0.20)',
               marginBottom: 28,
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 2px 8px rgba(90,80,130,0.06)',
             }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1EA97C', flexShrink: 0 }} />
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#6FA4FF', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
                 plataforma médica
               </span>
             </div>
 
-            <h1 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, color: 'var(--ink)' }}>
+            <h1 style={{ fontSize: 44, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.05, color: 'var(--ink)' }}>
               Médicos e empresas
               <br />
               <span style={{
-                background: 'linear-gradient(90deg, #2E7BFF 0%, #8B5CF6 100%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                background: 'linear-gradient(90deg, #5B6EF5 0%, #A855F7 50%, #F472B6 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                color: 'transparent',
+                WebkitTextFillColor: 'transparent',
+                display: 'inline-block',
               }}>
                 conectados.
               </span>
             </h1>
 
-            <p style={{ marginTop: 16, fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.6, maxWidth: 320, margin: '16px auto 0' }}>
+            <p style={{ marginTop: 18, fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.6, maxWidth: 340, margin: '18px auto 0' }}>
               Eventos, produtos e cursos das melhores empresas da saúde. Fale direto pelo WhatsApp, sem burocracia.
             </p>
 
             <div style={{ marginTop: 36, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <Link to="/cadastro" style={{
-                display: 'block', padding: '15px 24px', borderRadius: 14,
-                background: '#2E7BFF', color: '#fff',
+                display: 'block', padding: '16px 24px', borderRadius: 14,
+                background: 'linear-gradient(135deg, #5B6EF5 0%, #A855F7 100%)',
+                color: '#fff',
                 fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 15,
                 textDecoration: 'none', letterSpacing: '-0.01em',
-                boxShadow: '0 8px 32px rgba(46,123,255,0.35)',
+                boxShadow: '0 10px 30px rgba(91,110,245,0.35)',
               }}>
                 Criar conta grátis →
               </Link>
               <Link to="/entrar" style={{
-                display: 'block', padding: '15px 24px', borderRadius: 14,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--ink-2)',
+                display: 'block', padding: '16px 24px', borderRadius: 14,
+                background: 'rgba(255,255,255,0.85)',
+                border: '1px solid var(--line)',
+                color: 'var(--ink-2)',
                 fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15,
-                textDecoration: 'none', backdropFilter: 'blur(8px)',
+                textDecoration: 'none',
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 2px 8px rgba(90,80,130,0.08)',
               }}>
                 Já tenho conta
               </Link>
+            </div>
+
+            {/* Trust row */}
+            <div style={{
+              marginTop: 32, display: 'flex', justifyContent: 'center',
+              gap: 20, flexWrap: 'wrap',
+            }}>
+              {[
+                { label: '100%', sub: 'grátis' },
+                { label: 'CRM', sub: 'verificado' },
+                { label: '24h', sub: 'suporte' },
+              ].map(t => (
+                <div key={t.label} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.02em' }}>{t.label}</div>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 2 }}>
+                    {t.sub}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px 32px', textAlign: 'center' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 24px 32px', textAlign: 'center' }}>
         {/* Feature cards */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, maxWidth: 400, width: '100%' }}>
           {[
-            { icon: '📅', title: 'Eventos', desc: 'Congressos e workshops' },
-            { icon: '💊', title: 'Produtos', desc: 'Catálogo farmacêutico' },
-            { icon: '🎓', title: 'Cursos', desc: 'Para médicos professores' },
+            { icon: '📅', title: 'Eventos', desc: 'Congressos e workshops', accent: '#5B6EF5' },
+            { icon: '💊', title: 'Produtos', desc: 'Catálogo farmacêutico', accent: '#A855F7' },
+            { icon: '🎓', title: 'Cursos', desc: 'Para professores', accent: '#F472B6' },
           ].map(f => (
             <div key={f.title} style={{
               padding: '14px 10px', borderRadius: 16,
               background: 'var(--card)', border: '1px solid var(--line)', textAlign: 'left',
+              boxShadow: '0 2px 10px rgba(90,80,130,0.06)',
+              position: 'relative',
             }}>
+              <div style={{
+                width: 4, height: 20, borderRadius: 2,
+                background: f.accent, marginBottom: 8,
+              }} />
               <div style={{ fontSize: 22 }}>{f.icon}</div>
               <div style={{ fontSize: 13, fontWeight: 600, marginTop: 8, color: 'var(--ink)' }}>{f.title}</div>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3, lineHeight: 1.4 }}>{f.desc}</div>
@@ -136,10 +179,11 @@ export default function Landing() {
           padding: '14px 16px', borderRadius: 16,
           background: 'var(--card)', border: '1px solid var(--line)',
           display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+          boxShadow: '0 2px 10px rgba(90,80,130,0.06)',
         }}>
           <div style={{
             width: 42, height: 42, borderRadius: 12, flexShrink: 0,
-            background: 'rgba(37,211,102,0.12)',
+            background: 'rgba(37,211,102,0.10)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#25D366',
           }}>
