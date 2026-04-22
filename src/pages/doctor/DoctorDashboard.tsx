@@ -303,11 +303,34 @@ function ConnectView({ events, products, courses }: { events: Event[]; products:
 
 /* ─── EventCard (full banner) ─── */
 function EventCard({ ev }: { ev: Event }) {
+  const { registerInterest, registeredEventIds } = useAuth();
   const [tint1, tint2] = categoryTint(ev.category);
   const pct = Math.min(100, Math.round((ev.registeredCount / ev.maxParticipants) * 100));
   const full = pct >= 100;
+  const registered = registeredEventIds.has(ev.id);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
   const waLink = buildWhatsappLink(ev.companyWhatsapp, `Olá! Vi o evento "${ev.title}" no Tessy e tenho interesse.`);
   const code = ev.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+  async function handleInterest() {
+    if (registered || full || busy) return;
+    setBusy(true);
+    setErr('');
+    try {
+      await registerInterest(ev.id);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const btnLabel = busy ? '...' : full ? 'Esgotado' : registered ? 'Inscrito ✓' : 'Tenho interesse';
+  const btnBg = full ? 'var(--chip)' : registered ? 'rgba(18,160,108,0.12)' : 'var(--accent)';
+  const btnColor = full ? 'var(--muted)' : registered ? 'var(--success)' : '#fff';
+  const btnBorder = registered ? '1px solid rgba(18,160,108,0.35)' : 'none';
+  const btnCursor = full || registered || busy ? 'not-allowed' : 'pointer';
 
   return (
     <BannerCard tint1={tint1} tint2={tint2} month={monthShort(ev.date)} day={dayNum(ev.date)} format={ev.category}>
@@ -323,21 +346,34 @@ function EventCard({ ev }: { ev: Event }) {
       <div style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Vagas</Mono>
-          <Mono style={{ fontSize: 10, color: full ? '#F25C54' : 'var(--muted)' }}>{ev.registeredCount}/{ev.maxParticipants}</Mono>
+          <Mono style={{ fontSize: 10, color: full ? 'var(--danger)' : 'var(--muted)' }}>{ev.registeredCount}/{ev.maxParticipants}</Mono>
         </div>
         <div style={{ height: 4, borderRadius: 999, background: 'var(--line)', overflow: 'hidden' }}>
-          <div style={{ height: '100%', borderRadius: 999, background: full ? '#F25C54' : tint1, width: `${pct}%`, transition: 'width 0.3s' }} />
+          <div style={{ height: '100%', borderRadius: 999, background: full ? 'var(--danger)' : tint1, width: `${pct}%`, transition: 'width 0.4s' }} />
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-        <button disabled={full} style={{
-          flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
-          background: full ? 'var(--chip)' : '#2E7BFF',
-          color: full ? 'var(--muted)' : '#fff',
-          fontSize: 13, fontWeight: 700, cursor: full ? 'not-allowed' : 'pointer',
+      {err && (
+        <div style={{
+          marginTop: 10, padding: '8px 10px', borderRadius: 8,
+          background: 'rgba(232,69,69,0.08)', color: 'var(--danger)', fontSize: 12,
         }}>
-          {full ? 'Esgotado' : 'Tenho interesse'}
+          {err}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <button
+          onClick={handleInterest}
+          disabled={full || registered || busy}
+          style={{
+            flex: 1, padding: '11px 0', borderRadius: 12, border: btnBorder,
+            background: btnBg, color: btnColor,
+            fontSize: 13, fontWeight: 700, cursor: btnCursor,
+            transition: 'all 0.2s',
+          }}
+        >
+          {btnLabel}
         </button>
         {waLink && (
           <a href={waLink} target="_blank" rel="noopener noreferrer" style={{

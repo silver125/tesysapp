@@ -22,6 +22,8 @@ interface AuthContextType {
   deleteProduct: (id: string) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
+  registerInterest: (eventId: string) => Promise<void>;
+  registeredEventIds: Set<string>;
 }
 
 interface RegisterInput {
@@ -124,6 +126,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [events,   setEvents]   = useState<Event[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [courses,  setCourses]  = useState<Course[]>([]);
+  const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
+
+  // Carrega IDs de eventos em que o usuário já clicou "Tenho interesse" (localStorage)
+  useEffect(() => {
+    if (!user) { setRegisteredEventIds(new Set()); return; }
+    try {
+      const stored = localStorage.getItem(`tessy-registered-${user.id}`);
+      if (stored) setRegisteredEventIds(new Set(JSON.parse(stored)));
+    } catch {
+      /* ignore */
+    }
+  }, [user?.id]);
 
   // Carrega eventos/produtos/cursos públicos
   const refreshData = useCallback(async () => {
@@ -312,6 +326,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEvents(prev => prev.filter(e => e.id !== id));
   };
 
+  // ── Registrar interesse em evento (incrementa registered_count) ──
+  const registerInterest = async (eventId: string) => {
+    if (!user) throw new Error('Você precisa estar logado.');
+    if (registeredEventIds.has(eventId)) return; // já inscrito
+
+    // Busca contagem atual
+    const { data: row, error: fetchErr } = await supabase
+      .from('events')
+      .select('registered_count, max_participants')
+      .eq('id', eventId)
+      .single();
+    if (fetchErr || !row) throw new Error('Evento não encontrado.');
+    const current = (row.registered_count as number) ?? 0;
+    const max = (row.max_participants as number) ?? 0;
+    if (current >= max) throw new Error('Evento esgotado.');
+
+    const newCount = current + 1;
+    const { error: updErr } = await supabase
+      .from('events')
+      .update({ registered_count: newCount })
+      .eq('id', eventId);
+    if (updErr) throw new Error(updErr.message);
+
+    // Atualiza estado local + persiste inscrição no localStorage
+    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, registeredCount: newCount } : e));
+    const next = new Set(registeredEventIds);
+    next.add(eventId);
+    setRegisteredEventIds(next);
+    try {
+      localStorage.setItem(`tessy-registered-${user.id}`, JSON.stringify([...next]));
+    } catch {
+      /* ignore */
+    }
+  };
+
   // ── Produtos ──
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
     const { error } = await supabase.from('products').insert({
@@ -364,6 +413,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       addEvent, addProduct, addCourse,
       deleteEvent, deleteProduct, deleteCourse,
       refreshData,
+      registerInterest, registeredEventIds,
     }}>
       {children}
     </AuthContext.Provider>
