@@ -79,12 +79,13 @@ function formatDisplayPhone(raw: string) {
 }
 
 export default function CompanyDashboard() {
-  const { user, events, products, courses, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile } = useAuth();
+  const { user, events, products, courses, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
   const [editingProfile, setEditingProfile] = useState(false);
   const [editName, setEditName] = useState('');
   const [editWa, setEditWa] = useState('');
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
   const myEvents   = events.filter(e => e.companyId === user?.id);
   const myProducts = products.filter(p => p.companyId === user?.id);
@@ -98,7 +99,10 @@ export default function CompanyDashboard() {
     setTab(k as Tab);
   }
 
+  const editingEvent = events.find(e => e.id === editingEventId) ?? null;
+
   return (
+    <>
     <Layout navItems={NAV_ITEMS} activeKey={tab} onNavChange={goTab}>
 
       {/* ── HOME ── */}
@@ -284,7 +288,7 @@ export default function CompanyDashboard() {
           empty={myEvents.length === 0}
           emptyText="Nenhum evento criado ainda."
         >
-          {myEvents.map(e => <EventCardCompany key={e.id} ev={e} onDelete={() => deleteEvent(e.id)} />)}
+          {myEvents.map(e => <EventCardCompany key={e.id} ev={e} onDelete={() => deleteEvent(e.id)} onEdit={() => setEditingEventId(e.id)} />)}
         </ListTab>
       )}
 
@@ -325,6 +329,19 @@ export default function CompanyDashboard() {
         />
       )}
     </Layout>
+
+    {/* ── EDIT EVENT MODAL ── */}
+    {editingEvent && (
+      <EditEventModal
+        event={editingEvent}
+        onClose={() => setEditingEventId(null)}
+        onSave={async patch => {
+          await updateEvent(editingEvent.id, patch);
+          setEditingEventId(null);
+        }}
+      />
+    )}
+    </>
   );
 }
 
@@ -669,7 +686,7 @@ function EventRowCompany({ ev }: { ev: Event }) {
   );
 }
 
-function EventCardCompany({ ev, onDelete }: { ev: Event; onDelete: () => void }) {
+function EventCardCompany({ ev, onDelete, onEdit }: { ev: Event; onDelete: () => void; onEdit: () => void }) {
   const [tint1, tint2] = categoryTint(ev.category);
   return (
     <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
@@ -684,10 +701,17 @@ function EventCardCompany({ ev, onDelete }: { ev: Event; onDelete: () => void })
               <Mono style={{ fontSize: 10, color: 'var(--ink-2)' }}>👥 {ev.registeredCount}/{ev.maxParticipants} inscritos</Mono>
             </div>
           </div>
-          <button onClick={onDelete} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
-          }}>Excluir</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 10, flexShrink: 0 }}>
+            <button onClick={onEdit} style={{
+              background: 'rgba(91,110,245,0.10)', border: '1px solid rgba(91,110,245,0.25)',
+              borderRadius: 8, cursor: 'pointer',
+              color: 'var(--accent)', fontSize: 12, fontWeight: 600, padding: '5px 10px',
+            }}>Editar</button>
+            <button onClick={onDelete} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '4px 0',
+            }}>Excluir</button>
+          </div>
         </div>
       </div>
     </div>
@@ -762,6 +786,144 @@ function WField({ label, value, onChange, type = 'text', placeholder, as = 'inpu
           ? <select value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>{options?.map(o => <option key={o} value={o}>{o}</option>)}</select>
           : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={base} onFocus={e => e.target.style.borderBottomColor = '#2E7BFF'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
       }
+    </div>
+  );
+}
+
+/* ─── Edit event modal ─── */
+function EditEventModal({ event, onSave, onClose }: {
+  event: Event;
+  onSave: (patch: Partial<Omit<Event, 'id' | 'createdAt' | 'companyId' | 'companyName' | 'registeredCount'>>) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [title,           setTitle]           = useState(event.title);
+  const [description,     setDescription]     = useState(event.description);
+  const [date,            setDate]            = useState(event.date);
+  const [time,            setTime]            = useState(event.time);
+  const [location,        setLocation]        = useState(event.location);
+  const [category,        setCategory]        = useState(event.category);
+  const [maxParticipants, setMaxParticipants] = useState(String(event.maxParticipants));
+  const [website,         setWebsite]         = useState(event.website ?? '');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr]       = useState('');
+
+  function normalizeUrl(raw: string): string | undefined {
+    const trimmed = raw.trim();
+    if (!trimmed) return undefined;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  }
+
+  async function handleSave() {
+    if (!title.trim())    { setErr('Informe o título do evento.'); return; }
+    if (!date)            { setErr('Selecione a data.');           return; }
+    if (!location.trim()) { setErr('Informe o local.');            return; }
+    const max = Number(maxParticipants) || 100;
+    if (max < event.registeredCount) {
+      setErr(`Vagas não podem ser menores que o nº de inscritos (${event.registeredCount}).`);
+      return;
+    }
+    setErr('');
+    setSaving(true);
+    try {
+      await onSave({
+        title:           title.trim(),
+        description:     description.trim(),
+        date,
+        time,
+        location:        location.trim(),
+        category,
+        maxParticipants: max,
+        website:         normalizeUrl(website),
+      });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Erro ao salvar.');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100,
+        background: 'rgba(15,18,30,0.45)', backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16, overflowY: 'auto',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--card)', borderRadius: 20, border: '1px solid var(--line)',
+          width: '100%', maxWidth: 440, maxHeight: '92vh', overflowY: 'auto',
+          padding: 24, boxShadow: '0 30px 80px rgba(15,18,30,0.25)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
+            Editar evento<span style={{ color: '#2E7BFF' }}>.</span>
+          </h2>
+          <button onClick={onClose} style={{
+            width: 36, height: 36, borderRadius: 10, border: '1px solid var(--line)',
+            background: 'var(--bg)', cursor: 'pointer', color: 'var(--ink)', fontSize: 18,
+          }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <WField label="TÍTULO" value={title} onChange={setTitle} placeholder="Título do evento" />
+          <WField label="DESCRIÇÃO" value={description} onChange={setDescription} as="textarea" placeholder="Descreva o evento..." />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <WField label="DATA" value={date} onChange={setDate} type="date" />
+            <WField label="HORA" value={time} onChange={setTime} type="time" />
+          </div>
+          <WField label="LOCAL" value={location} onChange={setLocation} placeholder="São Paulo, SP" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <WField label="CATEGORIA" value={category} onChange={setCategory} as="select" options={EVENT_CATS} />
+            <WField label="VAGAS" value={maxParticipants} onChange={setMaxParticipants} type="number" />
+          </div>
+          <WField label="WEBSITE (opcional)" value={website} onChange={setWebsite} type="url" placeholder="www.seusite.com.br" />
+
+          <div style={{
+            padding: '10px 12px', borderRadius: 10,
+            background: 'rgba(91,110,245,0.06)', border: '1px solid rgba(91,110,245,0.18)',
+            fontSize: 12, color: 'var(--ink-2)',
+          }}>
+            👥 <b>{event.registeredCount}</b> {event.registeredCount === 1 ? 'médico inscrito' : 'médicos inscritos'} —
+            o número de vagas não pode ficar abaixo desse total.
+          </div>
+        </div>
+
+        {err && (
+          <div style={{
+            marginTop: 14, padding: '10px 12px', borderRadius: 10,
+            background: 'rgba(242,92,84,0.10)', border: '1px solid rgba(242,92,84,0.30)',
+            color: '#F25C54', fontSize: 13,
+          }}>
+            {err}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+          <button onClick={onClose} disabled={saving} style={{
+            flex: 1, padding: '12px', borderRadius: 12,
+            background: 'var(--chip)', border: '1px solid var(--line)',
+            color: 'var(--ink-2)', fontSize: 14, fontWeight: 600,
+            cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1,
+          }}>
+            Cancelar
+          </button>
+          <button onClick={handleSave} disabled={saving} style={{
+            flex: 2, padding: '12px', borderRadius: 12, border: 'none',
+            background: saving ? '#1a5cbf' : '#2E7BFF', color: '#fff',
+            fontSize: 14, fontWeight: 700,
+            cursor: saving ? 'not-allowed' : 'pointer',
+            boxShadow: '0 6px 20px rgba(46,123,255,0.30)',
+          }}>
+            {saving ? 'Salvando...' : 'Salvar alterações'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -21,6 +21,7 @@ interface AuthContextType {
   deleteEvent: (id: string) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
+  updateEvent: (id: string, patch: Partial<Omit<Event, 'id' | 'createdAt' | 'companyId' | 'companyName' | 'registeredCount'>>) => Promise<void>;
   refreshData: () => Promise<void>;
   registerInterest: (eventId: string) => Promise<void>;
   registeredEventIds: Set<string>;
@@ -330,6 +331,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEvents(prev => prev.filter(e => e.id !== id));
   };
 
+  // ── Atualizar evento (título, data, hora, local, vagas, etc.) ──
+  const updateEvent: AuthContextType['updateEvent'] = async (id, patch) => {
+    // Mapeia camelCase do app → snake_case do banco
+    const dbPatch: Record<string, unknown> = {};
+    if (patch.title           !== undefined) dbPatch.title             = patch.title;
+    if (patch.description     !== undefined) dbPatch.description       = patch.description;
+    if (patch.date            !== undefined) dbPatch.date              = patch.date;
+    if (patch.time            !== undefined) dbPatch.time              = patch.time;
+    if (patch.location        !== undefined) dbPatch.location          = patch.location;
+    if (patch.category        !== undefined) dbPatch.category          = patch.category;
+    if (patch.maxParticipants !== undefined) dbPatch.max_participants  = patch.maxParticipants;
+    if (patch.companyWhatsapp !== undefined) dbPatch.company_whatsapp  = patch.companyWhatsapp;
+    if (patch.website         !== undefined) dbPatch.website           = patch.website ?? null;
+
+    const { error } = await supabase.from('events').update(dbPatch).eq('id', id);
+    if (error) throw new Error(error.message);
+
+    // Atualização otimista local
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, ...patch } as Event : e));
+  };
+
   // ── Registrar interesse em evento (incrementa registered_count) ──
   const registerInterest = async (eventId: string) => {
     if (!user) throw new Error('Você precisa estar logado.');
@@ -418,6 +440,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       events, products, courses,
       addEvent, addProduct, addCourse,
       deleteEvent, deleteProduct, deleteCourse,
+      updateEvent,
       refreshData,
       registerInterest, registeredEventIds,
     }}>
