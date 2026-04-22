@@ -343,11 +343,11 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
   const [saveError, setSaveError] = useState('');
 
   // Event state
-  const [ev, setEv] = useState({ title: '', description: '', date: '', time: '09:00', location: '', category: EVENT_CATS[0], maxParticipants: '100' });
+  const [ev, setEv] = useState({ title: '', description: '', date: '', time: '09:00', location: '', category: EVENT_CATS[0], maxParticipants: '100', website: '' });
   // Product state
-  const [pr, setPr] = useState({ name: '', description: '', category: PRODUCT_CATS[0], availableFor: 'Médicos credenciados', price: 'Sob consulta' });
+  const [pr, setPr] = useState({ name: '', description: '', category: PRODUCT_CATS[0], availableFor: 'Médicos credenciados', price: 'Sob consulta', website: '' });
   // Course state
-  const [co, setCo] = useState({ title: '', description: '', instructor: '', category: COURSE_CATS[0], modality: 'online' as CourseModality, duration: '', price: '' });
+  const [co, setCo] = useState({ title: '', description: '', instructor: '', category: COURSE_CATS[0], modality: 'online' as CourseModality, duration: '', price: '', website: '' });
 
   const totalSteps = kind === 'event' ? 3 : kind === 'course' ? 3 : 2;
 
@@ -378,6 +378,14 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     setStep(s => s + 1);
   }
 
+  // Normaliza URL do site: adiciona https:// se faltando, vazio → undefined
+  function normalizeUrl(raw: string): string | undefined {
+    const trimmed = raw.trim();
+    if (!trimmed) return undefined;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  }
+
   async function handleFinish() {
     const err = validate();
     if (err) { setSaveError(err); return; }
@@ -385,11 +393,24 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     setSaving(true);
     try {
       if (kind === 'event') {
-        await onSaveEvent({ ...ev, maxParticipants: Number(ev.maxParticipants) || 100, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+        await onSaveEvent({
+          ...ev,
+          maxParticipants: Number(ev.maxParticipants) || 100,
+          website: normalizeUrl(ev.website),
+          companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
+        });
       } else if (kind === 'product') {
-        await onSaveProduct({ ...pr, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+        await onSaveProduct({
+          ...pr,
+          website: normalizeUrl(pr.website),
+          companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
+        });
       } else {
-        await onSaveCourse({ ...co, companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp });
+        await onSaveCourse({
+          ...co,
+          website: normalizeUrl(co.website),
+          companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
+        });
       }
     } catch {
       setSaveError('Erro ao publicar. Verifique sua conexão e tente novamente.');
@@ -486,6 +507,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
               <WField label="HORA" value={ev.time} onChange={v => setEv(p => ({ ...p, time: v }))} type="time" />
             </div>
             <WField label="LOCAL" value={ev.location} onChange={v => setEv(p => ({ ...p, location: v }))} placeholder="São Paulo, SP" />
+            <WField label="WEBSITE (opcional)" value={ev.website} onChange={v => setEv(p => ({ ...p, website: v }))} placeholder="www.seusite.com.br" type="url" />
           </div>
         </div>
       )}
@@ -502,6 +524,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             <WField label="CATEGORIA" value={pr.category} onChange={v => setPr(p => ({ ...p, category: v }))} as="select" options={PRODUCT_CATS} />
             <WField label="DISPONÍVEL PARA" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Médicos credenciados" />
             <WField label="PREÇO" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Sob consulta" />
+            <WField label="WEBSITE (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.seusite.com.br" type="url" />
           </div>
         </div>
       )}
@@ -546,6 +569,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
               <WField label="DURAÇÃO" value={co.duration} onChange={v => setCo(p => ({ ...p, duration: v }))} placeholder="Ex: 20 horas" />
               <WField label="PREÇO" value={co.price} onChange={v => setCo(p => ({ ...p, price: v }))} placeholder="R$ 490" />
             </div>
+            <WField label="WEBSITE (opcional)" value={co.website} onChange={v => setCo(p => ({ ...p, website: v }))} placeholder="www.seusite.com.br" type="url" />
           </div>
         </div>
       )}

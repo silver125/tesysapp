@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS events (
   company_id        UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   company_name      TEXT NOT NULL,
   company_whatsapp  TEXT,
+  website           TEXT,
   created_at        TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS products (
   company_id        UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   company_name      TEXT NOT NULL,
   company_whatsapp  TEXT,
+  website           TEXT,
   available_for     TEXT,
   created_at        TIMESTAMPTZ DEFAULT NOW()
 );
@@ -61,6 +63,7 @@ CREATE TABLE IF NOT EXISTS courses (
   company_id        UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   company_name      TEXT NOT NULL,
   company_whatsapp  TEXT,
+  website           TEXT,
   created_at        TIMESTAMPTZ DEFAULT NOW()
 );
 

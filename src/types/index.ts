@@ -26,6 +26,7 @@ export interface Event {
   companyId: string;
   companyName: string;
   companyWhatsapp?: string;
+  website?: string;
   imageUrl?: string;
   createdAt: string;
 }
@@ -40,6 +41,7 @@ export interface Product {
   companyId: string;
   companyName: string;
   companyWhatsapp?: string;
+  website?: string;
   availableFor: string;
   createdAt: string;
 }
@@ -58,5 +60,6 @@ export interface Course {
   companyId: string;
   companyName: string;
   companyWhatsapp?: string;
+  website?: string;
   createdAt: string;
 }

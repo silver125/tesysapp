@@ -79,6 +79,7 @@ function dbToEvent(row: Record<string, unknown>): Event {
     companyId:        row.company_id       as string,
     companyName:      row.company_name     as string,
     companyWhatsapp:  row.company_whatsapp as string | undefined,
+    website:          row.website          as string | undefined,
     createdAt:        row.created_at       as string,
   };
 }
@@ -93,6 +94,7 @@ function dbToProduct(row: Record<string, unknown>): Product {
     companyId:       row.company_id      as string,
     companyName:     row.company_name    as string,
     companyWhatsapp: row.company_whatsapp as string | undefined,
+    website:         row.website         as string | undefined,
     availableFor:    row.available_for   as string,
     createdAt:       row.created_at      as string,
   };
@@ -111,6 +113,7 @@ function dbToCourse(row: Record<string, unknown>): Course {
     companyId:       row.company_id       as string,
     companyName:     row.company_name     as string,
     companyWhatsapp: row.company_whatsapp as string | undefined,
+    website:         row.website          as string | undefined,
     createdAt:       row.created_at       as string,
   };
 }
@@ -316,6 +319,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       company_id:       data.companyId,
       company_name:     data.companyName,
       company_whatsapp: data.companyWhatsapp ?? null,
+      website:          data.website ?? null,
     });
     if (error) throw new Error(error.message);
     await refreshData();
@@ -372,6 +376,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       company_name:     data.companyName,
       company_whatsapp: data.companyWhatsapp ?? null,
       available_for:    data.availableFor,
+      website:          data.website ?? null,
     });
     if (error) throw new Error(error.message);
     await refreshData();
@@ -395,6 +400,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       company_id:       data.companyId,
       company_name:     data.companyName,
       company_whatsapp: data.companyWhatsapp ?? null,
+      website:          data.website ?? null,
     });
     if (error) throw new Error(error.message);
     await refreshData();

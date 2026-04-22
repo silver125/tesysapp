@@ -301,6 +301,31 @@ function ConnectView({ events, products, courses }: { events: Event[]; products:
   );
 }
 
+/* ─── WebsiteLink (link para site da empresa, exibido nos cards) ─── */
+function WebsiteLink({ url }: { url?: string }) {
+  if (!url) return null;
+  let host = url;
+  try { host = new URL(url).host.replace(/^www\./, ''); } catch { /* manter url original se inválida */ }
+  return (
+    <a
+      href={url} target="_blank" rel="noopener noreferrer"
+      onClick={e => e.stopPropagation()}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        marginTop: 6, padding: '4px 10px', borderRadius: 999,
+        background: 'rgba(91,110,245,0.10)', border: '1px solid rgba(91,110,245,0.25)',
+        color: 'var(--accent)', fontSize: 11, fontWeight: 600, textDecoration: 'none',
+        maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}
+    >
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ flexShrink: 0 }}>
+        <circle cx="8" cy="8" r="6.5" /><path d="M1.5 8h13M8 1.5c2 2.2 3 4.5 3 6.5s-1 4.3-3 6.5M8 1.5c-2 2.2-3 4.5-3 6.5s1 4.3 3 6.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      {host}
+    </a>
+  );
+}
+
 /* ─── EventCard (full banner) ─── */
 function EventCard({ ev }: { ev: Event }) {
   const { registerInterest, registeredEventIds } = useAuth();
@@ -340,6 +365,7 @@ function EventCard({ ev }: { ev: Event }) {
         <VerifiedDot size={11} />
       </div>
       <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.25, color: 'var(--ink)' }}>{ev.title}</div>
+      {ev.website && <div><WebsiteLink url={ev.website} /></div>}
       <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{ev.location} · {ev.time}</div>
 
       {/* seats */}
@@ -433,6 +459,7 @@ function ProductCard({ product }: { product: Product }) {
         <VerifiedDot size={11} />
       </div>
       <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>{product.name}</div>
+      {product.website && <div><WebsiteLink url={product.website} /></div>}
       <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 6, lineHeight: 1.5 }}>{product.description}</div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' }}>Disponível para</Mono>
@@ -475,6 +502,7 @@ function CourseCard({ course }: { course: Course }) {
         <ModalityBadge modality={course.modality} />
       </div>
       <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>{course.title}</div>
+      {course.website && <div><WebsiteLink url={course.website} /></div>}
       <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.5 }}>{course.description}</div>
       <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {[
