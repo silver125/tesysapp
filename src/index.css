@@ -21,6 +21,7 @@
 
   --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-serif: 'Fraunces', Georgia, serif;
 
   --r-sm:  6px;
   --r-md:  10px;
@@ -80,3 +81,40 @@ select option { background: var(--card); color: var(--ink); }
 /* Scrollbar hidden */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Animações premium */
+@keyframes tessy-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes tessy-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes tessy-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+@keyframes tessy-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.fade-up   { animation: tessy-fade-up 0.7s var(--ease) both; }
+.fade-in   { animation: tessy-fade-in 0.8s ease-out both; }
+.float-slow{ animation: tessy-float 6s ease-in-out infinite; }
+
+.delay-1   { animation-delay: 0.10s; }
+.delay-2   { animation-delay: 0.20s; }
+.delay-3   { animation-delay: 0.30s; }
+.delay-4   { animation-delay: 0.40s; }
+.delay-5   { animation-delay: 0.50s; }
+
+/* Hover lift universal para cards premium */
+.lift {
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+.lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px rgba(15,18,30,0.18);
+}
