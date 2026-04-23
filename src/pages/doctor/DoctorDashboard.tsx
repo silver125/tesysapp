@@ -450,6 +450,11 @@ function ProductCard({ product }: { product: Product }) {
   const [tint1, tint2] = categoryTint(product.category);
   const code = product.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const waLink = buildWhatsappLink(product.companyWhatsapp, `Olá! Vi o produto "${product.name}" no Tessy e gostaria de mais informações.`);
+  const infoLink = buildWhatsappLink(product.companyWhatsapp, `Olá! Sou médico cadastrado no Tessy e gostaria de receber o catálogo / ficha técnica completa do produto "${product.name}". Pode me enviar?`);
+
+  // Ação do "Solicitar info": prioriza WhatsApp; cai para website se não tiver WhatsApp
+  const requestInfoTarget = infoLink || product.website || '';
+  const canRequestInfo = !!requestInfoTarget;
 
   return (
     <BannerCard tint1={tint1} tint2={tint2} format={product.category}>
@@ -467,10 +472,21 @@ function ProductCard({ product }: { product: Product }) {
         {product.price && <Chip color="#1EA97C">{product.price}</Chip>}
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-        <button style={{
-          flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
-          background: '#2E7BFF', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-        }}>
+        <button
+          type="button"
+          disabled={!canRequestInfo}
+          onClick={() => {
+            if (!canRequestInfo) return;
+            window.open(requestInfoTarget, '_blank', 'noopener,noreferrer');
+          }}
+          style={{
+            flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
+            background: canRequestInfo ? '#2E7BFF' : 'var(--chip)',
+            color: canRequestInfo ? '#fff' : 'var(--muted)',
+            fontSize: 13, fontWeight: 700,
+            cursor: canRequestInfo ? 'pointer' : 'not-allowed',
+            opacity: canRequestInfo ? 1 : 0.7,
+          }}>
           Solicitar info
         </button>
         {waLink && (
@@ -493,6 +509,9 @@ function CourseCard({ course }: { course: Course }) {
   const [tint1, tint2] = categoryTint(course.category);
   const code = course.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const waLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Vi o curso "${course.title}" no Tessy e tenho interesse.`);
+  const enrollLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Sou médico cadastrado no Tessy e gostaria de me inscrever no curso "${course.title}". Como faço para garantir minha vaga?`);
+  const interestTarget = enrollLink || course.website || '';
+  const canShowInterest = !!interestTarget;
 
   return (
     <BannerCard tint1={tint1} tint2={tint2} format="CURSO">
@@ -519,11 +538,23 @@ function CourseCard({ course }: { course: Course }) {
         ))}
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-        <button style={{
-          flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
-          background: 'linear-gradient(135deg, #5F2C82 0%, #2E7BFF 100%)',
-          color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-        }}>
+        <button
+          type="button"
+          disabled={!canShowInterest}
+          onClick={() => {
+            if (!canShowInterest) return;
+            window.open(interestTarget, '_blank', 'noopener,noreferrer');
+          }}
+          style={{
+            flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
+            background: canShowInterest
+              ? 'linear-gradient(135deg, #5F2C82 0%, #2E7BFF 100%)'
+              : 'var(--chip)',
+            color: canShowInterest ? '#fff' : 'var(--muted)',
+            fontSize: 13, fontWeight: 700,
+            cursor: canShowInterest ? 'pointer' : 'not-allowed',
+            opacity: canShowInterest ? 1 : 0.7,
+          }}>
           Tenho interesse
         </button>
         {waLink && (
