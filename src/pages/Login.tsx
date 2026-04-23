@@ -20,12 +20,6 @@ export default function Login() {
     }
   };
 
-  const fillDemo = (kind: 'medico' | 'empresa') => {
-    setEmail(kind === 'medico' ? 'medico@teste.com' : 'empresa@teste.com');
-    setPassword('123456');
-    setError('');
-  };
-
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', color: 'var(--ink)' }}>
       <header style={{
@@ -87,28 +81,6 @@ export default function Login() {
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </button>
             </form>
-
-            <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
-              <div style={{
-                fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
-                color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase',
-                textAlign: 'center', marginBottom: 10,
-              }}>
-                Conta de demonstração
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {(['medico', 'empresa'] as const).map(kind => (
-                  <button key={kind} type="button" onClick={() => fillDemo(kind)} style={{
-                    padding: '10px', borderRadius: 10,
-                    background: 'var(--chip)', border: '1px solid var(--line)',
-                    color: 'var(--ink-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                    fontFamily: "'Inter', sans-serif",
-                  }}>
-                    {kind === 'medico' ? '🩺 Médico' : '🏢 Empresa'}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-2)', marginTop: 20 }}>
