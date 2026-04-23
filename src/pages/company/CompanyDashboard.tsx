@@ -429,8 +429,9 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       }
-    } catch {
-      setSaveError('Erro ao publicar. Verifique sua conexão e tente novamente.');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erro desconhecido';
+      setSaveError(`Erro ao publicar: ${msg}`);
       setSaving(false);
     }
   }

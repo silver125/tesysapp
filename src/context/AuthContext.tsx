@@ -338,22 +338,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Eventos ──
   const addEvent = async (data: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
-    const { error } = await supabase.from('events').insert({
-      title:            data.title,
-      description:      data.description,
-      date:             data.date,
-      time:             data.time,
-      location:         data.location,
-      category:         data.category,
-      max_participants: data.maxParticipants,
-      registered_count: 0,
-      company_id:       data.companyId,
-      company_name:     data.companyName,
-      company_whatsapp: data.companyWhatsapp ?? null,
-      website:          data.website ?? null,
-    });
+    const { error } = await withTimeout(
+      supabase.from('events').insert({
+        title:            data.title,
+        description:      data.description,
+        date:             data.date,
+        time:             data.time,
+        location:         data.location,
+        category:         data.category,
+        max_participants: data.maxParticipants,
+        registered_count: 0,
+        company_id:       data.companyId,
+        company_name:     data.companyName,
+        company_whatsapp: data.companyWhatsapp ?? null,
+        website:          data.website ?? null,
+      }),
+      12000,
+      'Publicar evento',
+    );
     if (error) throw new Error(error.message);
-    await refreshData();
+    refreshData(); // background, não bloqueia
   };
 
   const deleteEvent = async (id: string) => {
@@ -419,19 +423,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Produtos ──
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
-    const { error } = await supabase.from('products').insert({
-      name:             data.name,
-      description:      data.description,
-      category:         data.category,
-      price:            data.price ?? null,
-      company_id:       data.companyId,
-      company_name:     data.companyName,
-      company_whatsapp: data.companyWhatsapp ?? null,
-      available_for:    data.availableFor,
-      website:          data.website ?? null,
-    });
+    const { error } = await withTimeout(
+      supabase.from('products').insert({
+        name:             data.name,
+        description:      data.description,
+        category:         data.category,
+        price:            data.price ?? null,
+        company_id:       data.companyId,
+        company_name:     data.companyName,
+        company_whatsapp: data.companyWhatsapp ?? null,
+        available_for:    data.availableFor,
+        website:          data.website ?? null,
+      }),
+      12000,
+      'Publicar produto',
+    );
     if (error) throw new Error(error.message);
-    await refreshData();
+    refreshData(); // background, não bloqueia
   };
 
   const deleteProduct = async (id: string) => {
@@ -441,21 +449,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Cursos ──
   const addCourse = async (data: Omit<Course, 'id' | 'createdAt'>) => {
-    const { error } = await supabase.from('courses').insert({
-      title:            data.title,
-      description:      data.description,
-      category:         data.category,
-      modality:         data.modality,
-      duration:         data.duration,
-      instructor:       data.instructor,
-      price:            data.price ?? null,
-      company_id:       data.companyId,
-      company_name:     data.companyName,
-      company_whatsapp: data.companyWhatsapp ?? null,
-      website:          data.website ?? null,
-    });
+    const { error } = await withTimeout(
+      supabase.from('courses').insert({
+        title:            data.title,
+        description:      data.description,
+        category:         data.category,
+        modality:         data.modality,
+        duration:         data.duration,
+        instructor:       data.instructor,
+        price:            data.price ?? null,
+        company_id:       data.companyId,
+        company_name:     data.companyName,
+        company_whatsapp: data.companyWhatsapp ?? null,
+        website:          data.website ?? null,
+      }),
+      12000,
+      'Publicar curso',
+    );
     if (error) throw new Error(error.message);
-    await refreshData();
+    refreshData(); // background, não bloqueia
   };
 
   const deleteCourse = async (id: string) => {
