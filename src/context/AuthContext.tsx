@@ -42,6 +42,20 @@ interface RegisterInput {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Helper: timeout para evitar travas infinitas em chamadas Supabase
+// Aceita PromiseLike para suportar o query builder do supabase-js (thenable)
+function withTimeout<T>(p: PromiseLike<T>, ms: number, label = 'Servidor'): Promise<T> {
+  return Promise.race([
+    Promise.resolve(p),
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`${label} demorou para responder. Verifique sua conexão e tente novamente.`)),
+        ms,
+      ),
+    ),
+  ]);
+}
+
 // ── Helpers de conversão DB → App ────────────────────────────────────────────
 function dbToUser(profile: Record<string, unknown>, email: string): User {
   // Suporta tanto schema novo (name, company) quanto existente (first_name, company_name)
@@ -155,15 +169,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (coRes.data) setCourses(coRes.data.map(r => dbToCourse(r as Record<string, unknown>)));
   }, []);
 
-  // Busca perfil do usuário autenticado
+  // Busca perfil do usuário autenticado (com timeout de 8s)
   async function fetchProfile(userId: string, email: string): Promise<User | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (error || !data) return null;
-    return dbToUser(data as Record<string, unknown>, email);
+    try {
+      const { data, error } = await withTimeout(
+        supabase.from('profiles').select('*').eq('id', userId).single(),
+        8000,
+        'Perfil',
+      );
+      if (error || !data) return null;
+      return dbToUser(data as Record<string, unknown>, email);
+    } catch {
+      return null;
+    }
   }
 
   // Inicializa sessão e ouve mudanças de auth
@@ -205,7 +223,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        12000,
+        'Login',
+      );
       if (error) throw new Error('E-mail ou senha incorretos.');
       if (!data.user) throw new Error('Erro ao entrar. Tente novamente.');
       // Busca perfil já dentro do login para poder navegar direto ao dashboard
@@ -224,10 +246,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       // 1. Cria usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: input.email,
-        password: input.password,
-      });
+      const { data: authData, error: authError } = await withTimeout(
+        supabase.auth.signUp({
+          email: input.email,
+          password: input.password,
+        }),
+        15000,
+        'Cadastro',
+      );
 
       if (authError) {
         const msg = authError.message.toLowerCase().includes('already registered')
@@ -250,20 +276,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const uid = authData.user.id;
 
       // 2. Salva perfil — upsert para sobrescrever caso trigger já tenha criado
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id:           uid,
-        name:         input.name.trim(),
-        first_name:   input.name.trim(),
-        last_name:    '',
-        email:        input.email,
-        role:         input.role,
-        specialty:    input.specialty ?? null,
-        crm:          input.crm ?? null,
-        crm_state:    input.crmState ?? null,
-        company:      input.company ?? null,
-        company_name: input.company ?? null,
-        whatsapp:     input.whatsapp ?? null,
-      }, { onConflict: 'id' });
+      const { error: profileError } = await withTimeout(
+        supabase.from('profiles').upsert({
+          id:           uid,
+          name:         input.name.trim(),
+          first_name:   input.name.trim(),
+          last_name:    '',
+          email:        input.email,
+          role:         input.role,
+          specialty:    input.specialty ?? null,
+          crm:          input.crm ?? null,
+          crm_state:    input.crmState ?? null,
+          company:      input.company ?? null,
+          company_name: input.company ?? null,
+          whatsapp:     input.whatsapp ?? null,
+        }, { onConflict: 'id' }),
+        12000,
+        'Salvar perfil',
+      );
 
       if (profileError) {
         throw new Error('Erro ao salvar perfil: ' + profileError.message);
