@@ -35,3 +35,4 @@ tesysapp/
 *.njsproj
 *.sln
 *.sw?
+.vercel
