@@ -155,3 +155,34 @@ select option { background: var(--card); color: var(--ink); }
     width: 100%;
   }
 }
+
+.tessy-auth-grid {
+  min-height: calc(100vh - 71px);
+  display: grid;
+  grid-template-columns: minmax(360px, 0.92fr) minmax(360px, 1.08fr);
+  gap: clamp(28px, 5vw, 72px);
+  padding: clamp(24px, 5vw, 64px) clamp(20px, 5vw, 72px);
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .tessy-auth-grid {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .tessy-auth-visual {
+    min-height: 320px !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .tessy-auth-grid {
+    padding: 24px 20px 42px;
+    gap: 24px;
+  }
+
+  .tessy-auth-visual {
+    display: none;
+  }
+}

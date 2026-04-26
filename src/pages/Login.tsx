@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 
+const authImage = 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1400&q=84';
+
 export default function Login() {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -21,75 +23,169 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', color: 'var(--ink)' }}>
-      <header style={{
-        padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        borderBottom: '1px solid var(--line)',
-        background: 'rgba(247,245,250,0.88)', backdropFilter: 'blur(14px)',
-      }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: 'linear-gradient(135deg,#5B6EF5 0%,#A855F7 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 700, fontSize: 16,
-          }}>T</div>
-          <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
-            Tessy<span style={{ color: 'var(--accent)' }}>.</span>
-          </span>
-        </Link>
-        <Link to="/cadastro" style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}>
-          Criar conta
-        </Link>
-      </header>
+    <div style={{ minHeight: '100vh', color: 'var(--ink)', background: '#FBFAFD' }}>
+      <AuthHeader actionLabel="Criar conta" actionTo="/cadastro" />
 
-      <main style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '32px 20px' }}>
-        <div style={{ width: '100%', maxWidth: 380 }}>
-          <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              Bem-vinda de volta<span style={{ color: 'var(--accent)' }}>.</span>
-            </h1>
-            <p style={{ marginTop: 8, fontSize: 14, color: 'var(--ink-2)' }}>Entre na sua conta Tessy.</p>
+      <main className="tessy-auth-grid">
+        <section style={{
+          position: 'relative',
+          minHeight: 520,
+          overflow: 'hidden',
+          borderRadius: 8,
+          background: '#17142F',
+        }} className="tessy-auth-visual">
+          <img
+            src={authImage}
+            alt="Ambiente médico profissional"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.86 }}
+          />
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(180deg, rgba(23,20,47,0.12) 0%, rgba(23,20,47,0.78) 100%)',
+          }} />
+          <div style={{ position: 'absolute', left: 28, right: 28, bottom: 28, color: '#fff' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#9FC5FF' }}>
+              Tessy para saúde
+            </div>
+            <h2 style={{ marginTop: 10, fontSize: 32, lineHeight: 1.05, letterSpacing: 0, fontWeight: 900 }}>
+              Acesso direto entre médicos e empresas.
+            </h2>
+            <p style={{ marginTop: 12, maxWidth: 430, color: 'rgba(255,255,255,0.76)', fontSize: 15, lineHeight: 1.55 }}>
+              Produtos, eventos e representantes em um fluxo simples, comercial e objetivo.
+            </p>
           </div>
+        </section>
 
-          <div style={{
-            background: 'var(--card)', borderRadius: 20, border: '1px solid var(--line)',
-            padding: '24px 20px',
-            boxShadow: '0 4px 20px rgba(90,80,130,0.08)',
-          }}>
-            {error && (
+        <section style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 430 }}>
+            <div style={{ marginBottom: 26 }}>
               <div style={{
-                marginBottom: 16, padding: '12px 14px', borderRadius: 10,
-                background: 'rgba(232,69,69,0.08)', border: '1px solid rgba(232,69,69,0.25)',
-                color: 'var(--danger)', fontSize: 13,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '7px 11px',
+                borderRadius: 999,
+                background: '#EEF4FF',
+                color: '#285DE8',
+                fontSize: 12,
+                fontWeight: 800,
+                marginBottom: 18,
               }}>
-                {error}
+                <span style={{ width: 7, height: 7, borderRadius: 99, background: '#2E7BFF' }} />
+                Área restrita
               </div>
-            )}
+              <h1 style={{ fontSize: 42, fontWeight: 900, letterSpacing: 0, lineHeight: 1.02, color: '#17142F' }}>
+                Entrar no Tessy<span style={{ color: '#2E7BFF' }}>.</span>
+              </h1>
+              <p style={{ marginTop: 12, fontSize: 16, color: '#666477', lineHeight: 1.55 }}>
+                Acesse sua conta para gerenciar conexões, produtos, eventos e contatos salvos.
+              </p>
+            </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <Field label="E-MAIL" type="email" value={email} onChange={setEmail} placeholder="voce@exemplo.com" autoComplete="email" />
-              <Field label="SENHA" type="password" value={password} onChange={setPassword} placeholder="••••••" autoComplete="current-password" />
+            <div style={{
+              background: '#fff',
+              borderRadius: 8,
+              border: '1px solid rgba(26,27,46,0.10)',
+              padding: 22,
+              boxShadow: '0 18px 42px rgba(23,20,47,0.08)',
+            }}>
+              {error && (
+                <div style={{
+                  marginBottom: 16,
+                  padding: '12px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(232,69,69,0.07)',
+                  border: '1px solid rgba(232,69,69,0.22)',
+                  color: 'var(--danger)',
+                  fontSize: 13,
+                  lineHeight: 1.4,
+                }}>
+                  {error}
+                </div>
+              )}
 
-              <button type="submit" disabled={isLoading} style={{
-                marginTop: 4, padding: '14px', borderRadius: 12, border: 'none',
-                background: 'linear-gradient(135deg, #5B6EF5 0%, #A855F7 100%)',
-                color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: 15, fontWeight: 700, opacity: isLoading ? 0.7 : 1,
-                boxShadow: '0 6px 20px rgba(91,110,245,0.28)',
-              }}>
-                {isLoading ? 'Entrando...' : 'Entrar'}
-              </button>
-            </form>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <Field label="E-mail" type="email" value={email} onChange={setEmail} placeholder="voce@exemplo.com" autoComplete="email" />
+                <Field label="Senha" type="password" value={password} onChange={setPassword} placeholder="Sua senha" autoComplete="current-password" />
+
+                <button type="submit" disabled={isLoading} style={{
+                  marginTop: 4,
+                  padding: '14px 18px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: '#2E7BFF',
+                  color: '#fff',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  fontSize: 15,
+                  fontWeight: 800,
+                  opacity: isLoading ? 0.7 : 1,
+                  boxShadow: '0 10px 24px rgba(46,123,255,0.24)',
+                }}>
+                  {isLoading ? 'Entrando...' : 'Entrar'}
+                </button>
+              </form>
+            </div>
+
+            <p style={{ fontSize: 14, color: '#666477', marginTop: 18 }}>
+              Novo no Tessy?{' '}
+              <Link to="/cadastro" style={{ color: '#2E7BFF', fontWeight: 800, textDecoration: 'none' }}>
+                Criar conta
+              </Link>
+            </p>
           </div>
-
-          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-2)', marginTop: 20 }}>
-            Novo no Tessy?{' '}
-            <Link to="/cadastro" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Criar conta</Link>
-          </p>
-        </div>
+        </section>
       </main>
     </div>
+  );
+}
+
+function AuthHeader({ actionLabel, actionTo }: { actionLabel: string; actionTo: string }) {
+  return (
+    <header style={{
+      padding: '16px clamp(20px, 5vw, 72px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderBottom: '1px solid rgba(26,27,46,0.08)',
+      background: 'rgba(251,250,253,0.92)',
+      backdropFilter: 'blur(14px)',
+    }}>
+      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+        <div style={{
+          width: 38,
+          height: 38,
+          borderRadius: 8,
+          background: '#17142F',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          fontWeight: 800,
+          fontSize: 18,
+        }}>T</div>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 19, letterSpacing: 0, lineHeight: 1, color: 'var(--ink)' }}>
+            Tessy<span style={{ color: '#2E7BFF' }}>.</span>
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 3 }}>
+            saúde + negócios
+          </div>
+        </div>
+      </Link>
+      <Link to={actionTo} style={{
+        padding: '11px 16px',
+        borderRadius: 8,
+        background: '#2E7BFF',
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 800,
+        textDecoration: 'none',
+        boxShadow: '0 10px 24px rgba(46,123,255,0.20)',
+      }}>
+        {actionLabel}
+      </Link>
+    </header>
   );
 }
 
@@ -100,22 +196,39 @@ function Field({ label, type = 'text', value, onChange, placeholder, autoComplet
   return (
     <div>
       <div style={{
-        fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
-        color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8,
+        fontSize: 13,
+        color: '#4F4D61',
+        fontWeight: 800,
+        marginBottom: 8,
       }}>
         {label}
       </div>
       <input
-        required type={type} value={value} onChange={e => onChange(e.target.value)}
-        placeholder={placeholder} autoComplete={autoComplete}
+        required
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
         style={{
-          width: '100%', padding: '12px 14px', borderRadius: 10,
-          background: 'var(--bg)', border: '1.5px solid var(--line)',
-          color: 'var(--ink)', fontSize: 14, outline: 'none',
-          transition: 'border-color 0.15s',
+          width: '100%',
+          padding: '13px 14px',
+          borderRadius: 8,
+          background: '#FBFAFD',
+          border: '1.5px solid rgba(26,27,46,0.12)',
+          color: '#17142F',
+          fontSize: 15,
+          outline: 'none',
+          transition: 'border-color 0.15s, box-shadow 0.15s',
         }}
-        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-        onBlur={e => e.target.style.borderColor = 'var(--line)'}
+        onFocus={e => {
+          e.target.style.borderColor = '#2E7BFF';
+          e.target.style.boxShadow = '0 0 0 3px rgba(46,123,255,0.10)';
+        }}
+        onBlur={e => {
+          e.target.style.borderColor = 'rgba(26,27,46,0.12)';
+          e.target.style.boxShadow = 'none';
+        }}
       />
     </div>
   );
