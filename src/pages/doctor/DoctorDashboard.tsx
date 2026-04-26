@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import type { NavItem } from '../../components/Layout';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import {
   CompanyMark, VerifiedDot, Mono, BannerCard, RowCard, Chip, ModalityBadge,
-  WaIcon, companyTint, categoryTint, buildWhatsappLink,
+  WaIcon,
 } from '../../components/ui';
+import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
 import type { Event, Product, Course } from '../../types';
 
 type Tab = 'home' | 'events' | 'products' | 'courses' | 'connect';
@@ -160,10 +161,10 @@ export default function DoctorDashboard() {
       {tab === 'products' && (
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Produtos<span style={{ color: '#2E7BFF' }}>.</span>
+            Parcerias com produtos<span style={{ color: '#2E7BFF' }}>.</span>
           </h1>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
-            Catálogo de produtos das empresas parceiras.
+            Conecte-se com startups e representantes que buscam médicos para apresentar produtos nas redes.
           </p>
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar produtos..." />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -449,12 +450,15 @@ function EventRow({ ev }: { ev: Event }) {
 function ProductCard({ product }: { product: Product }) {
   const [tint1, tint2] = categoryTint(product.category);
   const code = product.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  const waLink = buildWhatsappLink(product.companyWhatsapp, `Olá! Vi o produto "${product.name}" no Tessy e gostaria de mais informações.`);
-  const infoLink = buildWhatsappLink(product.companyWhatsapp, `Olá! Sou médico cadastrado no Tessy e gostaria de receber o catálogo / ficha técnica completa do produto "${product.name}". Pode me enviar?`);
+  const repMessage = `Olá! Vi o produto "${product.name}" no Tessy e gostaria de falar com o representante sobre uma possível parceria.`;
+  const creatorMessage = `Olá! Sou médico cadastrado no Tessy. Tenho interesse em divulgar o produto "${product.name}" no Instagram e gostaria de entender a proposta, briefing, condições e materiais disponíveis.`;
+  const waLink = buildWhatsappLink(product.companyWhatsapp, repMessage);
+  const creatorLink = buildWhatsappLink(product.companyWhatsapp, creatorMessage);
 
-  // Ação do "Solicitar info": prioriza WhatsApp; cai para website se não tiver WhatsApp
-  const requestInfoTarget = infoLink || product.website || '';
-  const canRequestInfo = !!requestInfoTarget;
+  // Prioriza conversa com representante. Se a empresa não cadastrou WhatsApp, cai para o site.
+  const repTarget = waLink || product.website || '';
+  const creatorTarget = creatorLink || product.website || '';
+  const canContactRep = !!repTarget;
 
   return (
     <BannerCard tint1={tint1} tint2={tint2} format={product.category}>
@@ -466,37 +470,51 @@ function ProductCard({ product }: { product: Product }) {
       <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>{product.name}</div>
       {product.website && <div><WebsiteLink url={product.website} /></div>}
       <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 6, lineHeight: 1.5 }}>{product.description}</div>
+      <div style={{
+        marginTop: 12,
+        padding: '10px 12px',
+        borderRadius: 12,
+        background: 'rgba(46,123,255,0.07)',
+        border: '1px solid rgba(46,123,255,0.16)',
+      }}>
+        <Mono style={{ display: 'block', fontSize: 9, color: '#2E7BFF', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 5 }}>
+          Proposta para médicos
+        </Mono>
+        <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+          {product.availableFor || 'Contato com representante para briefing, amostras e condições de divulgação.'}
+        </div>
+      </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' }}>Disponível para</Mono>
-        <span style={{ fontSize: 12, color: 'var(--ink-2)' }}>{product.availableFor}</span>
+        <Chip color="#2E7BFF">Instagram</Chip>
+        <Chip color="#5F2C82">Representante</Chip>
         {product.price && <Chip color="#1EA97C">{product.price}</Chip>}
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
         <button
           type="button"
-          disabled={!canRequestInfo}
+          disabled={!canContactRep}
           onClick={() => {
-            if (!canRequestInfo) return;
-            window.open(requestInfoTarget, '_blank', 'noopener,noreferrer');
+            if (!canContactRep) return;
+            window.open(repTarget, '_blank', 'noopener,noreferrer');
           }}
           style={{
-            flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
-            background: canRequestInfo ? '#2E7BFF' : 'var(--chip)',
-            color: canRequestInfo ? '#fff' : 'var(--muted)',
+            flex: '1 1 160px', padding: '11px 10px', borderRadius: 12, border: 'none',
+            background: canContactRep ? '#2E7BFF' : 'var(--chip)',
+            color: canContactRep ? '#fff' : 'var(--muted)',
             fontSize: 13, fontWeight: 700,
-            cursor: canRequestInfo ? 'pointer' : 'not-allowed',
-            opacity: canRequestInfo ? 1 : 0.7,
+            cursor: canContactRep ? 'pointer' : 'not-allowed',
+            opacity: canContactRep ? 1 : 0.7,
           }}>
-          Solicitar info
+          Falar com representante
         </button>
-        {waLink && (
-          <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '11px 0', borderRadius: 12, textDecoration: 'none',
+        {creatorTarget && (
+          <a href={creatorTarget} target="_blank" rel="noopener noreferrer" style={{
+            flex: '1 1 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '11px 10px', borderRadius: 12, textDecoration: 'none',
             background: 'rgba(37,211,102,0.1)', color: '#25D366',
             border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 700,
           }}>
-            <WaIcon size={14} /> WhatsApp
+            <WaIcon size={14} /> Quero divulgar
           </a>
         )}
       </div>

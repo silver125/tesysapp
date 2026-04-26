@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import Layout from '../../components/Layout';
 import type { NavItem } from '../../components/Layout';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import {
   CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
-  categoryTint, companyTint, buildWhatsappLink,
 } from '../../components/ui';
+import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
 import type { Event, Product, Course, CourseModality } from '../../types';
 
 type Tab = 'home' | 'events' | 'create' | 'products' | 'courses';
@@ -362,7 +362,14 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
   // Event state
   const [ev, setEv] = useState({ title: '', description: '', date: '', time: '09:00', location: '', category: EVENT_CATS[0], maxParticipants: '100', website: '' });
   // Product state
-  const [pr, setPr] = useState({ name: '', description: '', category: PRODUCT_CATS[0], availableFor: 'Médicos credenciados', price: 'Sob consulta', website: '' });
+  const [pr, setPr] = useState({
+    name: '',
+    description: '',
+    category: PRODUCT_CATS[0],
+    availableFor: 'Parceria para médicos divulgarem no Instagram. Representante envia briefing, materiais e condições.',
+    price: 'Parceria sob consulta',
+    website: '',
+  });
   // Course state
   const [co, setCo] = useState({ title: '', description: '', instructor: '', category: COURSE_CATS[0], modality: 'online' as CourseModality, duration: '', price: '', website: '' });
 
@@ -534,15 +541,18 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {kind === 'product' && step === 1 && (
         <div>
           <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
-            Sobre o produto<span style={{ color: '#2E7BFF' }}>.</span>
+            Produto e parceria<span style={{ color: '#2E7BFF' }}>.</span>
           </h2>
+          <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, marginBottom: 16 }}>
+            Pense como startup: explique por que um médico chamaria o representante e como funcionaria a divulgação no Instagram.
+          </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <WField label="NOME" value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder="Ex: CardioPlus 10mg" />
-            <WField label="DESCRIÇÃO" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="Descreva o produto..." as="textarea" />
+            <WField label="NOME DO PRODUTO" value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder="Ex: SkinBiome Serum" />
+            <WField label="PITCH PARA O MÉDICO" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="O que é o produto, para qual público e qual diferencial clínico/comercial." as="textarea" />
             <WField label="CATEGORIA" value={pr.category} onChange={v => setPr(p => ({ ...p, category: v }))} as="select" options={PRODUCT_CATS} />
-            <WField label="DISPONÍVEL PARA" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Médicos credenciados" />
-            <WField label="PREÇO" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Sob consulta" />
-            <WField label="WEBSITE (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.seusite.com.br" type="url" />
+            <WField label="PROPOSTA DE DIVULGAÇÃO" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Ex: Enviamos amostra, briefing, cupom personalizado e comissão por venda." as="textarea" />
+            <WField label="CONDIÇÕES / COMISSÃO" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Ex: Comissão sob consulta, permuta, fee fixo..." />
+            <WField label="LANDING PAGE OU MÍDIA KIT (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.seusite.com.br/parcerias" type="url" />
           </div>
         </div>
       )}

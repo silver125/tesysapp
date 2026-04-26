@@ -118,3 +118,40 @@ select option { background: var(--card); color: var(--ink); }
   transform: translateY(-4px);
   box-shadow: 0 24px 60px rgba(15,18,30,0.18);
 }
+
+@media (max-width: 900px) {
+  .tessy-hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .tessy-hero-grid > div:last-child {
+    min-height: 360px !important;
+    order: -1;
+  }
+
+  .tessy-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .tessy-event-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .tessy-search-box {
+    grid-template-columns: 1fr !important;
+  }
+
+  .tessy-search-box a {
+    text-align: center;
+  }
+
+  .tessy-cta-band {
+    grid-template-columns: 1fr !important;
+  }
+
+  .tessy-cta-band a {
+    width: 100%;
+  }
+}

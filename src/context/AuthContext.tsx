@@ -1,46 +1,9 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { User, UserRole, Event, Product, Course } from '../types';
-import { supabase } from '../lib/supabase';
-
-// ── Tipo do contexto ──────────────────────────────────────────────────────────
-interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  authReady: boolean;
-  login: (email: string, password: string) => Promise<User>;
-  register: (input: RegisterInput) => Promise<User>;
-  logout: () => Promise<void>;
-  updateProfile: (data: { name?: string; company?: string; whatsapp?: string }) => Promise<void>;
-  events: Event[];
-  products: Product[];
-  courses: Course[];
-  addEvent: (event: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => Promise<void>;
-  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
-  addCourse: (course: Omit<Course, 'id' | 'createdAt'>) => Promise<void>;
-  deleteEvent: (id: string) => Promise<void>;
-  deleteProduct: (id: string) => Promise<void>;
-  deleteCourse: (id: string) => Promise<void>;
-  updateEvent: (id: string, patch: Partial<Omit<Event, 'id' | 'createdAt' | 'companyId' | 'companyName' | 'registeredCount'>>) => Promise<void>;
-  refreshData: () => Promise<void>;
-  registerInterest: (eventId: string) => Promise<void>;
-  registeredEventIds: Set<string>;
-}
-
-interface RegisterInput {
-  name: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  specialty?: string;
-  crm?: string;
-  crmState?: string;
-  company?: string;
-  whatsapp?: string;
-  bio?: string;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
+import { assertSupabaseConfigured, isSupabaseConfigured, supabase } from '../lib/supabase';
+import { AuthContext } from './authContextValue';
+import type { AuthContextType, RegisterInput } from './authContextValue';
 
 // Helper: timeout para evitar travas infinitas em chamadas Supabase
 // Aceita PromiseLike para suportar o query builder do supabase-js (thenable)
@@ -145,20 +108,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [courses,  setCourses]  = useState<Course[]>([]);
   const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
+  const userId = user?.id;
 
   // Carrega IDs de eventos em que o usuário já clicou "Tenho interesse" (localStorage)
   useEffect(() => {
-    if (!user) { setRegisteredEventIds(new Set()); return; }
+    if (!userId) { setRegisteredEventIds(new Set()); return; }
     try {
-      const stored = localStorage.getItem(`tessy-registered-${user.id}`);
+      const stored = localStorage.getItem(`tessy-registered-${userId}`);
       if (stored) setRegisteredEventIds(new Set(JSON.parse(stored)));
     } catch {
       /* ignore */
     }
-  }, [user?.id]);
+  }, [userId]);
 
   // Carrega eventos/produtos/cursos públicos
   const refreshData = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
     const [evRes, prRes, coRes] = await Promise.all([
       supabase.from('events').select('*').order('created_at', { ascending: false }),
       supabase.from('products').select('*').order('created_at', { ascending: false }),
@@ -187,6 +152,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Inicializa sessão e ouve mudanças de auth
   useEffect(() => {
     refreshData();
+
+    if (!isSupabaseConfigured) {
+      setAuthReady(true);
+      return;
+    }
 
     // Timeout de segurança: se Supabase não responder em 5s, libera o app
     const timeout = setTimeout(() => setAuthReady(true), 5000);
@@ -221,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Login ──
   const login = async (email: string, password: string): Promise<User> => {
+    assertSupabaseConfigured();
     setIsLoading(true);
     try {
       const { data, error } = await withTimeout(
@@ -242,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Cadastro ──
   const register = async (input: RegisterInput): Promise<User> => {
+    assertSupabaseConfigured();
     isRegistering.current = true;
     setIsLoading(true);
     try {
@@ -280,16 +252,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         supabase.from('profiles').upsert({
           id:           uid,
           name:         input.name.trim(),
-          first_name:   input.name.trim(),
-          last_name:    '',
-          email:        input.email,
           role:         input.role,
           specialty:    input.specialty ?? null,
           crm:          input.crm ?? null,
           crm_state:    input.crmState ?? null,
           company:      input.company ?? null,
-          company_name: input.company ?? null,
           whatsapp:     input.whatsapp ?? null,
+          bio:          input.bio ?? null,
         }, { onConflict: 'id' }),
         12000,
         'Salvar perfil',
@@ -320,6 +289,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Logout ──
   const logout = async () => {
+    assertSupabaseConfigured();
     await supabase.auth.signOut();
     setUser(null);
   };
@@ -327,6 +297,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Atualizar perfil ──
   const updateProfile = async (data: { name?: string; company?: string; whatsapp?: string }) => {
     if (!user) return;
+    assertSupabaseConfigured();
     const updates: Record<string, string | undefined> = {};
     if (data.name)      { updates.name    = data.name;    }
     if (data.company)   { updates.company = data.company; updates.name = data.company; }
@@ -338,6 +309,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Eventos ──
   const addEvent = async (data: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
+    assertSupabaseConfigured();
     const { error } = await withTimeout(
       supabase.from('events').insert({
         title:            data.title,
@@ -361,12 +333,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteEvent = async (id: string) => {
+    assertSupabaseConfigured();
     await supabase.from('events').delete().eq('id', id);
     setEvents(prev => prev.filter(e => e.id !== id));
   };
 
   // ── Atualizar evento (título, data, hora, local, vagas, etc.) ──
   const updateEvent: AuthContextType['updateEvent'] = async (id, patch) => {
+    assertSupabaseConfigured();
     // Mapeia camelCase do app → snake_case do banco
     const dbPatch: Record<string, unknown> = {};
     if (patch.title           !== undefined) dbPatch.title             = patch.title;
@@ -389,6 +363,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Registrar interesse em evento (incrementa registered_count) ──
   const registerInterest = async (eventId: string) => {
     if (!user) throw new Error('Você precisa estar logado.');
+    assertSupabaseConfigured();
     if (registeredEventIds.has(eventId)) return; // já inscrito
 
     // Busca contagem atual
@@ -423,6 +398,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Produtos ──
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
+    assertSupabaseConfigured();
     const { error } = await withTimeout(
       supabase.from('products').insert({
         name:             data.name,
@@ -443,12 +419,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteProduct = async (id: string) => {
+    assertSupabaseConfigured();
     await supabase.from('products').delete().eq('id', id);
     setProducts(prev => prev.filter(p => p.id !== id));
   };
 
   // ── Cursos ──
   const addCourse = async (data: Omit<Course, 'id' | 'createdAt'>) => {
+    assertSupabaseConfigured();
     const { error } = await withTimeout(
       supabase.from('courses').insert({
         title:            data.title,
@@ -471,6 +449,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteCourse = async (id: string) => {
+    assertSupabaseConfigured();
     await supabase.from('courses').delete().eq('id', id);
     setCourses(prev => prev.filter(c => c.id !== id));
   };
@@ -489,17 +468,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
-  return ctx;
-}
-
-export function buildWhatsappLink(phone: string | undefined, message?: string) {
-  if (!phone) return '';
-  const clean = phone.replace(/\D/g, '');
-  const msg = message ? `?text=${encodeURIComponent(message)}` : '';
-  return `https://wa.me/${clean}${msg}`;
 }

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { CompanyMark, companyTint } from './ui';
+import { useAuth } from '../context/useAuth';
+import { CompanyMark } from './ui';
+import { companyTint } from '../lib/uiHelpers';
 
 export interface NavItem {
   label: string;
