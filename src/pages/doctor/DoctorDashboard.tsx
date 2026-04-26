@@ -220,80 +220,197 @@ export default function DoctorDashboard() {
 
       {/* ── CONNECT (WhatsApp matches) ── */}
       {tab === 'connect' && (
-        <ConnectView events={events} products={products} courses={courses} />
+        <ConnectView
+          events={events}
+          products={products}
+          courses={courses}
+          onOpenProducts={company => { setTab('products'); setSearch(company); }}
+          onOpenEvents={company => { setTab('events'); setSearch(company); }}
+        />
       )}
     </Layout>
   );
 }
 
 /* ─── Connect view ─── */
-function ConnectView({ events, products, courses }: { events: Event[]; products: Product[]; courses: Course[] }) {
-  // Unique companies with whatsapp
-  const companyMap = new Map<string, { name: string; whatsapp: string; events: number; products: number; courses: number }>();
-  events.forEach(e => {
-    if (e.companyWhatsapp) {
-      const ex = companyMap.get(e.companyId) ?? { name: e.companyName, whatsapp: e.companyWhatsapp, events: 0, products: 0, courses: 0 };
-      companyMap.set(e.companyId, { ...ex, events: ex.events + 1 });
-    }
-  });
-  products.forEach(p => {
-    if (p.companyWhatsapp) {
-      const ex = companyMap.get(p.companyId) ?? { name: p.companyName, whatsapp: p.companyWhatsapp, events: 0, products: 0, courses: 0 };
-      companyMap.set(p.companyId, { ...ex, products: ex.products + 1 });
-    }
-  });
-  courses.forEach(c => {
-    if (c.companyWhatsapp) {
-      const ex = companyMap.get(c.companyId) ?? { name: c.companyName, whatsapp: c.companyWhatsapp, events: 0, products: 0, courses: 0 };
-      companyMap.set(c.companyId, { ...ex, courses: ex.courses + 1 });
+type CompanyMatch = {
+  id: string;
+  name: string;
+  whatsapp?: string;
+  products: Product[];
+  events: Event[];
+  courses: Course[];
+};
+
+function ConnectView({
+  events,
+  products,
+  courses,
+  onOpenProducts,
+  onOpenEvents,
+}: {
+  events: Event[];
+  products: Product[];
+  courses: Course[];
+  onOpenProducts: (company: string) => void;
+  onOpenEvents: (company: string) => void;
+}) {
+  const [saved, setSaved] = useState<Set<string>>(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('tessy-saved-companies') ?? '[]'));
+    } catch {
+      return new Set();
     }
   });
 
-  const companies = [...companyMap.entries()];
+  const companyMap = new Map<string, CompanyMatch>();
+  const ensureCompany = (id: string, name: string, whatsapp?: string) => {
+    const ex = companyMap.get(id) ?? { id, name, whatsapp, products: [], events: [], courses: [] };
+    companyMap.set(id, { ...ex, whatsapp: ex.whatsapp ?? whatsapp });
+    return companyMap.get(id)!;
+  };
+
+  events.forEach(e => ensureCompany(e.companyId, e.companyName, e.companyWhatsapp).events.push(e));
+  products.forEach(p => ensureCompany(p.companyId, p.companyName, p.companyWhatsapp).products.push(p));
+  courses.forEach(c => ensureCompany(c.companyId, c.companyName, c.companyWhatsapp).courses.push(c));
+
+  const companies = [...companyMap.values()].sort((a, b) =>
+    (b.products.length * 3 + b.events.length * 2 + b.courses.length) -
+    (a.products.length * 3 + a.events.length * 2 + a.courses.length),
+  );
+
+  function toggleSaved(id: string) {
+    setSaved(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      localStorage.setItem('tessy-saved-companies', JSON.stringify([...next]));
+      return next;
+    });
+  }
 
   return (
     <div>
-      <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
-        Conectar<span style={{ color: '#2E7BFF' }}>.</span>
-      </h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 20 }}>
-        Fale direto com as empresas via WhatsApp.
-      </p>
+      <div style={{
+        padding: '18px 16px',
+        borderRadius: 18,
+        background: 'linear-gradient(135deg, rgba(46,123,255,0.12) 0%, rgba(30,169,124,0.10) 100%)',
+        border: '1px solid rgba(46,123,255,0.16)',
+        marginBottom: 18,
+      }}>
+        <Mono style={{ fontSize: 10, color: '#2E7BFF', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+          Ponte médico-empresa
+        </Mono>
+        <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, marginTop: 8 }}>
+          Comunidade prática<span style={{ color: '#2E7BFF' }}>.</span>
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 8, lineHeight: 1.5 }}>
+          Encontre empresas com produtos, eventos e treinamentos relevantes. Salve contato ou fale direto com o representante.
+        </p>
+      </div>
 
-      {companies.length === 0 && <Empty text="Nenhuma empresa com WhatsApp cadastrado." />}
+      {companies.length === 0 && <Empty text="Nenhuma empresa publicada ainda." />}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {companies.map(([id, co]) => {
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {companies.map(co => {
           const tint = companyTint(co.name);
           const code = co.name.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
-          const waLink = buildWhatsappLink(co.whatsapp, `Olá ${co.name}, vim pelo Tessy e gostaria de saber mais sobre seus produtos e eventos.`);
+          const topProduct = co.products[0];
+          const topEvent = co.events[0];
+          const waLink = buildWhatsappLink(
+            co.whatsapp,
+            `Olá ${co.name}, sou médico no Tessy e gostaria de falar com um representante sobre produtos, eventos e possíveis parcerias.`,
+          );
+          const isSaved = saved.has(co.id);
+
           return (
-            <div key={id} style={{
-              padding: 16, background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)',
+            <div key={co.id} style={{
+              padding: 16,
+              background: 'var(--card)',
+              borderRadius: 18,
+              border: '1px solid var(--line)',
+              boxShadow: '0 2px 10px rgba(90,80,130,0.06)',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <CompanyMark code={code} tint={tint} size={48} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <CompanyMark code={code} tint={tint} size={50} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>{co.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>{co.name}</span>
                     <VerifiedDot />
+                    {co.whatsapp && <Chip color="#25D366">WhatsApp direto</Chip>}
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                    {co.events > 0 && <Chip color="#2E7BFF">{co.events} evento{co.events > 1 ? 's' : ''}</Chip>}
-                    {co.products > 0 && <Chip color="#1EA97C">{co.products} produto{co.products > 1 ? 's' : ''}</Chip>}
-                    {co.courses > 0 && <Chip color="#5F2C82">{co.courses} curso{co.courses > 1 ? 's' : ''}</Chip>}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                    {co.products.length > 0 && <Chip color="#1EA97C">{co.products.length} produto{co.products.length > 1 ? 's' : ''}</Chip>}
+                    {co.events.length > 0 && <Chip color="#2E7BFF">{co.events.length} evento{co.events.length > 1 ? 's' : ''}</Chip>}
+                    {co.courses.length > 0 && <Chip color="#5F2C82">{co.courses.length} treinamento{co.courses.length > 1 ? 's' : ''}</Chip>}
                   </div>
                 </div>
               </div>
-              <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
-                marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                padding: '12px', borderRadius: 12,
-                background: 'rgba(37,211,102,0.1)', color: '#25D366',
-                border: '1px solid rgba(37,211,102,0.3)',
-                textDecoration: 'none', fontWeight: 700, fontSize: 14,
-              }}>
-                <WaIcon size={18} /> Falar no WhatsApp
-              </a>
+
+              {(topProduct || topEvent) && (
+                <div style={{
+                  marginTop: 14,
+                  padding: '12px 12px',
+                  borderRadius: 14,
+                  background: 'var(--bg)',
+                  border: '1px solid var(--line)',
+                }}>
+                  <Mono style={{ display: 'block', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>
+                    Melhor oportunidade agora
+                  </Mono>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.25 }}>
+                    {topProduct?.name ?? topEvent?.title}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.45 }}>
+                    {topProduct
+                      ? topProduct.availableFor || topProduct.description
+                      : `${topEvent?.category} · ${topEvent?.location} · ${topEvent?.time}`}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 14 }}>
+                {waLink && (
+                  <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                    padding: '11px 8px', borderRadius: 12,
+                    background: 'rgba(37,211,102,0.12)', color: '#25D366',
+                    border: '1px solid rgba(37,211,102,0.32)',
+                    textDecoration: 'none', fontWeight: 700, fontSize: 13,
+                  }}>
+                    <WaIcon size={15} /> WhatsApp
+                  </a>
+                )}
+                <button onClick={() => toggleSaved(co.id)} style={{
+                  padding: '11px 8px', borderRadius: 12,
+                  background: isSaved ? 'rgba(46,123,255,0.10)' : 'var(--chip)',
+                  color: isSaved ? '#2E7BFF' : 'var(--ink-2)',
+                  border: `1px solid ${isSaved ? 'rgba(46,123,255,0.28)' : 'var(--line)'}`,
+                  fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                }}>
+                  {isSaved ? 'Contato salvo' : 'Salvar contato'}
+                </button>
+                <button onClick={() => onOpenProducts(co.name)} disabled={co.products.length === 0} style={{
+                  padding: '11px 8px', borderRadius: 12,
+                  background: co.products.length > 0 ? '#2E7BFF' : 'var(--chip)',
+                  color: co.products.length > 0 ? '#fff' : 'var(--muted)',
+                  border: 'none',
+                  fontWeight: 700, fontSize: 13,
+                  cursor: co.products.length > 0 ? 'pointer' : 'not-allowed',
+                }}>
+                  Ver produtos
+                </button>
+                <button onClick={() => onOpenEvents(co.name)} disabled={co.events.length === 0} style={{
+                  padding: '11px 8px', borderRadius: 12,
+                  background: co.events.length > 0 ? '#17142F' : 'var(--chip)',
+                  color: co.events.length > 0 ? '#fff' : 'var(--muted)',
+                  border: 'none',
+                  fontWeight: 700, fontSize: 13,
+                  cursor: co.events.length > 0 ? 'pointer' : 'not-allowed',
+                }}>
+                  Ver eventos
+                </button>
+              </div>
             </div>
           );
         })}
