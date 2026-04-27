@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { User, UserRole, Event, Product, Course, Lead, LeadInput } from '../types';
-import { assertSupabaseConfigured, isSupabaseConfigured, supabase } from '../lib/supabase';
+import { assertSupabaseConfigured, createSessionClient, isSupabaseConfigured, supabase } from '../lib/supabase';
 import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
 
@@ -241,20 +241,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthReady(true);
     });
 
+    let cancelled = false;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         // Durante o cadastro, ignorar — o register() vai setar o user correto
         if (isRegistering.current) return;
-        if (session?.user) {
-          const u = await fetchProfile(session.user.id, session.user.email ?? '');
-          if (u) setUser(u);
-        } else {
-          setUser(null);
-        }
+        setTimeout(async () => {
+          if (cancelled) return;
+          if (session?.user) {
+            const u = await fetchProfile(session.user.id, session.user.email ?? '');
+            if (!cancelled && u) setUser(u);
+          } else {
+            setUser(null);
+          }
+        }, 0);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [refreshData]);
 
   // ── Login ──
@@ -314,10 +321,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const uid = authData.user.id;
+      const profileClient = createSessionClient(authData.session.access_token);
 
-      // 2. Salva perfil — upsert para sobrescrever caso trigger já tenha criado
+      // 2. Salva perfil com um client sem storage para evitar conflito no lock do Auth.
       const { error: profileError } = await withTimeout(
-        supabase.from('profiles').upsert({
+        profileClient.from('profiles').upsert({
           id:           uid,
           name:         input.name.trim(),
           role:         input.role,

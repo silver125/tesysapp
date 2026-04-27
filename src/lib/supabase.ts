@@ -19,3 +19,20 @@ export const supabase = createClient(
   isSupabaseConfigured ? url : 'https://placeholder.supabase.co',
   isSupabaseConfigured ? key : 'placeholder-anon-key',
 );
+
+export function createSessionClient(accessToken: string) {
+  assertSupabaseConfigured();
+
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+}
