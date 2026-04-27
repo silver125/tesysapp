@@ -161,12 +161,12 @@ export default function DoctorDashboard() {
       {tab === 'products' && (
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Parcerias com produtos<span style={{ color: '#2E7BFF' }}>.</span>
+            Produtos e representantes<span style={{ color: '#2E7BFF' }}>.</span>
           </h1>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
-            Conecte-se com startups e representantes que buscam médicos para apresentar produtos nas redes.
+            Empresas e startups com contato comercial direto para médicos.
           </p>
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar produtos..." />
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar empresa, produto ou representante..." />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filtProducts.length === 0
               ? <Empty text="Nenhum produto encontrado." />
@@ -607,7 +607,7 @@ function EventRow({ ev }: { ev: Event }) {
 function ProductCard({ product }: { product: Product }) {
   const { addLead } = useAuth();
   const [leadSent, setLeadSent] = useState(false);
-  const [tint1, tint2] = categoryTint(product.category);
+  const [tint1] = categoryTint(product.category);
   const code = product.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const repMessage = `Olá! Vi o produto "${product.name}" no Tessy e gostaria de falar com o representante sobre uma possível parceria.`;
   const creatorMessage = `Olá! Sou médico cadastrado no Tessy. Tenho interesse em divulgar o produto "${product.name}" no Instagram e gostaria de entender a proposta, briefing, condições e materiais disponíveis.`;
@@ -637,76 +637,105 @@ function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <BannerCard tint1={tint1} tint2={tint2} format={product.category}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <CompanyMark code={code} tint={companyTint(product.companyName)} size={22} radius={6} />
-        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{product.companyName}</span>
-        <VerifiedDot size={11} />
-      </div>
-      <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>{product.name}</div>
-      {product.website && <div><WebsiteLink url={product.website} /></div>}
-      <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 6, lineHeight: 1.5 }}>{product.description}</div>
-      <div style={{
-        marginTop: 12,
-        padding: '10px 12px',
-        borderRadius: 12,
-        background: 'rgba(46,123,255,0.07)',
-        border: '1px solid rgba(46,123,255,0.16)',
-      }}>
-        <Mono style={{ display: 'block', fontSize: 9, color: '#2E7BFF', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 5 }}>
-          Proposta para médicos
-        </Mono>
-        <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-          {product.availableFor || 'Contato com representante para briefing, amostras e condições de divulgação.'}
+    <div style={{
+      background: 'var(--card)',
+      borderRadius: 18,
+      border: '1px solid var(--line)',
+      boxShadow: '0 2px 12px rgba(90,80,130,0.06)',
+      overflow: 'hidden',
+    }}>
+      <div style={{ height: 5, background: tint1 }} />
+      <div style={{ padding: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <CompanyMark code={code} tint={companyTint(product.companyName)} size={44} radius={10} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 14, color: 'var(--ink-2)', fontWeight: 700 }}>{product.companyName}</span>
+              <VerifiedDot size={12} />
+              {product.companyWhatsapp && <Chip color="#25D366">Representante direto</Chip>}
+            </div>
+            <h2 style={{ marginTop: 7, fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--ink)', lineHeight: 1.1 }}>
+              {product.name}
+            </h2>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 7, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Chip color={tint1}>{product.category}</Chip>
+          <Chip color="#1EA97C">Amostra</Chip>
+          {product.price && <Chip color="#5F2C82">{product.price}</Chip>}
+        </div>
+
+        <div style={{ marginTop: 14 }}>
+          <Mono style={{ display: 'block', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>
+            Produto
+          </Mono>
+          <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.45, fontWeight: 600 }}>
+            {product.description}
+          </div>
+        </div>
+
+        <div style={{
+          marginTop: 13,
+          padding: '11px 12px',
+          borderRadius: 12,
+          background: 'rgba(46,123,255,0.06)',
+          border: '1px solid rgba(46,123,255,0.16)',
+        }}>
+          <Mono style={{ display: 'block', fontSize: 9, color: '#2E7BFF', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 5 }}>
+            Próximo passo
+          </Mono>
+          <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+            {product.availableFor || 'Peça amostra, materiais e fale com o representante da empresa.'}
+          </div>
+        </div>
+
+        {product.website && <div style={{ marginTop: 8 }}><WebsiteLink url={product.website} /></div>}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 14 }}>
+          <button
+            type="button"
+            disabled={!canContactRep}
+            onClick={() => {
+              if (!canContactRep) return;
+              void sendProductLead('representative_contact');
+              window.open(repTarget, '_blank', 'noopener,noreferrer');
+            }}
+            style={{
+              padding: '12px 10px', borderRadius: 12, border: 'none',
+              background: canContactRep ? '#2E7BFF' : 'var(--chip)',
+              color: canContactRep ? '#fff' : 'var(--muted)',
+              fontSize: 13, fontWeight: 800,
+              cursor: canContactRep ? 'pointer' : 'not-allowed',
+              opacity: canContactRep ? 1 : 0.7,
+            }}>
+            {leadSent ? 'Interesse enviado' : 'Falar com representante'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { void sendProductLead('sample_request'); }}
+            style={{
+              padding: '12px 10px', borderRadius: 12,
+              background: 'rgba(46,123,255,0.08)', color: '#2E7BFF',
+              border: '1px solid rgba(46,123,255,0.22)',
+              fontSize: 13, fontWeight: 800, cursor: 'pointer',
+            }}>
+            Pedir amostra
+          </button>
+          {creatorTarget && (
+            <a href={creatorTarget} target="_blank" rel="noopener noreferrer" onClick={() => { void sendProductLead('instagram_partnership'); }} style={{
+              gridColumn: '1 / -1',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '12px 10px', borderRadius: 12, textDecoration: 'none',
+              background: 'rgba(37,211,102,0.1)', color: '#25D366',
+              border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 800,
+            }}>
+              <WaIcon size={14} /> Conversar sobre parceria
+            </a>
+          )}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Chip color="#2E7BFF">Instagram</Chip>
-        <Chip color="#5F2C82">Representante</Chip>
-        {product.price && <Chip color="#1EA97C">{product.price}</Chip>}
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          disabled={!canContactRep}
-          onClick={() => {
-            if (!canContactRep) return;
-            void sendProductLead('representative_contact');
-            window.open(repTarget, '_blank', 'noopener,noreferrer');
-          }}
-          style={{
-            flex: '1 1 160px', padding: '11px 10px', borderRadius: 12, border: 'none',
-            background: canContactRep ? '#2E7BFF' : 'var(--chip)',
-            color: canContactRep ? '#fff' : 'var(--muted)',
-            fontSize: 13, fontWeight: 700,
-            cursor: canContactRep ? 'pointer' : 'not-allowed',
-            opacity: canContactRep ? 1 : 0.7,
-          }}>
-          {leadSent ? 'Lead enviado' : 'Falar com representante'}
-        </button>
-        <button
-          type="button"
-          onClick={() => { void sendProductLead('sample_request'); }}
-          style={{
-            flex: '1 1 160px', padding: '11px 10px', borderRadius: 12,
-            background: 'rgba(46,123,255,0.08)', color: '#2E7BFF',
-            border: '1px solid rgba(46,123,255,0.22)',
-            fontSize: 13, fontWeight: 700, cursor: 'pointer',
-          }}>
-          Quero amostra
-        </button>
-        {creatorTarget && (
-          <a href={creatorTarget} target="_blank" rel="noopener noreferrer" onClick={() => { void sendProductLead('instagram_partnership'); }} style={{
-            flex: '1 1 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '11px 10px', borderRadius: 12, textDecoration: 'none',
-            background: 'rgba(37,211,102,0.1)', color: '#25D366',
-            border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 700,
-          }}>
-            <WaIcon size={14} /> Quero divulgar
-          </a>
-        )}
-      </div>
-    </BannerCard>
+    </div>
   );
 }
 

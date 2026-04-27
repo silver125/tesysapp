@@ -410,7 +410,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     name: '',
     description: '',
     category: PRODUCT_CATS[0],
-    availableFor: 'Parceria para médicos divulgarem no Instagram. Representante envia briefing, materiais e condições.',
+    availableFor: 'Representante envia amostra, materiais e condições comerciais para médicos interessados.',
     price: 'Parceria sob consulta',
     website: '',
   });
@@ -521,7 +521,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             {(['event', 'product', 'course'] as const).map(k => {
               const cfg = {
                 event:   { icon: '📅', title: 'Evento', desc: 'Congresso, workshop, webinar' },
-                product: { icon: '💊', title: 'Produto', desc: 'Medicamento, solução, dispositivo' },
+                product: { icon: '💊', title: 'Produto', desc: 'Produto, amostra, representante' },
                 course:  { icon: '🎓', title: 'Curso', desc: 'Para médicos professores' },
               }[k];
               return (
@@ -585,18 +585,18 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {kind === 'product' && step === 1 && (
         <div>
           <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
-            Produto e parceria<span style={{ color: '#2E7BFF' }}>.</span>
+            Produto e representante<span style={{ color: '#2E7BFF' }}>.</span>
           </h2>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, marginBottom: 16 }}>
-            Pense como startup: explique por que um médico chamaria o representante e como funcionaria a divulgação no Instagram.
+            Publique uma oportunidade clara para o médico chamar o representante.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <WField label="NOME DO PRODUTO" value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder="Ex: SkinBiome Serum" />
-            <WField label="PITCH PARA O MÉDICO" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="O que é o produto, para qual público e qual diferencial clínico/comercial." as="textarea" />
+            <WField label="RESUMO CLÍNICO / COMERCIAL" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="O que é, para quem é e por que vale uma conversa." as="textarea" />
             <WField label="CATEGORIA" value={pr.category} onChange={v => setPr(p => ({ ...p, category: v }))} as="select" options={PRODUCT_CATS} />
-            <WField label="PROPOSTA DE DIVULGAÇÃO" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Ex: Enviamos amostra, briefing, cupom personalizado e comissão por venda." as="textarea" />
-            <WField label="CONDIÇÕES / COMISSÃO" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Ex: Comissão sob consulta, permuta, fee fixo..." />
-            <WField label="LANDING PAGE OU MÍDIA KIT (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.seusite.com.br/parcerias" type="url" />
+            <WField label="PRÓXIMO PASSO PARA O MÉDICO" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Ex: Solicitar amostra, falar com representante, receber material científico." as="textarea" />
+            <WField label="CONDIÇÕES" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Ex: Amostra disponível, sob consulta, parceria regional..." />
+            <WField label="SITE OU MATERIAL (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.empresa.com.br/produto" type="url" />
           </div>
         </div>
       )}
@@ -888,11 +888,29 @@ function ProductCardCompany({ product, onDelete }: { product: Product; onDelete:
       <div style={{ height: 6, background: `linear-gradient(90deg, ${tint1}, ${tint2})` }} />
       <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <Chip color={tint1}>{product.category}</Chip>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <Chip color={tint1}>{product.category}</Chip>
+            <Chip color="#25D366">Representante</Chip>
+          </div>
           <div style={{ fontSize: 15, fontWeight: 700, marginTop: 8, color: 'var(--ink)' }}>{product.name}</div>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3, lineHeight: 1.4 }}>{product.description}</div>
-          <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+          {product.availableFor && (
+            <div style={{
+              marginTop: 9,
+              padding: '9px 10px',
+              borderRadius: 10,
+              background: 'rgba(46,123,255,0.06)',
+              border: '1px solid rgba(46,123,255,0.14)',
+              color: 'var(--ink-2)',
+              fontSize: 12,
+              lineHeight: 1.4,
+            }}>
+              {product.availableFor}
+            </div>
+          )}
+          <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {product.price && <Chip color="#1EA97C">{product.price}</Chip>}
+            {product.website && <Chip color="#5F2C82">Material</Chip>}
           </div>
         </div>
         <button onClick={onDelete} style={{
