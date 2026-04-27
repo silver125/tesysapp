@@ -20,11 +20,13 @@ ALTER TABLE IF EXISTS public.courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.opportunities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.reports ENABLE ROW LEVEL SECURITY;
 
 -- Remove policies públicas genéricas que podem ter sido criadas no MVP.
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.applications;
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.opportunities;
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.reviews;
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.reports;
 
 -- Se existir outra tabela pública criada no MVP, mantenha RLS ligada aqui também.
 -- ALTER TABLE IF EXISTS public.<nome_da_tabela> ENABLE ROW LEVEL SECURITY;
@@ -194,6 +196,40 @@ BEGIN
       ON public.reviews
       FOR SELECT
       USING (is_public = true);
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Reports: relatórios devem ficar privados por padrão. Se a tabela tiver
+-- reporter_id ou user_id, o usuário autenticado enxerga somente os próprios.
+DO $$
+BEGIN
+  IF to_regclass('public.reports') IS NOT NULL
+     AND EXISTS (
+       SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'reports' AND column_name = 'reporter_id'
+     ) THEN
+    CREATE POLICY "Users read own reports by reporter"
+      ON public.reports
+      FOR SELECT
+      USING (auth.uid()::text = reporter_id::text);
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  IF to_regclass('public.reports') IS NOT NULL
+     AND EXISTS (
+       SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'reports' AND column_name = 'user_id'
+     ) THEN
+    CREATE POLICY "Users read own reports by user"
+      ON public.reports
+      FOR SELECT
+      USING (auth.uid()::text = user_id::text);
   END IF;
 EXCEPTION
   WHEN duplicate_object THEN NULL;
