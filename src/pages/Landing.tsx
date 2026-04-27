@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { WaIcon } from '../components/ui';
 
-const heroImage = 'https://images.unsplash.com/photo-1629909615184-74f495363b67?auto=format&fit=crop&w=1800&q=86';
+const heroImage = '/hero-clinic-premium.png';
 
 const pillars = [
   {
