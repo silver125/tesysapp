@@ -1,51 +1,54 @@
 import { Link } from 'react-router-dom';
 import { WaIcon } from '../components/ui';
 
-const heroImage = 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1800&q=85';
+const heroImage = 'https://images.unsplash.com/photo-1629909615184-74f495363b67?auto=format&fit=crop&w=1800&q=86';
 
-const categories = [
+const pillars = [
   {
-    title: 'Congressos',
-    image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=500&q=80',
+    title: 'Representantes por região',
+    desc: 'Contato direto com quem atende sua praça, sem intermediação desnecessária.',
   },
   {
-    title: 'Nutrologia',
-    image: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=500&q=80',
+    title: 'Produtos com intenção médica',
+    desc: 'Indicação, diferencial, público ideal, amostras, materiais e proposta de parceria.',
   },
   {
-    title: 'Produtos',
-    image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=500&q=80',
+    title: 'Eventos comerciais',
+    desc: 'Imersões, lançamentos, workshops e demonstrações para médicos selecionados.',
   },
   {
-    title: 'Cursos',
-    image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=500&q=80',
+    title: 'Leads qualificados',
+    desc: 'Cada clique de interesse vira sinal comercial para a empresa agir rápido.',
   },
 ];
 
 const featuredEvents = [
   {
-    tag: 'Em alta',
-    title: 'Jornada de Nutrologia e Performance Metabólica',
+    tag: 'Dermato',
+    title: 'Demonstração privada para protocolos estéticos avançados',
     date: 'Qui, 21 Mai · 19:00',
     place: 'São Paulo, SP',
-    company: 'Tessy Health',
-    image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=900&q=82',
+    company: 'Empresa parceira',
+    audience: 'Dermatologistas e clínicas premium',
+    signal: 'Amostras + representante regional',
   },
   {
-    tag: 'Workshop',
-    title: 'Imersão em Procedimentos Estéticos Avançados',
+    tag: 'Lançamento',
+    title: 'Nova linha de skin quality com treinamento comercial',
     date: 'Sáb, 30 Mai · 09:00',
     place: 'Rio de Janeiro, RJ',
     company: 'Derma Lab',
-    image: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=900&q=82',
+    audience: 'Médicos com agenda estética ativa',
+    signal: 'Evento + material científico',
   },
   {
-    tag: 'Online',
-    title: 'Marketing Médico Ético para Clínicas',
+    tag: 'Parceria',
+    title: 'Campanha com médicos para divulgação educativa',
     date: 'Ter, 02 Jun · 20:00',
     place: 'Evento online',
     company: 'Med Growth',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=82',
+    audience: 'Médicos com presença no Instagram',
+    signal: 'Briefing + WhatsApp do representante',
   },
 ];
 
@@ -150,7 +153,7 @@ export default function Landing() {
             fontWeight: 900,
             color: '#17142F',
           }}>
-            Descubra eventos, cursos e produtos para médicos.
+            Conexões comerciais para médicos de alto valor.
           </h1>
 
           <p style={{
@@ -160,7 +163,7 @@ export default function Landing() {
             lineHeight: 1.55,
             color: '#5C5B6E',
           }}>
-            Uma vitrine profissional para empresas de saúde apresentarem oportunidades relevantes, com contato direto pelo WhatsApp.
+            O Tessy conecta médicos, clínicas e empresas premium de saúde com produtos, eventos e representantes certos.
           </p>
 
           <div style={{
@@ -180,7 +183,7 @@ export default function Landing() {
                 <circle cx="9" cy="9" r="6" />
                 <path d="M14 14l4 4" strokeLinecap="round" />
               </svg>
-              <span style={{ color: '#777487', fontSize: 15 }}>Buscar por evento, especialidade ou empresa</span>
+              <span style={{ color: '#777487', fontSize: 15 }}>Buscar empresa, produto, procedimento ou representante</span>
             </div>
             <Link to="/cadastro" style={{
               padding: '14px 20px',
@@ -198,9 +201,9 @@ export default function Landing() {
 
           <div style={{ display: 'flex', gap: 26, marginTop: 34, flexWrap: 'wrap' }}>
             {[
-              ['120+', 'oportunidades'],
-              ['CRM', 'perfil médico'],
-              ['WhatsApp', 'contato direto'],
+              ['CRM', 'curadoria médica'],
+              ['B2B', 'saúde premium'],
+              ['WhatsApp', 'representante direto'],
             ].map(([value, label]) => (
               <div key={value}>
                 <div style={{ fontSize: 22, fontWeight: 900, color: '#17142F' }}>{value}</div>
@@ -236,10 +239,10 @@ export default function Landing() {
               Destaque da semana
             </div>
             <div style={{ marginTop: 7, fontSize: 20, fontWeight: 900, color: '#17142F', lineHeight: 1.2 }}>
-              Encontro de Inovação Médica e Novas Terapias
+              Encontro de dermatologia, estética e novas terapias
             </div>
             <div style={{ marginTop: 8, fontSize: 14, color: '#5C5B6E' }}>
-              Quinta, 19:00 · São Paulo · Vagas limitadas
+              Quinta, 19:00 · São Paulo · Médicos selecionados
             </div>
           </div>
         </div>
@@ -250,34 +253,48 @@ export default function Landing() {
           <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 18, marginBottom: 22 }}>
             <div>
               <h2 style={{ fontSize: 'clamp(26px, 4vw, 38px)', lineHeight: 1.1, letterSpacing: 0, color: '#17142F', fontWeight: 900 }}>
-                Explore o que está em alta na saúde
+                Menos feed. Mais ponte comercial.
               </h2>
               <p style={{ marginTop: 8, fontSize: 15, color: '#666477' }}>
-                Categorias para médicos encontrarem conteúdo relevante mais rápido.
+                Uma experiência desenhada para médicos e empresas que precisam gerar relacionamento, amostras, eventos e oportunidades reais.
               </p>
             </div>
             <Link to="/cadastro" style={{ color: '#2E7BFF', fontSize: 14, fontWeight: 800, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-              Ver tudo
+              Começar
             </Link>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 18 }} className="tessy-category-grid">
-            {categories.map(category => (
-              <Link key={category.title} to="/cadastro" style={{ textAlign: 'center', textDecoration: 'none', color: '#17142F' }}>
-                <img
-                  src={category.image}
-                  alt={category.title}
-                  style={{
-                    width: 132,
-                    height: 132,
-                    maxWidth: '100%',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    boxShadow: '0 16px 40px rgba(23,20,47,0.12)',
-                  }}
-                />
-                <div style={{ marginTop: 12, fontSize: 16, fontWeight: 800 }}>{category.title}</div>
-              </Link>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }} className="tessy-category-grid">
+            {pillars.map((pillar, index) => (
+              <div key={pillar.title} style={{
+                minHeight: 178,
+                padding: 18,
+                borderRadius: 8,
+                background: '#fff',
+                border: '1px solid rgba(26,27,46,0.08)',
+                boxShadow: '0 14px 34px rgba(23,20,47,0.06)',
+              }}>
+                <div style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  background: index === 0 ? '#17142F' : '#EEF4FF',
+                  color: index === 0 ? '#fff' : '#2E7BFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 13,
+                  fontWeight: 900,
+                }}>
+                  {String(index + 1).padStart(2, '0')}
+                </div>
+                <h3 style={{ marginTop: 16, fontSize: 18, lineHeight: 1.15, color: '#17142F', fontWeight: 900, letterSpacing: 0 }}>
+                  {pillar.title}
+                </h3>
+                <p style={{ marginTop: 10, color: '#666477', fontSize: 13, lineHeight: 1.5 }}>
+                  {pillar.desc}
+                </p>
+              </div>
             ))}
           </div>
         </section>
@@ -286,10 +303,10 @@ export default function Landing() {
           <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 18, marginBottom: 22 }}>
             <div>
               <h2 style={{ fontSize: 'clamp(26px, 4vw, 38px)', lineHeight: 1.1, letterSpacing: 0, color: '#285DE8', fontWeight: 900 }}>
-                Eventos mais procurados
+                Oportunidades selecionadas
               </h2>
               <p style={{ marginTop: 8, fontSize: 15, color: '#666477' }}>
-                Uma prévia da experiência que médicos terão dentro do Tessy.
+                Uma prévia do que médicos encontram dentro do Tessy: produto, intenção e contato comercial direto.
               </p>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
@@ -307,30 +324,39 @@ export default function Landing() {
                 overflow: 'hidden',
                 boxShadow: '0 18px 42px rgba(23,20,47,0.08)',
               }}>
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  style={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', display: 'block' }}
-                />
-                <div style={{ padding: '18px 18px 20px' }}>
+                <div style={{
+                  minHeight: 142,
+                  padding: 18,
+                  background: 'linear-gradient(135deg, #17142F 0%, #253E73 100%)',
+                  color: '#fff',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}>
                   <span style={{
                     display: 'inline-flex',
                     padding: '6px 10px',
                     borderRadius: 7,
-                    background: '#EEF4FF',
-                    color: '#285DE8',
+                    background: 'rgba(255,255,255,0.12)',
+                    color: '#fff',
                     fontSize: 12,
                     fontWeight: 800,
-                    marginBottom: 12,
+                    width: 'fit-content',
                   }}>
                     {event.tag}
                   </span>
-                  <h3 style={{ fontSize: 21, lineHeight: 1.18, color: '#3B394C', fontWeight: 900, letterSpacing: 0 }}>
+                  <h3 style={{ marginTop: 22, fontSize: 21, lineHeight: 1.18, color: '#fff', fontWeight: 900, letterSpacing: 0 }}>
                     {event.title}
                   </h3>
+                </div>
+                <div style={{ padding: '18px 18px 20px' }}>
                   <div style={{ marginTop: 12, color: '#3B394C', fontSize: 15, fontWeight: 800 }}>{event.date}</div>
                   <div style={{ marginTop: 8, color: '#777487', fontSize: 14 }}>{event.place}</div>
-                  <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(26,27,46,0.08)' }}>
+                    <div style={{ color: '#17142F', fontSize: 14, fontWeight: 800 }}>{event.audience}</div>
+                    <div style={{ marginTop: 6, color: '#777487', fontSize: 13 }}>{event.signal}</div>
+                  </div>
+                  <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                     <span style={{ color: '#777487', fontSize: 14 }}>{event.company}</span>
                     <Link to="/cadastro" style={{
                       color: '#285DE8',
