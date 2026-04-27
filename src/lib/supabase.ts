@@ -20,19 +20,22 @@ export const supabase = createClient(
   isSupabaseConfigured ? key : 'placeholder-anon-key',
 );
 
-export function createSessionClient(accessToken: string) {
+export async function upsertProfileWithToken(accessToken: string, profile: Record<string, unknown>) {
   assertSupabaseConfigured();
 
-  return createClient(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
+  const response = await fetch(`${url}/rest/v1/profiles?on_conflict=id`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=minimal',
     },
-    global: {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
+    body: JSON.stringify(profile),
   });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || response.statusText || 'Erro ao salvar perfil.');
+  }
 }

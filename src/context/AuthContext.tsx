@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { User, UserRole, Event, Product, Course, Lead, LeadInput } from '../types';
-import { assertSupabaseConfigured, createSessionClient, isSupabaseConfigured, supabase } from '../lib/supabase';
+import { assertSupabaseConfigured, isSupabaseConfigured, supabase, upsertProfileWithToken } from '../lib/supabase';
 import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
 
@@ -321,11 +321,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const uid = authData.user.id;
-      const profileClient = createSessionClient(authData.session.access_token);
 
-      // 2. Salva perfil com um client sem storage para evitar conflito no lock do Auth.
-      const { error: profileError } = await withTimeout(
-        profileClient.from('profiles').upsert({
+      // 2. Salva perfil via REST direto para evitar qualquer lock interno do Auth.
+      try {
+        await withTimeout(
+          upsertProfileWithToken(authData.session.access_token, {
           id:           uid,
           name:         input.name.trim(),
           role:         input.role,
@@ -335,13 +335,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           company:      input.company ?? null,
           whatsapp:     input.whatsapp ?? null,
           bio:          input.bio ?? null,
-        }, { onConflict: 'id' }),
-        12000,
-        'Salvar perfil',
-      );
-
-      if (profileError) {
-        throw new Error('Erro ao salvar perfil: ' + profileError.message);
+          }),
+          12000,
+          'Salvar perfil',
+        );
+      } catch (profileError) {
+        const message = profileError instanceof Error ? profileError.message : 'Tente novamente.';
+        throw new Error('Erro ao salvar perfil: ' + message);
       }
 
       const newUser: User = {
