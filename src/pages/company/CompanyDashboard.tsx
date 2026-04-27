@@ -6,9 +6,9 @@ import {
   CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
-import type { Event, Product, Course, CourseModality } from '../../types';
+import type { Event, Product, Course, CourseModality, Lead } from '../../types';
 
-type Tab = 'home' | 'events' | 'create' | 'products' | 'courses';
+type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads';
 
 function IcoHome(a: boolean) {
   const c = a ? '#2E7BFF' : '#6F7A90';
@@ -26,6 +26,10 @@ function IcoBook(a: boolean) {
   const c = a ? '#2E7BFF' : '#6F7A90';
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
 }
+function IcoLeads(a: boolean) {
+  const c = a ? '#2E7BFF' : '#6F7A90';
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M6.5 10.5a3.5 3.5 0 117 0M3 18a7 7 0 0114 0"/><path d="M2.5 5.5h3M14.5 5.5h3M4 2.5l2 2M16 2.5l-2 2" strokeLinecap="round"/></svg>;
+}
 function IcoBigCreate() {
   return (
     <svg width="52" height="52" viewBox="0 0 52 52">
@@ -40,6 +44,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
   { key: 'create',   label: '',         icon: () => <IcoBigCreate />, big: true },
   { key: 'products', label: 'Produtos', icon: IcoBox },
+  { key: 'leads',    label: 'Leads',    icon: IcoLeads },
   { key: 'courses',  label: 'Cursos',   icon: IcoBook },
 ];
 
@@ -79,7 +84,7 @@ function formatDisplayPhone(raw: string) {
 }
 
 export default function CompanyDashboard() {
-  const { user, events, products, courses, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent } = useAuth();
+  const { user, events, products, courses, leads, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
   const [editingProfile, setEditingProfile] = useState(false);
@@ -90,6 +95,7 @@ export default function CompanyDashboard() {
   const myEvents   = events.filter(e => e.companyId === user?.id);
   const myProducts = products.filter(p => p.companyId === user?.id);
   const myCourses  = courses.filter(c => c.companyId === user?.id);
+  const myLeads    = leads.filter(l => l.companyId === user?.id);
   const tint = companyTint(user?.company ?? user?.name ?? '');
   const code = (user?.company ?? user?.name ?? 'EM').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
@@ -227,7 +233,7 @@ export default function CompanyDashboard() {
             {[
               { v: myEvents.length, l: 'eventos' },
               { v: myProducts.length, l: 'produtos' },
-              { v: myCourses.length, l: 'cursos' },
+              { v: myLeads.length, l: 'leads' },
             ].map((s, i) => (
               <div key={s.l} style={{
                 flex: 1, textAlign: 'center', padding: '16px 8px',
@@ -237,6 +243,39 @@ export default function CompanyDashboard() {
                 <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>{s.l}</Mono>
               </div>
             ))}
+          </div>
+
+          {/* Commercial pipeline */}
+          <div style={{
+            marginBottom: 24,
+            padding: 16,
+            borderRadius: 18,
+            background: 'linear-gradient(135deg, rgba(46,123,255,0.10) 0%, rgba(30,169,124,0.08) 100%)',
+            border: '1px solid rgba(46,123,255,0.16)',
+          }}>
+            <Mono style={{ fontSize: 9, color: '#2E7BFF', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              Ponte comercial
+            </Mono>
+            <div style={{ marginTop: 8, fontSize: 18, color: 'var(--ink)', fontWeight: 700, lineHeight: 1.2 }}>
+              Leads médicos qualificados
+            </div>
+            <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+              Veja médicos que pediram representante, amostra, evento ou parceria de divulgação.
+            </p>
+            <button onClick={() => setTab('leads')} style={{
+              marginTop: 12,
+              width: '100%',
+              padding: '11px 12px',
+              borderRadius: 12,
+              border: 'none',
+              background: '#2E7BFF',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}>
+              Abrir leads
+            </button>
           </div>
 
           {/* Quick create */}
@@ -314,6 +353,11 @@ export default function CompanyDashboard() {
         >
           {myCourses.map(c => <CourseCardCompany key={c.id} course={c} onDelete={() => deleteCourse(c.id)} />)}
         </ListTab>
+      )}
+
+      {/* ── LEADS ── */}
+      {tab === 'leads' && (
+        <LeadInbox leads={myLeads} />
       )}
 
       {/* ── CREATE WIZARD ── */}
@@ -725,6 +769,114 @@ function EventCardCompany({ ev, onDelete, onEdit }: { ev: Event; onDelete: () =>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LeadInbox({ leads }: { leads: Lead[] }) {
+  const intentLabel: Record<Lead['intent'], { label: string; color: string }> = {
+    representative_contact: { label: 'Representante', color: '#2E7BFF' },
+    sample_request: { label: 'Amostra', color: '#1EA97C' },
+    instagram_partnership: { label: 'Instagram', color: '#E63E8C' },
+    event_interest: { label: 'Evento', color: '#5F2C82' },
+    course_interest: { label: 'Curso', color: '#F58220' },
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 18 }}>
+        <Mono style={{ fontSize: 10, color: '#2E7BFF', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+          Relacionamento médico
+        </Mono>
+        <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em' }}>
+          Leads qualificados<span style={{ color: '#2E7BFF' }}>.</span>
+        </h1>
+        <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
+          Pedidos de amostra, contato com representante, interesse em eventos e propostas de divulgação.
+        </p>
+      </div>
+
+      {leads.length === 0 ? (
+        <div style={{ padding: 24, borderRadius: 18, background: 'var(--card)', border: '1px solid var(--line)' }}>
+          <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 700 }}>Nenhum lead ainda.</div>
+          <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+            Quando um médico clicar em representante, amostra, evento ou divulgação, ele aparecerá aqui.
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {leads.map(lead => {
+            const intent = intentLabel[lead.intent];
+            const waLink = buildWhatsappLink(
+              lead.doctorWhatsapp,
+              `Olá ${lead.doctorName}, vi seu interesse no Tessy sobre "${lead.itemName}". Posso te passar mais detalhes?`,
+            );
+            return (
+              <div key={lead.id} style={{
+                padding: 16,
+                borderRadius: 18,
+                background: 'var(--card)',
+                border: '1px solid var(--line)',
+                boxShadow: '0 2px 10px rgba(90,80,130,0.05)',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <Chip color={intent.color}>{intent.label}</Chip>
+                    <div style={{ marginTop: 10, fontSize: 16, color: 'var(--ink)', fontWeight: 700 }}>
+                      {lead.doctorName}
+                    </div>
+                    <div style={{ marginTop: 3, color: 'var(--muted)', fontSize: 12 }}>
+                      {lead.doctorSpecialty || 'Especialidade não informada'}
+                    </div>
+                  </div>
+                  <Mono style={{ fontSize: 9, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                    {new Date(lead.createdAt).toLocaleDateString('pt-BR')}
+                  </Mono>
+                </div>
+
+                <div style={{
+                  marginTop: 12,
+                  padding: '10px 12px',
+                  borderRadius: 12,
+                  background: 'var(--bg)',
+                  border: '1px solid var(--line)',
+                }}>
+                  <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 700 }}>{lead.itemName}</div>
+                  {lead.message && (
+                    <div style={{ marginTop: 5, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+                      {lead.message}
+                    </div>
+                  )}
+                </div>
+
+                {waLink ? (
+                  <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+                    marginTop: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 7,
+                    padding: '11px 12px',
+                    borderRadius: 12,
+                    background: 'rgba(37,211,102,0.12)',
+                    color: '#25D366',
+                    border: '1px solid rgba(37,211,102,0.32)',
+                    textDecoration: 'none',
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}>
+                    <WaIcon size={14} /> Falar com médico
+                  </a>
+                ) : (
+                  <div style={{ marginTop: 12, color: 'var(--muted)', fontSize: 12 }}>
+                    Médico sem WhatsApp no perfil.
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

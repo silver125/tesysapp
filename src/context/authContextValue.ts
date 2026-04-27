@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { Course, Event, Product, User, UserRole } from '../types';
+import type { Course, Event, Lead, LeadInput, Product, User, UserRole } from '../types';
 
 export interface AuthContextType {
   user: User | null;
@@ -12,9 +12,11 @@ export interface AuthContextType {
   events: Event[];
   products: Product[];
   courses: Course[];
+  leads: Lead[];
   addEvent: (event: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => Promise<void>;
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
   addCourse: (course: Omit<Course, 'id' | 'createdAt'>) => Promise<void>;
+  addLead: (lead: LeadInput) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;

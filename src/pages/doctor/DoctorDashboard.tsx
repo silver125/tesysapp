@@ -262,6 +262,8 @@ function ConnectView({
       return new Set();
     }
   });
+  const [sentLeadIds, setSentLeadIds] = useState<Set<string>>(new Set());
+  const { addLead } = useAuth();
 
   const companyMap = new Map<string, CompanyMatch>();
   const ensureCompany = (id: string, name: string, whatsapp?: string) => {
@@ -322,6 +324,21 @@ function ConnectView({
             `Olá ${co.name}, sou médico no Tessy e gostaria de falar com um representante sobre produtos, eventos e possíveis parcerias.`,
           );
           const isSaved = saved.has(co.id);
+          const leadSent = sentLeadIds.has(co.id);
+
+          async function registerCompanyLead(intent: 'representative_contact' | 'sample_request') {
+            setSentLeadIds(prev => new Set(prev).add(co.id));
+            await addLead({
+              companyId: co.id,
+              companyName: co.name,
+              itemType: 'company',
+              itemName: co.name,
+              intent,
+              message: intent === 'sample_request'
+                ? 'Médico solicitou amostras e materiais para avaliação.'
+                : 'Médico pediu contato do representante regional.',
+            });
+          }
 
           return (
             <div key={co.id} style={{
@@ -371,7 +388,12 @@ function ConnectView({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 14 }}>
                 {waLink && (
-                  <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+                  <a
+                    href={waLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => { void registerCompanyLead('representative_contact'); }}
+                    style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                     padding: '11px 8px', borderRadius: 12,
                     background: 'rgba(37,211,102,0.12)', color: '#25D366',
@@ -389,6 +411,15 @@ function ConnectView({
                   fontWeight: 700, fontSize: 13, cursor: 'pointer',
                 }}>
                   {isSaved ? 'Contato salvo' : 'Salvar contato'}
+                </button>
+                <button onClick={() => { void registerCompanyLead('sample_request'); }} style={{
+                  padding: '11px 8px', borderRadius: 12,
+                  background: leadSent ? 'rgba(30,169,124,0.10)' : 'rgba(46,123,255,0.08)',
+                  color: leadSent ? '#1EA97C' : '#2E7BFF',
+                  border: `1px solid ${leadSent ? 'rgba(30,169,124,0.28)' : 'rgba(46,123,255,0.22)'}`,
+                  fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                }}>
+                  {leadSent ? 'Interesse enviado' : 'Receber amostra'}
                 </button>
                 <button onClick={() => onOpenProducts(co.name)} disabled={co.products.length === 0} style={{
                   padding: '11px 8px', borderRadius: 12,
@@ -446,7 +477,7 @@ function WebsiteLink({ url }: { url?: string }) {
 
 /* ─── EventCard (full banner) ─── */
 function EventCard({ ev }: { ev: Event }) {
-  const { registerInterest, registeredEventIds } = useAuth();
+  const { registerInterest, registeredEventIds, addLead } = useAuth();
   const [tint1, tint2] = categoryTint(ev.category);
   const pct = Math.min(100, Math.round((ev.registeredCount / ev.maxParticipants) * 100));
   const full = pct >= 100;
@@ -462,6 +493,15 @@ function EventCard({ ev }: { ev: Event }) {
     setErr('');
     try {
       await registerInterest(ev.id);
+      await addLead({
+        companyId: ev.companyId,
+        companyName: ev.companyName,
+        itemType: 'event',
+        itemId: ev.id,
+        itemName: ev.title,
+        intent: 'event_interest',
+        message: `Médico demonstrou interesse no evento ${ev.title}.`,
+      });
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
     } finally {
@@ -565,6 +605,8 @@ function EventRow({ ev }: { ev: Event }) {
 
 /* ─── ProductCard ─── */
 function ProductCard({ product }: { product: Product }) {
+  const { addLead } = useAuth();
+  const [leadSent, setLeadSent] = useState(false);
   const [tint1, tint2] = categoryTint(product.category);
   const code = product.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const repMessage = `Olá! Vi o produto "${product.name}" no Tessy e gostaria de falar com o representante sobre uma possível parceria.`;
@@ -576,6 +618,23 @@ function ProductCard({ product }: { product: Product }) {
   const repTarget = waLink || product.website || '';
   const creatorTarget = creatorLink || product.website || '';
   const canContactRep = !!repTarget;
+
+  async function sendProductLead(intent: 'representative_contact' | 'sample_request' | 'instagram_partnership') {
+    setLeadSent(true);
+    await addLead({
+      companyId: product.companyId,
+      companyName: product.companyName,
+      itemType: 'product',
+      itemId: product.id,
+      itemName: product.name,
+      intent,
+      message: intent === 'sample_request'
+        ? 'Médico pediu amostra, material científico e condições comerciais.'
+        : intent === 'instagram_partnership'
+          ? 'Médico quer avaliar parceria para divulgação no Instagram.'
+          : 'Médico pediu contato do representante do produto.',
+    });
+  }
 
   return (
     <BannerCard tint1={tint1} tint2={tint2} format={product.category}>
@@ -612,6 +671,7 @@ function ProductCard({ product }: { product: Product }) {
           disabled={!canContactRep}
           onClick={() => {
             if (!canContactRep) return;
+            void sendProductLead('representative_contact');
             window.open(repTarget, '_blank', 'noopener,noreferrer');
           }}
           style={{
@@ -622,10 +682,21 @@ function ProductCard({ product }: { product: Product }) {
             cursor: canContactRep ? 'pointer' : 'not-allowed',
             opacity: canContactRep ? 1 : 0.7,
           }}>
-          Falar com representante
+          {leadSent ? 'Lead enviado' : 'Falar com representante'}
+        </button>
+        <button
+          type="button"
+          onClick={() => { void sendProductLead('sample_request'); }}
+          style={{
+            flex: '1 1 160px', padding: '11px 10px', borderRadius: 12,
+            background: 'rgba(46,123,255,0.08)', color: '#2E7BFF',
+            border: '1px solid rgba(46,123,255,0.22)',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          }}>
+          Quero amostra
         </button>
         {creatorTarget && (
-          <a href={creatorTarget} target="_blank" rel="noopener noreferrer" style={{
+          <a href={creatorTarget} target="_blank" rel="noopener noreferrer" onClick={() => { void sendProductLead('instagram_partnership'); }} style={{
             flex: '1 1 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             padding: '11px 10px', borderRadius: 12, textDecoration: 'none',
             background: 'rgba(37,211,102,0.1)', color: '#25D366',
@@ -641,6 +712,7 @@ function ProductCard({ product }: { product: Product }) {
 
 /* ─── CourseCard (full) ─── */
 function CourseCard({ course }: { course: Course }) {
+  const { addLead } = useAuth();
   const [tint1, tint2] = categoryTint(course.category);
   const code = course.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const waLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Vi o curso "${course.title}" no Tessy e tenho interesse.`);
@@ -678,6 +750,15 @@ function CourseCard({ course }: { course: Course }) {
           disabled={!canShowInterest}
           onClick={() => {
             if (!canShowInterest) return;
+            void addLead({
+              companyId: course.companyId,
+              companyName: course.companyName,
+              itemType: 'course',
+              itemId: course.id,
+              itemName: course.title,
+              intent: 'course_interest',
+              message: `Médico demonstrou interesse no curso ${course.title}.`,
+            });
             window.open(interestTarget, '_blank', 'noopener,noreferrer');
           }}
           style={{

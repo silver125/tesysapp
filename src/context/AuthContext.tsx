@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { User, UserRole, Event, Product, Course } from '../types';
+import type { User, UserRole, Event, Product, Course, Lead, LeadInput } from '../types';
 import { assertSupabaseConfigured, isSupabaseConfigured, supabase } from '../lib/supabase';
 import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
@@ -96,6 +96,41 @@ function dbToCourse(row: Record<string, unknown>): Course {
   };
 }
 
+function dbToLead(row: Record<string, unknown>): Lead {
+  return {
+    id:              row.id               as string,
+    companyId:       row.company_id       as string,
+    companyName:     row.company_name     as string,
+    doctorId:        row.doctor_id        as string,
+    doctorName:      row.doctor_name      as string,
+    doctorSpecialty: row.doctor_specialty as string | undefined,
+    doctorWhatsapp:  row.doctor_whatsapp  as string | undefined,
+    itemType:        row.item_type        as Lead['itemType'],
+    itemId:          row.item_id          as string | undefined,
+    itemName:        row.item_name        as string,
+    intent:          row.intent           as Lead['intent'],
+    message:         row.message          as string | undefined,
+    createdAt:       row.created_at       as string,
+  };
+}
+
+function readLocalLeads(companyId: string): Lead[] {
+  try {
+    return JSON.parse(localStorage.getItem(`tessy-leads-${companyId}`) ?? '[]') as Lead[];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalLead(lead: Lead) {
+  try {
+    const prev = readLocalLeads(lead.companyId);
+    localStorage.setItem(`tessy-leads-${lead.companyId}`, JSON.stringify([lead, ...prev]));
+  } catch {
+    /* ignore */
+  }
+}
+
 // ── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]       = useState<User | null>(null);
@@ -107,8 +142,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [events,   setEvents]   = useState<Event[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [courses,  setCourses]  = useState<Course[]>([]);
+  const [leads,    setLeads]    = useState<Lead[]>([]);
   const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
   const userId = user?.id;
+
+  const refreshLeads = useCallback(async () => {
+    if (!userId || user?.role !== 'empresa') {
+      setLeads([]);
+      return;
+    }
+
+    const local = readLocalLeads(userId);
+    if (!isSupabaseConfigured) {
+      setLeads(local);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('company_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      setLeads(local);
+      return;
+    }
+
+    const remote = (data ?? []).map(r => dbToLead(r as Record<string, unknown>));
+    const remoteIds = new Set(remote.map(l => l.id));
+    setLeads([...remote, ...local.filter(l => !remoteIds.has(l.id))]);
+  }, [userId, user?.role]);
 
   // Carrega IDs de eventos em que o usuário já clicou "Tenho interesse" (localStorage)
   useEffect(() => {
@@ -120,6 +184,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       /* ignore */
     }
   }, [userId]);
+
+  useEffect(() => {
+    refreshLeads();
+  }, [refreshLeads]);
 
   // Carrega eventos/produtos/cursos públicos
   const refreshData = useCallback(async () => {
@@ -454,12 +522,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCourses(prev => prev.filter(c => c.id !== id));
   };
 
+  const addLead = async (input: LeadInput) => {
+    if (!user) throw new Error('Você precisa estar logado.');
+    const lead: Lead = {
+      id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}`,
+      ...input,
+      doctorId: user.id,
+      doctorName: user.name,
+      doctorSpecialty: user.specialty,
+      doctorWhatsapp: user.whatsapp,
+      createdAt: new Date().toISOString(),
+    };
+
+    writeLocalLead(lead);
+
+    if (!isSupabaseConfigured) {
+      return;
+    }
+
+    const { error } = await supabase.from('leads').insert({
+      id: lead.id,
+      company_id: lead.companyId,
+      company_name: lead.companyName,
+      doctor_id: lead.doctorId,
+      doctor_name: lead.doctorName,
+      doctor_specialty: lead.doctorSpecialty ?? null,
+      doctor_whatsapp: lead.doctorWhatsapp ?? null,
+      item_type: lead.itemType,
+      item_id: lead.itemId ?? null,
+      item_name: lead.itemName,
+      intent: lead.intent,
+      message: lead.message ?? null,
+      created_at: lead.createdAt,
+    });
+
+    if (!error && user.role === 'empresa' && lead.companyId === user.id) {
+      setLeads(prev => [lead, ...prev]);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user, isLoading, authReady,
       login, register, logout, updateProfile,
-      events, products, courses,
-      addEvent, addProduct, addCourse,
+      events, products, courses, leads,
+      addEvent, addProduct, addCourse, addLead,
       deleteEvent, deleteProduct, deleteCourse,
       updateEvent,
       refreshData,

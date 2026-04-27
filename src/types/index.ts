@@ -46,6 +46,41 @@ export interface Product {
   createdAt: string;
 }
 
+export type LeadIntent =
+  | 'representative_contact'
+  | 'sample_request'
+  | 'instagram_partnership'
+  | 'event_interest'
+  | 'course_interest';
+
+export type LeadItemType = 'company' | 'product' | 'event' | 'course';
+
+export interface Lead {
+  id: string;
+  companyId: string;
+  companyName: string;
+  doctorId: string;
+  doctorName: string;
+  doctorSpecialty?: string;
+  doctorWhatsapp?: string;
+  itemType: LeadItemType;
+  itemId?: string;
+  itemName: string;
+  intent: LeadIntent;
+  message?: string;
+  createdAt: string;
+}
+
+export interface LeadInput {
+  companyId: string;
+  companyName: string;
+  itemType: LeadItemType;
+  itemId?: string;
+  itemName: string;
+  intent: LeadIntent;
+  message?: string;
+}
+
 export type CourseModality = 'online' | 'presencial' | 'hibrido';
 
 export interface Course {
