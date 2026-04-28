@@ -48,7 +48,7 @@ export default function Landing() {
         <header className="tl-header">
           <Link to="/" className="tl-brand" aria-label="Tessy">
             <span className="tl-brand-mark">T</span>
-            <span className="tl-brand-name">Tessy</span>
+            <span className="tl-brand-name">Tessy<span>.app</span></span>
           </Link>
 
           <nav className="tl-nav" aria-label="Principal">
@@ -210,29 +210,38 @@ export default function Landing() {
 
 const landingCss = `
 .tessy-landing {
-  width: 100vw;
+  --tessy-deep: #171b2a;
+  --tessy-graphite: #343949;
+  --tessy-steel: #777f95;
+  --tessy-lavender: #b9c1ea;
+  --tessy-sky: #4aa8ff;
+  --tessy-paper: #f7f8ff;
+  width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
-  background: #ffffff;
-  color: #05060a;
+  background: var(--tessy-paper);
+  color: var(--tessy-deep);
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .tl-hero {
   position: relative;
-  width: 100vw;
-  min-height: 900px;
+  width: 100%;
+  min-height: 880px;
   overflow: hidden;
   background:
-    linear-gradient(135deg, #10113f 0%, #12145a 48%, #20143d 100%);
-  color: #ffffff;
+    radial-gradient(900px 520px at 52% 28%, rgba(185,193,234,0.28) 0%, rgba(255,255,255,0) 70%),
+    radial-gradient(600px 360px at 10% 80%, rgba(74,168,255,0.10) 0%, rgba(255,255,255,0) 72%),
+    linear-gradient(180deg, #ffffff 0%, #f7f8ff 100%);
+  color: var(--tessy-deep);
+  border-bottom: 1px solid rgba(119,127,149,0.16);
 }
 
 .tl-orbit {
   position: absolute;
   left: 50%;
   top: 51%;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(52,57,73,0.12);
   border-radius: 9999px;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -247,8 +256,8 @@ const landingCss = `
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: #ffffff;
-  box-shadow: 0 0 22px #73a7ff;
+  background: var(--tessy-sky);
+  box-shadow: 0 0 22px rgba(74,168,255,0.36);
 }
 
 .tl-pin-one { left: 51%; top: 122px; }
@@ -271,7 +280,7 @@ const landingCss = `
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  color: #ffffff;
+  color: var(--tessy-deep);
   text-decoration: none;
 }
 
@@ -281,8 +290,8 @@ const landingCss = `
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: #ffffff;
-  color: #11124a;
+  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-graphite) 100%);
+  color: #ffffff;
   font-weight: 900;
   font-size: 22px;
 }
@@ -291,6 +300,11 @@ const landingCss = `
   font-size: 34px;
   line-height: 1;
   font-weight: 900;
+}
+
+.tl-brand-name span {
+  color: var(--tessy-lavender);
+  font-weight: 850;
 }
 
 .tl-nav {
@@ -302,7 +316,7 @@ const landingCss = `
 .tl-nav a,
 .tl-login,
 .tl-outline {
-  color: rgba(255,255,255,0.86);
+  color: rgba(23,27,42,0.76);
   text-decoration: none;
   font-size: 18px;
   font-weight: 750;
@@ -321,6 +335,7 @@ const landingCss = `
   justify-content: center;
   padding: 0 25px;
   border: 2px solid rgba(255,255,255,0.82);
+  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
   border-radius: 999px;
   color: #ffffff;
 }
@@ -343,20 +358,20 @@ const landingCss = `
   gap: 9px;
   min-height: 44px;
   padding: 0 18px;
-  border: 1px solid rgba(255,255,255,0.16);
+  border: 1px solid rgba(119,127,149,0.18);
   border-radius: 999px;
-  background: rgba(255,255,255,0.10);
-  color: rgba(255,255,255,0.92);
+  background: #ffffff;
+  color: var(--tessy-graphite);
   font-size: 15px;
   font-weight: 800;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+  box-shadow: 0 12px 30px rgba(18,24,40,0.08);
 }
 
 .tl-badge span {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #68d391;
+  background: var(--tessy-sky);
 }
 
 .tl-hero h1 {
@@ -366,12 +381,13 @@ const landingCss = `
   line-height: 0.98;
   font-weight: 900;
   letter-spacing: 0;
+  color: var(--tessy-deep);
 }
 
 .tl-hero-content > p {
   margin-top: 28px;
   max-width: 760px;
-  color: rgba(255,255,255,0.84);
+  color: var(--tessy-steel);
   font-size: 21px;
   line-height: 1.45;
   font-weight: 650;
@@ -388,9 +404,9 @@ const landingCss = `
   align-items: center;
   gap: 8px;
   background: #ffffff;
-  border: 3px solid #66a1ff;
+  border: 2px solid var(--tessy-lavender);
   border-radius: 999px;
-  box-shadow: 0 28px 70px rgba(0,0,0,0.28);
+  box-shadow: 0 28px 70px rgba(52,57,73,0.13);
 }
 
 .tl-cta-shell span {
@@ -408,7 +424,7 @@ const landingCss = `
   justify-content: center;
   padding: 0 36px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #63a4ff 0%, #3d23cf 100%);
+  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
   color: #ffffff;
   text-decoration: none;
   font-size: 18px;
@@ -420,7 +436,7 @@ const landingCss = `
   display: flex;
   justify-content: center;
   gap: 46px;
-  color: rgba(255,255,255,0.42);
+  color: rgba(52,57,73,0.46);
   font-size: 18px;
   font-weight: 850;
 }
@@ -446,8 +462,8 @@ const landingCss = `
   padding: 18px;
   transform: translateX(-50%);
   border-radius: 34px 34px 0 0;
-  background: #0b0d18;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.34);
+  background: linear-gradient(180deg, var(--tessy-deep) 0%, #0f1220 100%);
+  box-shadow: 0 30px 80px rgba(52,57,73,0.20);
 }
 
 .tl-phone-top {
@@ -478,7 +494,7 @@ const landingCss = `
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: #ff8b2f;
+  background: var(--tessy-sky);
   color: #111111;
   font-weight: 900;
 }
@@ -517,8 +533,8 @@ const landingCss = `
 .tl-mini-actions span {
   padding: 7px 10px;
   border-radius: 999px;
-  background: #eef4ff;
-  color: #2868f4;
+  background: #eef2ff;
+  color: var(--tessy-graphite);
   font-size: 12px;
   font-weight: 850;
 }
@@ -531,14 +547,14 @@ const landingCss = `
   border-radius: 8px;
   background: rgba(255,255,255,0.96);
   color: #111111;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.24);
+  box-shadow: 0 24px 60px rgba(18,24,40,0.14);
 }
 
 .tl-preview-left { left: 0; }
 .tl-preview-right { right: 0; }
 
 .tl-preview-kicker {
-  color: #346cff;
+  color: var(--tessy-sky);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -609,7 +625,7 @@ const landingCss = `
 .tl-section-title h2,
 .tl-final h2 {
   margin-top: 8px;
-  color: #05060a;
+  color: var(--tessy-deep);
   font-size: 38px;
   line-height: 1.1;
   font-weight: 900;
@@ -665,11 +681,11 @@ const landingCss = `
   place-items: center;
   transform: translateX(-50%);
   border-radius: 999px;
-  background: linear-gradient(135deg, #668fff 0%, #2419ba 100%);
+  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
   color: #ffffff;
   font-size: 82px;
   font-weight: 950;
-  box-shadow: inset 0 -16px 28px rgba(0,0,0,0.20), 0 28px 60px rgba(44,63,220,0.26);
+  box-shadow: inset 0 -16px 28px rgba(0,0,0,0.18), 0 28px 60px rgba(52,57,73,0.18);
 }
 
 .tl-lead-box {
@@ -697,7 +713,7 @@ const landingCss = `
 
 .tl-lead-box small {
   margin-top: 34px;
-  color: #356fff;
+  color: var(--tessy-sky);
   font-size: 15px;
   font-weight: 900;
 }
@@ -712,7 +728,7 @@ const landingCss = `
 
 .tl-panel-copy {
   padding: 58px;
-  background: #dfe9ff;
+  background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%);
 }
 
 .tl-panel-copy ul {
@@ -741,7 +757,7 @@ const landingCss = `
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: #5878d8;
+  background: var(--tessy-graphite);
   color: #ffffff;
   font-size: 16px;
 }
@@ -762,7 +778,7 @@ const landingCss = `
   align-items: center;
   gap: 8px;
   padding: 0 22px;
-  background: #356df4;
+  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
 }
 
 .tl-window-bar span {
@@ -789,8 +805,8 @@ const landingCss = `
   display: inline-flex;
   padding: 7px 11px;
   border-radius: 999px;
-  background: #f0f5ff;
-  color: #356df4;
+  background: #f1f3ff;
+  color: var(--tessy-graphite);
   font-size: 12px;
   font-weight: 900;
 }
@@ -815,7 +831,7 @@ const landingCss = `
   padding: 0 16px;
   border: 0;
   border-radius: 999px;
-  background: #10113f;
+  background: var(--tessy-deep);
   color: #ffffff;
   font-weight: 900;
   cursor: default;
@@ -846,7 +862,7 @@ const landingCss = `
 }
 
 .tl-flow-grid span {
-  color: #356df4;
+  color: var(--tessy-sky);
   font-size: 18px;
   font-weight: 950;
 }
@@ -866,7 +882,7 @@ const landingCss = `
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  background: #05060a;
+  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-graphite) 100%);
 }
 
 .tl-final .tl-eyebrow,
@@ -881,8 +897,8 @@ const landingCss = `
   justify-content: center;
   padding: 0 30px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #63a4ff 0%, #3d23cf 100%);
-  color: #ffffff;
+  background: #ffffff;
+  color: var(--tessy-deep);
   text-decoration: none;
   font-size: 18px;
   font-weight: 900;
@@ -932,7 +948,7 @@ const landingCss = `
 
   .tl-hero {
     min-height: 930px;
-    width: 100vw;
+    width: 100%;
   }
 
   .tl-header {
@@ -958,7 +974,7 @@ const landingCss = `
     left: 0;
     right: 0;
     top: 140px;
-    width: calc(100vw - 32px);
+    width: calc(100% - 32px);
     max-width: none;
     margin: 0 16px;
   }
@@ -984,14 +1000,14 @@ const landingCss = `
 
   .tl-cta-shell {
     position: static;
-    transform: translateX(-54px);
+    transform: none;
     min-height: auto;
     width: 300px;
     max-width: 100%;
     grid-template-columns: 1fr;
     border-radius: 8px;
-    margin-left: 0;
-    margin-right: 0;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .tl-cta-shell span {
@@ -1012,7 +1028,7 @@ const landingCss = `
 
   .tl-hero-preview {
     left: 0;
-    width: 100vw;
+    width: 100%;
     transform: none;
   }
 
