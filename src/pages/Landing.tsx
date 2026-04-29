@@ -87,6 +87,8 @@ export default function Landing() {
             <span>Acesso para médicos e empresas</span>
             <Link to="/cadastro">Começar</Link>
           </div>
+
+          <Link to="/entrar" className="tl-mobile-login">Já tenho conta</Link>
         </div>
 
         <div className="tl-hero-preview" aria-hidden="true">
@@ -214,7 +216,7 @@ const landingCss = `
   --tessy-graphite: #343949;
   --tessy-steel: #777f95;
   --tessy-lavender: #b9c1ea;
-  --tessy-sky: #4aa8ff;
+  --tessy-sky: #aab1d8;
   --tessy-paper: #f7f8ff;
   --tessy-heading: #5d6474;
   --tessy-text: #6f7686;
@@ -236,7 +238,7 @@ const landingCss = `
   overflow: hidden;
   background:
     radial-gradient(900px 520px at 52% 28%, rgba(185,193,234,0.28) 0%, rgba(255,255,255,0) 70%),
-    radial-gradient(600px 360px at 10% 80%, rgba(74,168,255,0.10) 0%, rgba(255,255,255,0) 72%),
+    radial-gradient(600px 360px at 10% 80%, rgba(185,193,234,0.16) 0%, rgba(255,255,255,0) 72%),
     linear-gradient(180deg, #ffffff 0%, #f7f8ff 100%);
   color: var(--tessy-text);
   border-bottom: 1px solid rgba(119,127,149,0.16);
@@ -262,7 +264,7 @@ const landingCss = `
   height: 6px;
   border-radius: 999px;
   background: var(--tessy-sky);
-  box-shadow: 0 0 22px rgba(74,168,255,0.36);
+  box-shadow: 0 0 22px rgba(185,193,234,0.34);
 }
 
 .tl-pin-one { left: 51%; top: 122px; }
@@ -331,6 +333,10 @@ const landingCss = `
   display: flex;
   align-items: center;
   gap: 20px;
+}
+
+.tl-mobile-login {
+  display: none;
 }
 
 .tl-outline {
@@ -500,7 +506,7 @@ const landingCss = `
   place-items: center;
   border-radius: 8px;
   background: var(--tessy-sky);
-  color: var(--tessy-deep);
+  color: var(--tessy-graphite);
   font-weight: 600;
 }
 
@@ -539,7 +545,7 @@ const landingCss = `
 .tl-mini-actions span {
   padding: 7px 10px;
   border-radius: 999px;
-  background: #eef2ff;
+  background: #f2f4fa;
   color: var(--tessy-graphite);
   font-size: 12px;
   font-weight: 560;
@@ -700,7 +706,7 @@ const landingCss = `
   padding: 28px;
   border: 1px solid #e8e8e8;
   border-radius: 8px;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f8ff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f6fb 100%);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -721,7 +727,7 @@ const landingCss = `
 
 .tl-lead-box small {
   margin-top: 34px;
-  color: var(--tessy-sky);
+  color: var(--tessy-steel);
   font-size: 15px;
   font-weight: 560;
 }
@@ -736,7 +742,7 @@ const landingCss = `
 
 .tl-panel-copy {
   padding: 58px;
-  background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%);
+  background: linear-gradient(135deg, #f9faff 0%, #f1f3fa 100%);
 }
 
 .tl-panel-copy ul {
@@ -813,7 +819,7 @@ const landingCss = `
   display: inline-flex;
   padding: 7px 11px;
   border-radius: 999px;
-  background: #f1f3ff;
+  background: #f2f4fa;
   color: var(--tessy-graphite);
   font-size: 12px;
   font-weight: 560;
@@ -977,6 +983,24 @@ const landingCss = `
   }
 
   .tl-actions {
+    display: flex;
+    gap: 0;
+  }
+
+  .tl-login {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 14px;
+    border: 1px solid rgba(119,127,149,0.20);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.72);
+    color: var(--tessy-graphite);
+    font-size: 14px;
+    box-shadow: 0 10px 28px rgba(52,57,73,0.08);
+  }
+
+  .tl-outline {
     display: none;
   }
 
@@ -1031,6 +1055,15 @@ const landingCss = `
     width: 100%;
     min-height: 56px;
     border-radius: 8px;
+  }
+
+  .tl-mobile-login {
+    display: inline-flex;
+    margin-top: 14px;
+    color: var(--tessy-graphite);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 560;
   }
 
   .tl-trust {
