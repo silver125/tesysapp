@@ -216,12 +216,17 @@ const landingCss = `
   --tessy-lavender: #b9c1ea;
   --tessy-sky: #4aa8ff;
   --tessy-paper: #f7f8ff;
+  --tessy-heading: #5d6474;
+  --tessy-text: #6f7686;
+  --tessy-muted: #9299a8;
   width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
   background: var(--tessy-paper);
-  color: var(--tessy-deep);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--tessy-text);
+  font-family: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .tl-hero {
@@ -233,7 +238,7 @@ const landingCss = `
     radial-gradient(900px 520px at 52% 28%, rgba(185,193,234,0.28) 0%, rgba(255,255,255,0) 70%),
     radial-gradient(600px 360px at 10% 80%, rgba(74,168,255,0.10) 0%, rgba(255,255,255,0) 72%),
     linear-gradient(180deg, #ffffff 0%, #f7f8ff 100%);
-  color: var(--tessy-deep);
+  color: var(--tessy-text);
   border-bottom: 1px solid rgba(119,127,149,0.16);
 }
 
@@ -280,7 +285,7 @@ const landingCss = `
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  color: var(--tessy-deep);
+  color: var(--tessy-heading);
   text-decoration: none;
 }
 
@@ -292,19 +297,19 @@ const landingCss = `
   border-radius: 8px;
   background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-graphite) 100%);
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 600;
   font-size: 22px;
 }
 
 .tl-brand-name {
   font-size: 34px;
   line-height: 1;
-  font-weight: 900;
+  font-weight: 560;
 }
 
 .tl-brand-name span {
   color: var(--tessy-lavender);
-  font-weight: 850;
+  font-weight: 500;
 }
 
 .tl-nav {
@@ -316,10 +321,10 @@ const landingCss = `
 .tl-nav a,
 .tl-login,
 .tl-outline {
-  color: rgba(23,27,42,0.76);
+  color: rgba(93,100,116,0.88);
   text-decoration: none;
   font-size: 18px;
-  font-weight: 750;
+  font-weight: 560;
 }
 
 .tl-actions {
@@ -361,9 +366,9 @@ const landingCss = `
   border: 1px solid rgba(119,127,149,0.18);
   border-radius: 999px;
   background: #ffffff;
-  color: var(--tessy-graphite);
+  color: var(--tessy-text);
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 560;
   box-shadow: 0 12px 30px rgba(18,24,40,0.08);
 }
 
@@ -377,20 +382,20 @@ const landingCss = `
 .tl-hero h1 {
   max-width: 980px;
   margin: 44px auto 0;
-  font-size: 76px;
-  line-height: 0.98;
-  font-weight: 900;
+  font-size: 64px;
+  line-height: 1.1;
+  font-weight: 480;
   letter-spacing: 0;
-  color: var(--tessy-deep);
+  color: var(--tessy-heading);
 }
 
 .tl-hero-content > p {
   margin-top: 28px;
   max-width: 760px;
-  color: var(--tessy-steel);
-  font-size: 21px;
+  color: var(--tessy-muted);
+  font-size: 20px;
   line-height: 1.45;
-  font-weight: 650;
+  font-weight: 460;
 }
 
 .tl-cta-shell {
@@ -410,7 +415,7 @@ const landingCss = `
 }
 
 .tl-cta-shell span {
-  color: #777777;
+  color: var(--tessy-muted);
   font-size: 17px;
   text-align: left;
   padding-left: 26px;
@@ -428,7 +433,7 @@ const landingCss = `
   color: #ffffff;
   text-decoration: none;
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 560;
 }
 
 .tl-trust {
@@ -436,9 +441,9 @@ const landingCss = `
   display: flex;
   justify-content: center;
   gap: 46px;
-  color: rgba(52,57,73,0.46);
+  color: rgba(111,118,134,0.62);
   font-size: 18px;
-  font-weight: 850;
+  font-weight: 520;
 }
 
 .tl-hero-preview {
@@ -479,7 +484,7 @@ const landingCss = `
   padding: 18px;
   border-radius: 8px;
   background: #ffffff;
-  color: #111111;
+  color: var(--tessy-heading);
 }
 
 .tl-company-row {
@@ -495,19 +500,20 @@ const landingCss = `
   place-items: center;
   border-radius: 8px;
   background: var(--tessy-sky);
-  color: #111111;
-  font-weight: 900;
+  color: var(--tessy-deep);
+  font-weight: 600;
 }
 
 .tl-company-row strong {
   display: block;
   font-size: 15px;
+  font-weight: 560;
 }
 
 .tl-company-row small {
   display: block;
   margin-top: 2px;
-  color: #777777;
+  color: var(--tessy-muted);
   font-size: 11px;
 }
 
@@ -519,7 +525,7 @@ const landingCss = `
 
 .tl-phone-card p {
   margin-top: 8px;
-  color: #5f6270;
+  color: var(--tessy-muted);
   font-size: 13px;
   line-height: 1.35;
 }
@@ -536,7 +542,7 @@ const landingCss = `
   background: #eef2ff;
   color: var(--tessy-graphite);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 560;
 }
 
 .tl-preview-card {
@@ -546,7 +552,7 @@ const landingCss = `
   padding: 18px;
   border-radius: 8px;
   background: rgba(255,255,255,0.96);
-  color: #111111;
+  color: var(--tessy-heading);
   box-shadow: 0 24px 60px rgba(18,24,40,0.14);
 }
 
@@ -556,7 +562,7 @@ const landingCss = `
 .tl-preview-kicker {
   color: var(--tessy-sky);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 560;
   text-transform: uppercase;
 }
 
@@ -564,12 +570,13 @@ const landingCss = `
   display: block;
   margin-top: 10px;
   font-size: 20px;
+  font-weight: 560;
 }
 
 .tl-preview-card span {
   display: block;
   margin-top: 8px;
-  color: #6c6d78;
+  color: var(--tessy-muted);
   font-size: 13px;
   line-height: 1.35;
 }
@@ -613,10 +620,10 @@ const landingCss = `
 }
 
 .tl-eyebrow {
-  color: #7a7a7a;
+  color: var(--tessy-muted);
   font-size: 22px;
   line-height: 1.2;
-  font-weight: 800;
+  font-weight: 480;
 }
 
 .tl-wide-card h2,
@@ -625,10 +632,10 @@ const landingCss = `
 .tl-section-title h2,
 .tl-final h2 {
   margin-top: 8px;
-  color: var(--tessy-deep);
+  color: var(--tessy-heading);
   font-size: 38px;
-  line-height: 1.1;
-  font-weight: 900;
+  line-height: 1.14;
+  font-weight: 540;
   letter-spacing: 0;
 }
 
@@ -665,9 +672,9 @@ const landingCss = `
   border: 1px solid #e5e5e5;
   border-radius: 999px;
   background: #ffffff;
-  color: #25272d;
+  color: var(--tessy-text);
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 520;
   box-shadow: 0 8px 20px rgba(0,0,0,0.04);
 }
 
@@ -684,7 +691,7 @@ const landingCss = `
   background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
   color: #ffffff;
   font-size: 82px;
-  font-weight: 950;
+  font-weight: 560;
   box-shadow: inset 0 -16px 28px rgba(0,0,0,0.18), 0 28px 60px rgba(52,57,73,0.18);
 }
 
@@ -702,20 +709,21 @@ const landingCss = `
 .tl-lead-box strong {
   font-size: 36px;
   line-height: 1.05;
+  font-weight: 540;
 }
 
 .tl-lead-box span {
   margin-top: 16px;
-  color: #50535e;
+  color: var(--tessy-text);
   font-size: 20px;
-  font-weight: 750;
+  font-weight: 480;
 }
 
 .tl-lead-box small {
   margin-top: 34px;
   color: var(--tessy-sky);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 560;
 }
 
 .tl-product-panel {
@@ -741,10 +749,10 @@ const landingCss = `
 .tl-panel-copy li {
   position: relative;
   padding-left: 44px;
-  color: #07080d;
+  color: var(--tessy-text);
   font-size: 24px;
   line-height: 1.25;
-  font-weight: 850;
+  font-weight: 500;
 }
 
 .tl-panel-copy li:before {
@@ -808,7 +816,7 @@ const landingCss = `
   background: #f1f3ff;
   color: var(--tessy-graphite);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 560;
 }
 
 .tl-opportunity strong {
@@ -816,11 +824,13 @@ const landingCss = `
   margin-top: 14px;
   font-size: 22px;
   line-height: 1.08;
+  color: var(--tessy-heading);
+  font-weight: 540;
 }
 
 .tl-opportunity p {
   margin-top: 8px;
-  color: #5d606b;
+  color: var(--tessy-muted);
   font-size: 15px;
   line-height: 1.45;
 }
@@ -833,7 +843,7 @@ const landingCss = `
   border-radius: 999px;
   background: var(--tessy-deep);
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 560;
   cursor: default;
 }
 
@@ -864,15 +874,16 @@ const landingCss = `
 .tl-flow-grid span {
   color: var(--tessy-sky);
   font-size: 18px;
-  font-weight: 950;
+  font-weight: 560;
 }
 
 .tl-flow-grid h3 {
   margin-top: 62px;
-  color: #05060a;
+  color: var(--tessy-heading);
   font-size: 31px;
-  line-height: 1.08;
+  line-height: 1.12;
   letter-spacing: 0;
+  font-weight: 540;
 }
 
 .tl-final {
@@ -901,7 +912,7 @@ const landingCss = `
   color: var(--tessy-deep);
   text-decoration: none;
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 560;
   white-space: nowrap;
 }
 
@@ -915,7 +926,7 @@ const landingCss = `
   }
 
   .tl-hero h1 {
-    font-size: 58px;
+    font-size: 50px;
   }
 
   .tl-trust {
@@ -989,8 +1000,8 @@ const landingCss = `
   .tl-hero h1 {
     margin-top: 28px;
     max-width: 240px;
-    font-size: 28px;
-    line-height: 1.08;
+    font-size: 27px;
+    line-height: 1.12;
   }
 
   .tl-hero-content > p {
