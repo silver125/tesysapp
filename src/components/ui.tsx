@@ -5,7 +5,7 @@ export function Mono({ children, style, className }: { children: ReactNode; styl
   return (
     <span
       className={`mono ${className ?? ''}`}
-      style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', ...style }}
+      style={{ fontFamily: "var(--font-mono)", letterSpacing: '0.08em', ...style }}
     >
       {children}
     </span>
@@ -28,8 +28,8 @@ export function CompanyMark({
       width: size, height: size, borderRadius: rr,
       background: tint, color: fg, flexShrink: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: "'Inter', sans-serif", fontWeight: 700,
-      fontSize: Math.round(size * 0.35), letterSpacing: '-0.02em',
+      fontFamily: 'var(--font-sans)', fontWeight: 560,
+      fontSize: Math.round(size * 0.35), letterSpacing: 0,
     }}>
       {code}
     </div>
@@ -40,7 +40,7 @@ export function CompanyMark({
 export function VerifiedDot({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
-      <circle cx="7" cy="7" r="7" fill="#2E7BFF" />
+      <circle cx="7" cy="7" r="7" fill="var(--accent)" />
       <path d="M4 7.2l2 2L10 5.2" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -60,15 +60,15 @@ export function ModalityBadge({ modality }: { modality: string }) {
   const cfg: Record<string, { label: string; bg: string; color: string; border: string }> = {
     online:     { label: 'Online',     bg: 'rgba(30,169,124,0.12)', color: '#1EA97C', border: 'rgba(30,169,124,0.3)' },
     presencial: { label: 'Presencial', bg: 'rgba(245,130,32,0.12)', color: '#F58220', border: 'rgba(245,130,32,0.3)' },
-    hibrido:    { label: 'Híbrido',    bg: 'rgba(46,123,255,0.12)', color: '#6FA4FF', border: 'rgba(46,123,255,0.3)' },
+    hibrido:    { label: 'Híbrido',    bg: 'rgba(74,168,255,0.12)', color: '#6FA4FF', border: 'rgba(74,168,255,0.3)' },
   };
   const c = cfg[modality] ?? { label: modality, bg: 'rgba(111,122,144,0.12)', color: '#6F7A90', border: 'rgba(111,122,144,0.3)' };
   return (
     <span style={{
       padding: '4px 9px', borderRadius: 999,
       background: c.bg, color: c.color, border: `1px solid ${c.border}`,
-      fontFamily: "'JetBrains Mono', monospace",
-      fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
+      fontFamily: 'var(--font-mono)',
+      fontSize: 10, fontWeight: 560, letterSpacing: '0.04em',
     }}>
       {c.label}
     </span>
@@ -76,14 +76,16 @@ export function ModalityBadge({ modality }: { modality: string }) {
 }
 
 /* ── Small pill chip (category badge) ── */
-export function Chip({ children, color = '#2E7BFF' }: { children: ReactNode; color?: string }) {
+export function Chip({ children, color = 'var(--accent)' }: { children: ReactNode; color?: string }) {
+  const softBg = color.startsWith('#') ? `${color}18` : `color-mix(in srgb, ${color} 12%, transparent)`;
+  const softBorder = color.startsWith('#') ? `${color}35` : `color-mix(in srgb, ${color} 26%, transparent)`;
   return (
     <span style={{
       padding: '4px 9px', borderRadius: 999,
-      background: `${color}18`, color,
-      border: `1px solid ${color}35`,
-      fontFamily: "'JetBrains Mono', monospace",
-      fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', flexShrink: 0,
+      background: softBg, color,
+      border: `1px solid ${softBorder}`,
+      fontFamily: 'var(--font-mono)',
+      fontSize: 10, fontWeight: 560, letterSpacing: '0.04em', flexShrink: 0,
     }}>
       {children}
     </span>
@@ -119,8 +121,8 @@ export function BannerCard({
             position: 'relative',
             padding: '5px 9px', borderRadius: 6,
             background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(6px)',
-            color: '#fff', fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 10, fontWeight: 600, letterSpacing: '0.12em',
+            color: '#fff', fontFamily: 'var(--font-mono)',
+            fontSize: 10, fontWeight: 560, letterSpacing: '0.06em',
           }}>{format}</div>
         )}
         {/* date badge */}
@@ -132,8 +134,8 @@ export function BannerCard({
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', color: '#0F1626',
           }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: '#2E7BFF', letterSpacing: '0.1em' }}>{month}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1, marginTop: 2 }}>{day}</div>
+            <div style={{ fontSize: 9, fontWeight: 560, color: 'var(--accent)', letterSpacing: '0.04em' }}>{month}</div>
+            <div style={{ fontSize: 18, fontWeight: 560, lineHeight: 1, marginTop: 2 }}>{day}</div>
           </div>
         )}
       </div>
@@ -163,7 +165,7 @@ export function Btn({
   size?: 'sm' | 'md' | 'lg'; disabled?: boolean; href?: string; target?: string;
 }) {
   const styles: Record<string, CSSProperties> = {
-    primary:   { background: '#2E7BFF', color: '#fff', border: 'none' },
+    primary:   { background: 'var(--accent-ink)', color: '#fff', border: 'none' },
     secondary: { background: 'var(--chip)', color: 'var(--ink)', border: '1px solid var(--line)' },
     whatsapp:  { background: 'rgba(37,211,102,0.12)', color: '#25D366', border: '1px solid rgba(37,211,102,0.3)' },
     ghost:     { background: 'transparent', color: 'var(--ink-2)', border: '1px solid var(--line)' },
@@ -177,7 +179,7 @@ export function Btn({
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.45 : 1,
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: 'var(--font-sans)',
     transition: 'opacity 0.15s',
     textDecoration: 'none',
     ...styles[variant],

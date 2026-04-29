@@ -1,6 +1,6 @@
 const TINTS = [
-  '#2E7BFF', '#1EA97C', '#F58220', '#5F2C82',
-  '#F25C54', '#8B2D5C', '#4F46E5', '#0F7B8C',
+  '#4AA8FF', '#7FA7B8', '#B9C1EA', '#777F95',
+  '#8FA6D8', '#AAB1C4', '#6F829F', '#343949',
 ];
 
 export function companyTint(name: string): string {
@@ -11,31 +11,31 @@ export function companyTint(name: string): string {
 
 export function categoryTint(cat: string): [string, string] {
   const map: Record<string, [string, string]> = {
-    Congresso: ['#2E7BFF', '#1A46B8'],
-    Workshop: ['#1EA97C', '#0D6B4E'],
-    Simpósio: ['#F58220', '#9E4E0A'],
-    Webinar: ['#5F2C82', '#3A1650'],
-    Treinamento: ['#F25C54', '#9E2B25'],
-    Nutrologia: ['#F58220', '#9E4E0A'],
-    Endocrinologia: ['#1EA97C', '#0D6B4E'],
-    Dermatologia: ['#E63E8C', '#8B1A50'],
-    'Cirurgia Plástica': ['#8B5CF6', '#5B21B6'],
-    Cardiologia: ['#E63946', '#8B1A22'],
-    Oncologia: ['#5F2C82', '#3A1650'],
-    Neurologia: ['#2E7BFF', '#1A46B8'],
-    Ortopedia: ['#0F7B8C', '#074E5A'],
-    Pediatria: ['#F58220', '#9E4E0A'],
-    Gastroenterologia: ['#1EA97C', '#0D6B4E'],
-    Ginecologia: ['#E63E8C', '#8B1A50'],
-    Oftalmologia: ['#4F46E5', '#2D2898'],
-    Psiquiatria: ['#5F2C82', '#3A1650'],
-    Reumatologia: ['#F25C54', '#9E2B25'],
-    Urologia: ['#2E7BFF', '#1A46B8'],
-    Pneumologia: ['#0F7B8C', '#074E5A'],
-    'Clínica Médica': ['#4F46E5', '#2D2898'],
-    Outros: ['#6F7A90', '#3A4255'],
+    Congresso: ['#7FA7B8', '#343949'],
+    Workshop: ['#8FA6D8', '#343949'],
+    Simpósio: ['#AAB1C4', '#343949'],
+    Webinar: ['#B9C1EA', '#343949'],
+    Treinamento: ['#777F95', '#343949'],
+    Nutrologia: ['#AAB1C4', '#343949'],
+    Endocrinologia: ['#7FA7B8', '#343949'],
+    Dermatologia: ['#B9C1EA', '#343949'],
+    'Cirurgia Plástica': ['#8FA6D8', '#343949'],
+    Cardiologia: ['#AAB1C4', '#343949'],
+    Oncologia: ['#777F95', '#343949'],
+    Neurologia: ['#4AA8FF', '#343949'],
+    Ortopedia: ['#7FA7B8', '#343949'],
+    Pediatria: ['#B9C1EA', '#343949'],
+    Gastroenterologia: ['#8FA6D8', '#343949'],
+    Ginecologia: ['#B9C1EA', '#343949'],
+    Oftalmologia: ['#4AA8FF', '#343949'],
+    Psiquiatria: ['#777F95', '#343949'],
+    Reumatologia: ['#AAB1C4', '#343949'],
+    Urologia: ['#4AA8FF', '#343949'],
+    Pneumologia: ['#7FA7B8', '#343949'],
+    'Clínica Médica': ['#8FA6D8', '#343949'],
+    Outros: ['#777F95', '#343949'],
   };
-  return map[cat] ?? ['#2E7BFF', '#1A46B8'];
+  return map[cat] ?? ['#4AA8FF', '#343949'];
 }
 
 export function buildWhatsappLink(phone: string | undefined, message?: string) {

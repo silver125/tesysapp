@@ -36,7 +36,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
       {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 20,
-        background: 'rgba(247,245,250,0.88)', backdropFilter: 'blur(14px)',
+        background: 'rgba(247,248,255,0.9)', backdropFilter: 'blur(14px)',
         borderBottom: '1px solid var(--line)',
       }}>
         <div style={{
@@ -47,19 +47,19 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 32, height: 32, borderRadius: 10,
-              background: 'linear-gradient(135deg,#2E7BFF 0%,#5F2C82 100%)',
+              background: 'var(--deep)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontWeight: 700, fontSize: 16, letterSpacing: '-0.03em',
+              color: '#fff', fontWeight: 560, fontSize: 16, letterSpacing: 0,
             }}>T</div>
-            <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
-              Tessy<span style={{ color: 'var(--accent)' }}>.</span>
+            <span style={{ fontWeight: 560, fontSize: 17, letterSpacing: 0, color: 'var(--accent-ink)' }}>
+              Tessy<span style={{ color: 'var(--lavender)' }}>.app</span>
             </span>
           </div>
 
           {/* User + logout */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ display: 'none' }} className="sm:flex items-center gap-2">
-              <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: "'JetBrains Mono', monospace" }}>
+              <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
                 {user?.role === 'medico' ? 'médico' : 'empresa'}
               </span>
             </div>
@@ -69,7 +69,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'var(--muted)', fontSize: 12,
-                fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+                fontFamily: 'var(--font-mono)', letterSpacing: '0.04em',
               }}
             >
               sair
@@ -97,8 +97,8 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
         }}>
           {navItems.map(item => {
             const active = item.key === activeKey;
-            const accent = '#2E7BFF';
-            const muted = '#6F7A90';
+            const accent = 'var(--accent)';
+            const muted = 'var(--muted)';
 
             if (item.big) {
               return (
@@ -109,7 +109,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
                     width: 52, height: 52, borderRadius: '50%',
                     background: 'transparent', border: 'none', cursor: 'pointer',
                     marginTop: -18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    filter: 'drop-shadow(0 6px 16px rgba(46,123,255,0.4))',
+                    filter: 'drop-shadow(0 8px 18px rgba(52,57,73,0.20))',
                   }}
                 >
                   {item.icon(active)}
@@ -137,7 +137,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
                 {item.icon(active)}
                 <span style={{
                   fontSize: 10, fontWeight: 500,
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: 'var(--font-sans)',
                 }}>
                   {item.label}
                 </span>
@@ -147,7 +147,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
         </div>
         {/* Home indicator */}
         <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 6 }}>
-          <div style={{ width: 100, height: 3.5, borderRadius: 999, background: 'rgba(90,80,130,0.18)' }} />
+          <div style={{ width: 100, height: 3.5, borderRadius: 999, background: 'rgba(52,57,73,0.14)' }} />
         </div>
       </nav>
     </div>

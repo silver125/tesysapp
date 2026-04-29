@@ -96,22 +96,22 @@ export default function Register() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      color: 'var(--ink)', background: '#FBFAFD',
+      color: 'var(--ink)', background: 'var(--bg)',
     }}>
 
       {/* ── Header ── */}
       <header style={{
         padding: '16px clamp(20px, 5vw, 72px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(26,27,46,0.08)', position: 'sticky', top: 0, zIndex: 10,
-        background: 'rgba(251,250,253,0.92)', backdropFilter: 'blur(14px)',
+        borderBottom: '1px solid var(--line)', position: 'sticky', top: 0, zIndex: 10,
+        background: 'rgba(247,248,255,0.92)', backdropFilter: 'blur(14px)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {step > 0 && (
             <button onClick={back} style={{
               width: 38, height: 38, borderRadius: 8,
-              background: '#fff', border: '1px solid rgba(26,27,46,0.10)', cursor: 'pointer',
-              color: '#4F4D61', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#fff', border: '1px solid var(--line)', cursor: 'pointer',
+              color: 'var(--ink-2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
               padding: 0, marginRight: 2,
             }}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -122,13 +122,13 @@ export default function Register() {
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
             <div style={{
               width: 38, height: 38, borderRadius: 8,
-              background: '#17142F',
+              background: 'var(--deep)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontWeight: 800, fontSize: 18,
+              color: '#fff', fontWeight: 560, fontSize: 18,
             }}>T</div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: 19, letterSpacing: 0, lineHeight: 1, color: 'var(--ink)' }}>
-                Tessy<span style={{ color: '#2E7BFF' }}>.</span>
+              <div style={{ fontWeight: 560, fontSize: 19, letterSpacing: 0, lineHeight: 1, color: 'var(--accent-ink)' }}>
+                Tessy<span style={{ color: 'var(--lavender)' }}>.app</span>
               </div>
               <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 3 }}>
                 saúde + negócios
@@ -136,7 +136,7 @@ export default function Register() {
             </div>
           </Link>
         </div>
-        <Link to="/entrar" style={{ fontSize: 14, fontWeight: 800, color: '#2E7BFF', textDecoration: 'none' }}>
+        <Link to="/entrar" style={{ fontSize: 14, fontWeight: 560, color: 'var(--accent-ink)', textDecoration: 'none' }}>
           Entrar
         </Link>
       </header>
@@ -147,27 +147,27 @@ export default function Register() {
           <div key={i} style={{
             height: 4, borderRadius: 999,
             width: i === step ? 24 : 8,
-            background: i <= step ? '#2E7BFF' : 'rgba(26,27,46,0.10)',
+            background: i <= step ? 'var(--accent)' : 'rgba(26,27,46,0.10)',
             transition: 'width 0.3s ease, background 0.3s ease',
           }} />
         ))}
       </div>
 
       {/* ── Content ── */}
-      <main style={{ flex: 1, maxWidth: 460, width: '100%', margin: '0 auto', padding: '34px 24px 28px' }}>
+      <main className="tessy-register-main" style={{ flex: 1, maxWidth: 460, width: '100%', margin: '0 auto', padding: '34px 24px 28px' }}>
 
         {/* Title */}
         <div style={{ marginBottom: 26 }}>
-          <p style={{ fontSize: 12, color: '#285DE8', fontWeight: 800, marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <p style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 560, marginBottom: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             Etapa {step + 1} de {totalSteps} · {stepLabels[step]}
           </p>
-          <h1 style={{ fontSize: 38, fontWeight: 900, letterSpacing: 0, lineHeight: 1.02, color: '#17142F' }}>
-            {step === 0 && <>Escolha seu perfil<span style={{ color: '#2E7BFF' }}>.</span></>}
-            {step === 1 && data.role === 'medico' && <>Dados profissionais<span style={{ color: '#2E7BFF' }}>.</span></>}
-            {step === 1 && data.role === 'empresa' && <>Dados comerciais<span style={{ color: '#2E7BFF' }}>.</span></>}
-            {step === 2 && <>Crie seu acesso<span style={{ color: '#2E7BFF' }}>.</span></>}
+          <h1 className="tessy-auth-title" style={{ fontSize: 38, fontWeight: 560, letterSpacing: 0, lineHeight: 1.08, color: 'var(--accent-ink)' }}>
+            {step === 0 && <>Escolha seu perfil<span style={{ color: 'var(--accent)' }}>.</span></>}
+            {step === 1 && data.role === 'medico' && <>Dados profissionais<span style={{ color: 'var(--accent)' }}>.</span></>}
+            {step === 1 && data.role === 'empresa' && <>Dados comerciais<span style={{ color: 'var(--accent)' }}>.</span></>}
+            {step === 2 && <>Crie seu acesso<span style={{ color: 'var(--accent)' }}>.</span></>}
           </h1>
-          <p style={{ marginTop: 12, fontSize: 15, color: '#666477', lineHeight: 1.55 }}>
+          <p style={{ marginTop: 12, fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.55 }}>
             {step === 0 && 'O Tessy adapta a experiência para médicos e empresas.'}
             {step === 1 && data.role === 'medico' && 'Esses dados ajudam empresas a entenderem seu perfil profissional.'}
             {step === 1 && data.role === 'empresa' && 'Configure o contato que médicos usarão para falar com seu representante.'}
@@ -190,8 +190,8 @@ export default function Register() {
         {step === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {([
-              { role: 'medico' as UserRole, emoji: '🩺', title: 'Sou médico', desc: 'Acesso a eventos, produtos e cursos' },
-              { role: 'empresa' as UserRole, emoji: '🏢', title: 'Sou empresa', desc: 'Publique conteúdo para profissionais de saúde' },
+              { role: 'medico' as UserRole, code: 'M', title: 'Sou médico', desc: 'Acesso a eventos, produtos e representantes' },
+              { role: 'empresa' as UserRole, code: 'E', title: 'Sou empresa', desc: 'Publique produtos, eventos e receba leads médicos' },
             ]).map(opt => {
               const active = data.role === opt.role;
               return (
@@ -201,31 +201,33 @@ export default function Register() {
                   onClick={() => pickRole(opt.role)}
                   style={{
                     textAlign: 'left', padding: '18px 16px',
-                    borderRadius: 8, border: `1.5px solid ${active ? '#2E7BFF' : 'rgba(26,27,46,0.10)'}`,
-                    background: active ? '#EEF4FF' : '#fff',
+                    borderRadius: 8, border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
+                    background: active ? 'var(--accent-soft)' : '#fff',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16,
                     transition: 'border-color 0.15s, background 0.15s',
                     WebkitTapHighlightColor: 'transparent',
-                    boxShadow: active ? '0 12px 28px rgba(46,123,255,0.12)' : '0 10px 26px rgba(23,20,47,0.06)',
+                    boxShadow: active ? '0 12px 28px rgba(74,168,255,0.10)' : 'var(--shadow-sm)',
                   }}
                 >
                   <div style={{
                     width: 46, height: 46, borderRadius: 8, flexShrink: 0,
-                    background: active ? 'rgba(46,123,255,0.12)' : '#F4F6FB',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26,
+                    background: active ? 'var(--accent-ink)' : 'var(--chip)',
+                    color: active ? '#fff' : 'var(--ink-2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16, fontWeight: 560,
                   }}>
-                    {opt.emoji}
+                    {opt.code}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--ink)' }}>{opt.title}</div>
+                    <div style={{ fontSize: 17, fontWeight: 560, color: 'var(--accent-ink)' }}>{opt.title}</div>
                     <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 3, lineHeight: 1.4 }}>{opt.desc}</div>
                   </div>
                   <div style={{
                     width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                    background: active ? '#2E7BFF' : 'transparent',
-                    border: `2px solid ${active ? '#2E7BFF' : 'rgba(26,27,46,0.14)'}`,
+                    background: active ? 'var(--accent)' : 'transparent',
+                    border: `2px solid ${active ? 'var(--accent)' : 'rgba(26,27,46,0.14)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontSize: 13, fontWeight: 800,
+                    color: '#fff', fontSize: 13, fontWeight: 560,
                     transition: 'all 0.15s',
                   }}>
                     {active && '✓'}
@@ -234,7 +236,7 @@ export default function Register() {
               );
             })}
             <p style={{ textAlign: 'center', fontSize: 13, color: '#777487', marginTop: 4 }}>
-              Toque para selecionar e avançar automaticamente
+              Selecione para continuar
             </p>
           </div>
         )}
@@ -264,12 +266,12 @@ export default function Register() {
                   placeholder="123456"
                   style={{
                     width: '100%', padding: '13px 14px', borderRadius: 8,
-                    border: '1.5px solid rgba(26,27,46,0.12)', background: '#fff',
+                    border: '1.5px solid var(--line)', background: '#fff',
                     color: 'var(--ink)', fontSize: 16, outline: 'none',
                     transition: 'border-color 0.15s', boxSizing: 'border-box',
                   }}
-                  onFocus={e => e.target.style.borderColor = '#2E7BFF'}
-                  onBlur={e => e.target.style.borderColor = 'rgba(26,27,46,0.12)'}
+                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--line)'}
                 />
               </div>
               <div style={{ width: 90 }}>
@@ -281,14 +283,14 @@ export default function Register() {
                   onChange={e => update('crmState', e.target.value)}
                   style={{
                     width: '100%', padding: '13px 8px', borderRadius: 8,
-                    border: '1.5px solid rgba(26,27,46,0.12)', background: '#fff',
+                    border: '1.5px solid var(--line)', background: '#fff',
                     color: data.crmState ? 'var(--ink)' : 'var(--muted)',
-                    fontSize: 15, fontWeight: 700, outline: 'none',
+                    fontSize: 15, fontWeight: 560, outline: 'none',
                     appearance: 'none', textAlign: 'center', cursor: 'pointer',
                     transition: 'border-color 0.15s', boxSizing: 'border-box',
                   }}
-                  onFocus={e => e.target.style.borderColor = '#2E7BFF'}
-                  onBlur={e => e.target.style.borderColor = 'rgba(26,27,46,0.12)'}
+                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--line)'}
                 >
                   <option value="">UF</option>
                   {BR_STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -310,9 +312,9 @@ export default function Register() {
                       onClick={() => update('specialty', sel ? '' : s)}
                       style={{
                         padding: '8px 14px', borderRadius: 999,
-                        border: `1.5px solid ${sel ? '#2E7BFF' : 'rgba(26,27,46,0.10)'}`,
+                        border: `1.5px solid ${sel ? 'var(--accent)' : 'rgba(26,27,46,0.10)'}`,
                         background: sel ? '#EEF4FF' : '#fff',
-                        color: sel ? '#2E7BFF' : '#4F4D61',
+                        color: sel ? 'var(--accent)' : 'var(--ink-2)',
                         fontSize: 13, fontWeight: sel ? 700 : 500, cursor: 'pointer',
                         transition: 'all 0.15s',
                         WebkitTapHighlightColor: 'transparent',
@@ -357,13 +359,13 @@ export default function Register() {
                   placeholder="(11) 99999-9999"
                   style={{
                     width: '100%', padding: '18px 16px 18px 46px',
-                    borderRadius: 8, border: '1.5px solid rgba(26,27,46,0.12)',
+                    borderRadius: 8, border: '1.5px solid var(--line)',
                     background: '#fff', color: 'var(--ink)',
                     fontSize: 16, outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.15s',
                   }}
                   onFocus={e => e.target.style.borderColor = '#25D366'}
-                  onBlur={e => e.target.style.borderColor = 'rgba(26,27,46,0.12)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--line)'}
                 />
               </div>
               <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
@@ -413,11 +415,11 @@ export default function Register() {
               disabled={!ready}
               style={{
                 width: '100%', padding: '14px 18px', borderRadius: 8, border: 'none',
-                background: ready ? '#2E7BFF' : '#EEF0F6',
+                background: ready ? 'var(--accent-ink)' : '#EEF0F6',
                 color: ready ? '#fff' : 'var(--muted)',
-                fontSize: 16, fontWeight: 700,
+                fontSize: 16, fontWeight: 560,
                 cursor: ready ? 'pointer' : 'not-allowed',
-                boxShadow: ready ? '0 10px 24px rgba(46,123,255,0.24)' : 'none',
+                boxShadow: ready ? '0 10px 24px rgba(52,57,73,0.18)' : 'none',
                 transition: 'all 0.2s',
                 WebkitTapHighlightColor: 'transparent',
               }}
@@ -427,7 +429,7 @@ export default function Register() {
             {step === totalSteps - 1 && (
               <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)' }}>
                 Já tem conta?{' '}
-                <Link to="/entrar" style={{ color: '#2E7BFF', fontWeight: 800, textDecoration: 'none' }}>Entrar</Link>
+                <Link to="/entrar" style={{ color: 'var(--accent-ink)', fontWeight: 560, textDecoration: 'none' }}>Entrar</Link>
               </p>
             )}
           </div>
@@ -439,7 +441,7 @@ export default function Register() {
         <div style={{ textAlign: 'center', padding: '0 24px 32px', marginTop: 'auto' }}>
           <p style={{ fontSize: 13, color: 'var(--ink-2)' }}>
             Já tem conta?{' '}
-            <Link to="/entrar" style={{ color: '#2E7BFF', fontWeight: 800, textDecoration: 'none' }}>Entrar</Link>
+            <Link to="/entrar" style={{ color: 'var(--accent-ink)', fontWeight: 560, textDecoration: 'none' }}>Entrar</Link>
           </p>
         </div>
       )}
@@ -461,13 +463,13 @@ function BigField({ label, type = 'text', value, onChange, placeholder, autoComp
         placeholder={placeholder} autoComplete={autoComplete}
         style={{
           width: '100%', padding: '13px 14px', borderRadius: 8,
-          border: '1.5px solid rgba(26,27,46,0.12)', background: '#fff',
+          border: '1.5px solid var(--line)', background: '#fff',
           color: 'var(--ink)', fontSize: 16, outline: 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s', boxSizing: 'border-box',
         }}
         onFocus={e => {
-          e.target.style.borderColor = '#2E7BFF';
-          e.target.style.boxShadow = '0 0 0 3px rgba(46,123,255,0.10)';
+          e.target.style.borderColor = 'var(--accent)';
+          e.target.style.boxShadow = '0 0 0 3px rgba(74,168,255,0.10)';
         }}
         onBlur={e => {
           e.target.style.borderColor = 'rgba(26,27,46,0.12)';

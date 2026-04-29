@@ -11,29 +11,29 @@ import type { Event, Product, Course, CourseModality, Lead } from '../../types';
 type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads';
 
 function IcoHome(a: boolean) {
-  const c = a ? '#2E7BFF' : '#6F7A90';
+  const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="19" viewBox="0 0 20 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M2 9l8-7 8 7v9H13v-5H7v5H2z" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 }
 function IcoCalendar(a: boolean) {
-  const c = a ? '#2E7BFF' : '#6F7A90';
+  const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><rect x="1.5" y="3.5" width="16" height="14" rx="2"/><path d="M13.5 2v3M5.5 2v3M1.5 8.5h16" strokeLinecap="round"/></svg>;
 }
 function IcoBox(a: boolean) {
-  const c = a ? '#2E7BFF' : '#6F7A90';
+  const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
 }
 function IcoBook(a: boolean) {
-  const c = a ? '#2E7BFF' : '#6F7A90';
+  const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
 }
 function IcoLeads(a: boolean) {
-  const c = a ? '#2E7BFF' : '#6F7A90';
+  const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M6.5 10.5a3.5 3.5 0 117 0M3 18a7 7 0 0114 0"/><path d="M2.5 5.5h3M14.5 5.5h3M4 2.5l2 2M16 2.5l-2 2" strokeLinecap="round"/></svg>;
 }
 function IcoBigCreate() {
   return (
     <svg width="52" height="52" viewBox="0 0 52 52">
-      <circle cx="26" cy="26" r="26" fill="#2E7BFF"/>
+      <circle cx="26" cy="26" r="26" fill="var(--accent)"/>
       <path d="M26 14v24M14 26h24" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
     </svg>
   );
@@ -120,8 +120,8 @@ export default function CompanyDashboard() {
               <CompanyMark code={code} tint={tint} size={60} />
               {!editingProfile ? (
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-                    {user?.company ?? user?.name}<span style={{ color: '#2E7BFF' }}>.</span>
+                  <h1 style={{ fontSize: 22, fontWeight: 560, letterSpacing: 0, lineHeight: 1.1 }}>
+                    {user?.company ?? user?.name}<span style={{ color: 'var(--accent)' }}>.</span>
                   </h1>
                   {user?.whatsapp ? (
                     <a
@@ -138,7 +138,7 @@ export default function CompanyDashboard() {
               ) : (
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
                       NOME DA EMPRESA
                     </div>
                     <input
@@ -147,13 +147,13 @@ export default function CompanyDashboard() {
                       placeholder="Nome da empresa"
                       style={{
                         width: '100%', padding: '9px 12px', borderRadius: 8,
-                        background: 'var(--bg)', border: '1.5px solid #2E7BFF',
+                        background: 'var(--bg)', border: '1.5px solid var(--accent)',
                         color: 'var(--ink)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
                       }}
                     />
                   </div>
                   <div>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
                       WHATSAPP
                     </div>
                     <div style={{ position: 'relative' }}>
@@ -196,8 +196,8 @@ export default function CompanyDashboard() {
                       }}
                       style={{
                         flex: 2, padding: '9px', borderRadius: 8, border: 'none',
-                        background: '#2E7BFF', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                        boxShadow: '0 4px 16px rgba(46,123,255,0.3)',
+                        background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 560, cursor: 'pointer',
+                        boxShadow: '0 4px 16px rgba(74,168,255,0.3)',
                       }}
                     >Salvar</button>
                   </div>
@@ -239,7 +239,7 @@ export default function CompanyDashboard() {
                 flex: 1, textAlign: 'center', padding: '16px 8px',
                 borderRight: i < 2 ? '1px solid var(--line)' : 'none',
               }}>
-                <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em' }}>{s.v}</div>
+                <div style={{ fontSize: 26, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>{s.v}</div>
                 <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>{s.l}</Mono>
               </div>
             ))}
@@ -250,13 +250,13 @@ export default function CompanyDashboard() {
             marginBottom: 24,
             padding: 16,
             borderRadius: 18,
-            background: 'linear-gradient(135deg, rgba(46,123,255,0.10) 0%, rgba(30,169,124,0.08) 100%)',
-            border: '1px solid rgba(46,123,255,0.16)',
+            background: 'linear-gradient(135deg, rgba(74,168,255,0.10) 0%, rgba(30,169,124,0.08) 100%)',
+            border: '1px solid rgba(74,168,255,0.16)',
           }}>
-            <Mono style={{ fontSize: 9, color: '#2E7BFF', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+            <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
               Ponte comercial
             </Mono>
-            <div style={{ marginTop: 8, fontSize: 18, color: 'var(--ink)', fontWeight: 700, lineHeight: 1.2 }}>
+            <div style={{ marginTop: 8, fontSize: 18, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.2 }}>
               Leads médicos qualificados
             </div>
             <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
@@ -268,10 +268,10 @@ export default function CompanyDashboard() {
               padding: '11px 12px',
               borderRadius: 12,
               border: 'none',
-              background: '#2E7BFF',
+              background: 'var(--accent)',
               color: '#fff',
               fontSize: 13,
-              fontWeight: 700,
+              fontWeight: 560,
               cursor: 'pointer',
             }}>
               Abrir leads
@@ -304,11 +304,11 @@ export default function CompanyDashboard() {
           {myEvents.length > 0 && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: 16, fontWeight: 700 }}>Meus eventos</span>
+                <span style={{ fontSize: 16, fontWeight: 560 }}>Meus eventos</span>
                 <button onClick={() => setTab('events')} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
-                  color: '#2E7BFF', letterSpacing: '0.1em', textTransform: 'uppercase',
+                  fontFamily: "var(--font-mono)", fontSize: 10,
+                  color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
                 }}>ver todos →</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -504,15 +504,15 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {/* Progress */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 28 }}>
         {Array.from({ length: totalSteps }, (_, i) => (
-          <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= step ? '#2E7BFF' : 'var(--line)', transition: 'background 0.3s' }} />
+          <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= step ? 'var(--accent)' : 'var(--line)', transition: 'background 0.3s' }} />
         ))}
       </div>
 
       {/* Step 0: choose kind */}
       {step === 0 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
-            O que você quer criar<span style={{ color: '#2E7BFF' }}>?</span>
+          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+            O que você quer criar<span style={{ color: 'var(--accent)' }}>?</span>
           </h2>
           <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24 }}>
             Médicos verão no app deles imediatamente.
@@ -527,8 +527,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
               return (
                 <button key={k} onClick={() => setKind(k)} style={{
                   padding: '16px', borderRadius: 16, cursor: 'pointer', textAlign: 'left',
-                  background: kind === k ? 'rgba(46,123,255,0.08)' : 'var(--card)',
-                  border: `2px solid ${kind === k ? '#2E7BFF' : 'var(--line)'}`,
+                  background: kind === k ? 'rgba(74,168,255,0.08)' : 'var(--card)',
+                  border: `2px solid ${kind === k ? 'var(--accent)' : 'var(--line)'}`,
                   display: 'flex', alignItems: 'center', gap: 14,
                 }}>
                   <div style={{
@@ -536,11 +536,11 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0,
                   }}>{cfg.icon}</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>{cfg.title}</div>
+                    <div style={{ fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{cfg.title}</div>
                     <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{cfg.desc}</div>
                   </div>
                   {kind === k && (
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#2E7BFF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>✓</div>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>✓</div>
                   )}
                 </button>
               );
@@ -552,8 +552,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {/* Event steps */}
       {kind === 'event' && step === 1 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
-            Sobre o evento<span style={{ color: '#2E7BFF' }}>.</span>
+          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+            Sobre o evento<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <WField label="TÍTULO" value={ev.title} onChange={v => setEv(p => ({ ...p, title: v }))} placeholder="Ex: Simpósio de Cardiologia 2025" />
@@ -567,8 +567,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       )}
       {kind === 'event' && step === 2 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
-            Data e local<span style={{ color: '#2E7BFF' }}>.</span>
+          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+            Data e local<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -584,8 +584,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {/* Product steps */}
       {kind === 'product' && step === 1 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
-            Produto e representante<span style={{ color: '#2E7BFF' }}>.</span>
+          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+            Produto e representante<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, marginBottom: 16 }}>
             Publique uma oportunidade clara para o médico chamar o representante.
@@ -604,8 +604,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {/* Course steps */}
       {kind === 'course' && step === 1 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
-            Sobre o curso<span style={{ color: '#2E7BFF' }}>.</span>
+          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+            Sobre o curso<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <WField label="TÍTULO" value={co.title} onChange={v => setCo(p => ({ ...p, title: v }))} placeholder="Ex: Atualização em ECG" />
@@ -617,8 +617,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       )}
       {kind === 'course' && step === 2 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 8 }}>
-            Formato e preço<span style={{ color: '#2E7BFF' }}>.</span>
+          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+            Formato e preço<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
@@ -627,8 +627,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
                 {MODALITIES.map(m => (
                   <button key={m.value} onClick={() => setCo(p => ({ ...p, modality: m.value }))} style={{
                     padding: '14px 8px', borderRadius: 12, cursor: 'pointer',
-                    background: co.modality === m.value ? 'rgba(46,123,255,0.08)' : 'var(--card)',
-                    border: `1.5px solid ${co.modality === m.value ? '#2E7BFF' : 'var(--line)'}`,
+                    background: co.modality === m.value ? 'rgba(74,168,255,0.08)' : 'var(--card)',
+                    border: `1.5px solid ${co.modality === m.value ? 'var(--accent)' : 'var(--line)'}`,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                     fontSize: 12, fontWeight: 600, color: co.modality === m.value ? '#6FA4FF' : 'var(--ink-2)',
                   }}>
@@ -669,19 +669,19 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
         {step < totalSteps - 1 ? (
           <button onClick={handleNext} style={{
             flex: 1, height: 52, borderRadius: 14, border: 'none',
-            background: '#2E7BFF', color: '#fff', cursor: 'pointer',
-            fontSize: 15, fontWeight: 700,
-            boxShadow: '0 6px 24px rgba(46,123,255,0.3)',
+            background: 'var(--accent)', color: '#fff', cursor: 'pointer',
+            fontSize: 15, fontWeight: 560,
+            boxShadow: '0 6px 24px rgba(74,168,255,0.3)',
           }}>
             Continuar →
           </button>
         ) : (
           <button onClick={handleFinish} disabled={saving} style={{
             flex: 1, height: 52, borderRadius: 14, border: 'none',
-            background: saving ? '#1a5cbf' : '#2E7BFF', color: '#fff',
+            background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
             cursor: saving ? 'not-allowed' : 'pointer',
-            fontSize: 15, fontWeight: 700, opacity: saving ? 0.8 : 1,
-            boxShadow: '0 6px 24px rgba(46,123,255,0.3)',
+            fontSize: 15, fontWeight: 560, opacity: saving ? 0.8 : 1,
+            boxShadow: '0 6px 24px rgba(74,168,255,0.3)',
           }}>
             {saving
               ? 'Publicando...'
@@ -700,12 +700,12 @@ function ListTab({ title, onAdd, empty, emptyText, children }: {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
-          {title}<span style={{ color: '#2E7BFF' }}>.</span>
+        <h1 style={{ fontSize: 22, fontWeight: 560, letterSpacing: 0 }}>
+          {title}<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <button onClick={onAdd} style={{
           padding: '8px 16px', borderRadius: 10, border: 'none',
-          background: '#2E7BFF', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+          background: 'var(--accent)', color: '#fff', fontWeight: 560, fontSize: 13, cursor: 'pointer',
         }}>+ Novo</button>
       </div>
       {empty
@@ -726,15 +726,15 @@ function EventRowCompany({ ev }: { ev: Event }) {
         background: `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff',
       }}>
-        <div style={{ fontSize: 9, fontWeight: 700 }}>{ev.date ? ev.date.split('-')[1] : ''}</div>
-        <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1 }}>{ev.date ? ev.date.split('-')[2] : ''}</div>
+        <div style={{ fontSize: 9, fontWeight: 560 }}>{ev.date ? ev.date.split('-')[1] : ''}</div>
+        <div style={{ fontSize: 18, fontWeight: 560, lineHeight: 1 }}>{ev.date ? ev.date.split('-')[2] : ''}</div>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2 }}>{ev.title}</div>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{ev.location}</div>
         <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
-          <Chip color="#2E7BFF">{ev.registeredCount}/{ev.maxParticipants}</Chip>
-          <Mono style={{ fontSize: 10, color: '#1EA97C', fontWeight: 700 }}>✓ ATIVO</Mono>
+          <Chip color="var(--accent)">{ev.registeredCount}/{ev.maxParticipants}</Chip>
+          <Mono style={{ fontSize: 10, color: '#1EA97C', fontWeight: 560 }}>✓ ATIVO</Mono>
         </div>
       </div>
     </div>
@@ -750,7 +750,7 @@ function EventCardCompany({ ev, onDelete, onEdit }: { ev: Event; onDelete: () =>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Chip color={tint1}>{ev.category}</Chip>
-            <div style={{ fontSize: 15, fontWeight: 700, marginTop: 8, color: 'var(--ink)' }}>{ev.title}</div>
+            <div style={{ fontSize: 15, fontWeight: 560, marginTop: 8, color: 'var(--ink)' }}>{ev.title}</div>
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{fmt(ev.date)} · {ev.location}</div>
             <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
               <Mono style={{ fontSize: 10, color: 'var(--ink-2)' }}>👥 {ev.registeredCount}/{ev.maxParticipants} inscritos</Mono>
@@ -775,21 +775,21 @@ function EventCardCompany({ ev, onDelete, onEdit }: { ev: Event; onDelete: () =>
 
 function LeadInbox({ leads }: { leads: Lead[] }) {
   const intentLabel: Record<Lead['intent'], { label: string; color: string }> = {
-    representative_contact: { label: 'Representante', color: '#2E7BFF' },
+    representative_contact: { label: 'Representante', color: 'var(--accent)' },
     sample_request: { label: 'Amostra', color: '#1EA97C' },
     instagram_partnership: { label: 'Instagram', color: '#E63E8C' },
-    event_interest: { label: 'Evento', color: '#5F2C82' },
+    event_interest: { label: 'Evento', color: 'var(--accent-ink)' },
     course_interest: { label: 'Curso', color: '#F58220' },
   };
 
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
-        <Mono style={{ fontSize: 10, color: '#2E7BFF', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+        <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
           Relacionamento médico
         </Mono>
-        <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em' }}>
-          Leads qualificados<span style={{ color: '#2E7BFF' }}>.</span>
+        <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
+          Leads qualificados<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
           Pedidos de amostra, contato com representante, interesse em eventos e propostas de divulgação.
@@ -798,7 +798,7 @@ function LeadInbox({ leads }: { leads: Lead[] }) {
 
       {leads.length === 0 ? (
         <div style={{ padding: 24, borderRadius: 18, background: 'var(--card)', border: '1px solid var(--line)' }}>
-          <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 700 }}>Nenhum lead ainda.</div>
+          <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>Nenhum lead ainda.</div>
           <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
             Quando um médico clicar em representante, amostra, evento ou divulgação, ele aparecerá aqui.
           </p>
@@ -822,7 +822,7 @@ function LeadInbox({ leads }: { leads: Lead[] }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
                   <div style={{ minWidth: 0 }}>
                     <Chip color={intent.color}>{intent.label}</Chip>
-                    <div style={{ marginTop: 10, fontSize: 16, color: 'var(--ink)', fontWeight: 700 }}>
+                    <div style={{ marginTop: 10, fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>
                       {lead.doctorName}
                     </div>
                     <div style={{ marginTop: 3, color: 'var(--muted)', fontSize: 12 }}>
@@ -841,7 +841,7 @@ function LeadInbox({ leads }: { leads: Lead[] }) {
                   background: 'var(--bg)',
                   border: '1px solid var(--line)',
                 }}>
-                  <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 700 }}>{lead.itemName}</div>
+                  <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 560 }}>{lead.itemName}</div>
                   {lead.message && (
                     <div style={{ marginTop: 5, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
                       {lead.message}
@@ -863,7 +863,7 @@ function LeadInbox({ leads }: { leads: Lead[] }) {
                     border: '1px solid rgba(37,211,102,0.32)',
                     textDecoration: 'none',
                     fontSize: 13,
-                    fontWeight: 700,
+                    fontWeight: 560,
                   }}>
                     <WaIcon size={14} /> Falar com médico
                   </a>
@@ -892,15 +892,15 @@ function ProductCardCompany({ product, onDelete }: { product: Product; onDelete:
             <Chip color={tint1}>{product.category}</Chip>
             <Chip color="#25D366">Representante</Chip>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginTop: 8, color: 'var(--ink)' }}>{product.name}</div>
+          <div style={{ fontSize: 15, fontWeight: 560, marginTop: 8, color: 'var(--ink)' }}>{product.name}</div>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3, lineHeight: 1.4 }}>{product.description}</div>
           {product.availableFor && (
             <div style={{
               marginTop: 9,
               padding: '9px 10px',
               borderRadius: 10,
-              background: 'rgba(46,123,255,0.06)',
-              border: '1px solid rgba(46,123,255,0.14)',
+              background: 'rgba(74,168,255,0.06)',
+              border: '1px solid rgba(74,168,255,0.14)',
               color: 'var(--ink-2)',
               fontSize: 12,
               lineHeight: 1.4,
@@ -910,7 +910,7 @@ function ProductCardCompany({ product, onDelete }: { product: Product; onDelete:
           )}
           <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {product.price && <Chip color="#1EA97C">{product.price}</Chip>}
-            {product.website && <Chip color="#5F2C82">Material</Chip>}
+            {product.website && <Chip color="var(--accent-ink)">Material</Chip>}
           </div>
         </div>
         <button onClick={onDelete} style={{
@@ -933,7 +933,7 @@ function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () 
             <Chip color={tint1}>{course.category}</Chip>
             <ModalityBadge modality={course.modality} />
           </div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginTop: 8, color: 'var(--ink)' }}>{course.title}</div>
+          <div style={{ fontSize: 15, fontWeight: 560, marginTop: 8, color: 'var(--ink)' }}>{course.title}</div>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>🎓 {course.instructor} · ⏱ {course.duration}</div>
           {course.price && <div style={{ marginTop: 8 }}><Chip color="#1EA97C">{course.price}</Chip></div>}
         </div>
@@ -954,7 +954,7 @@ function WField({ label, value, onChange, type = 'text', placeholder, as = 'inpu
   const base = {
     width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid var(--line)',
     background: 'transparent', color: 'var(--ink)', fontSize: 16, fontWeight: 500,
-    outline: 'none', fontFamily: "'Inter', sans-serif",
+    outline: 'none', fontFamily: "var(--font-sans)",
   } as const;
   return (
     <div>
@@ -962,10 +962,10 @@ function WField({ label, value, onChange, type = 'text', placeholder, as = 'inpu
         {label}
       </Mono>
       {as === 'textarea'
-        ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...base, resize: 'none' }} onFocus={e => e.target.style.borderBottomColor = '#2E7BFF'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
+        ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...base, resize: 'none' }} onFocus={e => e.target.style.borderBottomColor = 'var(--accent)'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
         : as === 'select'
           ? <select value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>{options?.map(o => <option key={o} value={o}>{o}</option>)}</select>
-          : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={base} onFocus={e => e.target.style.borderBottomColor = '#2E7BFF'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
+          : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={base} onFocus={e => e.target.style.borderBottomColor = 'var(--accent)'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
       }
     </div>
   );
@@ -1042,8 +1042,8 @@ function EditEventModal({ event, onSave, onClose }: {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
-            Editar evento<span style={{ color: '#2E7BFF' }}>.</span>
+          <h2 style={{ fontSize: 22, fontWeight: 560, letterSpacing: 0 }}>
+            Editar evento<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <button onClick={onClose} style={{
             width: 36, height: 36, borderRadius: 10, border: '1px solid var(--line)',
@@ -1096,10 +1096,10 @@ function EditEventModal({ event, onSave, onClose }: {
           </button>
           <button onClick={handleSave} disabled={saving} style={{
             flex: 2, padding: '12px', borderRadius: 12, border: 'none',
-            background: saving ? '#1a5cbf' : '#2E7BFF', color: '#fff',
-            fontSize: 14, fontWeight: 700,
+            background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
+            fontSize: 14, fontWeight: 560,
             cursor: saving ? 'not-allowed' : 'pointer',
-            boxShadow: '0 6px 20px rgba(46,123,255,0.30)',
+            boxShadow: '0 6px 20px rgba(74,168,255,0.30)',
           }}>
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>

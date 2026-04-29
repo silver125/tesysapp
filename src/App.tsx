@@ -19,9 +19,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       }}>
         <div style={{
           width: 36, height: 36, borderRadius: 10,
-          background: 'linear-gradient(135deg,#2E7BFF 0%,#5F2C82 100%)',
+          background: 'var(--deep)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontWeight: 700, fontSize: 18,
+          color: '#fff', fontWeight: 560, fontSize: 18,
           animation: 'pulse 1.5s ease-in-out infinite',
         }}>T</div>
         <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>

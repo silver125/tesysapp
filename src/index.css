@@ -2,25 +2,27 @@
 
 /* ── Tessy design tokens (light) ── */
 :root {
-  --bg:          #F7F5FA;
+  --bg:          #F7F8FF;
   --card:        #FFFFFF;
-  --ink:         #1A1B2E;
-  --ink-2:       #52546A;
-  --muted:       #9FA3B8;
-  --line:        #E8E5F0;
-  --chip:        #F0EEF8;
+  --ink:         #5D6474;
+  --ink-2:       #6F7686;
+  --muted:       #9299A8;
+  --line:        #E3E7F2;
+  --chip:        #F1F3FA;
 
-  --accent:      #5B6EF5;
-  --accent-ink:  #3D52E0;
-  --accent-soft: #ECEEFF;
+  --accent:      #4AA8FF;
+  --accent-ink:  #343949;
+  --accent-soft: #EEF3FF;
+  --lavender:    #B9C1EA;
+  --deep:        #171B2A;
 
   --success:     #12A06C;
   --warn:        #F58220;
   --danger:      #E84545;
   --whats:       #25D366;
 
-  --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
   --font-serif: 'Fraunces', Georgia, serif;
 
   --r-sm:  6px;
@@ -29,9 +31,9 @@
   --r-xl:  20px;
   --r-2xl: 24px;
 
-  --shadow-sm: 0 1px 3px rgba(90,80,130,0.08);
-  --shadow-md: 0 6px 20px rgba(90,80,130,0.10);
-  --shadow-lg: 0 20px 50px rgba(90,80,130,0.14);
+  --shadow-sm: 0 1px 3px rgba(52,57,73,0.06);
+  --shadow-md: 0 10px 28px rgba(52,57,73,0.08);
+  --shadow-lg: 0 24px 64px rgba(52,57,73,0.12);
 
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -43,15 +45,17 @@ html, body {
   color: var(--ink);
   color-scheme: light;
   -webkit-font-smoothing: antialiased;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
   font-family: var(--font-sans);
   min-height: 100vh;
   background:
-    radial-gradient(900px 600px at 15% 10%, #EAE6FF 0%, transparent 55%),
-    radial-gradient(1000px 700px at 90% 95%, #E8F0FF 0%, transparent 50%),
-    linear-gradient(160deg, #F7F5FA 0%, #F4F6FB 100%);
+    radial-gradient(900px 600px at 14% 8%, rgba(185,193,234,0.25) 0%, transparent 58%),
+    radial-gradient(1000px 700px at 90% 96%, rgba(74,168,255,0.12) 0%, transparent 54%),
+    linear-gradient(160deg, #FAFBFF 0%, #F3F5FB 100%);
   background-attachment: fixed;
 }
 
@@ -73,7 +77,7 @@ select option { background: var(--card); color: var(--ink); }
 /* Mono utility */
 .mono {
   font-family: var(--font-mono);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
@@ -116,7 +120,7 @@ select option { background: var(--card); color: var(--ink); }
 }
 .lift:hover {
   transform: translateY(-4px);
-  box-shadow: 0 24px 60px rgba(15,18,30,0.18);
+  box-shadow: 0 24px 60px rgba(52,57,73,0.12);
 }
 
 @media (max-width: 900px) {
@@ -165,6 +169,21 @@ select option { background: var(--card); color: var(--ink); }
   align-items: stretch;
 }
 
+.tessy-auth-grid > * {
+  min-width: 0;
+}
+
+.tessy-auth-panel {
+  width: min(430px, 100%);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.tessy-auth-panel *,
+.tessy-register-main * {
+  max-width: 100%;
+}
+
 @media (max-width: 900px) {
   .tessy-auth-grid {
     grid-template-columns: 1fr;
@@ -178,8 +197,28 @@ select option { background: var(--card); color: var(--ink); }
 
 @media (max-width: 620px) {
   .tessy-auth-grid {
-    padding: 24px 20px 42px;
+    padding: 24px 16px 42px;
     gap: 24px;
+  }
+
+  .tessy-auth-title {
+    font-size: 33px !important;
+  }
+
+  .tessy-auth-action {
+    display: none !important;
+  }
+
+  .tessy-auth-panel {
+    width: calc(100vw - 48px) !important;
+    max-width: calc(100vw - 48px) !important;
+  }
+
+  .tessy-register-main {
+    width: calc(100vw - 48px) !important;
+    max-width: calc(100vw - 48px) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   .tessy-auth-visual {

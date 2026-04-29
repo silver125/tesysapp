@@ -23,7 +23,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', color: 'var(--ink)', background: '#FBFAFD' }}>
+    <div style={{ minHeight: '100vh', color: 'var(--ink)', background: 'var(--bg)' }}>
       <AuthHeader actionLabel="Criar conta" actionTo="/cadastro" />
 
       <main className="tessy-auth-grid">
@@ -32,7 +32,7 @@ export default function Login() {
           minHeight: 520,
           overflow: 'hidden',
           borderRadius: 8,
-          background: '#17142F',
+          background: 'var(--deep)',
         }} className="tessy-auth-visual">
           <img
             src={authImage}
@@ -42,23 +42,23 @@ export default function Login() {
           <div style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(180deg, rgba(23,20,47,0.12) 0%, rgba(23,20,47,0.78) 100%)',
+            background: 'linear-gradient(180deg, rgba(23,27,42,0.06) 0%, rgba(23,27,42,0.72) 100%)',
           }} />
           <div style={{ position: 'absolute', left: 28, right: 28, bottom: 28, color: '#fff' }}>
-            <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#9FC5FF' }}>
+            <div style={{ fontSize: 12, fontWeight: 560, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#D9DEF6' }}>
               Tessy para saúde
             </div>
-            <h2 style={{ marginTop: 10, fontSize: 32, lineHeight: 1.05, letterSpacing: 0, fontWeight: 900 }}>
+            <h2 style={{ marginTop: 10, fontSize: 32, lineHeight: 1.08, letterSpacing: 0, fontWeight: 560 }}>
               Acesso direto entre médicos e empresas.
             </h2>
-            <p style={{ marginTop: 12, maxWidth: 430, color: 'rgba(255,255,255,0.76)', fontSize: 15, lineHeight: 1.55 }}>
+            <p style={{ marginTop: 12, maxWidth: 430, color: 'rgba(255,255,255,0.72)', fontSize: 15, lineHeight: 1.55 }}>
               Produtos, eventos e representantes em um fluxo simples, comercial e objetivo.
             </p>
           </div>
         </section>
 
         <section style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '100%', maxWidth: 430 }}>
+          <div className="tessy-auth-panel">
             <div style={{ marginBottom: 26 }}>
               <div style={{
                 display: 'inline-flex',
@@ -66,19 +66,19 @@ export default function Login() {
                 gap: 8,
                 padding: '7px 11px',
                 borderRadius: 999,
-                background: '#EEF4FF',
-                color: '#285DE8',
+                background: 'var(--accent-soft)',
+                color: 'var(--ink)',
                 fontSize: 12,
-                fontWeight: 800,
+                fontWeight: 560,
                 marginBottom: 18,
               }}>
-                <span style={{ width: 7, height: 7, borderRadius: 99, background: '#2E7BFF' }} />
+                <span style={{ width: 7, height: 7, borderRadius: 99, background: 'var(--accent)' }} />
                 Área restrita
               </div>
-              <h1 style={{ fontSize: 42, fontWeight: 900, letterSpacing: 0, lineHeight: 1.02, color: '#17142F' }}>
-                Entrar no Tessy<span style={{ color: '#2E7BFF' }}>.</span>
+              <h1 className="tessy-auth-title" style={{ fontSize: 42, fontWeight: 560, letterSpacing: 0, lineHeight: 1.08, color: 'var(--accent-ink)' }}>
+                Entrar no Tessy<span style={{ color: 'var(--accent)' }}>.</span>
               </h1>
-              <p style={{ marginTop: 12, fontSize: 16, color: '#666477', lineHeight: 1.55 }}>
+              <p style={{ marginTop: 12, fontSize: 16, color: 'var(--ink-2)', lineHeight: 1.55 }}>
                 Acesse sua conta para gerenciar conexões, produtos, eventos e contatos salvos.
               </p>
             </div>
@@ -86,9 +86,9 @@ export default function Login() {
             <div style={{
               background: '#fff',
               borderRadius: 8,
-              border: '1px solid rgba(26,27,46,0.10)',
+              border: '1px solid var(--line)',
               padding: 22,
-              boxShadow: '0 18px 42px rgba(23,20,47,0.08)',
+              boxShadow: 'var(--shadow-md)',
             }}>
               {error && (
                 <div style={{
@@ -114,22 +114,22 @@ export default function Login() {
                   padding: '14px 18px',
                   borderRadius: 8,
                   border: 'none',
-                  background: '#2E7BFF',
+                  background: 'var(--accent-ink)',
                   color: '#fff',
                   cursor: isLoading ? 'not-allowed' : 'pointer',
                   fontSize: 15,
-                  fontWeight: 800,
+                  fontWeight: 560,
                   opacity: isLoading ? 0.7 : 1,
-                  boxShadow: '0 10px 24px rgba(46,123,255,0.24)',
+                  boxShadow: '0 10px 24px rgba(52,57,73,0.18)',
                 }}>
                   {isLoading ? 'Entrando...' : 'Entrar'}
                 </button>
               </form>
             </div>
 
-            <p style={{ fontSize: 14, color: '#666477', marginTop: 18 }}>
+            <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 18 }}>
               Novo no Tessy?{' '}
-              <Link to="/cadastro" style={{ color: '#2E7BFF', fontWeight: 800, textDecoration: 'none' }}>
+              <Link to="/cadastro" style={{ color: 'var(--accent-ink)', fontWeight: 560, textDecoration: 'none' }}>
                 Criar conta
               </Link>
             </p>
@@ -147,8 +147,8 @@ function AuthHeader({ actionLabel, actionTo }: { actionLabel: string; actionTo: 
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      borderBottom: '1px solid rgba(26,27,46,0.08)',
-      background: 'rgba(251,250,253,0.92)',
+      borderBottom: '1px solid var(--line)',
+      background: 'rgba(247,248,255,0.92)',
       backdropFilter: 'blur(14px)',
     }}>
       <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
@@ -156,32 +156,32 @@ function AuthHeader({ actionLabel, actionTo }: { actionLabel: string; actionTo: 
           width: 38,
           height: 38,
           borderRadius: 8,
-          background: '#17142F',
+          background: 'var(--deep)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: '#fff',
-          fontWeight: 800,
+          fontWeight: 560,
           fontSize: 18,
         }}>T</div>
         <div>
-          <div style={{ fontWeight: 800, fontSize: 19, letterSpacing: 0, lineHeight: 1, color: 'var(--ink)' }}>
-            Tessy<span style={{ color: '#2E7BFF' }}>.</span>
+          <div style={{ fontWeight: 560, fontSize: 19, letterSpacing: 0, lineHeight: 1, color: 'var(--accent-ink)' }}>
+            Tessy<span style={{ color: 'var(--lavender)' }}>.app</span>
           </div>
           <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 3 }}>
             saúde + negócios
           </div>
         </div>
       </Link>
-      <Link to={actionTo} style={{
+      <Link to={actionTo} className="tessy-auth-action" style={{
         padding: '11px 16px',
         borderRadius: 8,
-        background: '#2E7BFF',
+      background: 'var(--accent-ink)',
         color: '#fff',
         fontSize: 14,
-        fontWeight: 800,
+        fontWeight: 560,
         textDecoration: 'none',
-        boxShadow: '0 10px 24px rgba(46,123,255,0.20)',
+        boxShadow: '0 10px 24px rgba(52,57,73,0.16)',
       }}>
         {actionLabel}
       </Link>
@@ -197,8 +197,8 @@ function Field({ label, type = 'text', value, onChange, placeholder, autoComplet
     <div>
       <div style={{
         fontSize: 13,
-        color: '#4F4D61',
-        fontWeight: 800,
+        color: 'var(--ink-2)',
+        fontWeight: 560,
         marginBottom: 8,
       }}>
         {label}
@@ -214,19 +214,19 @@ function Field({ label, type = 'text', value, onChange, placeholder, autoComplet
           width: '100%',
           padding: '13px 14px',
           borderRadius: 8,
-          background: '#FBFAFD',
-          border: '1.5px solid rgba(26,27,46,0.12)',
-          color: '#17142F',
+          background: '#fff',
+          border: '1.5px solid var(--line)',
+          color: 'var(--accent-ink)',
           fontSize: 15,
           outline: 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
         }}
         onFocus={e => {
-          e.target.style.borderColor = '#2E7BFF';
-          e.target.style.boxShadow = '0 0 0 3px rgba(46,123,255,0.10)';
+          e.target.style.borderColor = 'var(--accent)';
+          e.target.style.boxShadow = '0 0 0 3px rgba(74,168,255,0.10)';
         }}
         onBlur={e => {
-          e.target.style.borderColor = 'rgba(26,27,46,0.12)';
+          e.target.style.borderColor = 'var(--line)';
           e.target.style.boxShadow = 'none';
         }}
       />

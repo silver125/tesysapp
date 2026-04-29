@@ -12,25 +12,25 @@ import type { Event, Product, Course } from '../../types';
 type Tab = 'home' | 'events' | 'products' | 'courses' | 'connect';
 
 function IcoHome(a: boolean) {
-  const c = a ? '#2E7BFF' : '#6F7A90';
+  const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="19" viewBox="0 0 20 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M2 9l8-7 8 7v9H13v-5H7v5H2z" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 }
 function IcoCalendar(a: boolean) {
-  const c = a ? '#2E7BFF' : '#6F7A90';
+  const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><rect x="1.5" y="3.5" width="16" height="14" rx="2"/><path d="M13.5 2v3M5.5 2v3M1.5 8.5h16" strokeLinecap="round"/></svg>;
 }
 function IcoBox(a: boolean) {
-  const c = a ? '#2E7BFF' : '#6F7A90';
+  const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
 }
 function IcoBook(a: boolean) {
-  const c = a ? '#2E7BFF' : '#6F7A90';
+  const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
 }
 function IcoBigConnect() {
   return (
     <svg width="52" height="52" viewBox="0 0 52 52">
-      <circle cx="26" cy="26" r="26" fill="#2E7BFF"/>
+      <circle cx="26" cy="26" r="26" fill="var(--accent)"/>
       <path d="M26 14v24M14 26h24" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
     </svg>
   );
@@ -89,8 +89,8 @@ export default function DoctorDashboard() {
             <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
               {today}
             </Mono>
-            <h1 style={{ marginTop: 10, fontSize: 30, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              Olá, {firstNameGreet}<span style={{ color: '#2E7BFF' }}>.</span>
+            <h1 style={{ marginTop: 10, fontSize: 30, fontWeight: 560, letterSpacing: 0, lineHeight: 1.1 }}>
+              Olá, {firstNameGreet}<span style={{ color: 'var(--accent)' }}>.</span>
             </h1>
             <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 6 }}>
               <b style={{ color: 'var(--ink)' }}>{events.length}</b> eventos disponíveis para você esta semana.
@@ -137,11 +137,11 @@ export default function DoctorDashboard() {
       {/* ── EVENTS ── */}
       {tab === 'events' && (
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Eventos<span style={{ color: '#2E7BFF' }}>.</span>
+          <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 4 }}>
+            Eventos<span style={{ color: 'var(--accent)' }}>.</span>
           </h1>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
-            <b style={{ color: '#2E7BFF' }}>{events.length}</b> eventos disponíveis.
+            <b style={{ color: 'var(--accent)' }}>{events.length}</b> eventos disponíveis.
           </p>
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos..." />
           <FilterChips
@@ -160,8 +160,8 @@ export default function DoctorDashboard() {
       {/* ── PRODUCTS ── */}
       {tab === 'products' && (
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Produtos e representantes<span style={{ color: '#2E7BFF' }}>.</span>
+          <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 4 }}>
+            Produtos e representantes<span style={{ color: 'var(--accent)' }}>.</span>
           </h1>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
             Empresas e startups com contato comercial direto para médicos.
@@ -179,8 +179,8 @@ export default function DoctorDashboard() {
       {/* ── COURSES ── */}
       {tab === 'courses' && (
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Cursos<span style={{ color: '#2E7BFF' }}>.</span>
+          <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 4 }}>
+            Cursos<span style={{ color: 'var(--accent)' }}>.</span>
           </h1>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
             Para médicos professores e especialistas.
@@ -296,15 +296,15 @@ function ConnectView({
       <div style={{
         padding: '18px 16px',
         borderRadius: 18,
-        background: 'linear-gradient(135deg, rgba(46,123,255,0.12) 0%, rgba(30,169,124,0.10) 100%)',
-        border: '1px solid rgba(46,123,255,0.16)',
+        background: 'linear-gradient(135deg, rgba(74,168,255,0.12) 0%, rgba(30,169,124,0.10) 100%)',
+        border: '1px solid rgba(74,168,255,0.16)',
         marginBottom: 18,
       }}>
-        <Mono style={{ fontSize: 10, color: '#2E7BFF', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+        <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
           Ponte médico-empresa
         </Mono>
-        <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, marginTop: 8 }}>
-          Comunidade prática<span style={{ color: '#2E7BFF' }}>.</span>
+        <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, lineHeight: 1.1, marginTop: 8 }}>
+          Comunidade prática<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 8, lineHeight: 1.5 }}>
           Encontre empresas com produtos, eventos e treinamentos relevantes. Salve contato ou fale direto com o representante.
@@ -352,14 +352,14 @@ function ConnectView({
                 <CompanyMark code={code} tint={tint} size={50} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>{co.name}</span>
+                    <span style={{ fontSize: 16, fontWeight: 560, color: 'var(--ink)' }}>{co.name}</span>
                     <VerifiedDot />
                     {co.whatsapp && <Chip color="#25D366">WhatsApp direto</Chip>}
                   </div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                     {co.products.length > 0 && <Chip color="#1EA97C">{co.products.length} produto{co.products.length > 1 ? 's' : ''}</Chip>}
-                    {co.events.length > 0 && <Chip color="#2E7BFF">{co.events.length} evento{co.events.length > 1 ? 's' : ''}</Chip>}
-                    {co.courses.length > 0 && <Chip color="#5F2C82">{co.courses.length} treinamento{co.courses.length > 1 ? 's' : ''}</Chip>}
+                    {co.events.length > 0 && <Chip color="var(--accent)">{co.events.length} evento{co.events.length > 1 ? 's' : ''}</Chip>}
+                    {co.courses.length > 0 && <Chip color="var(--accent-ink)">{co.courses.length} treinamento{co.courses.length > 1 ? 's' : ''}</Chip>}
                   </div>
                 </div>
               </div>
@@ -375,7 +375,7 @@ function ConnectView({
                   <Mono style={{ display: 'block', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>
                     Melhor oportunidade agora
                   </Mono>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.25 }}>
+                  <div style={{ fontSize: 14, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.25 }}>
                     {topProduct?.name ?? topEvent?.title}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.45 }}>
@@ -398,45 +398,45 @@ function ConnectView({
                     padding: '11px 8px', borderRadius: 12,
                     background: 'rgba(37,211,102,0.12)', color: '#25D366',
                     border: '1px solid rgba(37,211,102,0.32)',
-                    textDecoration: 'none', fontWeight: 700, fontSize: 13,
+                    textDecoration: 'none', fontWeight: 560, fontSize: 13,
                   }}>
                     <WaIcon size={15} /> WhatsApp
                   </a>
                 )}
                 <button onClick={() => toggleSaved(co.id)} style={{
                   padding: '11px 8px', borderRadius: 12,
-                  background: isSaved ? 'rgba(46,123,255,0.10)' : 'var(--chip)',
-                  color: isSaved ? '#2E7BFF' : 'var(--ink-2)',
-                  border: `1px solid ${isSaved ? 'rgba(46,123,255,0.28)' : 'var(--line)'}`,
-                  fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                  background: isSaved ? 'rgba(74,168,255,0.10)' : 'var(--chip)',
+                  color: isSaved ? 'var(--accent)' : 'var(--ink-2)',
+                  border: `1px solid ${isSaved ? 'rgba(74,168,255,0.28)' : 'var(--line)'}`,
+                  fontWeight: 560, fontSize: 13, cursor: 'pointer',
                 }}>
                   {isSaved ? 'Contato salvo' : 'Salvar contato'}
                 </button>
                 <button onClick={() => { void registerCompanyLead('sample_request'); }} style={{
                   padding: '11px 8px', borderRadius: 12,
-                  background: leadSent ? 'rgba(30,169,124,0.10)' : 'rgba(46,123,255,0.08)',
-                  color: leadSent ? '#1EA97C' : '#2E7BFF',
-                  border: `1px solid ${leadSent ? 'rgba(30,169,124,0.28)' : 'rgba(46,123,255,0.22)'}`,
-                  fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                  background: leadSent ? 'rgba(30,169,124,0.10)' : 'rgba(74,168,255,0.08)',
+                  color: leadSent ? '#1EA97C' : 'var(--accent)',
+                  border: `1px solid ${leadSent ? 'rgba(30,169,124,0.28)' : 'rgba(74,168,255,0.22)'}`,
+                  fontWeight: 560, fontSize: 13, cursor: 'pointer',
                 }}>
                   {leadSent ? 'Interesse enviado' : 'Receber amostra'}
                 </button>
                 <button onClick={() => onOpenProducts(co.name)} disabled={co.products.length === 0} style={{
                   padding: '11px 8px', borderRadius: 12,
-                  background: co.products.length > 0 ? '#2E7BFF' : 'var(--chip)',
+                  background: co.products.length > 0 ? 'var(--accent)' : 'var(--chip)',
                   color: co.products.length > 0 ? '#fff' : 'var(--muted)',
                   border: 'none',
-                  fontWeight: 700, fontSize: 13,
+                  fontWeight: 560, fontSize: 13,
                   cursor: co.products.length > 0 ? 'pointer' : 'not-allowed',
                 }}>
                   Ver produtos
                 </button>
                 <button onClick={() => onOpenEvents(co.name)} disabled={co.events.length === 0} style={{
                   padding: '11px 8px', borderRadius: 12,
-                  background: co.events.length > 0 ? '#17142F' : 'var(--chip)',
+                  background: co.events.length > 0 ? 'var(--deep)' : 'var(--chip)',
                   color: co.events.length > 0 ? '#fff' : 'var(--muted)',
                   border: 'none',
-                  fontWeight: 700, fontSize: 13,
+                  fontWeight: 560, fontSize: 13,
                   cursor: co.events.length > 0 ? 'pointer' : 'not-allowed',
                 }}>
                   Ver eventos
@@ -522,7 +522,7 @@ function EventCard({ ev }: { ev: Event }) {
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>{ev.companyName}</span>
         <VerifiedDot size={11} />
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.25, color: 'var(--ink)' }}>{ev.title}</div>
+      <div style={{ fontSize: 16, fontWeight: 560, letterSpacing: 0, lineHeight: 1.25, color: 'var(--ink)' }}>{ev.title}</div>
       {ev.website && <div><WebsiteLink url={ev.website} /></div>}
       <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{ev.location} · {ev.time}</div>
 
@@ -553,7 +553,7 @@ function EventCard({ ev }: { ev: Event }) {
           style={{
             flex: 1, padding: '11px 0', borderRadius: 12, border: btnBorder,
             background: btnBg, color: btnColor,
-            fontSize: 13, fontWeight: 700, cursor: btnCursor,
+            fontSize: 13, fontWeight: 560, cursor: btnCursor,
             transition: 'all 0.2s',
           }}
         >
@@ -565,7 +565,7 @@ function EventCard({ ev }: { ev: Event }) {
             padding: '11px 0', borderRadius: 12, textDecoration: 'none',
             background: 'rgba(37,211,102,0.1)', color: '#25D366',
             border: '1px solid rgba(37,211,102,0.3)',
-            fontSize: 13, fontWeight: 700,
+            fontSize: 13, fontWeight: 560,
           }}>
             <WaIcon size={14} /> WhatsApp
           </a>
@@ -586,8 +586,8 @@ function EventRow({ ev }: { ev: Event }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         color: '#fff', padding: '6px 0',
       }}>
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em' }}>{monthShort(ev.date)}</div>
-        <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1 }}>{dayNum(ev.date)}</div>
+        <div style={{ fontSize: 9, fontWeight: 560, letterSpacing: '0.1em' }}>{monthShort(ev.date)}</div>
+        <div style={{ fontSize: 20, fontWeight: 560, lineHeight: 1 }}>{dayNum(ev.date)}</div>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -595,7 +595,7 @@ function EventRow({ ev }: { ev: Event }) {
         </div>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{ev.companyName} · {ev.location}</div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
-          <Chip color="#2E7BFF">{ev.category}</Chip>
+          <Chip color="var(--accent)">{ev.category}</Chip>
           <Mono style={{ fontSize: 10, color: 'var(--muted)' }}>{ev.registeredCount} inscritos</Mono>
         </div>
       </div>
@@ -650,11 +650,11 @@ function ProductCard({ product }: { product: Product }) {
           <CompanyMark code={code} tint={companyTint(product.companyName)} size={44} radius={10} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 14, color: 'var(--ink-2)', fontWeight: 700 }}>{product.companyName}</span>
+              <span style={{ fontSize: 14, color: 'var(--ink-2)', fontWeight: 560 }}>{product.companyName}</span>
               <VerifiedDot size={12} />
               {product.companyWhatsapp && <Chip color="#25D366">Representante direto</Chip>}
             </div>
-            <h2 style={{ marginTop: 7, fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--ink)', lineHeight: 1.1 }}>
+            <h2 style={{ marginTop: 7, fontSize: 20, fontWeight: 560, letterSpacing: 0, color: 'var(--ink)', lineHeight: 1.1 }}>
               {product.name}
             </h2>
           </div>
@@ -663,7 +663,7 @@ function ProductCard({ product }: { product: Product }) {
         <div style={{ display: 'flex', gap: 7, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <Chip color={tint1}>{product.category}</Chip>
           <Chip color="#1EA97C">Amostra</Chip>
-          {product.price && <Chip color="#5F2C82">{product.price}</Chip>}
+          {product.price && <Chip color="var(--accent-ink)">{product.price}</Chip>}
         </div>
 
         <div style={{ marginTop: 14 }}>
@@ -679,10 +679,10 @@ function ProductCard({ product }: { product: Product }) {
           marginTop: 13,
           padding: '11px 12px',
           borderRadius: 12,
-          background: 'rgba(46,123,255,0.06)',
-          border: '1px solid rgba(46,123,255,0.16)',
+          background: 'rgba(74,168,255,0.06)',
+          border: '1px solid rgba(74,168,255,0.16)',
         }}>
-          <Mono style={{ display: 'block', fontSize: 9, color: '#2E7BFF', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 5 }}>
+          <Mono style={{ display: 'block', fontSize: 9, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 5 }}>
             Próximo passo
           </Mono>
           <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
@@ -703,9 +703,9 @@ function ProductCard({ product }: { product: Product }) {
             }}
             style={{
               padding: '12px 10px', borderRadius: 12, border: 'none',
-              background: canContactRep ? '#2E7BFF' : 'var(--chip)',
+              background: canContactRep ? 'var(--accent)' : 'var(--chip)',
               color: canContactRep ? '#fff' : 'var(--muted)',
-              fontSize: 13, fontWeight: 800,
+              fontSize: 13, fontWeight: 560,
               cursor: canContactRep ? 'pointer' : 'not-allowed',
               opacity: canContactRep ? 1 : 0.7,
             }}>
@@ -716,9 +716,9 @@ function ProductCard({ product }: { product: Product }) {
             onClick={() => { void sendProductLead('sample_request'); }}
             style={{
               padding: '12px 10px', borderRadius: 12,
-              background: 'rgba(46,123,255,0.08)', color: '#2E7BFF',
-              border: '1px solid rgba(46,123,255,0.22)',
-              fontSize: 13, fontWeight: 800, cursor: 'pointer',
+              background: 'rgba(74,168,255,0.08)', color: 'var(--accent)',
+              border: '1px solid rgba(74,168,255,0.22)',
+              fontSize: 13, fontWeight: 560, cursor: 'pointer',
             }}>
             Pedir amostra
           </button>
@@ -728,7 +728,7 @@ function ProductCard({ product }: { product: Product }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               padding: '12px 10px', borderRadius: 12, textDecoration: 'none',
               background: 'rgba(37,211,102,0.1)', color: '#25D366',
-              border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 800,
+              border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 560,
             }}>
               <WaIcon size={14} /> Conversar sobre parceria
             </a>
@@ -756,7 +756,7 @@ function CourseCard({ course }: { course: Course }) {
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>{course.companyName}</span>
         <ModalityBadge modality={course.modality} />
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>{course.title}</div>
+      <div style={{ fontSize: 16, fontWeight: 560, letterSpacing: 0, color: 'var(--ink)' }}>{course.title}</div>
       {course.website && <div><WebsiteLink url={course.website} /></div>}
       <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.5 }}>{course.description}</div>
       <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -793,10 +793,10 @@ function CourseCard({ course }: { course: Course }) {
           style={{
             flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
             background: canShowInterest
-              ? 'linear-gradient(135deg, #5F2C82 0%, #2E7BFF 100%)'
+              ? 'linear-gradient(135deg, var(--accent-ink) 0%, var(--accent) 100%)'
               : 'var(--chip)',
             color: canShowInterest ? '#fff' : 'var(--muted)',
-            fontSize: 13, fontWeight: 700,
+            fontSize: 13, fontWeight: 560,
             cursor: canShowInterest ? 'pointer' : 'not-allowed',
             opacity: canShowInterest ? 1 : 0.7,
           }}>
@@ -807,7 +807,7 @@ function CourseCard({ course }: { course: Course }) {
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             padding: '11px 0', borderRadius: 12, textDecoration: 'none',
             background: 'rgba(37,211,102,0.1)', color: '#25D366',
-            border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 700,
+            border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 560,
           }}>
             <WaIcon size={14} /> WhatsApp
           </a>
@@ -848,7 +848,7 @@ function StatChip({ label, value, onClick }: { label: string; value: number; onC
       background: 'var(--card)', border: '1px solid var(--line)',
       cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 6,
     }}>
-      <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em' }}>{value}</span>
+      <span style={{ fontSize: 20, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>{value}</span>
       <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 500 }}>{label}</span>
     </button>
   );
@@ -857,12 +857,12 @@ function StatChip({ label, value, onClick }: { label: string; value: number; onC
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-      <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>{title}</span>
+      <span style={{ fontSize: 16, fontWeight: 560, color: 'var(--ink)' }}>{title}</span>
       {onSeeAll && (
         <button onClick={onSeeAll} style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
-          color: '#2E7BFF', letterSpacing: '0.1em', textTransform: 'uppercase',
+          fontFamily: "var(--font-mono)", fontSize: 10,
+          color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
         }}>
           ver todos →
         </button>
@@ -885,7 +885,7 @@ function SearchBar({ value, onChange, placeholder }: { value: string; onChange: 
           borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)',
           color: 'var(--ink)', fontSize: 14, outline: 'none',
         }}
-        onFocus={e => e.target.style.borderColor = '#2E7BFF'}
+        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
         onBlur={e => e.target.style.borderColor = 'var(--line)'}
       />
     </div>
@@ -900,10 +900,10 @@ function FilterChips({ tabs, active, onChange }: {
       {tabs.map(([v, l]) => (
         <button key={v} onClick={() => onChange(v)} style={{
           padding: '8px 14px', borderRadius: 10, flexShrink: 0,
-          background: active === v ? '#2E7BFF' : 'var(--card)',
-          border: `1px solid ${active === v ? '#2E7BFF' : 'var(--line)'}`,
+          background: active === v ? 'var(--accent)' : 'var(--card)',
+          border: `1px solid ${active === v ? 'var(--accent)' : 'var(--line)'}`,
           color: active === v ? '#fff' : 'var(--ink-2)',
-          fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 700,
+          fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 560,
           letterSpacing: '0.08em', cursor: 'pointer',
         }}>{l}</button>
       ))}
