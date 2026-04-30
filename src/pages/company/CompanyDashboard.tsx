@@ -95,6 +95,18 @@ function formatDisplayPhone(raw: string) {
   return fmtPhone(local);
 }
 
+function latestLeadByDoctor(leads: Lead[]) {
+  const ordered = [...leads].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const seen = new Set<string>();
+
+  return ordered.filter(lead => {
+    const doctorKey = lead.doctorId || `${lead.doctorName}-${lead.doctorSpecialty ?? ''}`;
+    if (seen.has(doctorKey)) return false;
+    seen.add(doctorKey);
+    return true;
+  });
+}
+
 export default function CompanyDashboard() {
   const { user, events, products, courses, leads, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
@@ -109,13 +121,14 @@ export default function CompanyDashboard() {
   const myCourses  = courses.filter(c => c.companyId === user?.id);
   const eventById = new Map(myEvents.map(event => [event.id, event]));
   const eventByName = new Map(myEvents.map(event => [event.title, event]));
-  const myLeads = leads
+  const activeLeads = leads
     .filter(l => l.companyId === user?.id)
     .filter(lead => {
       if (lead.itemType !== 'event' || lead.intent !== 'event_interest') return true;
       const event = (lead.itemId ? eventById.get(lead.itemId) : undefined) ?? eventByName.get(lead.itemName);
       return Boolean(event && event.registeredCount > 0);
     });
+  const myLeads = latestLeadByDoctor(activeLeads);
   const tint = companyTint(user?.company ?? user?.name ?? '');
   const code = (user?.company ?? user?.name ?? 'EM').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
