@@ -479,9 +479,11 @@ function WebsiteLink({ url }: { url?: string }) {
 function EventCard({ ev }: { ev: Event }) {
   const { registerInterest, cancelEventInterest, registeredEventIds, addLead } = useAuth();
   const [tint1, tint2] = categoryTint(ev.category);
-  const pct = Math.min(100, Math.round((ev.registeredCount / ev.maxParticipants) * 100));
-  const full = pct >= 100;
   const registered = registeredEventIds.has(ev.id);
+  const effectiveRegisteredCount = registered ? Math.max(ev.registeredCount, 1) : ev.registeredCount;
+  const remainingSeats = Math.max(0, ev.maxParticipants - effectiveRegisteredCount);
+  const pct = Math.min(100, Math.round((effectiveRegisteredCount / ev.maxParticipants) * 100));
+  const full = pct >= 100;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const waLink = buildWhatsappLink(ev.companyWhatsapp, `Olá! Vi o evento "${ev.title}" no Tessy e tenho interesse.`);
@@ -534,7 +536,9 @@ function EventCard({ ev }: { ev: Event }) {
       <div style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Vagas</Mono>
-          <Mono style={{ fontSize: 10, color: full ? 'var(--danger)' : 'var(--muted)' }}>{ev.registeredCount}/{ev.maxParticipants}</Mono>
+          <Mono style={{ fontSize: 10, color: full ? 'var(--danger)' : 'var(--muted)' }}>
+            {remainingSeats} {remainingSeats === 1 ? 'vaga restante' : 'vagas restantes'}
+          </Mono>
         </div>
         <div style={{ height: 4, borderRadius: 999, background: 'var(--line)', overflow: 'hidden' }}>
           <div style={{ height: '100%', borderRadius: 999, background: full ? 'var(--danger)' : tint1, width: `${pct}%`, transition: 'width 0.4s' }} />
@@ -581,7 +585,11 @@ function EventCard({ ev }: { ev: Event }) {
 
 /* ─── EventRow (compact) ─── */
 function EventRow({ ev }: { ev: Event }) {
+  const { registeredEventIds } = useAuth();
   const [tint1, tint2] = categoryTint(ev.category);
+  const registered = registeredEventIds.has(ev.id);
+  const effectiveRegisteredCount = registered ? Math.max(ev.registeredCount, 1) : ev.registeredCount;
+  const remainingSeats = Math.max(0, ev.maxParticipants - effectiveRegisteredCount);
   return (
     <RowCard>
       <div style={{
@@ -600,7 +608,9 @@ function EventRow({ ev }: { ev: Event }) {
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{ev.companyName} · {ev.location}</div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
           <Chip color="var(--accent)">{ev.category}</Chip>
-          <Mono style={{ fontSize: 10, color: 'var(--muted)' }}>{ev.registeredCount} inscritos</Mono>
+          <Mono style={{ fontSize: 10, color: 'var(--muted)' }}>
+            {remainingSeats} {remainingSeats === 1 ? 'vaga restante' : 'vagas restantes'}
+          </Mono>
         </div>
       </div>
     </RowCard>
