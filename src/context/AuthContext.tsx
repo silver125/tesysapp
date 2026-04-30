@@ -132,12 +132,12 @@ function writeLocalLead(lead: Lead) {
   }
 }
 
-function removeLocalEventLead(companyId: string, eventId: string, doctorId: string) {
+function removeLocalEventLead(companyId: string, eventId: string, doctorId: string, eventName?: string) {
   try {
     const next = readLocalLeads(companyId).filter(lead => !(
       lead.doctorId === doctorId
       && lead.itemType === 'event'
-      && lead.itemId === eventId
+      && (lead.itemId === eventId || (eventName ? lead.itemName === eventName : false))
       && lead.intent === 'event_interest'
     ));
     localStorage.setItem(`tessy-leads-${companyId}`, JSON.stringify(next));
@@ -545,7 +545,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: row, error: fetchErr } = await supabase
       .from('events')
-      .select('registered_count, company_id')
+      .select('registered_count, company_id, title')
       .eq('id', eventId)
       .single();
     if (fetchErr || !row) throw new Error('Evento não encontrado.');
@@ -558,18 +558,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', eventId);
     if (updErr) throw new Error(updErr.message);
 
+    const eventName = (row.title as string) || events.find(e => e.id === eventId)?.title;
     const companyId = (row.company_id as string) || events.find(e => e.id === eventId)?.companyId;
     if (companyId) {
-      removeLocalEventLead(companyId, eventId, user.id);
+      removeLocalEventLead(companyId, eventId, user.id, eventName);
       setLeads(prev => prev.filter(lead => !(
         lead.companyId === companyId
         && lead.doctorId === user.id
         && lead.itemType === 'event'
-        && lead.itemId === eventId
+        && (lead.itemId === eventId || (eventName ? lead.itemName === eventName : false))
         && lead.intent === 'event_interest'
       )));
 
-      const { error: leadDeleteErr } = await supabase
+      await supabase
         .from('leads')
         .delete()
         .eq('company_id', companyId)
@@ -577,7 +578,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('item_type', 'event')
         .eq('item_id', eventId)
         .eq('intent', 'event_interest');
-      if (leadDeleteErr) throw new Error(leadDeleteErr.message);
+
+      if (eventName) {
+        await supabase
+          .from('leads')
+          .delete()
+          .eq('company_id', companyId)
+          .eq('doctor_id', user.id)
+          .eq('item_type', 'event')
+          .eq('item_name', eventName)
+          .eq('intent', 'event_interest');
+      }
     }
 
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, registeredCount: newCount } : e));

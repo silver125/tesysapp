@@ -107,22 +107,15 @@ export default function CompanyDashboard() {
   const myEvents   = events.filter(e => e.companyId === user?.id);
   const myProducts = products.filter(p => p.companyId === user?.id);
   const myCourses  = courses.filter(c => c.companyId === user?.id);
-  const myLeads    = leads.filter(l => l.companyId === user?.id);
-  const eventInterestCountById = new Map<string, number>();
-  myLeads
-    .filter(l => l.itemType === 'event' && l.intent === 'event_interest' && l.itemId)
-    .forEach(lead => {
-      const doctors = new Set(
-        myLeads
-          .filter(l => l.itemType === 'event' && l.intent === 'event_interest' && l.itemId === lead.itemId)
-          .map(l => l.doctorId),
-      );
-      eventInterestCountById.set(lead.itemId as string, doctors.size);
+  const eventById = new Map(myEvents.map(event => [event.id, event]));
+  const eventByName = new Map(myEvents.map(event => [event.title, event]));
+  const myLeads = leads
+    .filter(l => l.companyId === user?.id)
+    .filter(lead => {
+      if (lead.itemType !== 'event' || lead.intent !== 'event_interest') return true;
+      const event = (lead.itemId ? eventById.get(lead.itemId) : undefined) ?? eventByName.get(lead.itemName);
+      return Boolean(event && event.registeredCount > 0);
     });
-  const eventWithEffectiveCount = (event: Event): Event => ({
-    ...event,
-    registeredCount: Math.max(event.registeredCount, eventInterestCountById.get(event.id) ?? 0),
-  });
   const tint = companyTint(user?.company ?? user?.name ?? '');
   const code = (user?.company ?? user?.name ?? 'EM').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
@@ -339,7 +332,7 @@ export default function CompanyDashboard() {
                 }}>ver todos →</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {myEvents.slice(0, 3).map(e => <EventRowCompany key={e.id} ev={eventWithEffectiveCount(e)} />)}
+                {myEvents.slice(0, 3).map(e => <EventRowCompany key={e.id} ev={e} />)}
               </div>
             </div>
           )}
@@ -354,7 +347,7 @@ export default function CompanyDashboard() {
           empty={myEvents.length === 0}
           emptyText="Nenhum evento criado ainda."
         >
-          {myEvents.map(e => <EventCardCompany key={e.id} ev={eventWithEffectiveCount(e)} onDelete={() => deleteEvent(e.id)} onEdit={() => setEditingEventId(e.id)} />)}
+          {myEvents.map(e => <EventCardCompany key={e.id} ev={e} onDelete={() => deleteEvent(e.id)} onEdit={() => setEditingEventId(e.id)} />)}
         </ListTab>
       )}
 
