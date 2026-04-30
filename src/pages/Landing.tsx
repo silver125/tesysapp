@@ -98,26 +98,68 @@ export default function Landing() {
           <small>Convites liberados em fases para perfis selecionados.</small>
         </div>
 
-        <div className="tl-hero-console" aria-hidden="true">
-          <div className="tl-console-top">
-            <span>Interesse qualificado</span>
-            <strong>Agora</strong>
+        <div className="tl-phone-stage" aria-hidden="true">
+          <div className="tl-phone-card tl-phone-card-left">
+            <span>Médico</span>
+            <strong>Quero receber amostra</strong>
+            <small>Dra. Marina · estética e longevidade</small>
           </div>
-          <div className="tl-console-grid">
-            <div>
-              <span>Médico</span>
-              <strong>Quero receber amostra</strong>
-              <small>Dra. Marina · estética e longevidade</small>
+
+          <div className="tl-iphone">
+            <div className="tl-island" />
+            <div className="tl-phone-screen">
+              <div className="tl-phone-status">
+                <span>9:41</span>
+                <span>••• ▭</span>
+              </div>
+
+              <div className="tl-phone-appbar">
+                <div>
+                  <small>Tessy.app</small>
+                  <strong>Oportunidades</strong>
+                </div>
+                <span>SP</span>
+              </div>
+
+              <div className="tl-phone-feature">
+                <div>
+                  <span>Produto premium</span>
+                  <h3>Bioestimulador com demanda médica</h3>
+                  <p>Indicação clara, material científico e representante ativo.</p>
+                </div>
+                <strong>Hoje</strong>
+              </div>
+
+              <div className="tl-phone-list">
+                <div>
+                  <span>Representante</span>
+                  <strong>Contato direto por região</strong>
+                </div>
+                <button>WhatsApp</button>
+              </div>
+
+              <div className="tl-phone-list">
+                <div>
+                  <span>Evento</span>
+                  <strong>Lançamento para médicos selecionados</strong>
+                </div>
+                <button>Aula</button>
+              </div>
+
+              <div className="tl-phone-nav">
+                <span>Home</span>
+                <span>Produtos</span>
+                <strong>+</strong>
+                <span>Eventos</span>
+                <span>Perfil</span>
+              </div>
             </div>
-            <div>
-              <span>Empresa</span>
-              <strong>Lead qualificado</strong>
-              <small>Produto + evento + região</small>
-            </div>
-            <div className="tl-console-wide">
-              <span>Representante ativo</span>
-              <strong>Conversa iniciada pelo WhatsApp</strong>
-            </div>
+          </div>
+
+          <div className="tl-phone-card tl-phone-card-right">
+            <span>Empresa</span>
+            <strong>Lead qualificado</strong>
+            <small>Interesse em produto + evento</small>
           </div>
         </div>
       </section>
@@ -487,25 +529,20 @@ const landingCss = `
   line-height: 1.4;
 }
 
-.tl-hero-console {
+.tl-phone-stage {
   position: absolute;
-  z-index: 2;
+  z-index: 1;
   left: 50%;
-  bottom: 0;
-  width: calc(100% - 48px);
-  max-width: 860px;
-  padding: 18px;
+  bottom: -330px;
+  width: min(980px, calc(100% - 48px));
+  min-height: 650px;
   transform: translateX(-50%);
-  border: 1px solid rgba(119,127,149,0.16);
-  border-bottom: 0;
-  border-radius: 8px 8px 0 0;
-  background: rgba(255,255,255,0.84);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 28px 70px rgba(52,57,73,0.12);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  pointer-events: none;
 }
 
-.tl-console-top,
-.tl-console-grid,
 .tl-section,
 .tl-proof,
 .tl-positioning,
@@ -518,38 +555,9 @@ const landingCss = `
   margin-right: auto;
 }
 
-.tl-console-top {
-  width: 100%;
-  max-width: none;
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 4px 16px;
-  color: var(--tessy-muted);
-  font-size: 13px;
-}
-
-.tl-console-top strong {
-  color: var(--tessy-graphite);
-  font-weight: 560;
-}
-
-.tl-console-grid {
-  width: 100%;
-  max-width: none;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.tl-console-grid div {
-  min-height: 132px;
-  padding: 20px;
-  border: 1px solid rgba(119,127,149,0.14);
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.tl-console-grid span,
+.tl-phone-card span,
+.tl-phone-feature span,
+.tl-phone-list span,
 .tl-solution-grid span,
 .tl-flow-grid span,
 .tl-audience-panel span {
@@ -559,24 +567,263 @@ const landingCss = `
   text-transform: uppercase;
 }
 
-.tl-console-grid strong {
+.tl-phone-card {
+  position: absolute;
+  top: 330px;
+  width: 245px;
+  padding: 22px;
+  border: 1px solid rgba(119,127,149,0.14);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 58px rgba(52,57,73,0.11);
+}
+
+.tl-phone-card-left {
+  left: 0;
+}
+
+.tl-phone-card-right {
+  right: 0;
+}
+
+.tl-phone-card strong {
   display: block;
-  margin-top: 10px;
+  margin-top: 12px;
   color: var(--tessy-graphite);
-  font-size: 22px;
-  line-height: 1.14;
+  font-size: 21px;
+  line-height: 1.16;
   font-weight: 540;
 }
 
-.tl-console-grid small {
+.tl-phone-card small {
   display: block;
   margin-top: 12px;
   color: var(--tessy-muted);
   font-size: 14px;
+  line-height: 1.35;
 }
 
-.tl-console-wide {
-  grid-column: 1 / -1;
+.tl-iphone {
+  position: relative;
+  width: 360px;
+  height: 724px;
+  padding: 14px;
+  border-radius: 64px;
+  background:
+    linear-gradient(145deg, #0e111b 0%, #232838 45%, #6f7688 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.16),
+    inset 0 0 0 5px rgba(0,0,0,0.22),
+    0 40px 90px rgba(23,27,42,0.20);
+}
+
+.tl-iphone:before,
+.tl-iphone:after {
+  content: "";
+  position: absolute;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #242937 0%, #777f95 100%);
+  box-shadow: inset 1px 0 1px rgba(255,255,255,0.16);
+}
+
+.tl-iphone:before {
+  left: -4px;
+  top: 142px;
+  height: 86px;
+}
+
+.tl-iphone:after {
+  right: -4px;
+  top: 190px;
+  height: 118px;
+}
+
+.tl-island {
+  position: absolute;
+  z-index: 4;
+  top: 28px;
+  left: 50%;
+  width: 112px;
+  height: 35px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #05070c;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.06);
+}
+
+.tl-phone-screen {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50px;
+  background:
+    radial-gradient(260px 180px at 50% 18%, rgba(185,193,234,0.34) 0%, rgba(255,255,255,0) 72%),
+    linear-gradient(180deg, #fbfcff 0%, #f0f2fa 100%);
+  border: 1px solid rgba(255,255,255,0.20);
+  color: var(--tessy-graphite);
+}
+
+.tl-phone-status {
+  height: 68px;
+  padding: 28px 31px 0;
+  display: flex;
+  justify-content: space-between;
+  color: var(--tessy-graphite);
+  font-size: 14px;
+  font-weight: 560;
+}
+
+.tl-phone-appbar {
+  padding: 18px 30px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.tl-phone-appbar small {
+  display: block;
+  color: var(--tessy-muted);
+  font-size: 12px;
+  font-weight: 560;
+}
+
+.tl-phone-appbar strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--tessy-heading);
+  font-size: 31px;
+  line-height: 1;
+  font-weight: 520;
+}
+
+.tl-phone-appbar > span {
+  min-width: 36px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--tessy-steel);
+  font-size: 12px;
+  font-weight: 560;
+  box-shadow: 0 10px 26px rgba(52,57,73,0.08);
+}
+
+.tl-phone-feature {
+  min-height: 238px;
+  margin: 24px 18px 0;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(23,27,42,0.18) 0%, rgba(23,27,42,0.72) 100%),
+    radial-gradient(220px 140px at 80% 0%, rgba(185,193,234,0.55) 0%, rgba(255,255,255,0) 60%),
+    linear-gradient(135deg, #dce1f4 0%, #8f96a8 100%);
+  color: #ffffff;
+  box-shadow: 0 18px 40px rgba(52,57,73,0.16);
+}
+
+.tl-phone-feature span {
+  color: rgba(255,255,255,0.70);
+}
+
+.tl-phone-feature h3 {
+  margin-top: 48px;
+  color: #ffffff;
+  font-size: 24px;
+  line-height: 1.06;
+  font-weight: 540;
+}
+
+.tl-phone-feature p {
+  margin-top: 10px;
+  color: rgba(255,255,255,0.74);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.tl-phone-feature > strong {
+  align-self: flex-start;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.18);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 560;
+  backdrop-filter: blur(12px);
+}
+
+.tl-phone-list {
+  margin: 12px 18px 0;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(119,127,149,0.12);
+  border-radius: 22px;
+  background: rgba(255,255,255,0.76);
+  box-shadow: 0 10px 26px rgba(52,57,73,0.06);
+}
+
+.tl-phone-list strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--tessy-graphite);
+  font-size: 14px;
+  line-height: 1.18;
+  font-weight: 560;
+}
+
+.tl-phone-list button {
+  min-width: 74px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tessy-deep);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 560;
+}
+
+.tl-phone-nav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 82px;
+  padding: 12px 20px 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: start;
+  border-top: 1px solid rgba(119,127,149,0.12);
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(18px);
+}
+
+.tl-phone-nav span,
+.tl-phone-nav strong {
+  display: grid;
+  place-items: center;
+  color: var(--tessy-muted);
+  font-size: 11px;
+  font-weight: 560;
+}
+
+.tl-phone-nav strong {
+  width: 58px;
+  height: 58px;
+  margin: -22px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 420;
+  box-shadow: 0 20px 38px rgba(52,57,73,0.18);
 }
 
 main {
@@ -974,25 +1221,92 @@ main {
     width: min(320px, 100%);
   }
 
-  .tl-hero-console {
-    width: calc(100% - 28px);
-    padding: 12px;
+  .tl-phone-stage {
+    bottom: -168px;
+    width: 100%;
+    min-height: 550px;
   }
 
-  .tl-console-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .tl-console-grid div {
-    min-height: auto;
-  }
-
-  .tl-console-grid strong {
-    font-size: 18px;
-  }
-
-  .tl-console-wide {
+  .tl-phone-card {
     display: none;
+  }
+
+  .tl-iphone {
+    width: 292px;
+    height: 588px;
+    padding: 11px;
+    border-radius: 52px;
+  }
+
+  .tl-island {
+    top: 23px;
+    width: 92px;
+    height: 29px;
+  }
+
+  .tl-phone-screen {
+    border-radius: 42px;
+  }
+
+  .tl-phone-status {
+    height: 58px;
+    padding: 23px 25px 0;
+    font-size: 12px;
+  }
+
+  .tl-phone-appbar {
+    padding: 14px 22px 0;
+  }
+
+  .tl-phone-appbar strong {
+    font-size: 25px;
+  }
+
+  .tl-phone-feature {
+    min-height: 190px;
+    margin: 18px 14px 0;
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  .tl-phone-feature h3 {
+    margin-top: 34px;
+    font-size: 20px;
+  }
+
+  .tl-phone-feature p {
+    font-size: 12px;
+  }
+
+  .tl-phone-list {
+    margin: 10px 14px 0;
+    padding: 13px;
+    border-radius: 19px;
+  }
+
+  .tl-phone-list strong {
+    font-size: 12px;
+  }
+
+  .tl-phone-list button {
+    min-width: 62px;
+    height: 30px;
+    font-size: 11px;
+  }
+
+  .tl-phone-nav {
+    height: 70px;
+    padding: 10px 14px 0;
+  }
+
+  .tl-phone-nav span {
+    font-size: 10px;
+  }
+
+  .tl-phone-nav strong {
+    width: 50px;
+    height: 50px;
+    margin-top: -19px;
   }
 
   .tl-section,
@@ -1000,8 +1314,6 @@ main {
     padding: 60px 0;
   }
 
-  .tl-console-top,
-  .tl-console-grid,
   .tl-section,
   .tl-proof,
   .tl-positioning,
