@@ -10,6 +10,18 @@ import type { Event, Product, Course, CourseModality, Lead } from '../../types';
 
 type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads';
 
+const EVENT_DATE_MIN = '2026-01-01';
+const EVENT_DATE_MAX = '2030-12-31';
+
+function isEventDateInAllowedRange(date: string) {
+  return date >= EVENT_DATE_MIN && date <= EVENT_DATE_MAX;
+}
+
+function formatEventOccupancy(registered: number, total: number) {
+  if (registered === 1) return `1 vaga de ${total} preenchida`;
+  return `${registered} de ${total} vagas preenchidas`;
+}
+
 function IcoHome(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="19" viewBox="0 0 20 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M2 9l8-7 8 7v9H13v-5H7v5H2z" strokeLinecap="round" strokeLinejoin="round"/></svg>;
@@ -425,6 +437,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     if (kind === 'event') {
       if (step === 1 && !ev.title.trim()) return 'Informe o título do evento.';
       if (step === 2 && !ev.date) return 'Selecione a data do evento.';
+      if (step === 2 && !isEventDateInAllowedRange(ev.date)) return 'Selecione uma data entre 2026 e 2030.';
       if (step === 2 && !ev.location.trim()) return 'Informe o local do evento.';
     }
     if (kind === 'product') {
@@ -560,7 +573,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             <WField label="DESCRIÇÃO" value={ev.description} onChange={v => setEv(p => ({ ...p, description: v }))} placeholder="Descreva o evento..." as="textarea" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <WField label="CATEGORIA" value={ev.category} onChange={v => setEv(p => ({ ...p, category: v }))} as="select" options={EVENT_CATS} />
-              <WField label="VAGAS" value={ev.maxParticipants} onChange={v => setEv(p => ({ ...p, maxParticipants: v }))} type="number" />
+              <WField label="VAGAS" value={ev.maxParticipants} onChange={v => setEv(p => ({ ...p, maxParticipants: v }))} type="number" min="1" inputMode="numeric" />
             </div>
           </div>
         </div>
@@ -572,7 +585,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <WField label="DATA" value={ev.date} onChange={v => setEv(p => ({ ...p, date: v }))} type="date" />
+              <WField label="DATA" value={ev.date} onChange={v => setEv(p => ({ ...p, date: v }))} type="date" min={EVENT_DATE_MIN} max={EVENT_DATE_MAX} />
               <WField label="HORA" value={ev.time} onChange={v => setEv(p => ({ ...p, time: v }))} type="time" />
             </div>
             <WField label="LOCAL" value={ev.location} onChange={v => setEv(p => ({ ...p, location: v }))} placeholder="São Paulo, SP" />
@@ -732,8 +745,8 @@ function EventRowCompany({ ev }: { ev: Event }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2 }}>{ev.title}</div>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{ev.location}</div>
-        <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
-          <Chip color="var(--accent)">{ev.registeredCount}/{ev.maxParticipants}</Chip>
+        <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Chip color="var(--accent)">{formatEventOccupancy(ev.registeredCount, ev.maxParticipants)}</Chip>
           <Mono style={{ fontSize: 10, color: '#1EA97C', fontWeight: 560 }}>✓ ATIVO</Mono>
         </div>
       </div>
@@ -753,7 +766,7 @@ function EventCardCompany({ ev, onDelete, onEdit }: { ev: Event; onDelete: () =>
             <div style={{ fontSize: 15, fontWeight: 560, marginTop: 8, color: 'var(--ink)' }}>{ev.title}</div>
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{fmt(ev.date)} · {ev.location}</div>
             <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-              <Mono style={{ fontSize: 10, color: 'var(--ink-2)' }}>👥 {ev.registeredCount}/{ev.maxParticipants} inscritos</Mono>
+              <Mono style={{ fontSize: 10, color: 'var(--ink-2)' }}>👥 {formatEventOccupancy(ev.registeredCount, ev.maxParticipants)}</Mono>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 10, flexShrink: 0 }}>
@@ -947,9 +960,11 @@ function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () 
 }
 
 /* ─── Wizard field ─── */
-function WField({ label, value, onChange, type = 'text', placeholder, as = 'input', options }: {
+function WField({ label, value, onChange, type = 'text', placeholder, as = 'input', options, min, max, inputMode }: {
   label: string; value: string; onChange: (v: string) => void;
   type?: string; placeholder?: string; as?: 'input' | 'textarea' | 'select'; options?: string[];
+  min?: string; max?: string;
+  inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
 }) {
   const base = {
     width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid var(--line)',
@@ -965,7 +980,7 @@ function WField({ label, value, onChange, type = 'text', placeholder, as = 'inpu
         ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...base, resize: 'none' }} onFocus={e => e.target.style.borderBottomColor = 'var(--accent)'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
         : as === 'select'
           ? <select value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>{options?.map(o => <option key={o} value={o}>{o}</option>)}</select>
-          : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={base} onFocus={e => e.target.style.borderBottomColor = 'var(--accent)'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
+          : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} min={min} max={max} inputMode={inputMode} style={base} onFocus={e => e.target.style.borderBottomColor = 'var(--accent)'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
       }
     </div>
   );
@@ -998,6 +1013,10 @@ function EditEventModal({ event, onSave, onClose }: {
   async function handleSave() {
     if (!title.trim())    { setErr('Informe o título do evento.'); return; }
     if (!date)            { setErr('Selecione a data.');           return; }
+    if (!isEventDateInAllowedRange(date)) {
+      setErr('Selecione uma data entre 2026 e 2030.');
+      return;
+    }
     if (!location.trim()) { setErr('Informe o local.');            return; }
     const max = Number(maxParticipants) || 100;
     if (max < event.registeredCount) {
@@ -1055,13 +1074,13 @@ function EditEventModal({ event, onSave, onClose }: {
           <WField label="TÍTULO" value={title} onChange={setTitle} placeholder="Título do evento" />
           <WField label="DESCRIÇÃO" value={description} onChange={setDescription} as="textarea" placeholder="Descreva o evento..." />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <WField label="DATA" value={date} onChange={setDate} type="date" />
+            <WField label="DATA" value={date} onChange={setDate} type="date" min={EVENT_DATE_MIN} max={EVENT_DATE_MAX} />
             <WField label="HORA" value={time} onChange={setTime} type="time" />
           </div>
           <WField label="LOCAL" value={location} onChange={setLocation} placeholder="São Paulo, SP" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <WField label="CATEGORIA" value={category} onChange={setCategory} as="select" options={EVENT_CATS} />
-            <WField label="VAGAS" value={maxParticipants} onChange={setMaxParticipants} type="number" />
+            <WField label="VAGAS" value={maxParticipants} onChange={setMaxParticipants} type="number" min="1" inputMode="numeric" />
           </div>
           <WField label="WEBSITE (opcional)" value={website} onChange={setWebsite} type="url" placeholder="www.seusite.com.br" />
 
@@ -1070,7 +1089,7 @@ function EditEventModal({ event, onSave, onClose }: {
             background: 'rgba(91,110,245,0.06)', border: '1px solid rgba(91,110,245,0.18)',
             fontSize: 12, color: 'var(--ink-2)',
           }}>
-            👥 <b>{event.registeredCount}</b> {event.registeredCount === 1 ? 'médico inscrito' : 'médicos inscritos'} —
+            👥 <b>{formatEventOccupancy(event.registeredCount, event.maxParticipants)}</b> —
             o número de vagas não pode ficar abaixo desse total.
           </div>
         </div>
