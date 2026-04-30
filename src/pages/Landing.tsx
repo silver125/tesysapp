@@ -347,10 +347,14 @@ const landingCss = `
 }
 
 .tl-login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: rgba(93,100,116,0.88);
   text-decoration: none;
   font-size: 17px;
   font-weight: 520;
+  line-height: 1;
 }
 
 .tl-actions {
@@ -1108,8 +1112,9 @@ main {
   }
 
   .tl-login {
-    min-height: 40px;
-    padding: 0 18px;
+    width: 74px;
+    height: 40px;
+    padding: 0;
     border: 1px solid rgba(255,255,255,0.72);
     border-radius: 999px;
     background: var(--tessy-deep);
