@@ -152,12 +152,12 @@ export default function Landing() {
         <section className="tl-problem tl-section" id="problema">
           <div className="tl-section-copy">
             <p className="tl-eyebrow">O problema</p>
-            <h2>Você perde oportunidades porque ninguém certo te encontra?</h2>
+            <h2>A oportunidade certa não chega no feed certo.</h2>
           </div>
 
           <div className="tl-problem-card">
-            <p>Médicos ocupados. Marcas dispersas. Representantes no escuro.</p>
-            <strong>Oportunidade sem direção vira ruído.</strong>
+            <p>Um produto aparece no Instagram. Um evento circula no WhatsApp. O médico certo nem vê.</p>
+            <strong>Sem sinal de interesse, tudo vira abordagem fria.</strong>
           </div>
         </section>
 
