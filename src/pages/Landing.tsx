@@ -5,49 +5,45 @@ const waitlistHref = 'mailto:contato@tessybr.com?subject=Waitlist%20Tessy&body=O
 const solutionCards = [
   {
     eyebrow: 'Para médicos',
-    title: 'Menos tempo procurando. Mais oportunidades certas.',
-    text: 'Descubra produtos relevantes, fale direto com representantes e receba oportunidades de produtos e teste startups sem perder tempo.',
+    title: 'Oportunidades certas.',
+    text: 'Produtos, eventos e representantes relevantes.',
   },
   {
     eyebrow: 'Para empresas',
-    title: 'Demanda qualificada, não audiência vazia.',
-    text: 'Receba demanda qualificada, gere leads reais e reduza CAC comercial.',
+    title: 'Demanda real.',
+    text: 'Leads médicos com intenção comercial.',
   },
   {
     eyebrow: 'Para representantes',
-    title: 'Intenção clara antes da conversa.',
-    text: 'Atenda médicos com intenção clara e aumente conversão.',
+    title: 'Conversa quente.',
+    text: 'Menos visita fria. Mais conversão.',
   },
 ];
 
 const flowSteps = [
-  ['01', 'Cadastre seu perfil', 'Médico, clínica, marca ou representante.'],
-  ['02', 'A Tessy conecta interesses reais', 'Produtos, regiões, especialidades e momento de compra.'],
-  ['03', 'Conversa vira oportunidade', 'WhatsApp, reunião, demonstração, evento ou pedido.'],
-  ['04', 'Dados viram crescimento', 'Mais inteligência comercial a cada interação.'],
+  ['01', 'Perfil', 'Médico, clínica ou empresa.'],
+  ['02', 'Match', 'Interesse, região e especialidade.'],
+  ['03', 'Contato', 'WhatsApp, evento ou demonstração.'],
+  ['04', 'Crescimento', 'Dados para vender melhor.'],
 ];
 
 const doctorBenefits = [
   'Produtos alinhados à sua especialidade',
   'Representante certo na sua região',
-  'Eventos e aulas selecionadas',
   'Novidades sem spam',
-  'Ganho de tempo real',
 ];
 
 const companyBenefits = [
   'Leads médicos com intenção real',
   'Segmentação por especialidade e praça',
-  'Distribuição comercial mais eficiente',
-  'Lançamentos com tração imediata',
   'Métricas claras de performance',
 ];
 
 const faqs = [
-  ['A Tessy é para quais áreas?', 'Saúde estética, dermatologia, cirurgia, medicina premium e especialidades estratégicas.'],
-  ['Existe custo para médico?', 'O acesso inicial poderá ser gratuito para médicos aprovados.'],
-  ['Como empresas entram?', 'Via onboarding comercial e validação de categoria.'],
-  ['Quando recebo acesso?', 'Conforme ordem da waitlist e perfil estratégico.'],
+  ['Para quais áreas?', 'Estética, dermato, cirurgia, medicina premium e áreas estratégicas.'],
+  ['Médico paga?', 'O acesso inicial poderá ser gratuito para perfis aprovados.'],
+  ['Como empresas entram?', 'Onboarding comercial e validação de categoria.'],
+  ['Quando acesso?', 'Por fases, conforme perfil e ordem da waitlist.'],
 ];
 
 export default function Landing() {
@@ -81,13 +77,13 @@ export default function Landing() {
         <div className="tl-hero-content">
           <div className="tl-badge">
             <span />
-            Oportunidades entre empresas da saúde e médicos
+            Saúde + negócios
           </div>
 
           <h1>Onde a saúde fecha negócios mais rápido.</h1>
 
           <p>
-            A Tessy conecta médicos, clínicas, distribuidores e indústrias em um ecossistema inteligente de oportunidades reais.
+            Médicos, clínicas e empresas em um só lugar.
           </p>
 
           <div className="tl-hero-actions">
@@ -166,19 +162,17 @@ export default function Landing() {
 
       <main>
         <section className="tl-proof">
-          <p>Usado por médicos de todo Brasil e mundo que movem o mercado da saúde no Brasil.</p>
+          <p>Para quem move o mercado da saúde no Brasil.</p>
         </section>
 
         <section className="tl-problem tl-section" id="problema">
           <div className="tl-section-copy">
             <p className="tl-eyebrow">O problema</p>
-            <h2>O mercado da saúde ainda vende como em 2010.</h2>
+            <h2>Venda fria ainda domina.</h2>
           </div>
 
           <div className="tl-problem-card">
-            <p>
-              Representantes perdidos em visitas frias. Médicos sem tempo para descobrir novidades. Eventos cheios de ruído. Marcas gastando alto para pouca conversão.
-            </p>
+            <p>Visitas frias. Pouco tempo. Muito ruído.</p>
             <strong>A conexão existe. O sistema é que está ultrapassado.</strong>
           </div>
         </section>
@@ -186,7 +180,7 @@ export default function Landing() {
         <section className="tl-section" id="solucao">
           <div className="tl-section-copy tl-centered">
             <p className="tl-eyebrow">A solução</p>
-            <h2>A infraestrutura comercial que faltava para a saúde.</h2>
+            <h2>A ponte comercial da saúde.</h2>
           </div>
 
           <div className="tl-solution-grid">
@@ -203,7 +197,7 @@ export default function Landing() {
         <section className="tl-section tl-flow">
           <div className="tl-section-copy">
             <p className="tl-eyebrow">Como funciona</p>
-            <h2>Simples para entrar. Poderoso para crescer.</h2>
+            <h2>Entrar. Conectar. Fechar.</h2>
           </div>
 
           <div className="tl-flow-grid">
@@ -239,22 +233,22 @@ export default function Landing() {
 
           <div>
             <p className="tl-eyebrow">Para empresas</p>
-            <h2>Marketing bonito não basta. Venda precisa acontecer.</h2>
+            <h2>Mais demanda. Menos CAC.</h2>
             <BenefitList items={companyBenefits} />
             <Link to="/cadastro?perfil=empresa" className="tl-dark-cta">Entrar como empresa</Link>
           </div>
         </section>
 
         <section className="tl-positioning">
-          <h2>A década da saúde é sobre conexão.</h2>
-          <p>Tessy nasce para modernizar a relação entre médicos e indústria.</p>
+          <h2>Conexão é o novo canal.</h2>
+          <p>A ponte entre decisão médica e oportunidade comercial.</p>
         </section>
 
         <section className="tl-waitlist">
           <div>
             <p className="tl-eyebrow">Exclusividade</p>
-            <h2>Entrada por waitlist. Qualidade acima de volume.</h2>
-            <p>Estamos ativando a plataforma em fases para garantir alta qualidade de networking e oportunidades relevantes.</p>
+            <h2>Waitlist selecionada.</h2>
+            <p>Alto sinal. Pouca distração.</p>
           </div>
           <a href={waitlistHref}>Entrar na waitlist</a>
         </section>
@@ -262,7 +256,7 @@ export default function Landing() {
         <section className="tl-faq">
           <div className="tl-section-copy">
             <p className="tl-eyebrow">FAQ</p>
-            <h2>Perguntas frequentes.</h2>
+            <h2>Dúvidas.</h2>
           </div>
           <div className="tl-faq-list">
             {faqs.map(([question, answer]) => (
@@ -845,7 +839,7 @@ main {
 }
 
 .tl-section {
-  padding: 88px 0;
+  padding: 76px 0;
   border-top: 1px solid rgba(119,127,149,0.14);
 }
 
@@ -886,7 +880,7 @@ main {
 }
 
 .tl-problem-card {
-  padding: 34px;
+  padding: 30px;
   border: 1px solid rgba(119,127,149,0.16);
   border-radius: 8px;
   background: var(--tessy-soft);
@@ -894,14 +888,14 @@ main {
 
 .tl-problem-card p {
   color: var(--tessy-text);
-  font-size: 25px;
-  line-height: 1.36;
+  font-size: 24px;
+  line-height: 1.25;
   font-weight: 460;
 }
 
 .tl-problem-card strong {
   display: block;
-  margin-top: 30px;
+  margin-top: 22px;
   color: var(--tessy-graphite);
   font-size: 24px;
   line-height: 1.25;
@@ -925,12 +919,12 @@ main {
 }
 
 .tl-solution-grid article {
-  min-height: 300px;
+  min-height: 220px;
   padding: 28px;
 }
 
 .tl-solution-grid h3 {
-  margin-top: 64px;
+  margin-top: 48px;
   color: var(--tessy-graphite);
   font-size: 26px;
   line-height: 1.12;
@@ -942,7 +936,7 @@ main {
 .tl-waitlist p,
 .tl-faq p,
 .tl-positioning p {
-  margin-top: 16px;
+  margin-top: 12px;
   color: var(--tessy-text);
   font-size: 18px;
   line-height: 1.5;
@@ -957,12 +951,12 @@ main {
 }
 
 .tl-flow-grid article {
-  min-height: 260px;
+  min-height: 205px;
   padding: 24px;
 }
 
 .tl-flow-grid h3 {
-  margin-top: 72px;
+  margin-top: 52px;
   color: var(--tessy-graphite);
   font-size: 24px;
   line-height: 1.14;
@@ -1011,7 +1005,7 @@ main {
 }
 
 .tl-audience-panel {
-  min-height: 430px;
+  min-height: 330px;
   padding: 34px;
   display: flex;
   flex-direction: column;
@@ -1031,7 +1025,7 @@ main {
 }
 
 .tl-positioning {
-  padding: 112px 0;
+  padding: 92px 0;
   text-align: center;
   border-top: 1px solid rgba(119,127,149,0.14);
 }
@@ -1085,6 +1079,7 @@ main {
 .tl-faq-list {
   margin-top: 28px;
   display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
@@ -1347,6 +1342,10 @@ main {
   }
 
   .tl-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tl-faq-list {
     grid-template-columns: 1fr;
   }
 
