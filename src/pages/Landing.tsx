@@ -49,7 +49,7 @@ export default function Landing() {
           </Link>
 
           <div className="tl-actions">
-            <Link to="/entrar" className="tl-login">Entrar</Link>
+            <Link to="/entrar" className="tl-login">ENTRAR</Link>
             <a href={waitlistHref} className="tl-primary">Acesso antecipado</a>
           </div>
         </header>
@@ -355,6 +355,7 @@ const landingCss = `
   font-size: 17px;
   font-weight: 520;
   line-height: 1;
+  letter-spacing: 0.04em;
 }
 
 .tl-actions {
@@ -1120,7 +1121,7 @@ main {
     background: var(--tessy-deep);
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 560;
     box-shadow: 0 14px 34px rgba(23,27,42,0.16);
   }
