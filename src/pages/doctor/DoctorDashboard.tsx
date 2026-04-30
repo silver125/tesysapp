@@ -515,7 +515,7 @@ function EventCard({ ev }: { ev: Event }) {
     }
   }
 
-  const btnLabel = busy ? '...' : registered ? 'Desistir' : full ? 'Esgotado' : 'Participar';
+  const btnLabel = busy ? '...' : registered ? 'Liberar vaga' : full ? 'Esgotado' : 'Participar';
   const btnBg = full && !registered ? 'var(--chip)' : registered ? 'rgba(232,69,69,0.08)' : 'var(--accent)';
   const btnColor = full && !registered ? 'var(--muted)' : registered ? 'var(--danger)' : '#fff';
   const btnBorder = registered ? '1px solid rgba(232,69,69,0.24)' : 'none';
