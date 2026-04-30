@@ -48,12 +48,6 @@ export default function Landing() {
             <span className="tl-brand-name">Tessy<span>.app</span></span>
           </Link>
 
-          <nav className="tl-nav" aria-label="Principal">
-            <a href="#problema">Problema</a>
-            <a href="#solucao">Solução</a>
-            <a href="#medicos">Médicos</a>
-          </nav>
-
           <div className="tl-actions">
             <Link to="/entrar" className="tl-login">Entrar</Link>
             <a href={waitlistHref} className="tl-primary">Acesso antecipado</a>
@@ -317,7 +311,6 @@ const landingCss = `
 
 .tl-brand,
 .tl-actions,
-.tl-nav,
 .tl-hero-actions,
 .tl-footer nav {
   display: flex;
@@ -353,11 +346,6 @@ const landingCss = `
   font-weight: 500;
 }
 
-.tl-nav {
-  gap: 32px;
-}
-
-.tl-nav a,
 .tl-login {
   color: rgba(93,100,116,0.88);
   text-decoration: none;
@@ -1078,10 +1066,6 @@ main {
 }
 
 @media (max-width: 980px) {
-  .tl-nav {
-    display: none;
-  }
-
   .tl-hero h1 {
     font-size: 54px;
   }
