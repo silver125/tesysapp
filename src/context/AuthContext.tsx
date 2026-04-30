@@ -125,10 +125,19 @@ function readLocalLeads(companyId: string): Lead[] {
 function writeLocalLead(lead: Lead) {
   try {
     const prev = readLocalLeads(lead.companyId);
-    localStorage.setItem(`tessy-leads-${lead.companyId}`, JSON.stringify([lead, ...prev]));
+    const exists = prev.some(l => isSameLead(l, lead));
+    localStorage.setItem(`tessy-leads-${lead.companyId}`, JSON.stringify(exists ? prev : [lead, ...prev]));
   } catch {
     /* ignore */
   }
+}
+
+function isSameLead(a: Pick<Lead, 'companyId' | 'doctorId' | 'itemType' | 'itemId' | 'intent'>, b: Pick<Lead, 'companyId' | 'doctorId' | 'itemType' | 'itemId' | 'intent'>) {
+  return a.companyId === b.companyId
+    && a.doctorId === b.doctorId
+    && a.itemType === b.itemType
+    && (a.itemId ?? '') === (b.itemId ?? '')
+    && a.intent === b.intent;
 }
 
 // ── Provider ─────────────────────────────────────────────────────────────────
@@ -171,7 +180,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const remote = (data ?? []).map(r => dbToLead(r as Record<string, unknown>));
     const remoteIds = new Set(remote.map(l => l.id));
-    setLeads([...remote, ...local.filter(l => !remoteIds.has(l.id))]);
+    const merged = [...remote, ...local.filter(l => !remoteIds.has(l.id))];
+    setLeads(merged.filter((lead, index, arr) => arr.findIndex(other => isSameLead(other, lead)) === index));
   }, [userId, user?.role]);
 
   // Carrega IDs de eventos em que o usuário já clicou "Tenho interesse" (localStorage)
@@ -201,6 +211,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (prRes.data) setProducts(prRes.data.map(r => dbToProduct(r as Record<string, unknown>)));
     if (coRes.data) setCourses(coRes.data.map(r => dbToCourse(r as Record<string, unknown>)));
   }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    const eventsChannel = supabase
+      .channel('tessy-events-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+        refreshData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(eventsChannel);
+    };
+  }, [refreshData]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || user?.role !== 'empresa') return;
+
+    const leadsChannel = supabase
+      .channel(`tessy-leads-live-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads', filter: `company_id=eq.${user.id}` }, () => {
+        refreshLeads();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(leadsChannel);
+    };
+  }, [refreshLeads, user?.id, user?.role]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || user?.role !== 'empresa') return;
+
+    const interval = window.setInterval(() => {
+      refreshData();
+      refreshLeads();
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [refreshData, refreshLeads, user?.role]);
 
   // Busca perfil do usuário autenticado (com timeout de 8s)
   async function fetchProfile(userId: string, email: string): Promise<User | null> {
@@ -574,9 +625,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
     };
 
-    writeLocalLead(lead);
-
     if (!isSupabaseConfigured) {
+      writeLocalLead(lead);
+      return;
+    }
+
+    let existingQuery = supabase
+      .from('leads')
+      .select('id')
+      .eq('company_id', lead.companyId)
+      .eq('doctor_id', lead.doctorId)
+      .eq('item_type', lead.itemType)
+      .eq('intent', lead.intent)
+      .limit(1);
+
+    existingQuery = lead.itemId ? existingQuery.eq('item_id', lead.itemId) : existingQuery.is('item_id', null);
+
+    const { data: existing } = await existingQuery;
+    if (existing && existing.length > 0) {
       return;
     }
 
@@ -596,8 +662,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       created_at: lead.createdAt,
     });
 
-    if (!error && user.role === 'empresa' && lead.companyId === user.id) {
-      setLeads(prev => [lead, ...prev]);
+    if (!error) {
+      writeLocalLead(lead);
+      if (user.role === 'empresa' && lead.companyId === user.id) {
+        setLeads(prev => prev.some(l => isSameLead(l, lead)) ? prev : [lead, ...prev]);
+      }
     }
   };
 
