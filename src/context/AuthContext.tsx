@@ -472,6 +472,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ── Cancelar interesse em evento (decrementa registered_count) ──
+  const cancelEventInterest = async (eventId: string) => {
+    if (!user) throw new Error('Você precisa estar logado.');
+    assertSupabaseConfigured();
+    if (!registeredEventIds.has(eventId)) return;
+
+    const { data: row, error: fetchErr } = await supabase
+      .from('events')
+      .select('registered_count')
+      .eq('id', eventId)
+      .single();
+    if (fetchErr || !row) throw new Error('Evento não encontrado.');
+
+    const current = (row.registered_count as number) ?? 0;
+    const newCount = Math.max(0, current - 1);
+    const { error: updErr } = await supabase
+      .from('events')
+      .update({ registered_count: newCount })
+      .eq('id', eventId);
+    if (updErr) throw new Error(updErr.message);
+
+    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, registeredCount: newCount } : e));
+    const next = new Set(registeredEventIds);
+    next.delete(eventId);
+    setRegisteredEventIds(next);
+    try {
+      localStorage.setItem(`tessy-registered-${user.id}`, JSON.stringify([...next]));
+    } catch {
+      /* ignore */
+    }
+  };
+
   // ── Produtos ──
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
@@ -578,7 +610,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       deleteEvent, deleteProduct, deleteCourse,
       updateEvent,
       refreshData,
-      registerInterest, registeredEventIds,
+      registerInterest, cancelEventInterest, registeredEventIds,
     }}>
       {children}
     </AuthContext.Provider>

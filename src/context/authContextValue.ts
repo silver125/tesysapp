@@ -23,6 +23,7 @@ export interface AuthContextType {
   updateEvent: (id: string, patch: Partial<Omit<Event, 'id' | 'createdAt' | 'companyId' | 'companyName' | 'registeredCount'>>) => Promise<void>;
   refreshData: () => Promise<void>;
   registerInterest: (eventId: string) => Promise<void>;
+  cancelEventInterest: (eventId: string) => Promise<void>;
   registeredEventIds: Set<string>;
 }
 

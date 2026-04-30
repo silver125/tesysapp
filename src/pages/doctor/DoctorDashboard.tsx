@@ -477,7 +477,7 @@ function WebsiteLink({ url }: { url?: string }) {
 
 /* ─── EventCard (full banner) ─── */
 function EventCard({ ev }: { ev: Event }) {
-  const { registerInterest, registeredEventIds, addLead } = useAuth();
+  const { registerInterest, cancelEventInterest, registeredEventIds, addLead } = useAuth();
   const [tint1, tint2] = categoryTint(ev.category);
   const pct = Math.min(100, Math.round((ev.registeredCount / ev.maxParticipants) * 100));
   const full = pct >= 100;
@@ -488,32 +488,36 @@ function EventCard({ ev }: { ev: Event }) {
   const code = ev.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
   async function handleInterest() {
-    if (registered || full || busy) return;
+    if ((full && !registered) || busy) return;
     setBusy(true);
     setErr('');
     try {
-      await registerInterest(ev.id);
-      await addLead({
-        companyId: ev.companyId,
-        companyName: ev.companyName,
-        itemType: 'event',
-        itemId: ev.id,
-        itemName: ev.title,
-        intent: 'event_interest',
-        message: `Médico demonstrou interesse no evento ${ev.title}.`,
-      });
+      if (registered) {
+        await cancelEventInterest(ev.id);
+      } else {
+        await registerInterest(ev.id);
+        await addLead({
+          companyId: ev.companyId,
+          companyName: ev.companyName,
+          itemType: 'event',
+          itemId: ev.id,
+          itemName: ev.title,
+          intent: 'event_interest',
+          message: `Médico demonstrou interesse no evento ${ev.title}.`,
+        });
+      }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
+      setErr(e instanceof Error ? e.message : 'Erro ao atualizar participação.');
     } finally {
       setBusy(false);
     }
   }
 
-  const btnLabel = busy ? '...' : full ? 'Esgotado' : registered ? 'Inscrito ✓' : 'Tenho interesse';
-  const btnBg = full ? 'var(--chip)' : registered ? 'rgba(18,160,108,0.12)' : 'var(--accent)';
-  const btnColor = full ? 'var(--muted)' : registered ? 'var(--success)' : '#fff';
-  const btnBorder = registered ? '1px solid rgba(18,160,108,0.35)' : 'none';
-  const btnCursor = full || registered || busy ? 'not-allowed' : 'pointer';
+  const btnLabel = busy ? '...' : registered ? 'Desistir' : full ? 'Esgotado' : 'Participar';
+  const btnBg = full && !registered ? 'var(--chip)' : registered ? 'rgba(232,69,69,0.08)' : 'var(--accent)';
+  const btnColor = full && !registered ? 'var(--muted)' : registered ? 'var(--danger)' : '#fff';
+  const btnBorder = registered ? '1px solid rgba(232,69,69,0.24)' : 'none';
+  const btnCursor = (full && !registered) || busy ? 'not-allowed' : 'pointer';
 
   return (
     <BannerCard tint1={tint1} tint2={tint2} month={monthShort(ev.date)} day={dayNum(ev.date)} format={ev.category}>
@@ -549,7 +553,7 @@ function EventCard({ ev }: { ev: Event }) {
       <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
         <button
           onClick={handleInterest}
-          disabled={full || registered || busy}
+          disabled={(full && !registered) || busy}
           style={{
             flex: 1, padding: '11px 0', borderRadius: 12, border: btnBorder,
             background: btnBg, color: btnColor,
