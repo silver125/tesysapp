@@ -1,30 +1,30 @@
 import { Link } from 'react-router-dom';
 
-const waitlistHref = 'mailto:contato@tessybr.com?subject=Waitlist%20Tessy&body=Ol%C3%A1%2C%20quero%20entrar%20na%20waitlist%20da%20Tessy.';
+const waitlistHref = 'mailto:contato@tessybr.com?subject=Acesso%20antecipado%20Tessy&body=Ol%C3%A1%2C%20quero%20acesso%20antecipado%20%C3%A0%20Tessy.';
 
 const solutionCards = [
   {
     eyebrow: 'Para médicos',
     title: 'Oportunidades certas.',
-    text: 'Produtos, eventos e representantes relevantes.',
+    text: 'Produtos e contatos que fazem sentido.',
   },
   {
     eyebrow: 'Para empresas',
     title: 'Demanda real.',
-    text: 'Leads médicos com intenção comercial.',
+    text: 'Médicos que levantaram a mão.',
   },
   {
     eyebrow: 'Para representantes',
     title: 'Conversa quente.',
-    text: 'Menos visita fria. Mais conversão.',
+    text: 'Contato com motivo para acontecer.',
   },
 ];
 
 const flowSteps = [
   ['01', 'Perfil', 'Médico, clínica ou empresa.'],
   ['02', 'Match', 'Interesse, região e especialidade.'],
-  ['03', 'Contato', 'WhatsApp, evento ou demonstração.'],
-  ['04', 'Crescimento', 'Dados para vender melhor.'],
+  ['03', 'Contato', 'Solicitação clara.'],
+  ['04', 'Negócio', 'Conversa com intenção.'],
 ];
 
 const doctorBenefits = [
@@ -70,35 +70,33 @@ export default function Landing() {
 
           <div className="tl-actions">
             <Link to="/entrar" className="tl-login">Entrar</Link>
-            <a href={waitlistHref} className="tl-primary">Waitlist</a>
+            <a href={waitlistHref} className="tl-primary">Acesso antecipado</a>
           </div>
         </header>
 
         <div className="tl-hero-content">
           <div className="tl-badge">
             <span />
-            Saúde + negócios
+            Oportunidades reais na saúde
           </div>
 
-          <h1>Onde a saúde fecha negócios mais rápido.</h1>
+          <h1>Você perde oportunidades porque ninguém certo te encontra?</h1>
 
           <p>
-            Médicos, clínicas e empresas em um só lugar.
+            A Tessy conecta médicos, clínicas e empresas quando existe intenção real.
           </p>
 
           <div className="tl-hero-actions">
-            <a href={waitlistHref} className="tl-hero-primary">Entrar na waitlist</a>
-            <Link to="/cadastro?perfil=empresa" className="tl-hero-secondary">Sou empresa</Link>
+            <a href={waitlistHref} className="tl-hero-primary">Quero acesso antecipado</a>
+            <Link to="/cadastro?perfil=empresa" className="tl-hero-secondary">Quero captar médicos</Link>
           </div>
-
-          <small>Convites liberados em fases para perfis selecionados.</small>
         </div>
 
         <div className="tl-phone-stage" aria-hidden="true">
           <div className="tl-phone-card tl-phone-card-left">
             <span>Médico</span>
-            <strong>Quero receber amostra</strong>
-            <small>Dra. Marina · estética e longevidade</small>
+            <strong>Solicitou contato</strong>
+            <small>Sculptra · representante em SP</small>
           </div>
 
           <div className="tl-iphone">
@@ -119,27 +117,27 @@ export default function Landing() {
 
               <div className="tl-phone-feature">
                 <div>
-                  <span>Produto premium</span>
-                  <h3>Bioestimulador com demanda médica</h3>
-                  <p>Indicação clara, material científico e representante ativo.</p>
+                  <span>Nova oportunidade</span>
+                  <h3>Bioestimulador Sculptra</h3>
+                  <p>Material científico, amostra e representante em SP.</p>
                 </div>
-                <strong>Hoje</strong>
+                <strong>Alta intenção</strong>
               </div>
 
               <div className="tl-phone-list">
                 <div>
                   <span>Representante</span>
-                  <strong>Contato direto por região</strong>
+                  <strong>Agenda disponível hoje</strong>
                 </div>
-                <button>WhatsApp</button>
+                <button>Solicitar contato</button>
               </div>
 
               <div className="tl-phone-list">
                 <div>
                   <span>Evento</span>
-                  <strong>Lançamento para médicos selecionados</strong>
+                  <strong>Demonstração para médicos</strong>
                 </div>
-                <button>Aula</button>
+                <button>Entrar</button>
               </div>
 
               <div className="tl-phone-nav">
@@ -155,7 +153,7 @@ export default function Landing() {
           <div className="tl-phone-card tl-phone-card-right">
             <span>Empresa</span>
             <strong>Lead qualificado</strong>
-            <small>Interesse em produto + evento</small>
+            <small>Médico pediu contato comercial</small>
           </div>
         </div>
       </section>
@@ -168,19 +166,19 @@ export default function Landing() {
         <section className="tl-problem tl-section" id="problema">
           <div className="tl-section-copy">
             <p className="tl-eyebrow">O problema</p>
-            <h2>Venda fria ainda domina.</h2>
+            <h2>Você perde oportunidades porque ninguém certo te encontra?</h2>
           </div>
 
           <div className="tl-problem-card">
-            <p>Visitas frias. Pouco tempo. Muito ruído.</p>
-            <strong>A conexão existe. O sistema é que está ultrapassado.</strong>
+            <p>Médicos ocupados. Marcas dispersas. Representantes no escuro.</p>
+            <strong>Oportunidade sem direção vira ruído.</strong>
           </div>
         </section>
 
         <section className="tl-section" id="solucao">
           <div className="tl-section-copy tl-centered">
             <p className="tl-eyebrow">A solução</p>
-            <h2>A ponte comercial da saúde.</h2>
+            <h2>O lugar onde médicos encontram oportunidades reais.</h2>
           </div>
 
           <div className="tl-solution-grid">
@@ -216,7 +214,7 @@ export default function Landing() {
             <p className="tl-eyebrow">Para médicos</p>
             <h2>Menos ruído. Mais relevância.</h2>
             <BenefitList items={doctorBenefits} />
-            <Link to="/cadastro?perfil=medico" className="tl-dark-cta">Entrar como médico</Link>
+            <Link to="/cadastro?perfil=medico" className="tl-dark-cta">Receber oportunidades</Link>
           </div>
 
           <div className="tl-audience-panel">
@@ -235,7 +233,7 @@ export default function Landing() {
             <p className="tl-eyebrow">Para empresas</p>
             <h2>Mais demanda. Menos CAC.</h2>
             <BenefitList items={companyBenefits} />
-            <Link to="/cadastro?perfil=empresa" className="tl-dark-cta">Entrar como empresa</Link>
+            <Link to="/cadastro?perfil=empresa" className="tl-dark-cta">Captar médicos certos</Link>
           </div>
         </section>
 
@@ -248,9 +246,9 @@ export default function Landing() {
           <div>
             <p className="tl-eyebrow">Exclusividade</p>
             <h2>Waitlist selecionada.</h2>
-            <p>Alto sinal. Pouca distração.</p>
+            <p>Convites limitados por fase.</p>
           </div>
-          <a href={waitlistHref}>Entrar na waitlist</a>
+          <a href={waitlistHref}>Solicitar convite</a>
         </section>
 
         <section className="tl-faq">
@@ -776,6 +774,7 @@ const landingCss = `
 .tl-phone-list button {
   min-width: 74px;
   height: 34px;
+  padding: 0 11px;
   border: 0;
   border-radius: 999px;
   background: var(--tessy-deep);
@@ -1206,6 +1205,10 @@ main {
     font-size: 16px;
   }
 
+  .tl-hero-content small {
+    display: none;
+  }
+
   .tl-hero-actions {
     width: 100%;
     flex-direction: column;
@@ -1286,6 +1289,7 @@ main {
   .tl-phone-list button {
     min-width: 62px;
     height: 30px;
+    padding: 0 9px;
     font-size: 11px;
   }
 
