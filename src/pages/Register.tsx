@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { WaIcon } from '../components/ui';
 import type { UserRole } from '../types';
@@ -37,8 +37,11 @@ const SPECIALTIES = [
 export default function Register() {
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState<FormData>(INITIAL);
+  const [searchParams] = useSearchParams();
+  const roleParam = searchParams.get('perfil');
+  const initialRole: UserRole | null = roleParam === 'medico' || roleParam === 'empresa' ? roleParam : null;
+  const [step, setStep] = useState(initialRole ? 1 : 0);
+  const [data, setData] = useState<FormData>({ ...INITIAL, role: initialRole });
   const [error, setError] = useState('');
 
   const totalSteps = 3;

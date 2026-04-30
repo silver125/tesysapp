@@ -1,36 +1,53 @@
 import { Link } from 'react-router-dom';
 
-const platformTags = [
-  'Produtos',
-  'Amostras',
-  'Eventos',
-  'Representantes',
-  'Leads',
-  'Parcerias',
-];
+const waitlistHref = 'mailto:contato@tessybr.com?subject=Waitlist%20Tessy&body=Ol%C3%A1%2C%20quero%20entrar%20na%20waitlist%20da%20Tessy.';
 
-const opportunityCards = [
+const solutionCards = [
   {
-    title: 'Produto com intenção médica',
-    text: 'Indicação, diferencial, público ideal e material de apoio.',
-    label: 'Skin quality',
+    eyebrow: 'Para médicos',
+    title: 'Menos tempo procurando. Mais oportunidades certas.',
+    text: 'Descubra produtos relevantes, fale direto com representantes e receba oportunidades de produtos e teste startups sem perder tempo.',
   },
   {
-    title: 'Representante por região',
-    text: 'Contato direto com quem atende a praça do médico.',
-    label: 'SP capital',
+    eyebrow: 'Para empresas',
+    title: 'Demanda qualificada, não audiência vazia.',
+    text: 'Receba demanda qualificada, gere leads reais e reduza CAC comercial.',
   },
   {
-    title: 'Evento comercial',
-    text: 'Lançamentos, demonstrações e aulas para médicos selecionados.',
-    label: '20 vagas',
+    eyebrow: 'Para representantes',
+    title: 'Intenção clara antes da conversa.',
+    text: 'Atenda médicos com intenção clara e aumente conversão.',
   },
 ];
 
 const flowSteps = [
-  'Empresa publica',
-  'Médico demonstra interesse',
-  'Representante chama no WhatsApp',
+  ['01', 'Cadastre seu perfil', 'Médico, clínica, marca ou representante.'],
+  ['02', 'A Tessy conecta interesses reais', 'Produtos, regiões, especialidades e momento de compra.'],
+  ['03', 'Conversa vira oportunidade', 'WhatsApp, reunião, demonstração, evento ou pedido.'],
+  ['04', 'Dados viram crescimento', 'Mais inteligência comercial a cada interação.'],
+];
+
+const doctorBenefits = [
+  'Produtos alinhados à sua especialidade',
+  'Representante certo na sua região',
+  'Eventos e aulas selecionadas',
+  'Novidades sem spam',
+  'Ganho de tempo real',
+];
+
+const companyBenefits = [
+  'Leads médicos com intenção real',
+  'Segmentação por especialidade e praça',
+  'Distribuição comercial mais eficiente',
+  'Lançamentos com tração imediata',
+  'Métricas claras de performance',
+];
+
+const faqs = [
+  ['A Tessy é para quais áreas?', 'Saúde estética, dermatologia, cirurgia, medicina premium e especialidades estratégicas.'],
+  ['Existe custo para médico?', 'O acesso inicial poderá ser gratuito para médicos aprovados.'],
+  ['Como empresas entram?', 'Via onboarding comercial e validação de categoria.'],
+  ['Quando recebo acesso?', 'Conforme ordem da waitlist e perfil estratégico.'],
 ];
 
 export default function Landing() {
@@ -39,174 +56,208 @@ export default function Landing() {
       <style>{landingCss}</style>
 
       <section className="tl-hero">
-        <div className="tl-orbit tl-orbit-one" />
-        <div className="tl-orbit tl-orbit-two" />
-        <div className="tl-orbit tl-orbit-three" />
-        <div className="tl-pin tl-pin-one" />
-        <div className="tl-pin tl-pin-two" />
+        <div className="tl-ring tl-ring-a" />
+        <div className="tl-ring tl-ring-b" />
 
         <header className="tl-header">
-          <Link to="/" className="tl-brand" aria-label="Tessy">
+          <Link to="/" className="tl-brand" aria-label="Tessy.app">
             <span className="tl-brand-mark">T</span>
             <span className="tl-brand-name">Tessy<span>.app</span></span>
           </Link>
 
           <nav className="tl-nav" aria-label="Principal">
-            <a href="#produto">Produto</a>
+            <a href="#problema">Problema</a>
+            <a href="#solucao">Solução</a>
             <a href="#medicos">Médicos</a>
             <a href="#empresas">Empresas</a>
           </nav>
 
           <div className="tl-actions">
             <Link to="/entrar" className="tl-login">Entrar</Link>
-            <Link to="/cadastro" className="tl-outline">Criar conta</Link>
+            <a href={waitlistHref} className="tl-primary">Waitlist</a>
           </div>
         </header>
 
         <div className="tl-hero-content">
           <div className="tl-badge">
             <span />
-            Plataforma B2B para saúde premium
+            Oportunidades entre empresas da saúde e médicos
           </div>
 
-          <h1>
-            Médicos e empresas de saúde, conectados direto.
-          </h1>
+          <h1>Onde a saúde fecha negócios mais rápido.</h1>
 
           <p>
-            Produtos, eventos, amostras e representantes em um só lugar.
+            A Tessy conecta médicos, clínicas, distribuidores e indústrias em um ecossistema inteligente de oportunidades reais.
           </p>
 
-          <div className="tl-trust">
-            <span>Sem feed público</span>
-            <span>Curadoria médica</span>
-            <span>WhatsApp direto</span>
+          <div className="tl-hero-actions">
+            <a href={waitlistHref} className="tl-hero-primary">Entrar na waitlist</a>
+            <Link to="/cadastro?perfil=empresa" className="tl-hero-secondary">Sou empresa</Link>
           </div>
 
-          <div className="tl-cta-shell">
-            <span>Acesso para médicos e empresas</span>
-            <Link to="/cadastro">Começar</Link>
-          </div>
-
-          <Link to="/entrar" className="tl-mobile-login">Já tenho conta</Link>
+          <small>Convites liberados em fases para perfis selecionados.</small>
         </div>
 
-        <div className="tl-hero-preview" aria-hidden="true">
-          <div className="tl-preview-card tl-preview-left">
-            <div className="tl-preview-kicker">Médico</div>
-            <strong>Quero receber amostra</strong>
-            <span>Dra. Marina · estética e longevidade</span>
+        <div className="tl-hero-console" aria-hidden="true">
+          <div className="tl-console-top">
+            <span>Interesse qualificado</span>
+            <strong>Agora</strong>
           </div>
-
-          <div className="tl-phone">
-            <div className="tl-phone-top" />
-            <div className="tl-phone-card">
-              <div className="tl-company-row">
-                <span className="tl-company-logo">D</span>
-                <div>
-                  <strong>DermaLab</strong>
-                  <small>Representante ativo em SP</small>
-                </div>
-              </div>
-              <h3>Bioestimulador premium</h3>
-              <p>Indicação clara, materiais científicos e proposta comercial.</p>
-              <div className="tl-mini-actions">
-                <span>WhatsApp</span>
-                <span>Amostra</span>
-              </div>
+          <div className="tl-console-grid">
+            <div>
+              <span>Médico</span>
+              <strong>Quero receber amostra</strong>
+              <small>Dra. Marina · estética e longevidade</small>
             </div>
-          </div>
-
-          <div className="tl-preview-card tl-preview-right">
-            <div className="tl-preview-kicker">Empresa</div>
-            <strong>Lead qualificado</strong>
-            <span>Interesse em produto + evento</span>
+            <div>
+              <span>Empresa</span>
+              <strong>Lead qualificado</strong>
+              <small>Produto + evento + região</small>
+            </div>
+            <div className="tl-console-wide">
+              <span>Representante ativo</span>
+              <strong>Conversa iniciada pelo WhatsApp</strong>
+            </div>
           </div>
         </div>
       </section>
 
-      <main className="tl-main">
-        <section className="tl-card-grid" id="produto" aria-label="Visão do produto">
-          <article className="tl-wide-card">
-            <div>
-              <p className="tl-eyebrow">Organize a conexão</p>
-              <h2>Uma ponte prática, não uma rede social.</h2>
-            </div>
-
-            <div className="tl-tag-map">
-              {platformTags.map(tag => (
-                <span key={tag}>{tag}</span>
-              ))}
-              <div className="tl-tag-core">T</div>
-            </div>
-          </article>
-
-          <article className="tl-side-card">
-            <p className="tl-eyebrow">Ação rápida</p>
-            <h2>Interesse vira conversa.</h2>
-            <div className="tl-lead-box">
-              <strong>Novo lead</strong>
-              <span>Quero falar com representante</span>
-              <small>Agora · WhatsApp liberado</small>
-            </div>
-          </article>
+      <main>
+        <section className="tl-proof">
+          <p>Usado por médicos de todo Brasil e mundo que movem o mercado da saúde no Brasil.</p>
         </section>
 
-        <section className="tl-product-panel" id="medicos">
-          <div className="tl-panel-copy">
-            <p className="tl-eyebrow">Para médicos</p>
-            <h2>Ver rápido. Confiar rápido. Chamar rápido.</h2>
-            <ul>
-              <li>Produto com indicação e diferencial.</li>
-              <li>Representante certo por região.</li>
-              <li>Evento, amostra ou parceria sem burocracia.</li>
-            </ul>
+        <section className="tl-problem tl-section" id="problema">
+          <div className="tl-section-copy">
+            <p className="tl-eyebrow">O problema</p>
+            <h2>O mercado da saúde ainda vende como em 2010.</h2>
           </div>
 
-          <div className="tl-ui-window">
-            <div className="tl-window-bar">
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="tl-opportunity-list">
-              {opportunityCards.map(card => (
-                <div className="tl-opportunity" key={card.title}>
-                  <span>{card.label}</span>
-                  <strong>{card.title}</strong>
-                  <p>{card.text}</p>
-                  <button>Falar no WhatsApp</button>
-                </div>
-              ))}
-            </div>
+          <div className="tl-problem-card">
+            <p>
+              Representantes perdidos em visitas frias. Médicos sem tempo para descobrir novidades. Eventos cheios de ruído. Marcas gastando alto para pouca conversão.
+            </p>
+            <strong>A conexão existe. O sistema é que está ultrapassado.</strong>
           </div>
         </section>
 
-        <section className="tl-flow" id="empresas">
-          <div className="tl-section-title">
-            <p className="tl-eyebrow">Para empresas e startups</p>
-            <h2>Do cadastro ao contato comercial.</h2>
+        <section className="tl-section" id="solucao">
+          <div className="tl-section-copy tl-centered">
+            <p className="tl-eyebrow">A solução</p>
+            <h2>A infraestrutura comercial que faltava para a saúde.</h2>
           </div>
 
-          <div className="tl-flow-grid">
-            {flowSteps.map((step, index) => (
-              <article key={step}>
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <h3>{step}</h3>
+          <div className="tl-solution-grid">
+            {solutionCards.map(card => (
+              <article key={card.eyebrow}>
+                <span>{card.eyebrow}</span>
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="tl-final">
-          <div>
-            <p className="tl-eyebrow">Tessy</p>
-            <h2>Saúde premium com menos ruído.</h2>
+        <section className="tl-section tl-flow">
+          <div className="tl-section-copy">
+            <p className="tl-eyebrow">Como funciona</p>
+            <h2>Simples para entrar. Poderoso para crescer.</h2>
           </div>
-          <Link to="/cadastro">Criar conta</Link>
+
+          <div className="tl-flow-grid">
+            {flowSteps.map(([number, title, text]) => (
+              <article key={number}>
+                <span>{number}</span>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="tl-audience tl-section" id="medicos">
+          <div>
+            <p className="tl-eyebrow">Para médicos</p>
+            <h2>Menos ruído. Mais relevância.</h2>
+            <BenefitList items={doctorBenefits} />
+            <Link to="/cadastro?perfil=medico" className="tl-dark-cta">Entrar como médico</Link>
+          </div>
+
+          <div className="tl-audience-panel">
+            <span>Onde interesse vira conversa.</span>
+            <strong>Produtos alinhados à prática médica, sem feed público e sem spam.</strong>
+          </div>
+        </section>
+
+        <section className="tl-audience tl-section tl-audience-reverse" id="empresas">
+          <div className="tl-audience-panel">
+            <span>Menos visita fria. Mais demanda quente.</span>
+            <strong>A ponte entre decisão médica e oportunidade comercial.</strong>
+          </div>
+
+          <div>
+            <p className="tl-eyebrow">Para empresas</p>
+            <h2>Marketing bonito não basta. Venda precisa acontecer.</h2>
+            <BenefitList items={companyBenefits} />
+            <Link to="/cadastro?perfil=empresa" className="tl-dark-cta">Entrar como empresa</Link>
+          </div>
+        </section>
+
+        <section className="tl-positioning">
+          <h2>A década da saúde é sobre conexão.</h2>
+          <p>Tessy nasce para modernizar a relação entre médicos e indústria.</p>
+        </section>
+
+        <section className="tl-waitlist">
+          <div>
+            <p className="tl-eyebrow">Exclusividade</p>
+            <h2>Entrada por waitlist. Qualidade acima de volume.</h2>
+            <p>Estamos ativando a plataforma em fases para garantir alta qualidade de networking e oportunidades relevantes.</p>
+          </div>
+          <a href={waitlistHref}>Entrar na waitlist</a>
+        </section>
+
+        <section className="tl-faq">
+          <div className="tl-section-copy">
+            <p className="tl-eyebrow">FAQ</p>
+            <h2>Perguntas frequentes.</h2>
+          </div>
+          <div className="tl-faq-list">
+            {faqs.map(([question, answer]) => (
+              <details key={question}>
+                <summary>{question}</summary>
+                <p>{answer}</p>
+              </details>
+            ))}
+          </div>
         </section>
       </main>
+
+      <footer className="tl-footer">
+        <div>
+          <strong>Tessy.app</strong>
+          <p>A nova infraestrutura comercial da saúde.</p>
+          <a href="mailto:contato@tessybr.com">contato@tessybr.com</a>
+        </div>
+        <nav aria-label="Rodapé">
+          <a href="#top">Instagram</a>
+          <a href="#top">LinkedIn</a>
+          <a href="mailto:contato@tessybr.com">Contato</a>
+          <a href="#top">Termos</a>
+          <a href="#top">Privacidade</a>
+        </nav>
+      </footer>
     </div>
+  );
+}
+
+function BenefitList({ items }: { items: string[] }) {
+  return (
+    <ul className="tl-benefits">
+      {items.map(item => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
   );
 }
 
@@ -216,78 +267,76 @@ const landingCss = `
   --tessy-graphite: #343949;
   --tessy-steel: #777f95;
   --tessy-lavender: #b9c1ea;
-  --tessy-sky: #aab1d8;
   --tessy-paper: #f7f8ff;
+  --tessy-soft: #f1f3fa;
   --tessy-heading: #5d6474;
   --tessy-text: #6f7686;
   --tessy-muted: #9299a8;
-  width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
   background: var(--tessy-paper);
   color: var(--tessy-text);
   font-family: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+}
+
+.tessy-landing *,
+.tessy-landing *:before,
+.tessy-landing *:after {
+  box-sizing: border-box;
+}
+
+.tessy-landing a {
+  color: inherit;
 }
 
 .tl-hero {
   position: relative;
-  width: 100%;
-  min-height: 880px;
+  min-height: 1060px;
   overflow: hidden;
   background:
-    radial-gradient(900px 520px at 52% 28%, rgba(185,193,234,0.28) 0%, rgba(255,255,255,0) 70%),
-    radial-gradient(600px 360px at 10% 80%, rgba(185,193,234,0.16) 0%, rgba(255,255,255,0) 72%),
-    linear-gradient(180deg, #ffffff 0%, #f7f8ff 100%);
-  color: var(--tessy-text);
+    radial-gradient(860px 520px at 50% 26%, rgba(185,193,234,0.26) 0%, rgba(255,255,255,0) 72%),
+    linear-gradient(180deg, #ffffff 0%, #f8f9ff 100%);
   border-bottom: 1px solid rgba(119,127,149,0.16);
 }
 
-.tl-orbit {
+.tl-ring {
   position: absolute;
   left: 50%;
-  top: 51%;
-  border: 1px solid rgba(52,57,73,0.12);
-  border-radius: 9999px;
+  top: 48%;
   transform: translate(-50%, -50%);
+  border: 1px solid rgba(52,57,73,0.10);
+  border-radius: 9999px;
   pointer-events: none;
 }
 
-.tl-orbit-one { width: 780px; height: 780px; }
-.tl-orbit-two { width: 1180px; height: 1180px; }
-.tl-orbit-three { width: 1600px; height: 1600px; }
-
-.tl-pin {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--tessy-sky);
-  box-shadow: 0 0 22px rgba(185,193,234,0.34);
-}
-
-.tl-pin-one { left: 51%; top: 122px; }
-.tl-pin-two { left: 34%; top: 405px; }
+.tl-ring-a { width: 900px; height: 900px; }
+.tl-ring-b { width: 1360px; height: 1360px; }
 
 .tl-header {
   position: relative;
-  z-index: 3;
+  z-index: 4;
   width: calc(100% - 96px);
   max-width: 1540px;
-  margin: 0 auto;
   height: 88px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 28px;
 }
 
-.tl-brand {
-  display: inline-flex;
+.tl-brand,
+.tl-actions,
+.tl-nav,
+.tl-hero-actions,
+.tl-footer nav {
+  display: flex;
   align-items: center;
+}
+
+.tl-brand {
   gap: 12px;
-  color: var(--tessy-heading);
   text-decoration: none;
 }
 
@@ -297,13 +346,14 @@ const landingCss = `
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-graphite) 100%);
+  background: var(--tessy-deep);
   color: #ffffff;
-  font-weight: 600;
   font-size: 22px;
+  font-weight: 560;
 }
 
 .tl-brand-name {
+  color: var(--tessy-heading);
   font-size: 34px;
   line-height: 1;
   font-weight: 560;
@@ -315,59 +365,62 @@ const landingCss = `
 }
 
 .tl-nav {
-  display: flex;
-  align-items: center;
-  gap: 34px;
+  gap: 32px;
 }
 
 .tl-nav a,
-.tl-login,
-.tl-outline {
+.tl-login {
   color: rgba(93,100,116,0.88);
   text-decoration: none;
-  font-size: 18px;
-  font-weight: 560;
+  font-size: 17px;
+  font-weight: 520;
 }
 
 .tl-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  gap: 18px;
 }
 
-.tl-mobile-login {
-  display: none;
-}
-
-.tl-outline {
-  min-height: 48px;
+.tl-primary,
+.tl-hero-primary,
+.tl-dark-cta,
+.tl-waitlist a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 25px;
-  border: 2px solid rgba(255,255,255,0.82);
-  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
+  min-height: 48px;
+  padding: 0 24px;
   border-radius: 999px;
+  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 17px;
+  font-weight: 560;
+  box-shadow: 0 18px 45px rgba(52,57,73,0.16);
+}
+
+.tessy-landing .tl-primary,
+.tessy-landing .tl-hero-primary,
+.tessy-landing .tl-dark-cta {
   color: #ffffff;
 }
 
 .tl-hero-content {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   width: calc(100% - 48px);
-  max-width: 1120px;
+  max-width: 980px;
   margin: 108px auto 0;
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
 }
 
 .tl-badge {
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  min-height: 44px;
   padding: 0 18px;
   border: 1px solid rgba(119,127,149,0.18);
   border-radius: 999px;
@@ -382,595 +435,483 @@ const landingCss = `
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: var(--tessy-sky);
+  background: var(--tessy-lavender);
 }
 
 .tl-hero h1 {
-  max-width: 980px;
-  margin: 44px auto 0;
-  font-size: 64px;
-  line-height: 1.1;
-  font-weight: 480;
-  letter-spacing: 0;
+  max-width: 920px;
+  margin-top: 42px;
   color: var(--tessy-heading);
+  font-size: 70px;
+  line-height: 1.04;
+  letter-spacing: 0;
+  font-weight: 470;
 }
 
 .tl-hero-content > p {
-  margin-top: 28px;
   max-width: 760px;
-  color: var(--tessy-muted);
-  font-size: 20px;
-  line-height: 1.45;
+  margin-top: 26px;
+  color: var(--tessy-text);
+  font-size: 21px;
+  line-height: 1.5;
   font-weight: 460;
 }
 
-.tl-cta-shell {
-  width: 100%;
-  max-width: 560px;
-  min-height: 78px;
-  margin-top: 30px;
-  padding: 7px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 8px;
-  background: #ffffff;
-  border: 2px solid var(--tessy-lavender);
-  border-radius: 999px;
-  box-shadow: 0 28px 70px rgba(52,57,73,0.13);
+.tl-hero-actions {
+  margin-top: 34px;
+  gap: 12px;
+  justify-content: center;
 }
 
-.tl-cta-shell span {
-  color: var(--tessy-muted);
-  font-size: 17px;
-  text-align: left;
-  padding-left: 26px;
-  white-space: nowrap;
-}
-
-.tl-cta-shell a {
-  min-height: 60px;
+.tl-hero-secondary {
+  min-height: 52px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 36px;
+  padding: 0 24px;
+  border: 1px solid rgba(119,127,149,0.22);
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
-  color: #ffffff;
+  background: rgba(255,255,255,0.78);
+  color: var(--tessy-graphite);
   text-decoration: none;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 560;
 }
 
-.tl-trust {
-  margin-top: 24px;
-  display: flex;
-  justify-content: center;
-  gap: 46px;
-  color: rgba(111,118,134,0.62);
-  font-size: 18px;
-  font-weight: 520;
+.tl-hero-content small {
+  display: block;
+  max-width: 360px;
+  margin-top: 16px;
+  color: var(--tessy-muted);
+  font-size: 14px;
+  line-height: 1.4;
 }
 
-.tl-hero-preview {
+.tl-hero-console {
   position: absolute;
   z-index: 2;
   left: 50%;
   bottom: 0;
+  width: calc(100% - 48px);
+  max-width: 860px;
+  padding: 18px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(119,127,149,0.16);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: rgba(255,255,255,0.84);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 28px 70px rgba(52,57,73,0.12);
+}
+
+.tl-console-top,
+.tl-console-grid,
+.tl-section,
+.tl-proof,
+.tl-positioning,
+.tl-waitlist,
+.tl-faq,
+.tl-footer {
   width: calc(100% - 56px);
-  max-width: 960px;
-  height: 260px;
-  transform: translateX(-50%);
-  pointer-events: none;
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.tl-phone {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 330px;
-  height: 250px;
-  padding: 18px;
-  transform: translateX(-50%);
-  border-radius: 34px 34px 0 0;
-  background: linear-gradient(180deg, var(--tessy-deep) 0%, #0f1220 100%);
-  box-shadow: 0 30px 80px rgba(52,57,73,0.20);
-}
-
-.tl-phone-top {
-  width: 86px;
-  height: 18px;
-  margin: 0 auto 18px;
-  border-radius: 999px;
-  background: #000000;
-}
-
-.tl-phone-card {
-  height: 196px;
-  padding: 18px;
-  border-radius: 8px;
-  background: #ffffff;
-  color: var(--tessy-heading);
-}
-
-.tl-company-row {
+.tl-console-top {
+  width: 100%;
+  max-width: none;
   display: flex;
-  align-items: center;
-  gap: 11px;
-}
-
-.tl-company-logo {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--tessy-sky);
-  color: var(--tessy-graphite);
-  font-weight: 600;
-}
-
-.tl-company-row strong {
-  display: block;
-  font-size: 15px;
-  font-weight: 560;
-}
-
-.tl-company-row small {
-  display: block;
-  margin-top: 2px;
-  color: var(--tessy-muted);
-  font-size: 11px;
-}
-
-.tl-phone-card h3 {
-  margin-top: 18px;
-  font-size: 22px;
-  line-height: 1.05;
-}
-
-.tl-phone-card p {
-  margin-top: 8px;
+  justify-content: space-between;
+  padding: 8px 4px 16px;
   color: var(--tessy-muted);
   font-size: 13px;
-  line-height: 1.35;
 }
 
-.tl-mini-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.tl-mini-actions span {
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: #f2f4fa;
+.tl-console-top strong {
   color: var(--tessy-graphite);
-  font-size: 12px;
   font-weight: 560;
 }
 
-.tl-preview-card {
-  position: absolute;
-  top: 52px;
-  width: 250px;
-  padding: 18px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.96);
-  color: var(--tessy-heading);
-  box-shadow: 0 24px 60px rgba(18,24,40,0.14);
+.tl-console-grid {
+  width: 100%;
+  max-width: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
-.tl-preview-left { left: 0; }
-.tl-preview-right { right: 0; }
+.tl-console-grid div {
+  min-height: 132px;
+  padding: 20px;
+  border: 1px solid rgba(119,127,149,0.14);
+  border-radius: 8px;
+  background: #ffffff;
+}
 
-.tl-preview-kicker {
-  color: var(--tessy-sky);
+.tl-console-grid span,
+.tl-solution-grid span,
+.tl-flow-grid span,
+.tl-audience-panel span {
+  color: var(--tessy-steel);
   font-size: 12px;
   font-weight: 560;
   text-transform: uppercase;
 }
 
-.tl-preview-card strong {
+.tl-console-grid strong {
   display: block;
   margin-top: 10px;
-  font-size: 20px;
-  font-weight: 560;
-}
-
-.tl-preview-card span {
-  display: block;
-  margin-top: 8px;
-  color: var(--tessy-muted);
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.tl-main {
-  width: calc(100% - 56px);
-  max-width: 1500px;
-  margin: 0 auto;
-  padding: 72px 0 72px;
-}
-
-.tl-card-grid {
-  display: grid;
-  grid-template-columns: 1.28fr 1fr;
-  gap: 24px;
-}
-
-.tl-wide-card,
-.tl-side-card,
-.tl-product-panel,
-.tl-final {
-  border: 1px solid #eeeeee;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 18px 56px rgba(0,0,0,0.06);
-}
-
-.tl-wide-card {
-  min-height: 560px;
-  padding: 48px;
-  position: relative;
-  overflow: hidden;
-}
-
-.tl-side-card {
-  min-height: 560px;
-  padding: 48px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.tl-eyebrow {
-  color: var(--tessy-muted);
+  color: var(--tessy-graphite);
   font-size: 22px;
-  line-height: 1.2;
-  font-weight: 480;
-}
-
-.tl-wide-card h2,
-.tl-side-card h2,
-.tl-panel-copy h2,
-.tl-section-title h2,
-.tl-final h2 {
-  margin-top: 8px;
-  color: var(--tessy-heading);
-  font-size: 38px;
   line-height: 1.14;
   font-weight: 540;
-  letter-spacing: 0;
 }
 
-.tl-tag-map {
-  position: absolute;
-  left: 48px;
-  right: 48px;
-  bottom: 56px;
-  min-height: 330px;
-  display: flex;
-  align-items: start;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 18px;
-  padding-top: 54px;
+.tl-console-grid small {
+  display: block;
+  margin-top: 12px;
+  color: var(--tessy-muted);
+  font-size: 14px;
 }
 
-.tl-tag-map:before {
-  content: "";
-  position: absolute;
-  left: 18%;
-  right: 18%;
-  bottom: 108px;
-  height: 180px;
-  border: 1px solid #e2e5ec;
-  border-top: 0;
-  border-radius: 0 0 50% 50%;
+.tl-console-wide {
+  grid-column: 1 / -1;
 }
 
-.tl-tag-map span {
-  position: relative;
-  z-index: 1;
-  padding: 15px 22px;
-  border: 1px solid #e5e5e5;
-  border-radius: 999px;
+main {
   background: #ffffff;
-  color: var(--tessy-text);
-  font-size: 17px;
-  font-weight: 520;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.04);
 }
 
-.tl-tag-core {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 150px;
-  height: 150px;
-  display: grid;
-  place-items: center;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
-  color: #ffffff;
-  font-size: 82px;
-  font-weight: 560;
-  box-shadow: inset 0 -16px 28px rgba(0,0,0,0.18), 0 28px 60px rgba(52,57,73,0.18);
+.tl-proof {
+  padding: 44px 0;
+  text-align: center;
 }
 
-.tl-lead-box {
-  min-height: 250px;
-  padding: 28px;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f6fb 100%);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.tl-lead-box strong {
-  font-size: 36px;
-  line-height: 1.05;
-  font-weight: 540;
-}
-
-.tl-lead-box span {
-  margin-top: 16px;
-  color: var(--tessy-text);
-  font-size: 20px;
+.tl-proof p {
+  max-width: 820px;
+  margin: 0 auto;
+  color: var(--tessy-heading);
+  font-size: 24px;
+  line-height: 1.35;
   font-weight: 480;
 }
 
-.tl-lead-box small {
-  margin-top: 34px;
-  color: var(--tessy-steel);
-  font-size: 15px;
-  font-weight: 560;
+.tl-section {
+  padding: 88px 0;
+  border-top: 1px solid rgba(119,127,149,0.14);
 }
 
-.tl-product-panel {
-  margin-top: 32px;
-  min-height: 620px;
-  display: grid;
-  grid-template-columns: 0.9fr 1.2fr;
-  overflow: hidden;
-}
-
-.tl-panel-copy {
-  padding: 58px;
-  background: linear-gradient(135deg, #f9faff 0%, #f1f3fa 100%);
-}
-
-.tl-panel-copy ul {
-  margin-top: 38px;
-  display: grid;
-  gap: 22px;
-  list-style: none;
-}
-
-.tl-panel-copy li {
-  position: relative;
-  padding-left: 44px;
-  color: var(--tessy-text);
-  font-size: 24px;
-  line-height: 1.25;
-  font-weight: 500;
-}
-
-.tl-panel-copy li:before {
-  content: "✓";
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--tessy-graphite);
-  color: #ffffff;
-  font-size: 16px;
-}
-
-.tl-ui-window {
-  margin: 58px 58px 0 0;
-  border: 1px solid #e8e8e8;
-  border-bottom: 0;
-  border-radius: 8px 8px 0 0;
-  background: #ffffff;
-  box-shadow: 0 18px 52px rgba(0,0,0,0.12);
-  overflow: hidden;
-}
-
-.tl-window-bar {
-  height: 62px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 22px;
-  background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-steel) 100%);
-}
-
-.tl-window-bar span {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.72);
-}
-
-.tl-opportunity-list {
-  padding: 26px;
-  display: grid;
-  gap: 16px;
-}
-
-.tl-opportunity {
-  padding: 20px;
-  border: 1px solid #eeeeee;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.tl-opportunity span {
-  display: inline-flex;
-  padding: 7px 11px;
-  border-radius: 999px;
-  background: #f2f4fa;
-  color: var(--tessy-graphite);
-  font-size: 12px;
-  font-weight: 560;
-}
-
-.tl-opportunity strong {
-  display: block;
-  margin-top: 14px;
-  font-size: 22px;
-  line-height: 1.08;
-  color: var(--tessy-heading);
-  font-weight: 540;
-}
-
-.tl-opportunity p {
-  margin-top: 8px;
-  color: var(--tessy-muted);
-  font-size: 15px;
-  line-height: 1.45;
-}
-
-.tl-opportunity button {
-  margin-top: 16px;
-  height: 42px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--tessy-deep);
-  color: #ffffff;
-  font-weight: 560;
-  cursor: default;
-}
-
-.tl-flow {
-  margin-top: 72px;
-}
-
-.tl-section-title {
+.tl-section-copy {
   max-width: 760px;
 }
 
-.tl-flow-grid {
-  margin-top: 30px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+.tl-centered {
+  margin: 0 auto;
+  text-align: center;
 }
 
-.tl-flow-grid article {
-  min-height: 230px;
-  padding: 30px;
-  border: 1px solid #eeeeee;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 18px 56px rgba(0,0,0,0.06);
-}
-
-.tl-flow-grid span {
-  color: var(--tessy-sky);
-  font-size: 18px;
+.tl-eyebrow {
+  margin-bottom: 12px;
+  color: var(--tessy-muted);
+  font-size: 15px;
+  line-height: 1.2;
   font-weight: 560;
+  text-transform: uppercase;
 }
 
-.tl-flow-grid h3 {
-  margin-top: 62px;
+.tl-section h2,
+.tl-positioning h2,
+.tl-waitlist h2,
+.tl-faq h2 {
   color: var(--tessy-heading);
-  font-size: 31px;
-  line-height: 1.12;
+  font-size: 48px;
+  line-height: 1.08;
+  font-weight: 480;
   letter-spacing: 0;
+}
+
+.tl-problem {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.tl-problem-card {
+  padding: 34px;
+  border: 1px solid rgba(119,127,149,0.16);
+  border-radius: 8px;
+  background: var(--tessy-soft);
+}
+
+.tl-problem-card p {
+  color: var(--tessy-text);
+  font-size: 25px;
+  line-height: 1.36;
+  font-weight: 460;
+}
+
+.tl-problem-card strong {
+  display: block;
+  margin-top: 30px;
+  color: var(--tessy-graphite);
+  font-size: 24px;
+  line-height: 1.25;
   font-weight: 540;
 }
 
-.tl-final {
+.tl-solution-grid {
   margin-top: 34px;
-  padding: 38px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.tl-solution-grid article,
+.tl-flow-grid article,
+.tl-faq details {
+  border: 1px solid rgba(119,127,149,0.16);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 56px rgba(52,57,73,0.06);
+}
+
+.tl-solution-grid article {
+  min-height: 300px;
+  padding: 28px;
+}
+
+.tl-solution-grid h3 {
+  margin-top: 64px;
+  color: var(--tessy-graphite);
+  font-size: 26px;
+  line-height: 1.12;
+  font-weight: 520;
+}
+
+.tl-solution-grid p,
+.tl-flow-grid p,
+.tl-waitlist p,
+.tl-faq p,
+.tl-positioning p {
+  margin-top: 16px;
+  color: var(--tessy-text);
+  font-size: 18px;
+  line-height: 1.5;
+  font-weight: 450;
+}
+
+.tl-flow-grid {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.tl-flow-grid article {
+  min-height: 260px;
+  padding: 24px;
+}
+
+.tl-flow-grid h3 {
+  margin-top: 72px;
+  color: var(--tessy-graphite);
+  font-size: 24px;
+  line-height: 1.14;
+  font-weight: 520;
+}
+
+.tl-audience {
+  display: grid;
+  grid-template-columns: 1fr 0.9fr;
+  gap: 32px;
+  align-items: stretch;
+}
+
+.tl-audience-reverse {
+  grid-template-columns: 0.9fr 1fr;
+}
+
+.tl-benefits {
+  margin-top: 28px;
+  display: grid;
+  gap: 14px;
+  list-style: none;
+}
+
+.tl-benefits li {
+  position: relative;
+  padding-left: 32px;
+  color: var(--tessy-text);
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.tl-benefits li:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--tessy-lavender);
+}
+
+.tl-dark-cta {
+  margin-top: 34px;
+}
+
+.tl-audience-panel {
+  min-height: 430px;
+  padding: 34px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: space-between;
-  gap: 24px;
+  border: 1px solid rgba(119,127,149,0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(185,193,234,0.20) 0%, rgba(255,255,255,0) 70%),
+    var(--tessy-soft);
+}
+
+.tl-audience-panel strong {
+  color: var(--tessy-graphite);
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 500;
+}
+
+.tl-positioning {
+  padding: 112px 0;
+  text-align: center;
+  border-top: 1px solid rgba(119,127,149,0.14);
+}
+
+.tl-positioning h2 {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.tl-positioning p {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tl-waitlist {
+  margin-top: 0;
+  padding: 44px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: center;
+  border-radius: 8px;
   background: linear-gradient(135deg, var(--tessy-deep) 0%, var(--tessy-graphite) 100%);
 }
 
-.tl-final .tl-eyebrow,
-.tl-final h2 {
+.tl-waitlist .tl-eyebrow,
+.tl-waitlist h2,
+.tl-waitlist p {
   color: #ffffff;
 }
 
-.tl-final a {
-  min-height: 58px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 30px;
-  border-radius: 999px;
-  background: #ffffff;
-  color: var(--tessy-deep);
-  text-decoration: none;
-  font-size: 18px;
-  font-weight: 560;
-  white-space: nowrap;
+.tl-waitlist p {
+  max-width: 720px;
+  opacity: 0.78;
 }
 
-@media (max-width: 1100px) {
-  .tl-header {
-    width: calc(100% - 40px);
-  }
+.tl-waitlist a {
+  background: #ffffff;
+  color: var(--tessy-deep);
+}
 
+.tessy-landing .tl-waitlist a {
+  color: var(--tessy-deep);
+}
+
+.tl-faq {
+  padding: 88px 0;
+}
+
+.tl-faq-list {
+  margin-top: 28px;
+  display: grid;
+  gap: 12px;
+}
+
+.tl-faq details {
+  padding: 22px 24px;
+}
+
+.tl-faq summary {
+  cursor: pointer;
+  color: var(--tessy-graphite);
+  font-size: 20px;
+  font-weight: 520;
+}
+
+.tl-footer {
+  padding: 42px 0 54px;
+  display: flex;
+  justify-content: space-between;
+  gap: 28px;
+  border-top: 1px solid rgba(119,127,149,0.14);
+}
+
+.tl-footer strong {
+  display: block;
+  color: var(--tessy-graphite);
+  font-size: 24px;
+  font-weight: 560;
+}
+
+.tl-footer p,
+.tl-footer a {
+  margin-top: 8px;
+  color: var(--tessy-text);
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.tl-footer nav {
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 980px) {
   .tl-nav {
     display: none;
   }
 
   .tl-hero h1 {
-    font-size: 50px;
+    font-size: 54px;
   }
 
-  .tl-trust {
-    margin-top: 90px;
-    gap: 22px;
-    flex-wrap: wrap;
-  }
-
-  .tl-preview-left,
-  .tl-preview-right {
-    display: none;
-  }
-
-  .tl-card-grid,
-  .tl-product-panel,
-  .tl-flow-grid {
+  .tl-problem,
+  .tl-solution-grid,
+  .tl-flow-grid,
+  .tl-audience,
+  .tl-audience-reverse,
+  .tl-waitlist {
     grid-template-columns: 1fr;
   }
 
-  .tl-ui-window {
-    margin: 0 28px 0;
+  .tl-flow-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 700px) {
-  html,
-  body {
-    overflow-x: hidden;
-  }
-
   .tl-hero {
-    min-height: 930px;
-    width: 100%;
+    min-height: 1100px;
   }
 
   .tl-header {
-    height: 78px;
     width: calc(100% - 28px);
+    height: 76px;
   }
 
   .tl-brand-name {
@@ -982,15 +923,12 @@ const landingCss = `
     height: 38px;
   }
 
-  .tl-actions {
-    display: flex;
-    gap: 0;
+  .tl-primary {
+    display: none;
   }
 
   .tl-login {
     min-height: 38px;
-    display: inline-flex;
-    align-items: center;
     padding: 0 14px;
     border: 1px solid rgba(119,127,149,0.20);
     border-radius: 999px;
@@ -1000,163 +938,126 @@ const landingCss = `
     box-shadow: 0 10px 28px rgba(52,57,73,0.08);
   }
 
-  .tl-outline {
-    display: none;
-  }
-
   .tl-hero-content {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 140px;
     width: calc(100% - 32px);
-    max-width: none;
-    margin: 0 16px;
+    margin-top: 70px;
   }
 
   .tl-badge {
-    width: auto;
-    max-width: 300px;
+    max-width: 320px;
     justify-content: center;
     font-size: 12px;
+    text-align: left;
   }
 
   .tl-hero h1 {
     margin-top: 28px;
-    max-width: 240px;
-    font-size: 27px;
-    line-height: 1.12;
+    max-width: 340px;
+    font-size: 42px;
+    line-height: 1.06;
   }
 
   .tl-hero-content > p {
-    max-width: 285px;
-    font-size: 15px;
+    max-width: 330px;
+    font-size: 16px;
   }
 
-  .tl-cta-shell {
-    position: static;
-    transform: none;
-    min-height: auto;
-    width: 300px;
-    max-width: 100%;
-    grid-template-columns: 1fr;
-    border-radius: 8px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .tl-cta-shell span {
-    padding: 16px 14px 8px;
-    text-align: center;
-    white-space: normal;
-  }
-
-  .tl-cta-shell a {
+  .tl-hero-actions {
     width: 100%;
-    min-height: 56px;
-    border-radius: 8px;
+    flex-direction: column;
   }
 
-  .tl-mobile-login {
-    display: inline-flex;
-    margin-top: 14px;
-    color: var(--tessy-graphite);
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 560;
+  .tl-hero-primary,
+  .tl-hero-secondary {
+    width: min(320px, 100%);
   }
 
-  .tl-trust {
-    display: none;
-  }
-
-  .tl-hero-preview {
-    left: 0;
-    width: 100%;
-    transform: none;
-  }
-
-  .tl-phone {
-    left: 50vw;
-  }
-
-  .tl-orbit-one { width: 460px; height: 460px; }
-  .tl-orbit-two { width: 700px; height: 700px; }
-  .tl-orbit-three { width: 940px; height: 940px; }
-  .tl-pin { display: none; }
-
-  .tl-phone {
-    width: 288px;
-  }
-
-  .tl-main {
+  .tl-hero-console {
     width: calc(100% - 28px);
-    padding-top: 138px;
+    padding: 12px;
   }
 
-  .tl-wide-card,
-  .tl-side-card,
-  .tl-panel-copy,
-  .tl-final {
-    padding: 24px;
+  .tl-console-grid {
+    grid-template-columns: 1fr;
   }
 
-  .tl-wide-card,
-  .tl-side-card {
-    min-height: 430px;
+  .tl-console-grid div {
+    min-height: auto;
   }
 
-  .tl-wide-card h2,
-  .tl-side-card h2,
-  .tl-panel-copy h2,
-  .tl-section-title h2,
-  .tl-final h2 {
-    font-size: 31px;
-  }
-
-  .tl-eyebrow {
+  .tl-console-grid strong {
     font-size: 18px;
   }
 
-  .tl-tag-map {
-    left: 18px;
-    right: 18px;
-    bottom: 30px;
-    gap: 10px;
-    padding-top: 48px;
+  .tl-console-wide {
+    display: none;
   }
 
-  .tl-tag-map span {
-    padding: 10px 13px;
-    font-size: 13px;
+  .tl-section,
+  .tl-faq {
+    padding: 60px 0;
   }
 
-  .tl-tag-core {
-    width: 104px;
-    height: 104px;
-    font-size: 58px;
+  .tl-console-top,
+  .tl-console-grid,
+  .tl-section,
+  .tl-proof,
+  .tl-positioning,
+  .tl-waitlist,
+  .tl-faq,
+  .tl-footer {
+    width: calc(100% - 28px);
   }
 
-  .tl-product-panel {
-    min-height: auto;
+  .tl-proof p {
+    font-size: 20px;
   }
 
-  .tl-panel-copy li {
-    font-size: 19px;
+  .tl-section h2,
+  .tl-positioning h2,
+  .tl-waitlist h2,
+  .tl-faq h2 {
+    font-size: 34px;
   }
 
-  .tl-ui-window {
-    margin: 0;
+  .tl-problem-card,
+  .tl-solution-grid article,
+  .tl-flow-grid article,
+  .tl-audience-panel,
+  .tl-waitlist {
+    padding: 24px;
   }
 
-  .tl-flow-grid h3 {
-    margin-top: 42px;
-    font-size: 26px;
+  .tl-problem-card p {
+    font-size: 20px;
   }
 
-  .tl-final {
-    align-items: stretch;
+  .tl-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tl-audience-panel {
+    min-height: 280px;
+  }
+
+  .tl-audience-panel strong {
+    font-size: 27px;
+  }
+
+  .tl-benefits li {
+    font-size: 17px;
+  }
+
+  .tl-positioning {
+    padding: 72px 0;
+  }
+
+  .tl-footer {
     flex-direction: column;
+  }
+
+  .tl-footer nav {
+    justify-content: flex-start;
   }
 }
 `;
