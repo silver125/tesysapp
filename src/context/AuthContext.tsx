@@ -132,6 +132,20 @@ function writeLocalLead(lead: Lead) {
   }
 }
 
+function removeLocalEventLead(companyId: string, eventId: string, doctorId: string) {
+  try {
+    const next = readLocalLeads(companyId).filter(lead => !(
+      lead.doctorId === doctorId
+      && lead.itemType === 'event'
+      && lead.itemId === eventId
+      && lead.intent === 'event_interest'
+    ));
+    localStorage.setItem(`tessy-leads-${companyId}`, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+}
+
 function isSameLead(a: Pick<Lead, 'companyId' | 'doctorId' | 'itemType' | 'itemId' | 'intent'>, b: Pick<Lead, 'companyId' | 'doctorId' | 'itemType' | 'itemId' | 'intent'>) {
   return a.companyId === b.companyId
     && a.doctorId === b.doctorId
@@ -531,7 +545,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: row, error: fetchErr } = await supabase
       .from('events')
-      .select('registered_count')
+      .select('registered_count, company_id')
       .eq('id', eventId)
       .single();
     if (fetchErr || !row) throw new Error('Evento não encontrado.');
@@ -543,6 +557,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .update({ registered_count: newCount })
       .eq('id', eventId);
     if (updErr) throw new Error(updErr.message);
+
+    const companyId = (row.company_id as string) || events.find(e => e.id === eventId)?.companyId;
+    if (companyId) {
+      removeLocalEventLead(companyId, eventId, user.id);
+      setLeads(prev => prev.filter(lead => !(
+        lead.companyId === companyId
+        && lead.doctorId === user.id
+        && lead.itemType === 'event'
+        && lead.itemId === eventId
+        && lead.intent === 'event_interest'
+      )));
+
+      const { error: leadDeleteErr } = await supabase
+        .from('leads')
+        .delete()
+        .eq('company_id', companyId)
+        .eq('doctor_id', user.id)
+        .eq('item_type', 'event')
+        .eq('item_id', eventId)
+        .eq('intent', 'event_interest');
+      if (leadDeleteErr) throw new Error(leadDeleteErr.message);
+    }
 
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, registeredCount: newCount } : e));
     const next = new Set(registeredEventIds);
