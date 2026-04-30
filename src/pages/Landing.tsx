@@ -928,14 +928,16 @@ main {
   }
 
   .tl-login {
-    min-height: 38px;
-    padding: 0 14px;
-    border: 1px solid rgba(119,127,149,0.20);
+    min-height: 40px;
+    padding: 0 18px;
+    border: 1px solid rgba(255,255,255,0.72);
     border-radius: 999px;
-    background: rgba(255,255,255,0.72);
-    color: var(--tessy-graphite);
+    background: var(--tessy-deep);
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff;
     font-size: 14px;
-    box-shadow: 0 10px 28px rgba(52,57,73,0.08);
+    font-weight: 560;
+    box-shadow: 0 14px 34px rgba(23,27,42,0.16);
   }
 
   .tl-hero-content {
