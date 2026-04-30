@@ -20,23 +20,10 @@ const solutionCards = [
   },
 ];
 
-const flowSteps = [
-  ['01', 'Perfil', 'Médico, clínica ou empresa.'],
-  ['02', 'Match', 'Interesse, região e especialidade.'],
-  ['03', 'Contato', 'Solicitação clara.'],
-  ['04', 'Negócio', 'Conversa com intenção.'],
-];
-
 const doctorBenefits = [
   'Produtos alinhados à sua especialidade',
   'Representante certo na sua região',
   'Novidades sem spam',
-];
-
-const companyBenefits = [
-  'Leads médicos com intenção real',
-  'Segmentação por especialidade e praça',
-  'Métricas claras de performance',
 ];
 
 const faqs = [
@@ -65,7 +52,6 @@ export default function Landing() {
             <a href="#problema">Problema</a>
             <a href="#solucao">Solução</a>
             <a href="#medicos">Médicos</a>
-            <a href="#empresas">Empresas</a>
           </nav>
 
           <div className="tl-actions">
@@ -192,23 +178,6 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="tl-section tl-flow">
-          <div className="tl-section-copy">
-            <p className="tl-eyebrow">Como funciona</p>
-            <h2>Entrar. Conectar. Fechar.</h2>
-          </div>
-
-          <div className="tl-flow-grid">
-            {flowSteps.map(([number, title, text]) => (
-              <article key={number}>
-                <span>{number}</span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
         <section className="tl-audience tl-section" id="medicos">
           <div>
             <p className="tl-eyebrow">Para médicos</p>
@@ -220,20 +189,6 @@ export default function Landing() {
           <div className="tl-audience-panel">
             <span>Onde interesse vira conversa.</span>
             <strong>Produtos alinhados à prática médica, sem feed público e sem spam.</strong>
-          </div>
-        </section>
-
-        <section className="tl-audience tl-section tl-audience-reverse" id="empresas">
-          <div className="tl-audience-panel">
-            <span>Menos visita fria. Mais demanda quente.</span>
-            <strong>A ponte entre decisão médica e oportunidade comercial.</strong>
-          </div>
-
-          <div>
-            <p className="tl-eyebrow">Para empresas</p>
-            <h2>Mais demanda. Menos CAC.</h2>
-            <BenefitList items={companyBenefits} />
-            <Link to="/cadastro?perfil=empresa" className="tl-dark-cta">Captar médicos certos</Link>
           </div>
         </section>
 
