@@ -140,7 +140,44 @@ export default function Landing() {
 
       <main>
         <section className="tl-proof">
-          <p>Para quem move o mercado da saúde no Brasil.</p>
+          <div className="tl-proof-social" aria-label="200 médicos já na waitlist">
+            <div className="tl-proof-avatars" aria-hidden="true">
+              <span>A</span>
+              <span>B</span>
+              <span>C</span>
+            </div>
+            <p><strong>200+</strong> médicos já na waitlist</p>
+          </div>
+
+          <div className="tl-register-card">
+            <h2>Por que se cadastrar?</h2>
+
+            <div className="tl-register-list">
+              <div className="tl-register-item">
+                <SparkleIcon />
+                <div>
+                  <h3>Curadoria</h3>
+                  <p>Só o que importa para sua especialidade</p>
+                </div>
+              </div>
+
+              <div className="tl-register-item">
+                <NetworkIcon />
+                <div>
+                  <h3>Networking</h3>
+                  <p>Conecte com empresas de confiança</p>
+                </div>
+              </div>
+
+              <div className="tl-register-item">
+                <LockIcon />
+                <div>
+                  <h3>Privacidade</h3>
+                  <p>Seus dados protegidos e seguros</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="tl-problem tl-section" id="problema">
@@ -241,6 +278,35 @@ function BenefitList({ items }: { items: string[] }) {
         <li key={item}>{item}</li>
       ))}
     </ul>
+  );
+}
+
+function SparkleIcon() {
+  return (
+    <svg className="tl-register-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M23.4 5.5l4.2 12.1c.3.9 1 1.6 1.9 1.9l12.1 4.2-12.1 4.2c-.9.3-1.6 1-1.9 1.9l-4.2 12.1-4.2-12.1c-.3-.9-1-1.6-1.9-1.9L5.2 23.7l12.1-4.2c.9-.3 1.6-1 1.9-1.9L23.4 5.5Z" stroke="currentColor" strokeWidth="3.2" strokeLinejoin="round" />
+      <path d="M35.5 3.8v8.4M31.3 8h8.4M8.5 31.8v6.8M5.1 35.2h6.8" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function NetworkIcon() {
+  return (
+    <svg className="tl-register-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M17.5 22.5c5 0 9-4 9-9s-4-9-9-9-9 4-9 9 4 9 9 9Z" stroke="currentColor" strokeWidth="3.2" />
+      <path d="M3.7 41c1.8-7.1 6.7-11.2 13.8-11.2 3.1 0 5.8.8 8 2.4" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M35 25c3.8 0 6.8-3 6.8-6.8s-3-6.8-6.8-6.8" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M31.5 31.1c5.9.5 10.1 4 11.7 9.9" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg className="tl-register-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M12 21.5h24c2.2 0 4 1.8 4 4V40c0 2.2-1.8 4-4 4H12c-2.2 0-4-1.8-4-4V25.5c0-2.2 1.8-4 4-4Z" stroke="currentColor" strokeWidth="3.2" strokeLinejoin="round" />
+      <path d="M15 21.5v-6.2C15 9.2 19 5 24 5s9 4.2 9 10.3v6.2" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -772,17 +838,108 @@ main {
 }
 
 .tl-proof {
-  padding: 44px 0;
-  text-align: center;
+  padding: 58px 0 76px;
 }
 
-.tl-proof p {
-  max-width: 820px;
+.tl-proof-social {
+  max-width: 900px;
+  margin: 0 auto 118px;
+  display: flex;
+  align-items: center;
+  gap: 34px;
+}
+
+.tl-proof-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.tl-proof-avatars span {
+  width: 74px;
+  height: 74px;
+  margin-left: -15px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #8e9bb0 0%, #5e6b82 100%);
+  color: #ffffff;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 680;
+  box-shadow: 0 14px 28px rgba(52,57,73,0.10);
+}
+
+.tl-proof-avatars span:first-child {
+  margin-left: 0;
+}
+
+.tl-proof-social p {
+  margin: 0;
+  color: #40506b;
+  font-size: 30px;
+  line-height: 1.25;
+  font-weight: 420;
+}
+
+.tl-proof-social strong {
+  color: #0f1628;
+  font-weight: 760;
+}
+
+.tl-register-card {
+  max-width: 900px;
   margin: 0 auto;
-  color: var(--tessy-heading);
-  font-size: 24px;
-  line-height: 1.35;
-  font-weight: 480;
+  padding: 70px 64px 68px;
+  border: 1px solid #dce4f2;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 22px 46px rgba(52,57,73,0.10);
+}
+
+.tl-register-card h2 {
+  margin: 0;
+  color: #0f1628;
+  font-size: 48px;
+  line-height: 1.08;
+  font-weight: 720;
+}
+
+.tl-register-list {
+  margin-top: 56px;
+  display: grid;
+  gap: 38px;
+}
+
+.tl-register-item {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 22px;
+  align-items: start;
+  color: #334057;
+}
+
+.tl-register-icon {
+  width: 42px;
+  height: 42px;
+  margin-top: 3px;
+  color: #334057;
+}
+
+.tl-register-item h3 {
+  margin: 0;
+  color: #0f1628;
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 720;
+}
+
+.tl-register-item p {
+  margin: 6px 0 0;
+  color: #40506b;
+  font-size: 28px;
+  line-height: 1.18;
+  font-weight: 420;
 }
 
 .tl-section {
@@ -1075,6 +1232,19 @@ main {
     font-size: 54px;
   }
 
+  .tl-proof-social,
+  .tl-register-card {
+    max-width: calc(100% - 48px);
+  }
+
+  .tl-proof-social {
+    margin-bottom: 76px;
+  }
+
+  .tl-register-card {
+    padding: 54px 42px;
+  }
+
   .tl-problem,
   .tl-solution-grid,
   .tl-flow-grid,
@@ -1267,8 +1437,62 @@ main {
     width: calc(100% - 28px);
   }
 
-  .tl-proof p {
-    font-size: 20px;
+  .tl-proof {
+    padding: 44px 0 58px;
+  }
+
+  .tl-proof-social {
+    max-width: 100%;
+    margin-bottom: 54px;
+    gap: 14px;
+  }
+
+  .tl-proof-avatars span {
+    width: 44px;
+    height: 44px;
+    margin-left: -9px;
+    font-size: 18px;
+    border-width: 2px;
+  }
+
+  .tl-proof-social p {
+    font-size: 17px;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .tl-register-card {
+    max-width: 100%;
+    padding: 32px 24px;
+    border-radius: 22px;
+  }
+
+  .tl-register-card h2 {
+    font-size: 32px;
+  }
+
+  .tl-register-list {
+    margin-top: 32px;
+    gap: 26px;
+  }
+
+  .tl-register-item {
+    grid-template-columns: 34px 1fr;
+    gap: 14px;
+  }
+
+  .tl-register-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .tl-register-item h3 {
+    font-size: 22px;
+  }
+
+  .tl-register-item p {
+    font-size: 18px;
+    line-height: 1.25;
   }
 
   .tl-section h2,
