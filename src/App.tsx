@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import DoctorDashboard from './pages/doctor/DoctorDashboard';
 import CompanyDashboard from './pages/company/CompanyDashboard';
 import type { UserRole } from './types';
+import { TessyMark } from './components/ui';
 
 /* ── Aguarda Supabase verificar sessão antes de renderizar ── */
 function AuthGate({ children }: { children: React.ReactNode }) {
@@ -17,13 +18,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'var(--bg)', flexDirection: 'column', gap: 16,
       }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: 'var(--deep)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontWeight: 560, fontSize: 18,
-          animation: 'pulse 1.5s ease-in-out infinite',
-        }}>T</div>
+        <TessyMark size={36} style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
         <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
       </div>
     );

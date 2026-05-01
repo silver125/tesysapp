@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import { TessyMark } from '../components/ui';
 
 const authImage = 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1400&q=84';
 
@@ -152,18 +153,7 @@ function AuthHeader({ actionLabel, actionTo }: { actionLabel: string; actionTo: 
       backdropFilter: 'blur(14px)',
     }}>
       <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-        <div style={{
-          width: 38,
-          height: 38,
-          borderRadius: 8,
-          background: 'var(--deep)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#fff',
-          fontWeight: 560,
-          fontSize: 18,
-        }}>T</div>
+        <TessyMark size={38} />
         <div>
           <div style={{ fontWeight: 560, fontSize: 19, letterSpacing: 0, lineHeight: 1, color: 'var(--accent-ink)' }}>
             Tessy<span style={{ color: 'var(--lavender)' }}>.app</span>

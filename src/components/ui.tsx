@@ -1,5 +1,32 @@
 import type { ReactNode, CSSProperties } from 'react';
 
+/* ── Official Tessy logo mark ── */
+export function TessyMark({
+  size,
+  className,
+  style,
+}: {
+  size?: number;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <img
+      src="/tessy-icon.png"
+      alt=""
+      aria-hidden="true"
+      className={className}
+      style={{
+        ...(size === undefined ? {} : { width: size, height: size }),
+        display: 'block',
+        objectFit: 'contain',
+        flexShrink: 0,
+        ...style,
+      }}
+    />
+  );
+}
+
 /* ── Mono label ── */
 export function Mono({ children, style, className }: { children: ReactNode; style?: CSSProperties; className?: string }) {
   return (

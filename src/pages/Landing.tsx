@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { TessyMark } from '../components/ui';
 
 const waitlistHref = 'mailto:contato@tessybr.com?subject=Acesso%20antecipado%20Tessy&body=Ol%C3%A1%2C%20quero%20acesso%20antecipado%20%C3%A0%20Tessy.';
 
@@ -44,7 +45,7 @@ export default function Landing() {
 
         <header className="tl-header">
           <Link to="/" className="tl-brand" aria-label="Tessy.app">
-            <span className="tl-brand-mark">T</span>
+            <TessyMark className="tl-brand-mark" />
             <span className="tl-brand-name">Tessy<span>.app</span></span>
           </Link>
 
@@ -391,13 +392,9 @@ const landingCss = `
 .tl-brand-mark {
   width: 42px;
   height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--tessy-deep);
-  color: #ffffff;
-  font-size: 22px;
-  font-weight: 560;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .tl-brand-name {

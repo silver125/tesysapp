@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
-import { WaIcon } from '../components/ui';
+import { TessyMark, WaIcon } from '../components/ui';
 import type { UserRole } from '../types';
 
 type FormData = {
@@ -123,12 +123,7 @@ export default function Register() {
             </button>
           )}
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-            <div style={{
-              width: 38, height: 38, borderRadius: 8,
-              background: 'var(--deep)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontWeight: 560, fontSize: 18,
-            }}>T</div>
+            <TessyMark size={38} />
             <div>
               <div style={{ fontWeight: 560, fontSize: 19, letterSpacing: 0, lineHeight: 1, color: 'var(--accent-ink)' }}>
                 Tessy<span style={{ color: 'var(--lavender)' }}>.app</span>

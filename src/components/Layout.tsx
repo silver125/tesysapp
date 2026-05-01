@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
-import { CompanyMark } from './ui';
+import { CompanyMark, TessyMark } from './ui';
 import { companyTint } from '../lib/uiHelpers';
 
 export interface NavItem {
@@ -45,12 +45,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
         }}>
           {/* Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 10,
-              background: 'var(--deep)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontWeight: 560, fontSize: 16, letterSpacing: 0,
-            }}>T</div>
+            <TessyMark size={32} />
             <span style={{ fontWeight: 560, fontSize: 17, letterSpacing: 0, color: 'var(--accent-ink)' }}>
               Tessy<span style={{ color: 'var(--lavender)' }}>.app</span>
             </span>
