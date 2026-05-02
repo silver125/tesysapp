@@ -8,6 +8,7 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   register: (input: RegisterInput) => Promise<User>;
   logout: () => Promise<void>;
+  completeOnboarding: () => Promise<void>;
   updateProfile: (data: { name?: string; company?: string; whatsapp?: string }) => Promise<void>;
   events: Event[];
   products: Product[];

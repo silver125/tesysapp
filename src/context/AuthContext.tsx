@@ -40,6 +40,7 @@ function dbToUser(profile: Record<string, unknown>, email: string): User {
     company,
     whatsapp:  profile.whatsapp  as string | undefined,
     bio:       profile.bio       as string | undefined,
+    onboardingCompletedAt: profile.onboarding_completed_at as string | null | undefined,
   };
 }
 
@@ -162,6 +163,15 @@ function isSameLead(a: Pick<Lead, 'companyId' | 'doctorId' | 'itemType' | 'itemI
     && a.itemType === b.itemType
     && (a.itemId ?? '') === (b.itemId ?? '')
     && a.intent === b.intent;
+}
+
+function markLocalOnboardingDone(userId: string, completedAt: string) {
+  try {
+    localStorage.setItem(`tessy-onboarding-done-${userId}`, completedAt);
+    localStorage.removeItem(`tessy-onboarding-pending-${userId}`);
+  } catch {
+    /* ignore */
+  }
 }
 
 // ── Provider ─────────────────────────────────────────────────────────────────
@@ -447,7 +457,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         crmState: input.crmState,
         company: input.company,
         whatsapp: input.whatsapp,
+        onboardingCompletedAt: null,
       };
+      try {
+        localStorage.setItem(`tessy-onboarding-pending-${uid}`, '1');
+      } catch {
+        /* ignore */
+      }
       setUser(newUser);
       return newUser;
     } finally {
@@ -461,6 +477,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     assertSupabaseConfigured();
     await supabase.auth.signOut();
     setUser(null);
+  };
+
+  const completeOnboarding = async () => {
+    if (!user) return;
+    const completedAt = new Date().toISOString();
+    markLocalOnboardingDone(user.id, completedAt);
+    setUser(prev => prev ? { ...prev, onboardingCompletedAt: completedAt } : prev);
+
+    if (!isSupabaseConfigured) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ onboarding_completed_at: completedAt })
+      .eq('id', user.id);
+
+    if (error) {
+      // Se a coluna ainda não foi criada no Supabase, o fallback local evita repetir o modal.
+      console.warn('Não foi possível salvar onboarding no Supabase:', error.message);
+    }
   };
 
   // ── Atualizar perfil ──
@@ -762,7 +797,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, isLoading, authReady,
-      login, register, logout, updateProfile,
+      login, register, logout, completeOnboarding, updateProfile,
       events, products, courses, leads,
       addEvent, addProduct, addCourse, addLead,
       deleteEvent, deleteProduct, deleteCourse,

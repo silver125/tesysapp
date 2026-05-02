@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { CompanyMark, TessyMark } from './ui';
 import { companyTint } from '../lib/uiHelpers';
+import OnboardingModal from './OnboardingModal';
 
 export interface NavItem {
   label: string;
@@ -145,6 +146,8 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
           <div style={{ width: 100, height: 3.5, borderRadius: 999, background: 'rgba(52,57,73,0.14)' }} />
         </div>
       </nav>
+
+      <OnboardingModal />
     </div>
   );
 }

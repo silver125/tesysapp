@@ -11,6 +11,7 @@ export interface User {
   crmState?: string;
   whatsapp?: string;
   bio?: string;
+  onboardingCompletedAt?: string | null;
 }
 
 export interface Event {
