@@ -3,28 +3,34 @@ import { TessyMark } from '../components/ui';
 
 const waitlistHref = 'mailto:contato@tessybr.com?subject=Acesso%20antecipado%20Tessy&body=Ol%C3%A1%2C%20quero%20acesso%20antecipado%20%C3%A0%20Tessy.';
 
-const solutionCards = [
+const findCards = [
   {
-    eyebrow: 'Para médicos',
-    title: 'Oportunidades certas.',
-    text: 'Produtos e contatos que fazem sentido.',
+    title: 'Representantes',
+    text: 'Veja empresas e contatos da sua região.',
   },
   {
-    eyebrow: 'Para empresas',
-    title: 'Demanda real.',
-    text: 'Médicos que levantaram a mão.',
+    title: 'Eventos',
+    text: 'Encontre congressos, aulas, imersões e encontros médicos.',
   },
   {
-    eyebrow: 'Para representantes',
-    title: 'Conversa quente.',
-    text: 'Contato com motivo para acontecer.',
+    title: 'Cursos',
+    text: 'Descubra formações alinhadas à sua especialidade.',
+  },
+  {
+    title: 'Produtos',
+    text: 'Conheça produtos, tecnologias e soluções para sua prática.',
+  },
+  {
+    title: 'Serviços',
+    text: 'Encontre parceiros úteis para o consultório ou clínica.',
   },
 ];
 
 const doctorBenefits = [
-  'Produtos alinhados à sua especialidade',
-  'Representante certo na sua região',
-  'Novidades sem spam',
+  'Produtos para sua área',
+  'Representantes da sua região',
+  'Eventos e cursos médicos',
+  'Serviços úteis para sua prática',
 ];
 
 const faqs = [
@@ -184,16 +190,25 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="tl-section" id="solucao">
+        <section className="tl-section" id="como-ajuda">
           <div className="tl-section-copy tl-centered">
-            <p className="tl-eyebrow">A solução</p>
-            <h2>O lugar onde médicos encontram oportunidades reais.</h2>
+            <p className="tl-eyebrow">Como a Tessy ajuda</p>
+            <h2>Você encontra mais rápido.</h2>
+            <p className="tl-section-subtitle">
+              Em vez de procurar em grupos, mensagens soltas ou indicações perdidas, a Tessy organiza as oportunidades em um ambiente simples.
+            </p>
+          </div>
+        </section>
+
+        <section className="tl-section" id="o-que-encontra">
+          <div className="tl-section-copy tl-centered">
+            <p className="tl-eyebrow">O que você encontra</p>
+            <h2>Tudo em um só lugar.</h2>
           </div>
 
-          <div className="tl-solution-grid">
-            {solutionCards.map(card => (
-              <article key={card.eyebrow}>
-                <span>{card.eyebrow}</span>
+          <div className="tl-solution-grid tl-find-grid">
+            {findCards.map(card => (
+              <article key={card.title}>
                 <h3>{card.title}</h3>
                 <p>{card.text}</p>
               </article>
@@ -205,6 +220,9 @@ export default function Landing() {
           <div>
             <p className="tl-eyebrow">Para médicos</p>
             <h2>Menos ruído. Mais relevância.</h2>
+            <p className="tl-audience-subtitle">
+              Veja conexões relevantes para sua especialidade, sua região e sua rotina.
+            </p>
             <BenefitList items={doctorBenefits} />
             <Link to="/cadastro?perfil=medico" className="tl-dark-cta">Receber oportunidades</Link>
           </div>
@@ -991,6 +1009,25 @@ main {
   text-align: center;
 }
 
+.tl-section-subtitle,
+.tl-audience-subtitle {
+  margin: 18px auto 0;
+  color: var(--tessy-text);
+  font-size: 20px;
+  line-height: 1.48;
+  font-weight: 450;
+}
+
+.tl-section-subtitle {
+  max-width: 780px;
+}
+
+.tl-audience-subtitle {
+  max-width: 640px;
+  margin-left: 0;
+  margin-right: 0;
+}
+
 .tl-eyebrow {
   margin-bottom: 12px;
   color: var(--tessy-muted);
@@ -1014,7 +1051,7 @@ main {
 .tl-solution-grid {
   margin-top: 34px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 18px;
 }
 
@@ -1031,12 +1068,16 @@ main {
 }
 
 .tl-solution-grid article {
-  min-height: 220px;
+  min-height: 205px;
   padding: 28px;
 }
 
+.tl-find-grid article {
+  min-height: 190px;
+}
+
 .tl-solution-grid h3 {
-  margin-top: 48px;
+  margin-top: 0;
   color: var(--tessy-graphite);
   font-size: 26px;
   line-height: 1.12;
@@ -1330,6 +1371,13 @@ main {
   .tl-hero-content > p {
     max-width: 330px;
     font-size: 16px;
+  }
+
+  .tl-section-subtitle,
+  .tl-audience-subtitle {
+    max-width: 100%;
+    font-size: 17px;
+    line-height: 1.45;
   }
 
   .tl-hero-content small {
