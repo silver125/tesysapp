@@ -497,7 +497,6 @@ function EventCard({ ev }: { ev: Event }) {
       if (registered) {
         await cancelEventInterest(ev.id);
       } else {
-        await registerInterest(ev.id);
         await addLead({
           companyId: ev.companyId,
           companyName: ev.companyName,
@@ -507,6 +506,7 @@ function EventCard({ ev }: { ev: Event }) {
           intent: 'event_interest',
           message: `Médico demonstrou interesse no evento ${ev.title}.`,
         });
+        await registerInterest(ev.id);
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro ao atualizar participação.');

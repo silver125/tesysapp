@@ -122,11 +122,20 @@ function readLocalLeads(companyId: string): Lead[] {
   }
 }
 
+function notifyLocalLeadsChanged(companyId: string) {
+  try {
+    window.dispatchEvent(new CustomEvent('tessy-leads-changed', { detail: { companyId } }));
+  } catch {
+    /* ignore */
+  }
+}
+
 function writeLocalLead(lead: Lead) {
   try {
     const prev = readLocalLeads(lead.companyId);
     const exists = prev.some(l => isSameLead(l, lead));
     localStorage.setItem(`tessy-leads-${lead.companyId}`, JSON.stringify(exists ? prev : [lead, ...prev]));
+    notifyLocalLeadsChanged(lead.companyId);
   } catch {
     /* ignore */
   }
@@ -141,6 +150,7 @@ function removeLocalEventLead(companyId: string, eventId: string, doctorId: stri
       && lead.intent === 'event_interest'
     ));
     localStorage.setItem(`tessy-leads-${companyId}`, JSON.stringify(next));
+    notifyLocalLeadsChanged(companyId);
   } catch {
     /* ignore */
   }
@@ -262,10 +272,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const interval = window.setInterval(() => {
       refreshData();
       refreshLeads();
-    }, 5000);
+    }, 2000);
 
     return () => window.clearInterval(interval);
   }, [refreshData, refreshLeads, user?.role]);
+
+  useEffect(() => {
+    if (user?.role !== 'empresa') return;
+
+    const handleLocalLeadChange = (event: globalThis.Event) => {
+      if (event instanceof StorageEvent && event.key !== `tessy-leads-${user.id}`) return;
+      if (event instanceof CustomEvent && event.detail?.companyId !== user.id) return;
+      refreshLeads();
+    };
+
+    window.addEventListener('storage', handleLocalLeadChange);
+    window.addEventListener('tessy-leads-changed', handleLocalLeadChange);
+
+    return () => {
+      window.removeEventListener('storage', handleLocalLeadChange);
+      window.removeEventListener('tessy-leads-changed', handleLocalLeadChange);
+    };
+  }, [refreshLeads, user?.id, user?.role]);
 
   // Busca perfil do usuário autenticado (com timeout de 8s)
   async function fetchProfile(userId: string, email: string): Promise<User | null> {
@@ -523,7 +551,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from('events')
       .update({ registered_count: newCount })
       .eq('id', eventId);
-    if (updErr) throw new Error(updErr.message);
+    if (updErr) {
+      // Algumas políticas RLS podem bloquear update do evento para médicos.
+      // A conexão principal é registrada em leads; a contagem local continua otimista.
+      console.warn('Não foi possível atualizar a contagem remota do evento:', updErr.message);
+    }
 
     // Atualiza estado local + persiste inscrição no localStorage
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, registeredCount: newCount } : e));
@@ -549,14 +581,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', eventId)
       .single();
     if (fetchErr || !row) throw new Error('Evento não encontrado.');
-
-    const current = (row.registered_count as number) ?? 0;
-    const newCount = Math.max(0, current - 1);
-    const { error: updErr } = await supabase
-      .from('events')
-      .update({ registered_count: newCount })
-      .eq('id', eventId);
-    if (updErr) throw new Error(updErr.message);
 
     const eventName = (row.title as string) || events.find(e => e.id === eventId)?.title;
     const companyId = (row.company_id as string) || events.find(e => e.id === eventId)?.companyId;
@@ -589,6 +613,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq('item_name', eventName)
           .eq('intent', 'event_interest');
       }
+    }
+
+    const current = (row.registered_count as number) ?? 0;
+    const newCount = Math.max(0, current - 1);
+    const { error: updErr } = await supabase
+      .from('events')
+      .update({ registered_count: newCount })
+      .eq('id', eventId);
+    if (updErr) {
+      console.warn('Não foi possível atualizar a contagem remota do evento:', updErr.message);
     }
 
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, registeredCount: newCount } : e));
@@ -672,6 +706,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
     };
 
+    const local = readLocalLeads(lead.companyId);
+    if (local.some(existing => isSameLead(existing, lead))) {
+      return;
+    }
+
     if (!isSupabaseConfigured) {
       writeLocalLead(lead);
       return;
@@ -690,6 +729,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: existing } = await existingQuery;
     if (existing && existing.length > 0) {
+      writeLocalLead(lead);
       return;
     }
 
@@ -709,11 +749,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       created_at: lead.createdAt,
     });
 
-    if (!error) {
-      writeLocalLead(lead);
-      if (user.role === 'empresa' && lead.companyId === user.id) {
-        setLeads(prev => prev.some(l => isSameLead(l, lead)) ? prev : [lead, ...prev]);
-      }
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    writeLocalLead(lead);
+    if (user.role === 'empresa' && lead.companyId === user.id) {
+      setLeads(prev => prev.some(l => isSameLead(l, lead)) ? prev : [lead, ...prev]);
     }
   };
 

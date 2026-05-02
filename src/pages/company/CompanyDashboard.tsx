@@ -107,6 +107,19 @@ function latestLeadByDoctor(leads: Lead[]) {
   });
 }
 
+function eventLeadDoctorCount(event: Event, leads: Lead[]) {
+  const doctors = new Set<string>();
+
+  leads.forEach(lead => {
+    if (lead.itemType !== 'event' || lead.intent !== 'event_interest') return;
+    const sameEvent = lead.itemId === event.id || lead.itemName === event.title;
+    if (!sameEvent) return;
+    doctors.add(lead.doctorId || `${lead.doctorName}-${lead.doctorSpecialty ?? ''}`);
+  });
+
+  return doctors.size;
+}
+
 export default function CompanyDashboard() {
   const { user, events, products, courses, leads, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
@@ -116,18 +129,23 @@ export default function CompanyDashboard() {
   const [editWa, setEditWa] = useState('');
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
-  const myEvents   = events.filter(e => e.companyId === user?.id);
+  const companyLeads = leads.filter(l => l.companyId === user?.id);
+  const myEvents = events
+    .filter(e => e.companyId === user?.id)
+    .map(event => {
+      const leadCount = eventLeadDoctorCount(event, companyLeads);
+      const registeredCount = Math.max(event.registeredCount, leadCount);
+      return registeredCount === event.registeredCount ? event : { ...event, registeredCount };
+    });
   const myProducts = products.filter(p => p.companyId === user?.id);
   const myCourses  = courses.filter(c => c.companyId === user?.id);
   const eventById = new Map(myEvents.map(event => [event.id, event]));
   const eventByName = new Map(myEvents.map(event => [event.title, event]));
-  const activeLeads = leads
-    .filter(l => l.companyId === user?.id)
-    .filter(lead => {
-      if (lead.itemType !== 'event' || lead.intent !== 'event_interest') return true;
-      const event = (lead.itemId ? eventById.get(lead.itemId) : undefined) ?? eventByName.get(lead.itemName);
-      return Boolean(event && event.registeredCount > 0);
-    });
+  const activeLeads = companyLeads.filter(lead => {
+    if (lead.itemType !== 'event' || lead.intent !== 'event_interest') return true;
+    const event = (lead.itemId ? eventById.get(lead.itemId) : undefined) ?? eventByName.get(lead.itemName);
+    return Boolean(event);
+  });
   const myLeads = latestLeadByDoctor(activeLeads);
   const tint = companyTint(user?.company ?? user?.name ?? '');
   const code = (user?.company ?? user?.name ?? 'EM').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
