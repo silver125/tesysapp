@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Tessy">
+  <defs>
+    <linearGradient id="tessyCurrentBg" x1="512" y1="0" x2="512" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF7142"/>
+      <stop offset="0.48" stop-color="#A98AAE"/>
+      <stop offset="1" stop-color="#2E91FF"/>
+    </linearGradient>
+    <radialGradient id="tessyCurrentSoft" cx="0.42" cy="0.46" r="0.78">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.12"/>
+      <stop offset="0.68" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="160" fill="url(#tessyCurrentBg)"/>
+  <rect width="1024" height="1024" rx="160" fill="url(#tessyCurrentSoft)"/>
+  <rect x="224" y="397" width="330" height="138" fill="#FFFFFF"/>
+  <rect x="429" y="529" width="125" height="242" fill="#FFFFFF"/>
+  <rect x="554" y="250" width="246" height="147" fill="#8DBBFA"/>
+  <rect x="554" y="250" width="246" height="6" fill="#6673A7" opacity="0.7"/>
+</svg>

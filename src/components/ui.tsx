@@ -12,7 +12,7 @@ export function TessyMark({
 }) {
   return (
     <img
-      src="/tessy-icon.png"
+      src="/tessy-icon-current.svg"
       alt=""
       aria-hidden="true"
       className={className}
