@@ -38,25 +38,11 @@ function IcoBook(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
 }
-function IcoLeads(a: boolean) {
-  const c = a ? 'var(--accent)' : '#6F7A90';
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M6.5 10.5a3.5 3.5 0 117 0M3 18a7 7 0 0114 0"/><path d="M2.5 5.5h3M14.5 5.5h3M4 2.5l2 2M16 2.5l-2 2" strokeLinecap="round"/></svg>;
-}
-function IcoBigCreate() {
-  return (
-    <svg width="52" height="52" viewBox="0 0 52 52">
-      <circle cx="26" cy="26" r="26" fill="var(--accent)"/>
-      <path d="M26 14v24M14 26h24" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
 const NAV_ITEMS: NavItem[] = [
   { key: 'home',     label: 'Início',   icon: IcoHome },
   { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
-  { key: 'create',   label: '',         icon: () => <IcoBigCreate />, big: true },
+  { key: 'create',   label: 'Comece por aqui', icon: () => null, big: true },
   { key: 'products', label: 'Produtos', icon: IcoBox },
-  { key: 'leads',    label: 'Leads',    icon: IcoLeads },
   { key: 'courses',  label: 'Cursos',   icon: IcoBook },
 ];
 
@@ -296,44 +282,18 @@ export default function CompanyDashboard() {
             ))}
           </div>
 
-          {/* Commercial pipeline */}
-          <div style={{
-            marginBottom: 24,
-            padding: 16,
-            borderRadius: 18,
-            background: 'linear-gradient(135deg, rgba(74,168,255,0.10) 0%, rgba(30,169,124,0.08) 100%)',
-            border: '1px solid rgba(74,168,255,0.16)',
-          }}>
-            <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-              Ponte comercial
-            </Mono>
-            <div style={{ marginTop: 8, fontSize: 18, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.2 }}>
-              Leads médicos qualificados
-            </div>
-            <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-              Veja médicos que pediram representante, amostra, evento ou parceria de divulgação.
-            </p>
-            <button onClick={() => setTab('leads')} style={{
-              marginTop: 12,
-              width: '100%',
-              padding: '11px 12px',
-              borderRadius: 12,
-              border: 'none',
-              background: 'var(--accent)',
-              color: '#fff',
-              fontSize: 13,
-              fontWeight: 560,
-              cursor: 'pointer',
-            }}>
-              Abrir leads
-            </button>
-          </div>
-
           {/* Quick create */}
           <div style={{ marginBottom: 24 }}>
-            <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 10 }}>
-              Criar novo
-            </Mono>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+              <div>
+                <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+                  Comece por aqui
+                </Mono>
+                <div style={{ fontSize: 18, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.15 }}>
+                  Publique sua primeira oportunidade.
+                </div>
+              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
               {(['event', 'product', 'course'] as const).map(k => {
                 const cfg = { event: { icon: '📅', label: 'Evento' }, product: { icon: '💊', label: 'Produto' }, course: { icon: '🎓', label: 'Curso' } }[k];
@@ -350,6 +310,54 @@ export default function CompanyDashboard() {
               })}
             </div>
           </div>
+
+          {/* Leads access */}
+          <button
+            onClick={() => setTab('leads')}
+            style={{
+              width: '100%',
+              marginBottom: 24,
+              padding: '14px 16px',
+              borderRadius: 18,
+              background: 'var(--card)',
+              border: '1px solid var(--line)',
+              boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 14,
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                Relacionamento médico
+              </Mono>
+              <div style={{ marginTop: 6, fontSize: 16, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.2 }}>
+                Leads qualificados
+              </div>
+              <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+                {myLeads.length === 0
+                  ? 'Pedidos de amostra, eventos e representantes aparecerão aqui.'
+                  : `${myLeads.length} ${myLeads.length === 1 ? 'médico interessado' : 'médicos interessados'}.`}
+              </div>
+            </div>
+            <div style={{
+              minWidth: 48,
+              height: 48,
+              borderRadius: 14,
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 22,
+              fontWeight: 560,
+            }}>
+              {myLeads.length}
+            </div>
+          </button>
 
           {/* Recent events timeline */}
           {myEvents.length > 0 && (

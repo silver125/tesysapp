@@ -97,6 +97,36 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
             const muted = 'var(--muted)';
 
             if (item.big) {
+              if (item.label) {
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => onNavChange(item.key)}
+                    style={{
+                      minWidth: 118,
+                      height: 42,
+                      borderRadius: 999,
+                      background: 'var(--accent-ink)',
+                      border: '1px solid rgba(255,255,255,0.72)',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      marginTop: -12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 14px',
+                      fontSize: 12,
+                      fontWeight: 560,
+                      lineHeight: 1.05,
+                      textAlign: 'center',
+                      boxShadow: '0 12px 28px rgba(52,57,73,0.22)',
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                );
+              }
+
               return (
                 <button
                   key={item.key}
