@@ -61,15 +61,18 @@ export default function Landing() {
             Oportunidades reais na saúde
           </div>
 
-          <h1>Você perde oportunidades porque ninguém certo te encontra?</h1>
+          <h1>Comunidade para quem vive o mundo da medicina.</h1>
 
           <p>
-            A Tessy conecta médicos, clínicas e empresas quando existe intenção real.
+            Encontre representantes, eventos, cursos, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
           </p>
 
           <div className="tl-hero-actions">
-            <a href={waitlistHref} className="tl-hero-primary">Quero acesso antecipado</a>
-            <Link to="/cadastro?perfil=empresa" className="tl-hero-secondary">Quero captar médicos</Link>
+            <a href={waitlistHref} className="tl-hero-primary">
+              <span>Entrar na lista</span>
+              <span className="tl-hero-arrow" aria-hidden="true">→</span>
+            </a>
+            <Link to="/cadastro?perfil=empresa" className="tl-hero-secondary">Sou empresa</Link>
           </div>
         </div>
 
@@ -519,6 +522,17 @@ const landingCss = `
   margin-top: 34px;
   gap: 12px;
   justify-content: center;
+}
+
+.tl-hero-primary {
+  position: relative;
+  gap: 18px;
+}
+
+.tl-hero-arrow {
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 420;
 }
 
 .tl-hero-secondary {
@@ -1325,11 +1339,33 @@ main {
   .tl-hero-actions {
     width: 100%;
     flex-direction: column;
+    gap: 14px;
   }
 
   .tl-hero-primary,
   .tl-hero-secondary {
-    width: min(320px, 100%);
+    width: min(340px, 100%);
+    min-height: 76px;
+    border-radius: 16px;
+    font-size: 24px;
+    font-weight: 560;
+  }
+
+  .tl-hero-primary {
+    justify-content: center;
+    padding: 0 56px;
+  }
+
+  .tl-hero-arrow {
+    position: absolute;
+    right: 28px;
+    font-size: 34px;
+  }
+
+  .tl-hero-secondary {
+    background: rgba(255,255,255,0.82);
+    color: #171b2a;
+    border-color: rgba(119,127,149,0.22);
   }
 
   .tl-phone-stage {
