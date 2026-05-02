@@ -174,6 +174,18 @@ function markLocalOnboardingDone(userId: string, completedAt: string) {
   }
 }
 
+async function syncEventRegistrationCount(eventId: string): Promise<number | null> {
+  if (!isSupabaseConfigured) return null;
+
+  const { data, error } = await supabase.rpc('sync_event_registered_count', { p_event_id: eventId });
+  if (error) {
+    return null;
+  }
+
+  const count = typeof data === 'number' ? data : Number(data);
+  return Number.isFinite(count) ? count : null;
+}
+
 // ── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]       = useState<User | null>(null);
@@ -241,7 +253,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('courses').select('*').order('created_at', { ascending: false }),
     ]);
-    if (evRes.data) setEvents(evRes.data.map(r => dbToEvent(r as Record<string, unknown>)));
+    if (evRes.data) {
+      const mappedEvents = evRes.data.map(r => dbToEvent(r as Record<string, unknown>));
+      setEvents(mappedEvents);
+
+      void Promise.all(
+        mappedEvents.map(async event => {
+          const count = await syncEventRegistrationCount(event.id);
+          return count === null ? null : { id: event.id, count };
+        }),
+      ).then(results => {
+        const countByEvent = new Map(
+          results
+            .filter((result): result is { id: string; count: number } => result !== null)
+            .map(result => [result.id, result.count]),
+        );
+
+        if (countByEvent.size === 0) return;
+        setEvents(prev => prev.map(event => {
+          const count = countByEvent.get(event.id);
+          return count === undefined || event.registeredCount === count
+            ? event
+            : { ...event, registeredCount: count };
+        }));
+      });
+    }
     if (prRes.data) setProducts(prRes.data.map(r => dbToProduct(r as Record<string, unknown>)));
     if (coRes.data) setCourses(coRes.data.map(r => dbToCourse(r as Record<string, unknown>)));
   }, []);
@@ -581,15 +617,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const max = (row.max_participants as number) ?? 0;
     if (current >= max) throw new Error('Evento esgotado.');
 
-    const newCount = current + 1;
-    const { error: updErr } = await supabase
-      .from('events')
-      .update({ registered_count: newCount })
-      .eq('id', eventId);
-    if (updErr) {
-      // Algumas políticas RLS podem bloquear update do evento para médicos.
-      // A conexão principal é registrada em leads; a contagem local continua otimista.
-      console.warn('Não foi possível atualizar a contagem remota do evento:', updErr.message);
+    let newCount = await syncEventRegistrationCount(eventId);
+
+    if (newCount === null) {
+      newCount = current + 1;
+      const { error: updErr } = await supabase
+        .from('events')
+        .update({ registered_count: newCount })
+        .eq('id', eventId);
+      if (updErr) {
+        // Algumas políticas RLS podem bloquear update do evento para médicos.
+        // A conexão principal é registrada em leads; a contagem local continua otimista.
+        console.warn('Não foi possível atualizar a contagem remota do evento:', updErr.message);
+      }
     }
 
     // Atualiza estado local + persiste inscrição no localStorage
@@ -651,13 +691,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const current = (row.registered_count as number) ?? 0;
-    const newCount = Math.max(0, current - 1);
-    const { error: updErr } = await supabase
-      .from('events')
-      .update({ registered_count: newCount })
-      .eq('id', eventId);
-    if (updErr) {
-      console.warn('Não foi possível atualizar a contagem remota do evento:', updErr.message);
+    let newCount = await syncEventRegistrationCount(eventId);
+
+    if (newCount === null) {
+      newCount = Math.max(0, current - 1);
+      const { error: updErr } = await supabase
+        .from('events')
+        .update({ registered_count: newCount })
+        .eq('id', eventId);
+      if (updErr) {
+        console.warn('Não foi possível atualizar a contagem remota do evento:', updErr.message);
+      }
     }
 
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, registeredCount: newCount } : e));
