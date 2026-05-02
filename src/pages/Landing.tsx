@@ -181,18 +181,6 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="tl-problem tl-section" id="problema">
-          <div className="tl-section-copy">
-            <p className="tl-eyebrow">O problema</p>
-            <h2>A oportunidade certa não chega no feed certo.</h2>
-          </div>
-
-          <div className="tl-problem-card">
-            <p>Um produto aparece no Instagram. Um evento circula no WhatsApp. O médico certo nem vê.</p>
-            <strong>Sem sinal de interesse, tudo vira abordagem fria.</strong>
-          </div>
-        </section>
-
         <section className="tl-section" id="solucao">
           <div className="tl-section-copy tl-centered">
             <p className="tl-eyebrow">A solução</p>
@@ -1009,38 +997,6 @@ main {
   letter-spacing: 0;
 }
 
-.tl-problem {
-  display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
-  gap: 48px;
-  align-items: start;
-}
-
-.tl-problem-card {
-  padding: 30px;
-  border: 1px solid rgba(119,127,149,0.16);
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(63,131,241,0.08) 0%, rgba(255,111,70,0.08) 100%),
-    var(--tessy-soft);
-}
-
-.tl-problem-card p {
-  color: var(--tessy-text);
-  font-size: 24px;
-  line-height: 1.25;
-  font-weight: 460;
-}
-
-.tl-problem-card strong {
-  display: block;
-  margin-top: 22px;
-  color: var(--tessy-graphite);
-  font-size: 24px;
-  line-height: 1.25;
-  font-weight: 540;
-}
-
 .tl-solution-grid {
   margin-top: 34px;
   display: grid;
@@ -1286,7 +1242,6 @@ main {
     padding: 54px 42px;
   }
 
-  .tl-problem,
   .tl-solution-grid,
   .tl-flow-grid,
   .tl-audience,
@@ -1545,16 +1500,11 @@ main {
     font-size: 34px;
   }
 
-  .tl-problem-card,
   .tl-solution-grid article,
   .tl-flow-grid article,
   .tl-audience-panel,
   .tl-waitlist {
     padding: 24px;
-  }
-
-  .tl-problem-card p {
-    font-size: 20px;
   }
 
   .tl-flow-grid {
