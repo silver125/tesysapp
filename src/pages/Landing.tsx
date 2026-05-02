@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TessyMark } from '../components/ui';
 
@@ -41,6 +42,8 @@ const faqs = [
 ];
 
 export default function Landing() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <div className="tessy-landing">
       <style>{landingCss}</style>
@@ -63,11 +66,23 @@ export default function Landing() {
             <a href={waitlistHref} className="tl-primary">Acesso antecipado</a>
           </div>
 
-          <button className="tl-mobile-menu" type="button" aria-label="Abrir menu">
+          <button
+            className="tl-mobile-menu"
+            type="button"
+            aria-label={isMobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen(open => !open)}
+          >
             <span />
             <span />
             <span />
           </button>
+
+          <nav className={`tl-mobile-nav ${isMobileMenuOpen ? 'is-open' : ''}`} aria-label="Menu mobile">
+            <Link to="/entrar" onClick={() => setIsMobileMenuOpen(false)}>Entrar</Link>
+            <a href={waitlistHref} onClick={() => setIsMobileMenuOpen(false)}>Entrar na lista</a>
+            <Link to="/cadastro?perfil=empresa" onClick={() => setIsMobileMenuOpen(false)}>Sou empresa</Link>
+          </nav>
         </header>
 
         <div className="tl-hero-content">
@@ -188,6 +203,21 @@ export default function Landing() {
             <strong>Lead qualificado</strong>
             <small>Médico pediu contato comercial</small>
           </div>
+        </div>
+      </section>
+
+      <section className="tl-mobile-intro">
+        <h2>Comunidade para quem vive o mundo da medicina.</h2>
+        <p>
+          Encontre representantes, eventos, cursos, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
+        </p>
+
+        <div className="tl-mobile-hero-actions">
+          <a href={waitlistHref} className="tl-mobile-hero-primary">
+            <span>Entrar na lista</span>
+            <span aria-hidden="true">→</span>
+          </a>
+          <Link to="/cadastro?perfil=empresa" className="tl-mobile-hero-secondary">Sou empresa</Link>
         </div>
       </section>
 
@@ -1301,6 +1331,8 @@ main {
 .tl-mobile-glyph,
 .tl-mobile-menu,
 .tl-mobile-title,
+.tl-mobile-nav,
+.tl-mobile-intro,
 .tl-phone-mini-header,
 .tl-phone-dashboard,
 .tl-phone-sectionbar,
@@ -1823,6 +1855,47 @@ main {
     background: #ffffff;
   }
 
+  .tl-mobile-nav {
+    position: absolute;
+    z-index: 10;
+    top: 64px;
+    right: 0;
+    width: 176px;
+    padding: 8px;
+    display: grid;
+    gap: 6px;
+    border: 1px solid rgba(255,255,255,0.38);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.96);
+    box-shadow: 0 18px 44px rgba(15,22,40,0.16);
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .tl-mobile-nav.is-open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .tl-mobile-nav a {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: 11px;
+    color: #252b39;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 560;
+  }
+
+  .tl-mobile-nav a:hover {
+    background: rgba(63,131,241,0.08);
+  }
+
   .tl-hero-content {
     width: 100%;
     margin-top: 26px;
@@ -2094,9 +2167,79 @@ main {
     display: none;
   }
 
+  .tl-mobile-intro {
+    width: calc(100% - 36px);
+    margin: 24px auto 0;
+    display: block;
+    text-align: center;
+  }
+
+  .tl-mobile-intro h2 {
+    max-width: 340px;
+    margin: 0 auto;
+    color: var(--tessy-heading);
+    font-size: 32px;
+    line-height: 1.06;
+    font-weight: 470;
+    letter-spacing: 0;
+  }
+
+  .tl-mobile-intro p {
+    max-width: 330px;
+    margin: 14px auto 0;
+    color: var(--tessy-text);
+    font-size: 14px;
+    line-height: 1.42;
+    font-weight: 450;
+  }
+
+  .tl-mobile-hero-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .tl-mobile-hero-primary,
+  .tl-mobile-hero-secondary {
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 620;
+  }
+
+  .tl-mobile-hero-primary {
+    width: 172px;
+    gap: 12px;
+    background: var(--tessy-gradient);
+    color: #ffffff !important;
+    box-shadow:
+      0 18px 42px rgba(63,131,241,0.14),
+      0 18px 42px rgba(255,111,70,0.12);
+  }
+
+  .tl-mobile-hero-primary span:last-child {
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 400;
+  }
+
+  .tl-mobile-hero-secondary {
+    width: 140px;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(#ffffff, #ffffff) padding-box,
+      var(--tessy-gradient) border-box;
+    color: var(--tessy-heading);
+  }
+
   .tl-proof {
     width: calc(100% - 36px);
-    margin: 26px auto 0;
+    margin: 34px auto 0;
     padding: 22px 12px 16px;
     border-radius: 24px;
     background: linear-gradient(180deg, #f6faff 0%, #ffffff 70%);
