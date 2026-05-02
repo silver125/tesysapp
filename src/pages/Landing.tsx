@@ -51,6 +51,9 @@ export default function Landing() {
 
         <header className="tl-header">
           <Link to="/" className="tl-brand" aria-label="Tessy.app">
+            <span className="tl-mobile-glyph" aria-hidden="true">
+              <span />
+            </span>
             <TessyMark className="tl-brand-mark" />
             <span className="tl-brand-name">Tessy<span>.app</span></span>
           </Link>
@@ -59,15 +62,19 @@ export default function Landing() {
             <Link to="/entrar" className="tl-login">ENTRAR</Link>
             <a href={waitlistHref} className="tl-primary">Acesso antecipado</a>
           </div>
+
+          <button className="tl-mobile-menu" type="button" aria-label="Abrir menu">
+            <span />
+            <span />
+            <span />
+          </button>
         </header>
 
         <div className="tl-hero-content">
-          <div className="tl-badge">
-            <span />
-            Oportunidades reais na saúde
-          </div>
-
-          <h1>Comunidade para quem vive o mundo da medicina.</h1>
+          <h1>
+            <span className="tl-desktop-title">Comunidade para quem vive o mundo da medicina.</span>
+            <span className="tl-mobile-title">Seja bem vindo<br />a Tessy.</span>
+          </h1>
 
           <p>
             Encontre representantes, eventos, cursos, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
@@ -95,6 +102,42 @@ export default function Landing() {
               <div className="tl-phone-status">
                 <span>9:41</span>
                 <span>••• ▭</span>
+              </div>
+
+              <div className="tl-phone-mini-header">
+                <span className="tl-phone-mini-logo">T</span>
+                <strong>Tessy.app</strong>
+                <span className="tl-phone-mini-user">S</span>
+                <small>sair</small>
+              </div>
+
+              <div className="tl-phone-dashboard">
+                <span>SEX, 2 DE MAI.</span>
+                <h3>Olá, silvio.</h3>
+                <p>1 eventos disponíveis para você esta semana.</p>
+
+                <div className="tl-phone-stats">
+                  <span><strong>1</strong> Eventos</span>
+                  <span><strong>1</strong> Produtos</span>
+                  <span><strong>0</strong> Cursos</span>
+                </div>
+              </div>
+
+              <div className="tl-phone-sectionbar">
+                <strong>Em destaque</strong>
+                <span>VER TODOS →</span>
+              </div>
+
+              <div className="tl-phone-event">
+                <div className="tl-phone-event-visual">
+                  <span>Webinar</span>
+                  <strong>OUT<br />10</strong>
+                </div>
+                <div className="tl-phone-event-body">
+                  <span>Dermabrand</span>
+                  <h3>arquitetura para médicos e clínicos</h3>
+                  <p>santos · 10:00</p>
+                </div>
               </div>
 
               <div className="tl-phone-appbar">
@@ -493,33 +536,9 @@ const landingCss = `
   align-items: center;
 }
 
-.tl-badge {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 18px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background:
-    linear-gradient(#ffffff, #ffffff) padding-box,
-    var(--tessy-gradient) border-box;
-  color: var(--tessy-text);
-  font-size: 15px;
-  font-weight: 560;
-  box-shadow: 0 12px 30px rgba(18,24,40,0.08);
-}
-
-.tl-badge span {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--tessy-gradient);
-}
-
 .tl-hero h1 {
   max-width: 920px;
-  margin-top: 42px;
+  margin-top: 0;
   color: var(--tessy-heading);
   font-size: 70px;
   line-height: 1.04;
@@ -1279,6 +1298,20 @@ main {
   justify-content: flex-end;
 }
 
+.tl-mobile-glyph,
+.tl-mobile-menu,
+.tl-mobile-title,
+.tl-phone-mini-header,
+.tl-phone-dashboard,
+.tl-phone-sectionbar,
+.tl-phone-event {
+  display: none;
+}
+
+.tl-desktop-title {
+  display: block;
+}
+
 @media (max-width: 980px) {
   .tl-hero h1 {
     font-size: 54px;
@@ -1312,7 +1345,7 @@ main {
 
 @media (max-width: 700px) {
   .tl-hero {
-    min-height: 1100px;
+    min-height: 980px;
   }
 
   .tl-header {
@@ -1351,33 +1384,27 @@ main {
 
   .tl-hero-content {
     width: calc(100% - 32px);
-    margin-top: 70px;
-  }
-
-  .tl-badge {
-    max-width: 320px;
-    justify-content: center;
-    font-size: 12px;
-    text-align: left;
+    margin-top: 48px;
   }
 
   .tl-hero h1 {
-    margin-top: 28px;
     max-width: 340px;
-    font-size: 42px;
-    line-height: 1.06;
+    font-size: 36px;
+    line-height: 1.05;
   }
 
   .tl-hero-content > p {
-    max-width: 330px;
-    font-size: 16px;
+    max-width: 325px;
+    margin-top: 16px;
+    font-size: 14px;
+    line-height: 1.45;
   }
 
   .tl-section-subtitle,
   .tl-audience-subtitle {
     max-width: 100%;
-    font-size: 17px;
-    line-height: 1.45;
+    font-size: 14px;
+    line-height: 1.44;
   }
 
   .tl-hero-content small {
@@ -1387,27 +1414,28 @@ main {
   .tl-hero-actions {
     width: 100%;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
+    margin-top: 22px;
   }
 
   .tl-hero-primary,
   .tl-hero-secondary {
-    width: min(340px, 100%);
-    min-height: 76px;
-    border-radius: 16px;
-    font-size: 24px;
+    width: min(318px, 100%);
+    min-height: 56px;
+    border-radius: 14px;
+    font-size: 17px;
     font-weight: 560;
   }
 
   .tl-hero-primary {
     justify-content: center;
-    padding: 0 56px;
+    padding: 0 46px;
   }
 
   .tl-hero-arrow {
     position: absolute;
-    right: 28px;
-    font-size: 34px;
+    right: 22px;
+    font-size: 26px;
   }
 
   .tl-hero-secondary {
@@ -1417,9 +1445,9 @@ main {
   }
 
   .tl-phone-stage {
-    bottom: -168px;
+    bottom: -126px;
     width: 100%;
-    min-height: 550px;
+    min-height: 500px;
   }
 
   .tl-phone-card {
@@ -1427,10 +1455,10 @@ main {
   }
 
   .tl-iphone {
-    width: 292px;
-    height: 588px;
+    width: 268px;
+    height: 540px;
     padding: 11px;
-    border-radius: 52px;
+    border-radius: 48px;
   }
 
   .tl-island {
@@ -1440,33 +1468,33 @@ main {
   }
 
   .tl-phone-screen {
-    border-radius: 42px;
+    border-radius: 38px;
   }
 
   .tl-phone-status {
-    height: 58px;
-    padding: 23px 25px 0;
+    height: 54px;
+    padding: 22px 23px 0;
     font-size: 12px;
   }
 
   .tl-phone-appbar {
-    padding: 14px 22px 0;
+    padding: 12px 20px 0;
   }
 
   .tl-phone-appbar strong {
-    font-size: 25px;
+    font-size: 23px;
   }
 
   .tl-phone-feature {
-    min-height: 190px;
-    margin: 18px 14px 0;
-    padding: 18px;
-    border-radius: 24px;
+    min-height: 166px;
+    margin: 15px 13px 0;
+    padding: 16px;
+    border-radius: 22px;
   }
 
   .tl-phone-feature h3 {
-    margin-top: 34px;
-    font-size: 20px;
+    margin-top: 28px;
+    font-size: 18px;
   }
 
   .tl-phone-feature p {
@@ -1474,9 +1502,9 @@ main {
   }
 
   .tl-phone-list {
-    margin: 10px 14px 0;
-    padding: 13px;
-    border-radius: 19px;
+    margin: 9px 13px 0;
+    padding: 12px;
+    border-radius: 17px;
   }
 
   .tl-phone-list strong {
@@ -1491,8 +1519,8 @@ main {
   }
 
   .tl-phone-nav {
-    height: 70px;
-    padding: 10px 14px 0;
+    height: 64px;
+    padding: 9px 13px 0;
   }
 
   .tl-phone-nav span {
@@ -1500,14 +1528,14 @@ main {
   }
 
   .tl-phone-nav strong {
-    width: 50px;
-    height: 50px;
-    margin-top: -19px;
+    width: 44px;
+    height: 44px;
+    margin-top: -15px;
   }
 
   .tl-section,
   .tl-faq {
-    padding: 60px 0;
+    padding: 44px 0;
   }
 
   .tl-section,
@@ -1520,75 +1548,114 @@ main {
   }
 
   .tl-proof {
-    padding: 44px 0 58px;
+    padding: 36px 0 46px;
   }
 
   .tl-proof-social {
     max-width: 100%;
-    margin-bottom: 54px;
-    gap: 14px;
+    margin-bottom: 28px;
+    gap: 10px;
   }
 
   .tl-proof-avatars span {
-    width: 44px;
-    height: 44px;
-    margin-left: -9px;
-    font-size: 18px;
+    width: 34px;
+    height: 34px;
+    margin-left: -7px;
+    font-size: 14px;
     border-width: 2px;
   }
 
   .tl-proof-social p {
-    font-size: 17px;
+    font-size: 14px;
     line-height: 1.25;
     white-space: nowrap;
   }
 
   .tl-register-card {
     max-width: 100%;
-    padding: 32px 24px;
-    border-radius: 22px;
+    padding: 24px 20px;
+    border-radius: 18px;
   }
 
   .tl-register-card h2 {
-    font-size: 32px;
+    font-size: 26px;
+    line-height: 1.08;
   }
 
   .tl-register-list {
-    margin-top: 32px;
-    gap: 26px;
+    margin-top: 22px;
+    gap: 18px;
   }
 
   .tl-register-item {
-    grid-template-columns: 34px 1fr;
-    gap: 14px;
+    grid-template-columns: 27px 1fr;
+    gap: 12px;
   }
 
   .tl-register-icon {
-    width: 34px;
-    height: 34px;
+    width: 27px;
+    height: 27px;
+    margin-top: 2px;
   }
 
   .tl-register-item h3 {
-    font-size: 22px;
+    font-size: 18px;
   }
 
   .tl-register-item p {
-    font-size: 18px;
-    line-height: 1.25;
+    margin-top: 4px;
+    font-size: 14px;
+    line-height: 1.35;
   }
 
   .tl-section h2,
   .tl-positioning h2,
   .tl-waitlist h2,
   .tl-faq h2 {
-    font-size: 34px;
+    font-size: 28px;
+    line-height: 1.1;
+  }
+
+  .tl-eyebrow {
+    margin-bottom: 9px;
+    font-size: 11px;
+  }
+
+  .tl-solution-grid {
+    margin-top: 18px;
+    gap: 10px;
   }
 
   .tl-solution-grid article,
   .tl-flow-grid article,
   .tl-audience-panel,
   .tl-waitlist {
-    padding: 24px;
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .tl-solution-grid article,
+  .tl-find-grid article,
+  .tl-flow-grid article {
+    min-height: auto;
+  }
+
+  .tl-solution-grid h3 {
+    font-size: 19px;
+  }
+
+  .tl-solution-grid p,
+  .tl-flow-grid p,
+  .tl-waitlist p,
+  .tl-faq p,
+  .tl-positioning p {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.42;
+  }
+
+  .tl-flow-grid {
+    margin-top: 18px;
   }
 
   .tl-flow-grid {
@@ -1600,19 +1667,56 @@ main {
   }
 
   .tl-audience-panel {
-    min-height: 280px;
+    min-height: 190px;
   }
 
   .tl-audience-panel strong {
-    font-size: 27px;
+    font-size: 22px;
+  }
+
+  .tl-benefits {
+    margin-top: 18px;
+    gap: 9px;
   }
 
   .tl-benefits li {
-    font-size: 17px;
+    padding-left: 22px;
+    font-size: 14px;
+  }
+
+  .tl-benefits li:before {
+    top: 5px;
+    width: 10px;
+    height: 10px;
+  }
+
+  .tl-dark-cta {
+    min-height: 50px;
+    margin-top: 22px;
+    padding: 0 20px;
+    font-size: 15px;
   }
 
   .tl-positioning {
-    padding: 72px 0;
+    padding: 52px 0;
+  }
+
+  .tl-waitlist {
+    gap: 18px;
+  }
+
+  .tl-waitlist a {
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  .tl-faq details {
+    padding: 16px 18px;
+    border-radius: 14px;
+  }
+
+  .tl-faq summary {
+    font-size: 16px;
   }
 
   .tl-footer {
@@ -1621,6 +1725,558 @@ main {
 
   .tl-footer nav {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .tessy-landing,
+  main {
+    background: #ffffff;
+  }
+
+  .tl-hero {
+    width: calc(100% - 36px);
+    min-height: 477px;
+    margin: 26px auto 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 14px 14px 0 0;
+    background: linear-gradient(135deg, #5a82dc 0%, #ae7899 50%, #ff6948 100%);
+  }
+
+  .tl-hero:before,
+  .tl-ring {
+    display: none;
+  }
+
+  .tl-header {
+    width: calc(100% - 38px);
+    height: 58px;
+    padding-top: 18px;
+  }
+
+  .tl-brand {
+    width: 40px;
+    height: 36px;
+    gap: 0;
+  }
+
+  .tl-brand-mark,
+  .tl-brand-name,
+  .tl-actions {
+    display: none !important;
+  }
+
+  .tl-mobile-glyph {
+    position: relative;
+    display: block;
+    width: 34px;
+    height: 30px;
+  }
+
+  .tl-mobile-glyph:before,
+  .tl-mobile-glyph:after,
+  .tl-mobile-glyph span {
+    content: "";
+    position: absolute;
+    display: block;
+    background: #ffffff;
+  }
+
+  .tl-mobile-glyph:before {
+    left: 0;
+    top: 8px;
+    width: 25px;
+    height: 8px;
+  }
+
+  .tl-mobile-glyph:after {
+    left: 16px;
+    top: 8px;
+    width: 8px;
+    height: 22px;
+  }
+
+  .tl-mobile-glyph span {
+    left: 24px;
+    top: 0;
+    width: 10px;
+    height: 8px;
+  }
+
+  .tl-mobile-menu {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    align-content: center;
+    justify-items: end;
+    gap: 5px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .tl-mobile-menu span {
+    width: 29px;
+    height: 4px;
+    border-radius: 2px;
+    background: #ffffff;
+  }
+
+  .tl-hero-content {
+    width: 100%;
+    margin-top: 26px;
+  }
+
+  .tl-desktop-title {
+    display: none;
+  }
+
+  .tl-mobile-title {
+    display: block;
+  }
+
+  .tl-hero h1 {
+    max-width: 310px;
+    color: #ffffff;
+    font-size: 39px;
+    line-height: 1.08;
+    font-weight: 430;
+  }
+
+  .tl-hero-content > p,
+  .tl-hero-actions {
+    display: none;
+  }
+
+  .tl-phone-stage {
+    top: 209px;
+    bottom: auto;
+    width: 100%;
+    min-height: 526px;
+    z-index: 2;
+  }
+
+  .tl-phone-card {
+    display: none;
+  }
+
+  .tl-iphone {
+    width: 256px;
+    height: 526px;
+    padding: 6px;
+    border-radius: 42px;
+    background: #070912;
+    box-shadow: 0 18px 40px rgba(12,15,26,0.16);
+  }
+
+  .tl-iphone:before {
+    left: -3px;
+    top: 122px;
+    width: 3px;
+    height: 58px;
+  }
+
+  .tl-iphone:after {
+    right: -3px;
+    top: 160px;
+    width: 3px;
+    height: 86px;
+  }
+
+  .tl-island {
+    top: 15px;
+    width: 74px;
+    height: 23px;
+  }
+
+  .tl-phone-screen {
+    border: 0;
+    border-radius: 36px;
+    background:
+      radial-gradient(180px 130px at 52% 8%, rgba(185,193,234,0.24) 0%, rgba(255,255,255,0) 76%),
+      linear-gradient(180deg, #f9fbff 0%, #eef2fb 100%);
+  }
+
+  .tl-phone-status {
+    height: 47px;
+    padding: 22px 18px 0;
+    font-size: 9px;
+  }
+
+  .tl-phone-mini-header {
+    height: 24px;
+    margin: 10px 12px 0;
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.88);
+    color: #5d6474;
+    box-shadow: 0 8px 22px rgba(52,57,73,0.06);
+  }
+
+  .tl-phone-mini-logo,
+  .tl-phone-mini-user {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 7px;
+    font-weight: 700;
+  }
+
+  .tl-phone-mini-logo {
+    width: 17px;
+    height: 17px;
+    background: var(--tessy-gradient);
+  }
+
+  .tl-phone-mini-header strong {
+    margin-right: auto;
+    color: #4f586b;
+    font-size: 8px;
+    font-weight: 680;
+  }
+
+  .tl-phone-mini-user {
+    width: 19px;
+    height: 19px;
+    background: #7d8ba3;
+  }
+
+  .tl-phone-mini-header small {
+    color: #9ba3b2;
+    font-size: 7px;
+  }
+
+  .tl-phone-dashboard {
+    display: block;
+    padding: 18px 18px 0;
+  }
+
+  .tl-phone-dashboard > span {
+    color: #9ba3b2;
+    font-size: 7px;
+    font-weight: 560;
+    letter-spacing: 0.18em;
+  }
+
+  .tl-phone-dashboard h3 {
+    margin: 8px 0 0;
+    color: #5d6474;
+    font-size: 17px;
+    line-height: 1.1;
+    font-weight: 650;
+  }
+
+  .tl-phone-dashboard p {
+    margin: 3px 0 0;
+    color: #6f7686;
+    font-size: 7px;
+  }
+
+  .tl-phone-stats {
+    margin-top: 14px;
+    display: flex;
+    gap: 6px;
+  }
+
+  .tl-phone-stats span {
+    min-width: 48px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 1px solid rgba(119,127,149,0.18);
+    border-radius: 6px;
+    background: #ffffff;
+    color: #6f7686;
+    font-size: 6px;
+    box-shadow: 0 6px 16px rgba(52,57,73,0.04);
+  }
+
+  .tl-phone-stats strong {
+    color: #3b4254;
+    font-size: 9px;
+  }
+
+  .tl-phone-sectionbar {
+    margin: 16px 18px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #5d6474;
+  }
+
+  .tl-phone-sectionbar strong {
+    font-size: 8px;
+  }
+
+  .tl-phone-sectionbar span {
+    color: #3f83f1;
+    font-size: 6px;
+    letter-spacing: 0.12em;
+  }
+
+  .tl-phone-event {
+    margin: 8px 18px 0;
+    display: block;
+    overflow: hidden;
+    border: 1px solid rgba(119,127,149,0.16);
+    border-radius: 14px;
+    background: #ffffff;
+  }
+
+  .tl-phone-event-visual {
+    height: 112px;
+    position: relative;
+    padding: 11px;
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.12) 0 2px, rgba(255,255,255,0) 2px 12px),
+      linear-gradient(115deg, rgba(63,131,241,0.45) 0%, rgba(39,45,62,0.86) 100%);
+  }
+
+  .tl-phone-event-visual > span {
+    padding: 7px 10px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.18);
+    color: #ffffff;
+    font-size: 8px;
+    font-weight: 620;
+  }
+
+  .tl-phone-event-visual > strong {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 43px;
+    height: 50px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: #ffffff;
+    color: #111728;
+    text-align: center;
+    font-size: 16px;
+    line-height: 0.9;
+  }
+
+  .tl-phone-event-body {
+    padding: 12px;
+  }
+
+  .tl-phone-event-body span {
+    color: #9ba3b2;
+    font-size: 10px;
+  }
+
+  .tl-phone-event-body h3 {
+    margin-top: 7px;
+    color: #5d6474;
+    font-size: 16px;
+    line-height: 1.12;
+  }
+
+  .tl-phone-event-body p {
+    margin-top: 6px;
+    color: #8d95a6;
+    font-size: 9px;
+  }
+
+  .tl-phone-appbar,
+  .tl-phone-feature,
+  .tl-phone-list,
+  .tl-phone-nav {
+    display: none;
+  }
+
+  .tl-proof {
+    width: calc(100% - 36px);
+    margin: 26px auto 0;
+    padding: 22px 12px 16px;
+    border-radius: 24px;
+    background: linear-gradient(180deg, #f6faff 0%, #ffffff 70%);
+    box-shadow: 0 18px 42px rgba(63,131,241,0.10);
+  }
+
+  .tl-proof-social {
+    margin: 0 0 50px;
+    gap: 10px;
+  }
+
+  .tl-register-card {
+    padding: 30px 22px 28px;
+    border-radius: 15px;
+    background:
+      linear-gradient(#ffffff, #ffffff) padding-box,
+      linear-gradient(135deg, rgba(63,131,241,0.16), rgba(255,111,70,0.14)) border-box;
+    box-shadow: none;
+  }
+
+  .tl-register-card h2 {
+    max-width: 220px;
+    font-size: 28px;
+    line-height: 1.07;
+  }
+
+  .tl-register-list {
+    margin-top: 30px;
+    gap: 22px;
+  }
+
+  .tl-register-item {
+    grid-template-columns: 29px 1fr;
+    gap: 14px;
+  }
+
+  .tl-register-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .tl-register-item h3 {
+    font-size: 18px;
+  }
+
+  .tl-register-item p {
+    max-width: 235px;
+    font-size: 15px;
+    line-height: 1.18;
+  }
+
+  .tl-section#o-que-encontra,
+  .tl-audience,
+  .tl-positioning {
+    display: none;
+  }
+
+  .tl-section#como-ajuda {
+    width: calc(100% - 72px);
+    margin: 26px auto 0;
+    padding: 38px 18px 34px;
+    border: 0;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+    box-shadow: 0 20px 46px rgba(52,57,73,0.06);
+  }
+
+  .tl-section#como-ajuda .tl-eyebrow {
+    margin-bottom: 14px;
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .tl-section#como-ajuda h2 {
+    max-width: 260px;
+    margin: 0 auto;
+    font-size: 27px;
+    text-align: center;
+  }
+
+  .tl-section#como-ajuda .tl-section-subtitle {
+    max-width: 285px;
+    margin-top: 18px;
+    font-size: 13px;
+    line-height: 1.45;
+    text-align: center;
+  }
+
+  .tl-waitlist {
+    width: calc(100% - 72px);
+    margin: 10px auto 0;
+    padding: 28px 20px 20px;
+    display: block;
+    border-radius: 4px 4px 0 0;
+  }
+
+  .tl-waitlist .tl-eyebrow {
+    font-size: 10px;
+  }
+
+  .tl-waitlist h2 {
+    margin-top: 16px;
+    color: #ffffff;
+    font-size: 28px;
+  }
+
+  .tl-waitlist p {
+    color: #ffffff;
+    font-size: 15px;
+  }
+
+  .tl-waitlist a {
+    width: 100%;
+    min-height: 40px;
+    margin-top: 26px;
+    padding: 0 18px;
+    border-radius: 999px;
+    color: #0f1628;
+    font-size: 14px;
+  }
+
+  .tl-faq {
+    width: calc(100% - 72px);
+    margin: 0 auto;
+    padding: 24px 10px 26px;
+    border: 0;
+    border-radius: 0 0 16px 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,111,70,0.055));
+  }
+
+  .tl-faq .tl-eyebrow {
+    display: none;
+  }
+
+  .tl-faq h2 {
+    color: var(--tessy-heading);
+    font-size: 27px;
+    text-align: left;
+  }
+
+  .tl-faq-list {
+    margin-top: 20px;
+    gap: 12px;
+  }
+
+  .tl-faq details {
+    padding: 17px 18px;
+    border-radius: 5px;
+    background: #ffffff;
+  }
+
+  .tl-faq summary {
+    font-size: 16px;
+  }
+
+  .tl-faq p {
+    font-size: 13px;
+  }
+
+  .tl-footer {
+    width: 240px;
+    margin: 42px auto 48px;
+    padding: 22px 12px;
+    display: block;
+    border-top: 0;
+    border-left: 1px solid #252b39;
+    background: linear-gradient(115deg, rgba(63,131,241,0.055), rgba(255,111,70,0.055));
+  }
+
+  .tl-footer strong {
+    font-size: 13px;
+  }
+
+  .tl-footer p,
+  .tl-footer a {
+    font-size: 8px;
+  }
+
+  .tl-footer nav {
+    display: none;
   }
 }
 `;
