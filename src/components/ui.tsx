@@ -12,7 +12,7 @@ export function TessyMark({
 }) {
   return (
     <img
-      src="/tessy-icon-square.png"
+      src="/tessy-icon.png?v=brand-gradient-20260502"
       alt=""
       aria-hidden="true"
       className={className}
