@@ -54,9 +54,7 @@ export default function Landing() {
 
         <header className="tl-header">
           <Link to="/" className="tl-brand" aria-label="Tessy.app">
-            <span className="tl-mobile-glyph" aria-hidden="true">
-              <span />
-            </span>
+            <img src="/tessy-icon-white.png" className="tl-mobile-glyph" alt="" aria-hidden="true" />
             <TessyMark className="tl-brand-mark" />
             <span className="tl-brand-name">Tessy<span>.app</span></span>
           </Link>
@@ -120,7 +118,7 @@ export default function Landing() {
               </div>
 
               <div className="tl-phone-mini-header">
-                <span className="tl-phone-mini-logo">T</span>
+                <span className="tl-phone-mini-logo" aria-hidden="true" />
                 <strong>Tessy.app</strong>
                 <span className="tl-phone-mini-user">S</span>
                 <small>sair</small>
@@ -1788,7 +1786,7 @@ main {
   }
 
   .tl-brand {
-    width: 40px;
+    width: 44px;
     height: 36px;
     gap: 0;
   }
@@ -1800,40 +1798,10 @@ main {
   }
 
   .tl-mobile-glyph {
-    position: relative;
     display: block;
-    width: 34px;
-    height: 30px;
-  }
-
-  .tl-mobile-glyph:before,
-  .tl-mobile-glyph:after,
-  .tl-mobile-glyph span {
-    content: "";
-    position: absolute;
-    display: block;
-    background: #ffffff;
-  }
-
-  .tl-mobile-glyph:before {
-    left: 0;
-    top: 8px;
-    width: 25px;
-    height: 8px;
-  }
-
-  .tl-mobile-glyph:after {
-    left: 16px;
-    top: 8px;
-    width: 8px;
-    height: 22px;
-  }
-
-  .tl-mobile-glyph span {
-    left: 24px;
-    top: 0;
-    width: 10px;
-    height: 8px;
+    width: 42px;
+    height: 36px;
+    object-fit: contain;
   }
 
   .tl-mobile-menu {
@@ -2004,7 +1972,7 @@ main {
   .tl-phone-mini-logo {
     width: 17px;
     height: 17px;
-    background: var(--tessy-gradient);
+    background: url('/tessy-icon-white.png') center / 70% no-repeat, var(--tessy-gradient);
   }
 
   .tl-phone-mini-header strong {

@@ -12,13 +12,15 @@ export function TessyMark({
 }) {
   return (
     <img
-      src="/tessy-icon-current.svg"
+      src="/tessy-icon-square.png"
       alt=""
       aria-hidden="true"
       className={className}
       style={{
         ...(size === undefined ? {} : { width: size, height: size }),
+        boxSizing: 'border-box',
         display: 'block',
+        borderRadius: 'var(--tessy-mark-radius, 28%)',
         objectFit: 'contain',
         flexShrink: 0,
         ...style,
