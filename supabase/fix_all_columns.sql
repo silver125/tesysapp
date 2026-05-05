@@ -18,6 +18,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS crm_state    TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS company      TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS company_name TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS whatsapp     TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS whatsapp_connection_only BOOLEAN DEFAULT TRUE;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bio          TEXT;
 
 -- ── EVENTS ────────────────────────────────────────────────────────────────

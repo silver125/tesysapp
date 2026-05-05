@@ -12,12 +12,13 @@ type FormData = {
   specialty: string;
   company: string;
   whatsapp: string;
+  whatsappConnectionOnly: boolean;
   email: string;
   password: string;
 };
 
 const INITIAL: FormData = {
-  role: null, name: '', crm: '', crmState: '', specialty: '', company: '', whatsapp: '', email: '', password: '',
+  role: null, name: '', crm: '', crmState: '', specialty: '', company: '', whatsapp: '', whatsappConnectionOnly: true, email: '', password: '',
 };
 
 const BR_STATES = [
@@ -51,8 +52,10 @@ export default function Register() {
   const canAdvance = () => {
     if (step === 0) return data.role !== null;
     if (step === 1) {
-      if (data.role === 'medico')
-        return data.name.trim().length > 2 && data.crm.trim().length >= 4 && data.crmState !== '';
+      if (data.role === 'medico') {
+        const hasValidWhatsapp = data.whatsapp.trim() === '' || normalizePhone(data.whatsapp).length >= 12;
+        return data.name.trim().length > 2 && data.crm.trim().length >= 4 && data.crmState !== '' && hasValidWhatsapp;
+      }
       return data.company.trim().length > 2 && normalizePhone(data.whatsapp).length >= 12;
     }
     if (step === 2) return /^\S+@\S+\.\S+$/.test(data.email) && data.password.length >= 6;
@@ -80,7 +83,8 @@ export default function Register() {
         crm: data.role === 'medico' ? data.crm.trim() : undefined,
         crmState: data.role === 'medico' ? data.crmState : undefined,
         company: data.role === 'empresa' ? data.company : undefined,
-        whatsapp: data.role === 'empresa' ? normalizePhone(data.whatsapp) : undefined,
+        whatsapp: data.whatsapp.trim() ? normalizePhone(data.whatsapp) : undefined,
+        whatsappConnectionOnly: data.role === 'medico' ? data.whatsappConnectionOnly : undefined,
       });
       navigate(data.role === 'medico' ? '/medico' : '/empresa', { replace: true });
     } catch (err) {
@@ -324,6 +328,63 @@ export default function Register() {
                 })}
               </div>
             </div>
+
+            <div style={{
+              padding: 14,
+              borderRadius: 14,
+              background: '#fff',
+              border: '1px solid var(--line)',
+              boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 10 }}>
+                WhatsApp profissional
+              </div>
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                  color: '#25D366', display: 'flex', alignItems: 'center',
+                }}>
+                  <WaIcon size={17} />
+                </span>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={data.whatsapp}
+                  onChange={e => update('whatsapp', formatPhone(e.target.value))}
+                  placeholder="(11) 99999-9999"
+                  style={{
+                    width: '100%', padding: '13px 14px 13px 42px',
+                    borderRadius: 10, border: '1.5px solid var(--line)',
+                    background: 'var(--bg)', color: 'var(--ink)',
+                    fontSize: 15, outline: 'none', boxSizing: 'border-box',
+                    transition: 'border-color 0.15s',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#25D366'}
+                  onBlur={e => e.target.style.borderColor = 'var(--line)'}
+                />
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
+                Use um número que possa receber contatos comerciais, convites, eventos e oportunidades da Tessy.
+              </div>
+              <label style={{
+                marginTop: 12,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 9,
+                fontSize: 12,
+                lineHeight: 1.4,
+                color: 'var(--ink-2)',
+                cursor: 'pointer',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={data.whatsappConnectionOnly}
+                  onChange={e => update('whatsappConnectionOnly', e.target.checked)}
+                  style={{ marginTop: 2, accentColor: 'var(--accent)' }}
+                />
+                <span>Mostrar WhatsApp apenas para empresas com conexão aprovada.</span>
+              </label>
+            </div>
           </div>
         )}
 
@@ -491,6 +552,7 @@ function formatPhone(raw: string) {
 
 function normalizePhone(raw: string) {
   const d = raw.replace(/\D/g, '');
+  if (!d) return '';
   if (d.startsWith('55')) return d;
   return `55${d}`;
 }

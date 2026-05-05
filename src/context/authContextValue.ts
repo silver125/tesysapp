@@ -9,7 +9,7 @@ export interface AuthContextType {
   register: (input: RegisterInput) => Promise<User>;
   logout: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
-  updateProfile: (data: { name?: string; company?: string; whatsapp?: string }) => Promise<void>;
+  updateProfile: (data: { name?: string; company?: string; whatsapp?: string; whatsappConnectionOnly?: boolean }) => Promise<void>;
   events: Event[];
   products: Product[];
   courses: Course[];
@@ -18,6 +18,8 @@ export interface AuthContextType {
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
   addCourse: (course: Omit<Course, 'id' | 'createdAt'>) => Promise<void>;
   addLead: (lead: LeadInput) => Promise<void>;
+  requestConnection: (leadId: string) => Promise<void>;
+  approveConnection: (leadId: string) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
@@ -38,6 +40,7 @@ export interface RegisterInput {
   crmState?: string;
   company?: string;
   whatsapp?: string;
+  whatsappConnectionOnly?: boolean;
   bio?: string;
 }
 

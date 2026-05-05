@@ -39,6 +39,7 @@ function dbToUser(profile: Record<string, unknown>, email: string): User {
     crmState:  profile.crm_state as string | undefined,
     company,
     whatsapp:  profile.whatsapp  as string | undefined,
+    whatsappConnectionOnly: profile.whatsapp_connection_only !== false,
     bio:       profile.bio       as string | undefined,
     onboardingCompletedAt: profile.onboarding_completed_at as string | null | undefined,
   };
@@ -111,6 +112,9 @@ function dbToLead(row: Record<string, unknown>): Lead {
     itemName:        row.item_name        as string,
     intent:          row.intent           as Lead['intent'],
     message:         row.message          as string | undefined,
+    connectionStatus: (row.connection_status as Lead['connectionStatus'] | undefined) ?? 'none',
+    connectionRequestedAt: row.connection_requested_at as string | undefined,
+    connectionApprovedAt:  row.connection_approved_at  as string | undefined,
     createdAt:       row.created_at       as string,
   };
 }
@@ -202,22 +206,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userId = user?.id;
 
   const refreshLeads = useCallback(async () => {
-    if (!userId || user?.role !== 'empresa') {
+    if (!userId || !user?.role) {
       setLeads([]);
       return;
     }
 
-    const local = readLocalLeads(userId);
+    const local = user.role === 'empresa' ? readLocalLeads(userId) : [];
     if (!isSupabaseConfigured) {
       setLeads(local);
       return;
     }
 
-    const { data, error } = await supabase
+    const query = supabase
       .from('leads')
       .select('*')
-      .eq('company_id', userId)
       .order('created_at', { ascending: false });
+
+    const { data, error } = await (user.role === 'empresa'
+      ? query.eq('company_id', userId)
+      : query.eq('doctor_id', userId));
 
     if (error) {
       setLeads(local);
@@ -298,11 +305,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshData]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || user?.role !== 'empresa') return;
+    if (!isSupabaseConfigured || !user?.role) return;
 
     const leadsChannel = supabase
-      .channel(`tessy-leads-live-${user.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads', filter: `company_id=eq.${user.id}` }, () => {
+      .channel(`tessy-leads-live-${user.role}-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'leads',
+        filter: `${user.role === 'empresa' ? 'company_id' : 'doctor_id'}=eq.${user.id}`,
+      }, () => {
         refreshLeads();
       })
       .subscribe();
@@ -313,7 +325,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshLeads, user?.id, user?.role]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || user?.role !== 'empresa') return;
+    if (!isSupabaseConfigured || !user?.role) return;
 
     const interval = window.setInterval(() => {
       refreshData();
@@ -473,6 +485,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           crm_state:    input.crmState ?? null,
           company:      input.company ?? null,
           whatsapp:     input.whatsapp ?? null,
+          whatsapp_connection_only: input.whatsappConnectionOnly ?? true,
           bio:          input.bio ?? null,
           }),
           12000,
@@ -493,6 +506,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         crmState: input.crmState,
         company: input.company,
         whatsapp: input.whatsapp,
+        whatsappConnectionOnly: input.whatsappConnectionOnly ?? true,
         onboardingCompletedAt: null,
       };
       try {
@@ -535,15 +549,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ── Atualizar perfil ──
-  const updateProfile = async (data: { name?: string; company?: string; whatsapp?: string }) => {
+  const updateProfile = async (data: { name?: string; company?: string; whatsapp?: string; whatsappConnectionOnly?: boolean }) => {
     if (!user) return;
     assertSupabaseConfigured();
-    const updates: Record<string, string | undefined> = {};
+    const updates: Record<string, string | boolean | undefined> = {};
     if (data.name)      { updates.name    = data.name;    }
     if (data.company)   { updates.company = data.company; updates.name = data.company; }
     if (data.whatsapp !== undefined) { updates.whatsapp = data.whatsapp; }
+    if (data.whatsappConnectionOnly !== undefined) { updates.whatsapp_connection_only = data.whatsappConnectionOnly; }
 
-    await supabase.from('profiles').update(updates).eq('id', user.id);
+    const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+    if (error) throw new Error(error.message);
     setUser(prev => prev ? { ...prev, ...data } : prev);
   };
 
@@ -781,7 +797,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       doctorId: user.id,
       doctorName: user.name,
       doctorSpecialty: user.specialty,
-      doctorWhatsapp: user.whatsapp,
+      doctorWhatsapp: undefined,
+      connectionStatus: 'none',
       createdAt: new Date().toISOString(),
     };
 
@@ -819,7 +836,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       doctor_id: lead.doctorId,
       doctor_name: lead.doctorName,
       doctor_specialty: lead.doctorSpecialty ?? null,
-      doctor_whatsapp: lead.doctorWhatsapp ?? null,
+      doctor_whatsapp: null,
       item_type: lead.itemType,
       item_id: lead.itemId ?? null,
       item_name: lead.itemName,
@@ -838,12 +855,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const requestConnection = async (leadId: string) => {
+    if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem solicitar conexão.');
+    const now = new Date().toISOString();
+    setLeads(prev => prev.map(lead => lead.id === leadId
+      ? { ...lead, connectionStatus: 'requested', connectionRequestedAt: now }
+      : lead,
+    ));
+
+    if (!isSupabaseConfigured) return;
+
+    const { error } = await supabase.rpc('request_lead_connection', { p_lead_id: leadId });
+    if (error) {
+      await refreshLeads();
+      throw new Error(error.message);
+    }
+    await refreshLeads();
+  };
+
+  const approveConnection = async (leadId: string) => {
+    if (!user || user.role !== 'medico') throw new Error('Apenas médicos podem aprovar conexão.');
+    const now = new Date().toISOString();
+    setLeads(prev => prev.map(lead => lead.id === leadId
+      ? { ...lead, connectionStatus: 'approved', connectionApprovedAt: now, doctorWhatsapp: user.whatsapp }
+      : lead,
+    ));
+
+    if (!isSupabaseConfigured) return;
+
+    const { error } = await supabase.rpc('approve_lead_connection', { p_lead_id: leadId });
+    if (error) {
+      await refreshLeads();
+      throw new Error(error.message);
+    }
+    await refreshLeads();
+  };
+
   return (
     <AuthContext.Provider value={{
       user, isLoading, authReady,
       login, register, logout, completeOnboarding, updateProfile,
       events, products, courses, leads,
       addEvent, addProduct, addCourse, addLead,
+      requestConnection, approveConnection,
       deleteEvent, deleteProduct, deleteCourse,
       updateEvent,
       refreshData,

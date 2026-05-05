@@ -107,7 +107,7 @@ function eventLeadDoctorCount(event: Event, leads: Lead[]) {
 }
 
 export default function CompanyDashboard() {
-  const { user, events, products, courses, leads, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent } = useAuth();
+  const { user, events, products, courses, leads, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent, requestConnection } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
   const [editingProfile, setEditingProfile] = useState(false);
@@ -416,7 +416,7 @@ export default function CompanyDashboard() {
 
       {/* ── LEADS ── */}
       {tab === 'leads' && (
-        <LeadInbox leads={myLeads} />
+        <LeadInbox leads={myLeads} onRequestConnection={requestConnection} />
       )}
 
       {/* ── CREATE WIZARD ── */}
@@ -833,7 +833,10 @@ function EventCardCompany({ ev, onDelete, onEdit }: { ev: Event; onDelete: () =>
   );
 }
 
-function LeadInbox({ leads }: { leads: Lead[] }) {
+function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestConnection: (leadId: string) => Promise<void> }) {
+  const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [requestError, setRequestError] = useState('');
+
   const intentLabel: Record<Lead['intent'], { label: string; color: string }> = {
     representative_contact: { label: 'Representante', color: 'var(--accent)' },
     sample_request: { label: 'Amostra', color: '#1EA97C' },
@@ -841,6 +844,18 @@ function LeadInbox({ leads }: { leads: Lead[] }) {
     event_interest: { label: 'Evento', color: 'var(--accent-ink)' },
     course_interest: { label: 'Curso', color: '#F58220' },
   };
+
+  async function requestDoctorConnection(leadId: string) {
+    setRequestingId(leadId);
+    setRequestError('');
+    try {
+      await onRequestConnection(leadId);
+    } catch (err) {
+      setRequestError(err instanceof Error ? err.message : 'Erro ao solicitar conexão.');
+    } finally {
+      setRequestingId(null);
+    }
+  }
 
   return (
     <div>
@@ -865,12 +880,30 @@ function LeadInbox({ leads }: { leads: Lead[] }) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {requestError && (
+            <div style={{
+              padding: '10px 12px',
+              borderRadius: 12,
+              background: 'rgba(242,92,84,0.08)',
+              border: '1px solid rgba(242,92,84,0.18)',
+              color: '#F25C54',
+              fontSize: 12,
+              lineHeight: 1.4,
+            }}>
+              {requestError}
+            </div>
+          )}
           {leads.map(lead => {
             const intent = intentLabel[lead.intent];
-            const waLink = buildWhatsappLink(
-              lead.doctorWhatsapp,
-              `Olá ${lead.doctorName}, vi seu interesse no Tessy sobre "${lead.itemName}". Posso te passar mais detalhes?`,
-            );
+            const connectionStatus = lead.connectionStatus ?? 'none';
+            const isApproved = connectionStatus === 'approved';
+            const isRequested = connectionStatus === 'requested';
+            const waLink = isApproved
+              ? buildWhatsappLink(
+                lead.doctorWhatsapp,
+                `Olá ${lead.doctorName}, vi seu interesse no Tessy sobre "${lead.itemName}". Posso te passar mais detalhes?`,
+              )
+              : '';
             return (
               <div key={lead.id} style={{
                 padding: 16,
@@ -925,12 +958,49 @@ function LeadInbox({ leads }: { leads: Lead[] }) {
                     fontSize: 13,
                     fontWeight: 560,
                   }}>
-                    <WaIcon size={14} /> Falar com médico
+                    <WaIcon size={14} /> Falar no WhatsApp
                   </a>
-                ) : (
+                ) : isApproved ? (
                   <div style={{ marginTop: 12, color: 'var(--muted)', fontSize: 12 }}>
-                    Médico sem WhatsApp no perfil.
+                    WhatsApp ainda não informado.
                   </div>
+                ) : isRequested ? (
+                  <div style={{
+                    marginTop: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '11px 12px',
+                    borderRadius: 12,
+                    background: 'var(--chip)',
+                    color: 'var(--ink-2)',
+                    border: '1px solid var(--line)',
+                    fontSize: 13,
+                    fontWeight: 560,
+                  }}>
+                    Aguardando aprovação
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={requestingId === lead.id}
+                    onClick={() => { void requestDoctorConnection(lead.id); }}
+                    style={{
+                      marginTop: 12,
+                      width: '100%',
+                      padding: '11px 12px',
+                      borderRadius: 12,
+                      background: 'var(--ink)',
+                      color: '#fff',
+                      border: '1px solid var(--ink)',
+                      fontSize: 13,
+                      fontWeight: 560,
+                      cursor: requestingId === lead.id ? 'not-allowed' : 'pointer',
+                      opacity: requestingId === lead.id ? 0.72 : 1,
+                    }}
+                  >
+                    {requestingId === lead.id ? 'Solicitando...' : 'Solicitar conexão'}
+                  </button>
                 )}
               </div>
             );

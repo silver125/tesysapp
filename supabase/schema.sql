@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   crm_state   TEXT,
   company     TEXT,
   whatsapp    TEXT,
+  whatsapp_connection_only BOOLEAN DEFAULT TRUE,
   bio         TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );

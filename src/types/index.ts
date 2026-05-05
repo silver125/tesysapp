@@ -10,6 +10,7 @@ export interface User {
   crm?: string;
   crmState?: string;
   whatsapp?: string;
+  whatsappConnectionOnly?: boolean;
   bio?: string;
   onboardingCompletedAt?: string | null;
 }
@@ -69,6 +70,9 @@ export interface Lead {
   itemName: string;
   intent: LeadIntent;
   message?: string;
+  connectionStatus?: 'none' | 'requested' | 'approved';
+  connectionRequestedAt?: string;
+  connectionApprovedAt?: string;
   createdAt: string;
 }
 

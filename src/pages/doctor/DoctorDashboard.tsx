@@ -7,7 +7,7 @@ import {
   WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
-import type { Event, Product, Course } from '../../types';
+import type { Event, Product, Course, Lead } from '../../types';
 
 type Tab = 'home' | 'events' | 'products' | 'courses' | 'connect';
 
@@ -50,8 +50,22 @@ function monthShort(d: string) {
 }
 function dayNum(d: string) { return d ? d.split('-')[2] : ''; }
 
+function fmtPhone(raw: string) {
+  const d = raw.replace(/\D/g, '').replace(/^55/, '').slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+function normalizePhone(raw: string) {
+  const d = raw.replace(/\D/g, '');
+  if (!d) return '';
+  return d.startsWith('55') ? d : `55${d}`;
+}
+
 export default function DoctorDashboard() {
-  const { user, events, products, courses, refreshData } = useAuth();
+  const { user, events, products, courses, leads, refreshData } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
@@ -75,6 +89,7 @@ export default function DoctorDashboard() {
     .replace('.', '').toUpperCase();
 
   const firstNameGreet = user?.name?.split(' ')[0] ?? 'Doutor';
+  const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
 
   function goTab(k: string) { setTab(k as Tab); setSearch(''); }
 
@@ -103,6 +118,12 @@ export default function DoctorDashboard() {
             <StatChip label="Produtos" value={products.length} onClick={() => setTab('products')} />
             <StatChip label="Cursos" value={courses.length} onClick={() => setTab('courses')} />
           </div>
+
+          <DoctorWhatsappCard />
+
+          {pendingConnections.length > 0 && (
+            <ConnectionRequests leads={pendingConnections} />
+          )}
 
           {/* Featured event */}
           {events.length > 0 && (
@@ -229,6 +250,237 @@ export default function DoctorDashboard() {
         />
       )}
     </Layout>
+  );
+}
+
+function DoctorWhatsappCard() {
+  const { user, updateProfile } = useAuth();
+  const [editing, setEditing] = useState(!user?.whatsapp);
+  const [phone, setPhone] = useState(user?.whatsapp ? fmtPhone(user.whatsapp) : '');
+  const [privateOnly, setPrivateOnly] = useState(user?.whatsappConnectionOnly !== false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function save() {
+    const normalized = normalizePhone(phone);
+    if (phone.trim() && normalized.length < 12) {
+      setError('Informe um telefone brasileiro com DDD.');
+      return;
+    }
+
+    setBusy(true);
+    setError('');
+    try {
+      await updateProfile({
+        whatsapp: normalized || '',
+        whatsappConnectionOnly: privateOnly,
+      });
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar WhatsApp.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{
+      marginBottom: 20,
+      padding: 14,
+      borderRadius: 16,
+      background: 'var(--card)',
+      border: '1px solid var(--line)',
+      boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+        <div>
+          <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+            Perfil médico
+          </Mono>
+          <div style={{ marginTop: 6, fontSize: 15, color: 'var(--ink)', fontWeight: 560 }}>
+            WhatsApp profissional
+          </div>
+          {!editing && (
+            <div style={{ marginTop: 4, fontSize: 12, color: user?.whatsapp ? '#25D366' : 'var(--muted)', fontWeight: 560 }}>
+              {user?.whatsapp ? `${fmtPhone(user.whatsapp)} · privado` : 'WhatsApp ainda não informado.'}
+            </div>
+          )}
+        </div>
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => {
+              setPhone(user?.whatsapp ? fmtPhone(user.whatsapp) : '');
+              setPrivateOnly(user?.whatsappConnectionOnly !== false);
+              setEditing(true);
+            }}
+            style={{
+              padding: '8px 10px',
+              borderRadius: 10,
+              border: '1px solid var(--line)',
+              background: 'var(--chip)',
+              color: 'var(--ink-2)',
+              fontSize: 12,
+              fontWeight: 560,
+              cursor: 'pointer',
+            }}
+          >
+            Editar
+          </button>
+        )}
+      </div>
+
+      {editing && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ position: 'relative' }}>
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#25D366', display: 'flex' }}>
+              <WaIcon size={15} />
+            </span>
+            <input
+              type="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={event => setPhone(fmtPhone(event.target.value))}
+              placeholder="(11) 99999-9999"
+              style={{
+                width: '100%',
+                padding: '11px 12px 11px 36px',
+                borderRadius: 10,
+                background: 'var(--bg)',
+                border: '1.5px solid var(--line)',
+                color: 'var(--ink)',
+                fontSize: 14,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
+            Use um número que possa receber contatos comerciais, convites, eventos e oportunidades da Tessy.
+          </div>
+          <label style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>
+            <input
+              type="checkbox"
+              checked={privateOnly}
+              onChange={event => setPrivateOnly(event.target.checked)}
+              style={{ marginTop: 2, accentColor: 'var(--accent)' }}
+            />
+            <span>Mostrar WhatsApp apenas para empresas com conexão aprovada.</span>
+          </label>
+          {error && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            {user?.whatsapp && (
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: 10,
+                  border: '1px solid var(--line)',
+                  background: 'var(--chip)',
+                  color: 'var(--ink-2)',
+                  fontSize: 13,
+                  fontWeight: 560,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => { void save(); }}
+              style={{
+                flex: 2,
+                padding: '10px',
+                borderRadius: 10,
+                border: 'none',
+                background: 'var(--accent)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 560,
+                cursor: busy ? 'not-allowed' : 'pointer',
+                opacity: busy ? 0.72 : 1,
+              }}
+            >
+              {busy ? 'Salvando...' : 'Salvar WhatsApp'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ConnectionRequests({ leads }: { leads: Lead[] }) {
+  const { user, approveConnection } = useAuth();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  async function approve(leadId: string) {
+    if (!user?.whatsapp) {
+      setError('WhatsApp ainda não informado.');
+      return;
+    }
+    setBusyId(leadId);
+    setError('');
+    try {
+      await approveConnection(leadId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao aprovar conexão.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <SectionHeader title="Solicitações de conexão" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {leads.slice(0, 3).map(lead => (
+          <div key={lead.id} style={{
+            padding: 14,
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, rgba(74,168,255,0.10), rgba(255,111,77,0.08))',
+            border: '1px solid rgba(74,168,255,0.16)',
+          }}>
+            <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 560 }}>
+              {lead.companyName}
+            </div>
+            <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>
+              Solicitou conexão pelo interesse em <b>{lead.itemName}</b>.
+            </div>
+            {!user?.whatsapp && (
+              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>
+                WhatsApp ainda não informado.
+              </div>
+            )}
+            <button
+              type="button"
+              disabled={!user?.whatsapp || busyId === lead.id}
+              onClick={() => { void approve(lead.id); }}
+              style={{
+                marginTop: 10,
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 11,
+                border: 'none',
+                background: user?.whatsapp ? '#25D366' : 'var(--chip)',
+                color: user?.whatsapp ? '#fff' : 'var(--muted)',
+                fontSize: 13,
+                fontWeight: 560,
+                cursor: user?.whatsapp && busyId !== lead.id ? 'pointer' : 'not-allowed',
+              }}
+            >
+              {busyId === lead.id ? 'Aprovando...' : 'Aprovar conexão'}
+            </button>
+          </div>
+        ))}
+      </div>
+      {error && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
+    </div>
   );
 }
 
