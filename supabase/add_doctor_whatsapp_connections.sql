@@ -2,8 +2,11 @@
 -- TESSY — WhatsApp profissional do médico
 -- e conexão aprovada médico/empresa
 --
--- Seguro para rodar mais de uma vez no Supabase SQL Editor.
--- Não apaga médicos, empresas, produtos, eventos nem leads.
+-- Versão conservadora para Supabase SQL Editor:
+-- - sem DROP POLICY
+-- - sem DELETE
+-- - sem UPDATE geral para limpar dados antigos
+-- - funções retornam VOID para evitar falso alerta de tabela "v_lead"
 -- =============================================
 
 BEGIN;
@@ -17,34 +20,6 @@ ALTER TABLE IF EXISTS public.leads
   ADD COLUMN IF NOT EXISTS connection_approved_at TIMESTAMPTZ;
 
 ALTER TABLE IF EXISTS public.leads ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Doctors create own leads" ON public.leads;
-CREATE POLICY "Doctors create own leads"
-  ON public.leads
-  FOR INSERT
-  WITH CHECK (auth.uid() = doctor_id);
-
-DROP POLICY IF EXISTS "Doctors read own leads" ON public.leads;
-CREATE POLICY "Doctors read own leads"
-  ON public.leads
-  FOR SELECT
-  USING (auth.uid() = doctor_id);
-
-DROP POLICY IF EXISTS "Doctors delete own event leads" ON public.leads;
-CREATE POLICY "Doctors delete own event leads"
-  ON public.leads
-  FOR DELETE
-  USING (
-    auth.uid() = doctor_id
-    AND item_type = 'event'
-    AND intent = 'event_interest'
-  );
-
-DROP POLICY IF EXISTS "Companies read own leads" ON public.leads;
-CREATE POLICY "Companies read own leads"
-  ON public.leads
-  FOR SELECT
-  USING (auth.uid() = company_id);
 
 DO $$
 BEGIN
@@ -61,32 +36,60 @@ BEGIN
   END IF;
 END $$;
 
--- Segurança: WhatsApp do médico só fica gravado no lead depois de aprovação.
-UPDATE public.leads
-SET doctor_whatsapp = NULL
-WHERE connection_status <> 'approved'
-  AND doctor_whatsapp IS NOT NULL;
+DO $$
+BEGIN
+  IF to_regclass('public.leads') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1
+       FROM pg_policies
+       WHERE schemaname = 'public'
+         AND tablename = 'leads'
+         AND policyname = 'Doctors read own leads'
+     ) THEN
+    CREATE POLICY "Doctors read own leads"
+      ON public.leads
+      FOR SELECT
+      USING (auth.uid() = doctor_id);
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF to_regclass('public.leads') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1
+       FROM pg_policies
+       WHERE schemaname = 'public'
+         AND tablename = 'leads'
+         AND policyname = 'Companies read own leads'
+     ) THEN
+    CREATE POLICY "Companies read own leads"
+      ON public.leads
+      FOR SELECT
+      USING (auth.uid() = company_id);
+  END IF;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.request_lead_connection(p_lead_id UUID)
-RETURNS public.leads
+RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_lead public.leads;
+  lead_company_id UUID;
 BEGIN
-  SELECT *
-  INTO v_lead
+  SELECT company_id
+  INTO lead_company_id
   FROM public.leads
   WHERE id = p_lead_id
   LIMIT 1;
 
-  IF NOT FOUND THEN
+  IF lead_company_id IS NULL THEN
     RAISE EXCEPTION 'Lead não encontrado.';
   END IF;
 
-  IF auth.uid() IS NULL OR auth.uid() <> v_lead.company_id THEN
+  IF auth.uid() IS NULL OR auth.uid() <> lead_company_id THEN
     RAISE EXCEPTION 'Sem permissão para solicitar conexão.';
   END IF;
 
@@ -97,40 +100,36 @@ BEGIN
       END,
       connection_requested_at = COALESCE(connection_requested_at, NOW())
   WHERE id = p_lead_id
-    AND company_id = auth.uid()
-  RETURNING *
-  INTO v_lead;
-
-  RETURN v_lead;
+    AND company_id = auth.uid();
 END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.approve_lead_connection(p_lead_id UUID)
-RETURNS public.leads
+RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_lead public.leads;
-  v_whatsapp TEXT;
+  lead_doctor_id UUID;
+  profile_whatsapp TEXT;
 BEGIN
-  SELECT *
-  INTO v_lead
+  SELECT doctor_id
+  INTO lead_doctor_id
   FROM public.leads
   WHERE id = p_lead_id
   LIMIT 1;
 
-  IF NOT FOUND THEN
+  IF lead_doctor_id IS NULL THEN
     RAISE EXCEPTION 'Lead não encontrado.';
   END IF;
 
-  IF auth.uid() IS NULL OR auth.uid() <> v_lead.doctor_id THEN
+  IF auth.uid() IS NULL OR auth.uid() <> lead_doctor_id THEN
     RAISE EXCEPTION 'Sem permissão para aprovar conexão.';
   END IF;
 
   SELECT whatsapp
-  INTO v_whatsapp
+  INTO profile_whatsapp
   FROM public.profiles
   WHERE id = auth.uid()
   LIMIT 1;
@@ -138,18 +137,12 @@ BEGIN
   UPDATE public.leads
   SET connection_status = 'approved',
       connection_approved_at = NOW(),
-      doctor_whatsapp = NULLIF(v_whatsapp, '')
+      doctor_whatsapp = NULLIF(profile_whatsapp, '')
   WHERE id = p_lead_id
-    AND doctor_id = auth.uid()
-  RETURNING *
-  INTO v_lead;
-
-  RETURN v_lead;
+    AND doctor_id = auth.uid();
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.request_lead_connection(UUID) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.approve_lead_connection(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.request_lead_connection(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.approve_lead_connection(UUID) TO authenticated;
 
