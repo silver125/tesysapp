@@ -146,7 +146,7 @@ export default function DoctorDashboard() {
           {/* Courses highlight */}
           {courses.length > 0 && (
             <div style={{ marginBottom: 24 }}>
-              <SectionHeader title="Cursos para professores" onSeeAll={() => setTab('courses')} />
+              <SectionHeader title="Workshops e eventos médicos" onSeeAll={() => setTab('courses')} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {courses.slice(0, 2).map(c => <CourseRow key={c.id} course={c} />)}
               </div>
