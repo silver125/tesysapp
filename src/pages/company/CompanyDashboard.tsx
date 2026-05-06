@@ -13,6 +13,15 @@ type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads';
 const EVENT_DATE_MIN = '2026-01-01';
 const EVENT_DATE_MAX = '2030-12-31';
 
+function dateInDays(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function isEventDateInAllowedRange(date: string) {
   return date >= EVENT_DATE_MIN && date <= EVENT_DATE_MAX;
 }
@@ -463,7 +472,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
   const [saveError, setSaveError] = useState('');
 
   // Event state
-  const [ev, setEv] = useState({ title: '', description: '', date: '', time: '09:00', location: '', category: EVENT_CATS[0], maxParticipants: '100', website: '' });
+  const [ev, setEv] = useState({ title: '', description: '', date: dateInDays(30), time: '19:00', location: '', category: EVENT_CATS[1], maxParticipants: '100', website: '' });
   // Product state
   const [pr, setPr] = useState({
     name: '',

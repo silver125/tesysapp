@@ -50,6 +50,56 @@ function monthShort(d: string) {
 }
 function dayNum(d: string) { return d ? d.split('-')[2] : ''; }
 
+function eventDateTime(ev: Pick<Event, 'date' | 'time'>) {
+  if (!ev.date) return null;
+  const [year, month, day] = ev.date.split('-').map(Number);
+  const [hour = 0, minute = 0] = (ev.time || '00:00').split(':').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day, hour, minute);
+}
+
+function sameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+}
+
+function eventCountdown(ev: Pick<Event, 'date' | 'time'>, now = new Date()) {
+  const target = eventDateTime(ev);
+  if (!target || Number.isNaN(target.getTime())) return '';
+
+  const diffMs = target.getTime() - now.getTime();
+  if (diffMs <= 0) return 'Evento encerrado';
+  if (sameDay(target, now)) return 'É hoje';
+
+  const hours = Math.ceil(diffMs / (1000 * 60 * 60));
+  if (hours < 24) return `Faltam ${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+
+  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (days === 1) return 'Falta 1 dia';
+  return `Faltam ${days} dias`;
+}
+
+function eventDateLabel(ev: Pick<Event, 'date' | 'time'>) {
+  const target = eventDateTime(ev);
+  if (!target || Number.isNaN(target.getTime())) return ev.time || '';
+  const day = String(target.getDate()).padStart(2, '0');
+  const month = target.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
+  const hour = String(target.getHours()).padStart(2, '0');
+  const minute = target.getMinutes();
+  const time = minute === 0
+    ? `${hour}H`
+    : `${hour}H${String(minute).padStart(2, '0')}`;
+  return `${day} ${month} • ${time}`;
+}
+
+function eventFormat(ev: Pick<Event, 'category' | 'location'>) {
+  const text = `${ev.category} ${ev.location}`.toLowerCase();
+  if (text.includes('híbrido') || text.includes('hibrido')) return 'Híbrido';
+  if (text.includes('online') || text.includes('virtual') || text.includes('webinar')) return 'Online';
+  return 'Presencial';
+}
+
 function fmtPhone(raw: string) {
   const d = raw.replace(/\D/g, '').replace(/^55/, '').slice(0, 11);
   if (d.length <= 2) return d;
@@ -146,7 +196,7 @@ export default function DoctorDashboard() {
           {/* Courses highlight */}
           {courses.length > 0 && (
             <div style={{ marginBottom: 24 }}>
-              <SectionHeader title="Workshops e eventos médicos" onSeeAll={() => setTab('courses')} />
+              <SectionHeader title="Eventos e capacitações médicas" onSeeAll={() => setTab('courses')} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {courses.slice(0, 2).map(c => <CourseRow key={c.id} course={c} />)}
               </div>
@@ -772,6 +822,10 @@ function EventCard({ ev }: { ev: Event }) {
   const btnColor = full && !registered ? 'var(--muted)' : registered ? 'var(--danger)' : '#fff';
   const btnBorder = registered ? '1px solid rgba(232,69,69,0.24)' : 'none';
   const btnCursor = (full && !registered) || busy ? 'not-allowed' : 'pointer';
+  const dateLabel = eventDateLabel(ev);
+  const formatLabel = eventFormat(ev);
+  const countdown = eventCountdown(ev);
+  const eventStatus = full ? 'Inscrições encerradas' : 'Inscrições abertas';
 
   return (
     <BannerCard tint1={tint1} tint2={tint2} month={monthShort(ev.date)} day={dayNum(ev.date)} format={ev.category}>
@@ -781,8 +835,28 @@ function EventCard({ ev }: { ev: Event }) {
         <VerifiedDot size={11} />
       </div>
       <div style={{ fontSize: 16, fontWeight: 560, letterSpacing: 0, lineHeight: 1.25, color: 'var(--ink)' }}>{ev.title}</div>
+      {ev.description && (
+        <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+          {ev.description}
+        </div>
+      )}
       {ev.website && <div><WebsiteLink url={ev.website} /></div>}
-      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{ev.location} · {ev.time}</div>
+      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <Mono style={{ fontSize: 12, color: 'var(--ink)', letterSpacing: '0.06em' }}>
+          {dateLabel}
+        </Mono>
+        <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+          {ev.location} • {formatLabel}
+        </div>
+        {countdown && (
+          <div style={{ fontSize: 12, color: full ? 'var(--danger)' : 'var(--accent)', fontWeight: 560 }}>
+            {countdown}
+          </div>
+        )}
+        <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.35 }}>
+          {eventStatus} • Exclusivo médicos
+        </div>
+      </div>
 
       {/* seats */}
       <div style={{ marginTop: 12 }}>
@@ -842,6 +916,7 @@ function EventRow({ ev }: { ev: Event }) {
   const registered = registeredEventIds.has(ev.id);
   const effectiveRegisteredCount = registered ? Math.max(ev.registeredCount, 1) : ev.registeredCount;
   const remainingSeats = Math.max(0, ev.maxParticipants - effectiveRegisteredCount);
+  const countdown = eventCountdown(ev);
   return (
     <RowCard>
       <div style={{
@@ -857,9 +932,15 @@ function EventRow({ ev }: { ev: Event }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.2, color: 'var(--ink)' }}>{ev.title}</span>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{ev.companyName} · {ev.location}</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>
+          {ev.companyName} · {eventDateLabel(ev)}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
+          {ev.location} • {eventFormat(ev)}
+        </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
           <Chip color="var(--accent)">{ev.category}</Chip>
+          {countdown && <Chip color={countdown === 'Evento encerrado' ? 'var(--danger)' : '#1EA97C'}>{countdown}</Chip>}
           <Mono style={{ fontSize: 10, color: 'var(--muted)' }}>
             {remainingSeats} {remainingSeats === 1 ? 'vaga restante' : 'vagas restantes'}
           </Mono>
