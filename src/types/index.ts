@@ -94,6 +94,9 @@ export interface Course {
   description: string;
   category: string;
   modality: CourseModality;
+  date?: string;
+  time?: string;
+  location?: string;
   duration: string;
   instructor: string;
   price?: string;

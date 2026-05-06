@@ -87,6 +87,9 @@ function dbToCourse(row: Record<string, unknown>): Course {
     description:     row.description      as string,
     category:        row.category         as string,
     modality:        row.modality         as 'online' | 'presencial' | 'hibrido',
+    date:            row.date             as string | undefined,
+    time:            row.time             as string | undefined,
+    location:        row.location         as string | undefined,
     duration:        row.duration         as string,
     instructor:      row.instructor       as string,
     price:           row.price            as string | undefined,
@@ -762,23 +765,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Cursos ──
   const addCourse = async (data: Omit<Course, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
-    const { error } = await withTimeout(
-      supabase.from('courses').insert({
-        title:            data.title,
-        description:      data.description,
-        category:         data.category,
-        modality:         data.modality,
-        duration:         data.duration,
-        instructor:       data.instructor,
-        price:            data.price ?? null,
-        company_id:       data.companyId,
-        company_name:     data.companyName,
-        company_whatsapp: data.companyWhatsapp ?? null,
-        website:          data.website ?? null,
-      }),
+    const basePayload = {
+      title:            data.title,
+      description:      data.description,
+      category:         data.category,
+      modality:         data.modality,
+      duration:         data.duration,
+      instructor:       data.instructor,
+      price:            data.price ?? null,
+      company_id:       data.companyId,
+      company_name:     data.companyName,
+      company_whatsapp: data.companyWhatsapp ?? null,
+      website:          data.website ?? null,
+    };
+    const schedulePayload = {
+      ...basePayload,
+      date:             data.date ?? null,
+      time:             data.time ?? null,
+      location:         data.location ?? null,
+    };
+
+    const result = await withTimeout(
+      supabase.from('courses').insert(schedulePayload),
       12000,
       'Publicar curso',
     );
+    let error = result.error;
+    if (error && /column .* (date|time|location)|date.* column|time.* column|location.* column/i.test(error.message)) {
+      const fallback = await withTimeout(
+        supabase.from('courses').insert(basePayload),
+        12000,
+        'Publicar curso',
+      );
+      error = fallback.error;
+    }
     if (error) throw new Error(error.message);
     refreshData(); // background, não bloqueia
   };

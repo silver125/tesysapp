@@ -41,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
   { key: 'connect',  label: '',         icon: () => <IcoBigConnect />, big: true },
   { key: 'products', label: 'Produtos', icon: IcoBox },
-  { key: 'courses',  label: 'Cursos',   icon: IcoBook },
+  { key: 'courses',  label: 'Workshops', icon: IcoBook },
 ];
 
 function monthShort(d: string) {
@@ -50,7 +50,22 @@ function monthShort(d: string) {
 }
 function dayNum(d: string) { return d ? d.split('-')[2] : ''; }
 
-function eventDateTime(ev: Pick<Event, 'date' | 'time'>) {
+function dateToIso(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function courseDisplayDate(course: Course) {
+  if (course.date) return course.date;
+  const created = course.createdAt ? new Date(course.createdAt) : new Date();
+  if (Number.isNaN(created.getTime())) return '';
+  created.setDate(created.getDate() + 30);
+  return dateToIso(created);
+}
+
+function eventDateTime(ev: { date?: string; time?: string }) {
   if (!ev.date) return null;
   const [year, month, day] = ev.date.split('-').map(Number);
   const [hour = 0, minute = 0] = (ev.time || '00:00').split(':').map(Number);
@@ -64,7 +79,7 @@ function sameDay(a: Date, b: Date) {
     && a.getDate() === b.getDate();
 }
 
-function eventCountdown(ev: Pick<Event, 'date' | 'time'>, now = new Date()) {
+function eventCountdown(ev: { date?: string; time?: string }, now = new Date()) {
   const target = eventDateTime(ev);
   if (!target || Number.isNaN(target.getTime())) return '';
 
@@ -80,7 +95,7 @@ function eventCountdown(ev: Pick<Event, 'date' | 'time'>, now = new Date()) {
   return `Faltam ${days} dias`;
 }
 
-function eventDateLabel(ev: Pick<Event, 'date' | 'time'>) {
+function eventDateLabel(ev: { date?: string; time?: string }) {
   const target = eventDateTime(ev);
   if (!target || Number.isNaN(target.getTime())) return ev.time || '';
   const day = String(target.getDate()).padStart(2, '0');
@@ -98,6 +113,15 @@ function eventFormat(ev: Pick<Event, 'category' | 'location'>) {
   if (text.includes('híbrido') || text.includes('hibrido')) return 'Híbrido';
   if (text.includes('online') || text.includes('virtual') || text.includes('webinar')) return 'Online';
   return 'Presencial';
+}
+
+function modalityText(modality: Course['modality']) {
+  const labels: Record<Course['modality'], string> = {
+    online: 'Online',
+    presencial: 'Presencial',
+    hibrido: 'Híbrido',
+  };
+  return labels[modality] ?? modality;
 }
 
 function fmtPhone(raw: string) {
@@ -166,7 +190,7 @@ export default function DoctorDashboard() {
           <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
             <StatChip label="Eventos" value={events.length} onClick={() => setTab('events')} />
             <StatChip label="Produtos" value={products.length} onClick={() => setTab('products')} />
-            <StatChip label="Cursos" value={courses.length} onClick={() => setTab('courses')} />
+            <StatChip label="Workshops" value={courses.length} onClick={() => setTab('courses')} />
           </div>
 
           <DoctorWhatsappCard />
@@ -251,12 +275,12 @@ export default function DoctorDashboard() {
       {tab === 'courses' && (
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 4 }}>
-            Cursos<span style={{ color: 'var(--accent)' }}>.</span>
+            Eventos e capacitações médicas<span style={{ color: 'var(--accent)' }}>.</span>
           </h1>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
-            Para médicos professores e especialistas.
+            Workshops, aulas e oportunidades selecionadas para médicos.
           </p>
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar cursos..." />
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar workshops e eventos..." />
           <FilterChips
             tabs={[
               ['all','TODOS'],
@@ -282,7 +306,7 @@ export default function DoctorDashboard() {
           />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filtCourses.length === 0
-              ? <Empty text="Nenhum curso encontrado." />
+              ? <Empty text="Nenhuma capacitação encontrada." />
               : filtCourses.map(c => <CourseCard key={c.id} course={c} />)
             }
           </div>
@@ -1091,13 +1115,19 @@ function CourseCard({ course }: { course: Course }) {
   const { addLead } = useAuth();
   const [tint1, tint2] = categoryTint(course.category);
   const code = course.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  const waLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Vi o curso "${course.title}" no Tessy e tenho interesse.`);
-  const enrollLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Sou médico cadastrado no Tessy e gostaria de me inscrever no curso "${course.title}". Como faço para garantir minha vaga?`);
-  const interestTarget = enrollLink || course.website || '';
+  const waLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Vi "${course.title}" no Tessy e gostaria de falar com o representante.`);
+  const interestTarget = course.website || '';
   const canShowInterest = !!interestTarget;
+  const displayDate = courseDisplayDate(course);
+  const schedule = { date: displayDate, time: course.time || '19:00' };
+  const dateLabel = displayDate ? eventDateLabel(schedule) : 'Data a definir';
+  const countdown = displayDate ? eventCountdown(schedule) : '';
+  const placeLabel = course.location?.trim() || (course.modality === 'online' ? 'Online' : 'Local a definir');
+  const formatLabel = modalityText(course.modality);
+  const bannerLabel = course.category === 'Outros' ? 'CAPACITAÇÃO' : course.category;
 
   return (
-    <BannerCard tint1={tint1} tint2={tint2} format="CURSO">
+    <BannerCard tint1={tint1} tint2={tint2} month={displayDate ? monthShort(displayDate) : undefined} day={displayDate ? dayNum(displayDate) : undefined} format={bannerLabel}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
         <CompanyMark code={code} tint={companyTint(course.companyName)} size={22} radius={6} />
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>{course.companyName}</span>
@@ -1106,6 +1136,22 @@ function CourseCard({ course }: { course: Course }) {
       <div style={{ fontSize: 16, fontWeight: 560, letterSpacing: 0, color: 'var(--ink)' }}>{course.title}</div>
       {course.website && <div><WebsiteLink url={course.website} /></div>}
       <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.5 }}>{course.description}</div>
+      <div style={{ marginTop: 11, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <Mono style={{ fontSize: 12, color: 'var(--ink)', letterSpacing: '0.06em' }}>
+          {dateLabel}
+        </Mono>
+        <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+          {placeLabel} • {formatLabel}
+        </div>
+        {countdown && (
+          <div style={{ fontSize: 12, color: countdown === 'Evento encerrado' ? 'var(--danger)' : 'var(--accent)', fontWeight: 560 }}>
+            {countdown}
+          </div>
+        )}
+        <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.35 }}>
+          Inscrições abertas • Exclusivo médicos
+        </div>
+      </div>
       <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {[
           { label: 'INSTRUTOR', val: course.instructor },
@@ -1133,7 +1179,7 @@ function CourseCard({ course }: { course: Course }) {
               itemId: course.id,
               itemName: course.title,
               intent: 'course_interest',
-              message: `Médico demonstrou interesse no curso ${course.title}.`,
+              message: `Médico demonstrou interesse em ${course.title}.`,
             });
             window.open(interestTarget, '_blank', 'noopener,noreferrer');
           }}
@@ -1147,7 +1193,7 @@ function CourseCard({ course }: { course: Course }) {
             cursor: canShowInterest ? 'pointer' : 'not-allowed',
             opacity: canShowInterest ? 1 : 0.7,
           }}>
-          Tenho interesse
+          {canShowInterest ? 'Ir para o site' : 'Site não informado'}
         </button>
         {waLink && (
           <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
@@ -1167,19 +1213,36 @@ function CourseCard({ course }: { course: Course }) {
 /* ─── CourseRow (compact) ─── */
 function CourseRow({ course }: { course: Course }) {
   const [tint1, tint2] = categoryTint(course.category);
+  const displayDate = courseDisplayDate(course);
+  const schedule = { date: displayDate, time: course.time || '19:00' };
+  const countdown = displayDate ? eventCountdown(schedule) : '';
+  const placeLabel = course.location?.trim() || (course.modality === 'online' ? 'Online' : 'Local a definir');
   return (
     <RowCard>
       <div style={{
         width: 54, flexShrink: 0, borderRadius: 12,
         background: `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
-        fontSize: 24,
-      }}>🎓</div>
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        color: '#fff', padding: '6px 0',
+      }}>
+        <div style={{ fontSize: 9, fontWeight: 560, letterSpacing: '0.1em' }}>
+          {displayDate ? monthShort(displayDate) : 'DATA'}
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 560, lineHeight: 1 }}>
+          {displayDate ? dayNum(displayDate) : '--'}
+        </div>
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.2, color: 'var(--ink)' }}>{course.title}</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{course.instructor}</div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>
+          {eventDateLabel(schedule)} · {course.instructor}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
+          {placeLabel} • {modalityText(course.modality)}
+        </div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
           <ModalityBadge modality={course.modality} />
+          {countdown && <Chip color={countdown === 'Evento encerrado' ? 'var(--danger)' : '#1EA97C'}>{countdown}</Chip>}
           {course.price && <Chip color="#1EA97C">{course.price}</Chip>}
         </div>
       </div>

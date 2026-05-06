@@ -52,7 +52,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
   { key: 'create',   label: 'Comece por aqui', icon: () => null, big: true },
   { key: 'products', label: 'Produtos', icon: IcoBox },
-  { key: 'courses',  label: 'Cursos',   icon: IcoBook },
+  { key: 'courses',  label: 'Workshops', icon: IcoBook },
 ];
 
 const EVENT_CATS   = ['Congresso', 'Workshop', 'Simpósio', 'Webinar', 'Treinamento'];
@@ -73,6 +73,30 @@ function fmt(d: string) {
   if (!d) return '';
   const [, m, dd] = d.split('-');
   return `${dd}/${m}`;
+}
+
+function dateToIso(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function courseDisplayDate(course: Course) {
+  if (course.date) return course.date;
+  const created = course.createdAt ? new Date(course.createdAt) : new Date();
+  if (Number.isNaN(created.getTime())) return '';
+  created.setDate(created.getDate() + 30);
+  return dateToIso(created);
+}
+
+function modalityLabel(modality: CourseModality) {
+  const labels: Record<CourseModality, string> = {
+    online: 'Online',
+    presencial: 'Presencial',
+    hibrido: 'Híbrido',
+  };
+  return labels[modality] ?? modality;
 }
 
 function fmtPhone(raw: string) {
@@ -414,10 +438,10 @@ export default function CompanyDashboard() {
       {/* ── COURSES ── */}
       {tab === 'courses' && (
         <ListTab
-          title="Meus cursos"
+          title="Minhas capacitações"
           onAdd={() => { setCreateKind('course'); setTab('create'); }}
           empty={myCourses.length === 0}
-          emptyText="Nenhum curso criado ainda."
+          emptyText="Nenhuma capacitação criada ainda."
         >
           {myCourses.map(c => <CourseCardCompany key={c.id} course={c} onDelete={() => deleteCourse(c.id)} />)}
         </ListTab>
@@ -483,7 +507,19 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     website: '',
   });
   // Course state
-  const [co, setCo] = useState({ title: '', description: '', instructor: '', category: COURSE_CATS[0], modality: 'online' as CourseModality, duration: '', price: '', website: '' });
+  const [co, setCo] = useState({
+    title: '',
+    description: '',
+    instructor: '',
+    category: COURSE_CATS[0],
+    modality: 'presencial' as CourseModality,
+    date: dateInDays(30),
+    time: '19:00',
+    location: '',
+    duration: '',
+    price: '',
+    website: '',
+  });
 
   const totalSteps = kind === 'event' ? 3 : kind === 'course' ? 3 : 2;
 
@@ -501,9 +537,11 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       if (step === 1 && !pr.description.trim()) return 'Informe a descrição do produto.';
     }
     if (kind === 'course') {
-      if (step === 1 && !co.title.trim()) return 'Informe o título do curso.';
+      if (step === 1 && !co.title.trim()) return 'Informe o título da capacitação.';
       if (step === 1 && !co.instructor.trim()) return 'Informe o nome do instrutor.';
-      if (step === 2 && !co.duration.trim()) return 'Informe a duração do curso.';
+      if (step === 2 && !co.date) return 'Selecione a data.';
+      if (step === 2 && !co.location.trim()) return 'Informe o local ou cidade.';
+      if (step === 2 && !co.duration.trim()) return 'Informe a duração da capacitação.';
     }
     return '';
   }
@@ -565,7 +603,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           background: 'var(--card)', cursor: 'pointer', color: 'var(--ink)', fontSize: 18,
         }}>×</button>
         <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-          novo {kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'curso'} · etapa {step + 1} de {totalSteps}
+          novo {kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'} · etapa {step + 1} de {totalSteps}
         </Mono>
         <div style={{ width: 40 }} />
       </div>
@@ -591,7 +629,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
               const cfg = {
                 event:   { icon: '📅', title: 'Evento', desc: 'Congresso, workshop, webinar' },
                 product: { icon: '💊', title: 'Produto', desc: 'Produto, amostra, representante' },
-                course:  { icon: '🎓', title: 'Curso', desc: 'Para médicos professores' },
+                course:  { icon: '🎓', title: 'Workshop ou capacitação', desc: 'Aulas, eventos e cursos médicos' },
               }[k];
               return (
                 <button key={k} onClick={() => setKind(k)} style={{
@@ -674,12 +712,12 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {kind === 'course' && step === 1 && (
         <div>
           <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
-            Sobre o curso<span style={{ color: 'var(--accent)' }}>.</span>
+            Sobre a capacitação<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <WField label="TÍTULO" value={co.title} onChange={v => setCo(p => ({ ...p, title: v }))} placeholder="Ex: Atualização em ECG" />
             <WField label="INSTRUTOR / PROFESSOR" value={co.instructor} onChange={v => setCo(p => ({ ...p, instructor: v }))} placeholder="Dr. João Silva" />
-            <WField label="DESCRIÇÃO" value={co.description} onChange={v => setCo(p => ({ ...p, description: v }))} placeholder="Descreva o curso..." as="textarea" />
+            <WField label="DESCRIÇÃO" value={co.description} onChange={v => setCo(p => ({ ...p, description: v }))} placeholder="Descreva o workshop ou capacitação..." as="textarea" />
             <WField label="CATEGORIA" value={co.category} onChange={v => setCo(p => ({ ...p, category: v }))} as="select" options={COURSE_CATS} />
           </div>
         </div>
@@ -706,6 +744,11 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
                 ))}
               </div>
             </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <WField label="DATA" value={co.date} onChange={v => setCo(p => ({ ...p, date: v }))} type="date" min={EVENT_DATE_MIN} max={EVENT_DATE_MAX} />
+              <WField label="HORA" value={co.time} onChange={v => setCo(p => ({ ...p, time: v }))} type="time" />
+            </div>
+            <WField label="LOCAL / CIDADE" value={co.location} onChange={v => setCo(p => ({ ...p, location: v }))} placeholder={co.modality === 'online' ? 'Online' : 'São Paulo, SP'} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <WField label="DURAÇÃO" value={co.duration} onChange={v => setCo(p => ({ ...p, duration: v }))} placeholder="Ex: 20 horas" />
               <WField label="PREÇO" value={co.price} onChange={v => setCo(p => ({ ...p, price: v }))} placeholder="R$ 490" />
@@ -754,7 +797,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           }}>
             {saving
               ? 'Publicando...'
-              : `Publicar ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'curso'} ✓`}
+              : `Publicar ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'capacitação'} ✓`}
           </button>
         )}
       </div>
@@ -851,7 +894,7 @@ function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestCon
     sample_request: { label: 'Amostra', color: '#1EA97C' },
     instagram_partnership: { label: 'Instagram', color: '#E63E8C' },
     event_interest: { label: 'Evento', color: 'var(--accent-ink)' },
-    course_interest: { label: 'Curso', color: '#F58220' },
+    course_interest: { label: 'Workshop', color: '#F58220' },
   };
 
   async function requestDoctorConnection(leadId: string) {
@@ -1063,6 +1106,8 @@ function ProductCardCompany({ product, onDelete }: { product: Product; onDelete:
 
 function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () => void }) {
   const [tint1, tint2] = categoryTint(course.category);
+  const displayDate = courseDisplayDate(course);
+  const placeLabel = course.location?.trim() || (course.modality === 'online' ? 'Online' : 'Local a definir');
   return (
     <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
       <div style={{ height: 6, background: `linear-gradient(90deg, ${tint1}, ${tint2})` }} />
@@ -1073,7 +1118,13 @@ function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () 
             <ModalityBadge modality={course.modality} />
           </div>
           <div style={{ fontSize: 15, fontWeight: 560, marginTop: 8, color: 'var(--ink)' }}>{course.title}</div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>🎓 {course.instructor} · ⏱ {course.duration}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>
+            {displayDate ? `${fmt(displayDate)} · ${course.time || '19:00'} · ` : ''}
+            {placeLabel} · {modalityLabel(course.modality)}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 3 }}>
+            {course.instructor} · {course.duration}
+          </div>
           {course.price && <div style={{ marginTop: 8 }}><Chip color="#1EA97C">{course.price}</Chip></div>}
         </div>
         <button onClick={onDelete} style={{

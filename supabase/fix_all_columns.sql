@@ -52,12 +52,16 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS website          TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS available_for    TEXT;
 
 -- ── COURSES ───────────────────────────────────────────────────────────────
--- App envia/lê: title, description, category, modality, duration, instructor,
---               price, company_id, company_name, company_whatsapp, website
+-- App envia/lê: title, description, category, modality, date, time, location,
+--               duration, instructor, price, company_id, company_name,
+--               company_whatsapp, website
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS title            TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS description      TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS category         TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS modality         TEXT DEFAULT 'online';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS date             DATE;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS time             TIME;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS location         TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS duration         TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS instructor       TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS price            TEXT;
