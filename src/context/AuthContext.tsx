@@ -846,6 +846,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: existing } = await existingQuery;
     if (existing && existing.length > 0) {
       writeLocalLead(lead);
+      if (
+        (user.role === 'empresa' && lead.companyId === user.id)
+        || (user.role === 'medico' && lead.doctorId === user.id)
+      ) {
+        setLeads(prev => prev.some(l => isSameLead(l, lead)) ? prev : [lead, ...prev]);
+      }
       return;
     }
 
@@ -870,7 +876,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     writeLocalLead(lead);
-    if (user.role === 'empresa' && lead.companyId === user.id) {
+    if (
+      (user.role === 'empresa' && lead.companyId === user.id)
+      || (user.role === 'medico' && lead.doctorId === user.id)
+    ) {
       setLeads(prev => prev.some(l => isSameLead(l, lead)) ? prev : [lead, ...prev]);
     }
   };

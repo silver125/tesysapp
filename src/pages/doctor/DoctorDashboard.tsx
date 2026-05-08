@@ -7,9 +7,18 @@ import {
   WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
-import type { Event, Product, Course, Lead } from '../../types';
+import type { Event, Product, Course, Lead, User, LeadIntent, LeadItemType } from '../../types';
 
 type Tab = 'home' | 'events' | 'products' | 'courses' | 'connect';
+type ScheduleLike = { date?: string | null; time?: string | null; start_date?: string | null; event_date?: string | null };
+type CompanyMatch = {
+  id: string;
+  name: string;
+  whatsapp?: string;
+  products: Product[];
+  events: Event[];
+  courses: Course[];
+};
 
 function IcoHome(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
@@ -44,68 +53,133 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'courses',  label: 'Workshops', icon: IcoBook },
 ];
 
-function monthShort(d: string) {
-  if (!d) return '';
-  return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
-}
-function dayNum(d: string) { return d ? d.split('-')[2] : ''; }
+const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 
-function dateToIso(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function pickScheduleDate(item: ScheduleLike) {
+  return item.start_date || item.event_date || item.date || '';
+}
+
+function parseLocalDate(raw?: string | null) {
+  if (!raw) return null;
+  const value = raw.includes('T') ? raw.split('T')[0] : raw;
+  const [year, month, day] = value.split('-').map(Number);
+  if (year && month && day) return new Date(year, month - 1, day);
+
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function monthShort(d?: string | null) {
+  const date = parseLocalDate(d);
+  return date ? MONTHS_PT[date.getMonth()] : '';
+}
+
+function dayNum(d?: string | null) {
+  const date = parseLocalDate(d);
+  return date ? String(date.getDate()).padStart(2, '0') : '';
 }
 
 function courseDisplayDate(course: Course) {
   if (course.date) return course.date;
-  const created = course.createdAt ? new Date(course.createdAt) : new Date();
-  if (Number.isNaN(created.getTime())) return '';
-  created.setDate(created.getDate() + 30);
-  return dateToIso(created);
+  return '';
 }
 
-function eventDateTime(ev: { date?: string; time?: string }) {
-  if (!ev.date) return null;
-  const [year, month, day] = ev.date.split('-').map(Number);
+function eventDateTime(ev: ScheduleLike) {
+  const date = parseLocalDate(pickScheduleDate(ev));
+  if (!date) return null;
   const [hour = 0, minute = 0] = (ev.time || '00:00').split(':').map(Number);
-  if (!year || !month || !day) return null;
-  return new Date(year, month - 1, day, hour, minute);
+  date.setHours(Number.isFinite(hour) ? hour : 0, Number.isFinite(minute) ? minute : 0, 0, 0);
+  return date;
 }
 
-function sameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear()
-    && a.getMonth() === b.getMonth()
-    && a.getDate() === b.getDate();
+function startOfDay(date: Date) {
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  return day;
 }
 
-function eventCountdown(ev: { date?: string; time?: string }, now = new Date()) {
+function eventCountdown(ev: ScheduleLike, now = new Date()) {
   const target = eventDateTime(ev);
   if (!target || Number.isNaN(target.getTime())) return '';
 
-  const diffMs = target.getTime() - now.getTime();
-  if (diffMs <= 0) return 'Evento encerrado';
-  if (sameDay(target, now)) return 'É hoje';
-
-  const hours = Math.ceil(diffMs / (1000 * 60 * 60));
-  if (hours < 24) return `Faltam ${hours} ${hours === 1 ? 'hora' : 'horas'}`;
-
-  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  if (days === 1) return 'Falta 1 dia';
-  return `Faltam ${days} dias`;
+  const diffDays = Math.ceil((startOfDay(target).getTime() - startOfDay(now).getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays > 1) return `Faltam ${diffDays} dias`;
+  if (diffDays === 1) return 'É amanhã';
+  if (diffDays === 0) return 'É hoje';
+  return 'Evento encerrado';
 }
 
-function eventDateLabel(ev: { date?: string; time?: string }) {
+function formatEventTime(time?: string | null) {
+  if (!time) return 'Horário a confirmar';
+  const [rawHour, rawMinute = '0'] = time.split(':');
+  const hourNumber = Number(rawHour);
+  const minuteNumber = Number(rawMinute);
+  if (!Number.isFinite(hourNumber)) return 'Horário a confirmar';
+  const hour = String(hourNumber).padStart(2, '0');
+  if (!Number.isFinite(minuteNumber) || minuteNumber === 0) return `${hour}H`;
+  return `${hour}H${String(minuteNumber).padStart(2, '0')}`;
+}
+
+function eventDateLabel(ev: ScheduleLike) {
+  const dateText = pickScheduleDate(ev);
+  if (!parseLocalDate(dateText)) return 'Data a confirmar';
+  return `${dayNum(dateText)} ${monthShort(dateText)} • ${formatEventTime(ev.time)}`;
+}
+
+function locationText(location?: string | null) {
+  return location?.trim() || 'Local a confirmar';
+}
+
+function eventSeatText(total: number | undefined, remaining: number) {
+  if (!total || total <= 0) return 'Vagas limitadas';
+  return `${remaining} ${remaining === 1 ? 'vaga restante' : 'vagas restantes'}`;
+}
+
+function isUpcomingEvent(ev: ScheduleLike) {
   const target = eventDateTime(ev);
-  if (!target || Number.isNaN(target.getTime())) return ev.time || '';
-  const day = String(target.getDate()).padStart(2, '0');
-  const month = target.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
-  const hour = String(target.getHours()).padStart(2, '0');
-  const minute = target.getMinutes();
-  const time = minute === 0
-    ? `${hour}H`
-    : `${hour}H${String(minute).padStart(2, '0')}`;
-  return `${day} ${month} • ${time}`;
+  if (!target) return true;
+  return startOfDay(target).getTime() >= startOfDay(new Date()).getTime();
+}
+
+function leadKey(itemType: LeadItemType, itemId: string | undefined, intent: LeadIntent) {
+  return `${itemType}:${itemId ?? 'none'}:${intent}`;
+}
+
+function hasLeadInterest(leads: Lead[], itemType: LeadItemType, itemId: string | undefined, intent: LeadIntent) {
+  return leads.some(lead => leadKey(lead.itemType, lead.itemId, lead.intent) === leadKey(itemType, itemId, intent));
+}
+
+function buildCompanyMatches(events: Event[], products: Product[], courses: Course[]) {
+  const companyMap = new Map<string, CompanyMatch>();
+  const ensureCompany = (id: string, name: string, whatsapp?: string) => {
+    const ex = companyMap.get(id) ?? { id, name, whatsapp, products: [], events: [], courses: [] };
+    companyMap.set(id, { ...ex, whatsapp: ex.whatsapp ?? whatsapp });
+    return companyMap.get(id)!;
+  };
+
+  events.forEach(e => ensureCompany(e.companyId, e.companyName, e.companyWhatsapp).events.push(e));
+  products.forEach(p => ensureCompany(p.companyId, p.companyName, p.companyWhatsapp).products.push(p));
+  courses.forEach(c => ensureCompany(c.companyId, c.companyName, c.companyWhatsapp).courses.push(c));
+
+  return [...companyMap.values()].sort((a, b) =>
+    (b.products.length * 3 + b.events.length * 2 + b.courses.length) -
+    (a.products.length * 3 + a.events.length * 2 + a.courses.length),
+  );
+}
+
+function matchesDoctorProfile(user: User | null | undefined, ...texts: Array<string | undefined>) {
+  const specialty = user?.specialty?.trim().toLowerCase();
+  if (!specialty) return true;
+  return texts.some(text => text?.toLowerCase().includes(specialty));
+}
+
+function professionalInterestTags(user: User | null | undefined, products: Product[], courses: Course[], events: Event[]) {
+  const tags = new Set<string>();
+  if (user?.specialty) tags.add(user.specialty);
+  [...products, ...courses, ...events].forEach(item => {
+    if ('category' in item && item.category) tags.add(item.category);
+  });
+  return [...tags].slice(0, 5);
 }
 
 function eventFormat(ev: Pick<Event, 'category' | 'location'>) {
@@ -144,6 +218,7 @@ export default function DoctorDashboard() {
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
   const [courseFilter, setCourseFilter] = useState('all');
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
 
   // Refresh data every time the doctor switches tabs so new items from companies appear
   useEffect(() => {
@@ -151,7 +226,19 @@ export default function DoctorDashboard() {
   }, [tab, refreshData]);
 
   const q = search.toLowerCase();
-  const filtEvents   = events.filter(e => !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q));
+  const upcomingEvents = events.filter(isUpcomingEvent);
+  const companyMatches = buildCompanyMatches(events, products, courses);
+  const recommendedProducts = products.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
+  const representativeCompanies = companyMatches.filter(company => company.whatsapp);
+  const interestTags = professionalInterestTags(user, products, courses, events);
+  const filtEvents = events.filter(e => {
+    const matchQ = !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q);
+    const filter = evFilter.toLowerCase();
+    const matchFilter = evFilter === 'all'
+      || e.category.toLowerCase().includes(filter)
+      || eventFormat(e).toLowerCase().includes(filter);
+    return matchQ && matchFilter;
+  });
   const filtProducts = products.filter(p => !q || p.name.toLowerCase().includes(q) || p.companyName.toLowerCase().includes(q));
   const filtCourses  = courses.filter(c => {
     const matchQ = !q || c.title.toLowerCase().includes(q) || c.companyName.toLowerCase().includes(q);
@@ -165,7 +252,19 @@ export default function DoctorDashboard() {
   const firstNameGreet = user?.name?.split(' ')[0] ?? 'Doutor';
   const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
 
-  function goTab(k: string) { setTab(k as Tab); setSearch(''); }
+  function openTab(k: Tab, nextSearch = '') {
+    setTab(k);
+    setSearch(nextSearch);
+    setActionSheetOpen(false);
+  }
+
+  function goTab(k: string) {
+    if (k === 'connect') {
+      setActionSheetOpen(true);
+      return;
+    }
+    openTab(k as Tab);
+  }
 
   return (
     <Layout navItems={NAV_ITEMS} activeKey={tab} onNavChange={goTab}>
@@ -182,35 +281,53 @@ export default function DoctorDashboard() {
               Olá, {firstNameGreet}<span style={{ color: 'var(--accent)' }}>.</span>
             </h1>
             <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 6 }}>
-              <b style={{ color: 'var(--ink)' }}>{events.length}</b> eventos disponíveis para você esta semana.
+              Você tem novas oportunidades para sua prática médica.
             </p>
           </div>
 
-          {/* Stats chips */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-            <StatChip label="Eventos" value={events.length} onClick={() => setTab('events')} />
-            <StatChip label="Produtos" value={products.length} onClick={() => setTab('products')} />
-            <StatChip label="Workshops" value={courses.length} onClick={() => setTab('courses')} />
+          {/* Opportunity shortcuts */}
+          <div className="no-scrollbar" style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 2 }}>
+            <OpportunityMetric label="Eventos próximos" value={upcomingEvents.length} onClick={() => openTab('events')} />
+            <OpportunityMetric label="Empresas compatíveis" value={companyMatches.length} onClick={() => openTab('connect')} />
+            <OpportunityMetric label="Representantes disponíveis" value={representativeCompanies.length} onClick={() => openTab('connect')} />
+            <OpportunityMetric label="Produtos recomendados" value={recommendedProducts.length} onClick={() => openTab('products')} />
           </div>
 
           <DoctorWhatsappCard />
+
+          <SuggestedConnections
+            companies={companyMatches}
+            events={upcomingEvents}
+            products={recommendedProducts}
+            courses={courses}
+            onOpenCompany={company => openTab('connect', company)}
+            onOpenEvents={company => openTab('events', company)}
+            onOpenProducts={company => openTab('products', company)}
+            onOpenCourses={company => openTab('courses', company)}
+            onUpdateInterests={() => openTab('connect')}
+          />
 
           {pendingConnections.length > 0 && (
             <ConnectionRequests leads={pendingConnections} />
           )}
 
           {/* Featured event */}
-          {events.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <SectionHeader title="Em destaque" onSeeAll={() => setTab('events')} />
+          {events.length > 0 ? (
+            <div style={{ marginBottom: 22 }}>
+              <SectionHeader title="Oportunidades em destaque" onSeeAll={() => openTab('events')} />
               <EventCard ev={events[0]} />
             </div>
+          ) : (
+            <Empty
+              text="Nenhum evento disponível no momento."
+              hint="Novas oportunidades aparecerão aqui quando forem publicadas."
+            />
           )}
 
           {/* For you — compact rows */}
           {events.length > 1 && (
-            <div style={{ marginBottom: 24 }}>
-              <SectionHeader title="Mais eventos" onSeeAll={() => setTab('events')} />
+            <div style={{ marginBottom: 22 }}>
+              <SectionHeader title="Mais eventos" onSeeAll={() => openTab('events')} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {events.slice(1, 4).map(e => <EventRow key={e.id} ev={e} />)}
               </div>
@@ -219,13 +336,25 @@ export default function DoctorDashboard() {
 
           {/* Courses highlight */}
           {courses.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <SectionHeader title="Eventos e capacitações médicas" onSeeAll={() => setTab('courses')} />
+            <div style={{ marginBottom: 22 }}>
+              <SectionHeader title="Eventos e capacitações médicas" onSeeAll={() => openTab('courses')} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {courses.slice(0, 2).map(c => <CourseRow key={c.id} course={c} />)}
               </div>
             </div>
           )}
+
+          <CommunityPulse
+            companies={companyMatches}
+            events={events}
+            products={products}
+            courses={courses}
+          />
+
+          <ProfessionalInterests
+            tags={interestTags}
+            onUpdate={() => openTab('connect')}
+          />
         </div>
       )}
 
@@ -245,7 +374,7 @@ export default function DoctorDashboard() {
           />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filtEvents.length === 0
-              ? <Empty text="Nenhum evento encontrado." />
+              ? <Empty text="Nenhum evento disponível no momento." hint="Novas oportunidades aparecerão aqui quando forem publicadas." />
               : filtEvents.map(e => <EventCard key={e.id} ev={e} />)
             }
           </div>
@@ -264,7 +393,7 @@ export default function DoctorDashboard() {
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar empresa, produto ou representante..." />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filtProducts.length === 0
-              ? <Empty text="Nenhum produto encontrado." />
+              ? <Empty text="Nenhum produto recomendado ainda." hint="Atualize seus interesses para receber sugestões mais precisas." />
               : filtProducts.map(p => <ProductCard key={p.id} product={p} />)
             }
           </div>
@@ -306,7 +435,7 @@ export default function DoctorDashboard() {
           />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filtCourses.length === 0
-              ? <Empty text="Nenhuma capacitação encontrada." />
+              ? <Empty text="Nenhuma capacitação encontrada." hint="Quando empresas publicarem workshops e eventos médicos, eles aparecem aqui." />
               : filtCourses.map(c => <CourseCard key={c.id} course={c} />)
             }
           </div>
@@ -319,21 +448,503 @@ export default function DoctorDashboard() {
           events={events}
           products={products}
           courses={courses}
-          onOpenProducts={company => { setTab('products'); setSearch(company); }}
-          onOpenEvents={company => { setTab('events'); setSearch(company); }}
+          onOpenProducts={company => openTab('products', company)}
+          onOpenEvents={company => openTab('events', company)}
         />
       )}
+
+      <DoctorActionSheet
+        open={actionSheetOpen}
+        onClose={() => setActionSheetOpen(false)}
+        onSelect={action => {
+          if (action === 'companies') openTab('connect');
+          if (action === 'representative') openTab('connect');
+          if (action === 'interest') openTab('products');
+          if (action === 'events') openTab('events');
+          if (action === 'profile') openTab('home');
+        }}
+      />
     </Layout>
+  );
+}
+
+function OpportunityMetric({ label, value, onClick }: { label: string; value: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: '0 0 142px',
+        padding: '12px 12px',
+        borderRadius: 16,
+        background: 'var(--card)',
+        border: '1px solid var(--line)',
+        cursor: 'pointer',
+        textAlign: 'left',
+        boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+      }}
+    >
+      <div style={{ fontSize: 22, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0, lineHeight: 1 }}>
+        {value}
+      </div>
+      <div style={{ marginTop: 6, fontSize: 11, color: 'var(--ink-2)', fontWeight: 560, lineHeight: 1.25 }}>
+        {label}
+      </div>
+    </button>
+  );
+}
+
+function SuggestedConnections({
+  companies,
+  events,
+  products,
+  courses,
+  onOpenCompany,
+  onOpenEvents,
+  onOpenProducts,
+  onOpenCourses,
+  onUpdateInterests,
+}: {
+  companies: CompanyMatch[];
+  events: Event[];
+  products: Product[];
+  courses: Course[];
+  onOpenCompany: (company: string) => void;
+  onOpenEvents: (company: string) => void;
+  onOpenProducts: (company: string) => void;
+  onOpenCourses: (company: string) => void;
+  onUpdateInterests: () => void;
+}) {
+  const { addLead, registerInterest, registeredEventIds, leads } = useAuth();
+  const [savedContacts, setSavedContacts] = useState<Set<string>>(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('tessy-doctor-saved-contacts') ?? '[]'));
+    } catch {
+      return new Set();
+    }
+  });
+  const [sentCompanies, setSentCompanies] = useState<Set<string>>(new Set());
+  const topCompany = companies[0];
+  const representative = companies.find(company => company.whatsapp);
+  const topEvent = events[0];
+  const topProduct = products[0];
+  const topCourse = courses[0];
+  const suggestionsAvailable = topCompany || representative || topEvent || topProduct || topCourse;
+
+  function saveContact(id: string) {
+    setSavedContacts(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      localStorage.setItem('tessy-doctor-saved-contacts', JSON.stringify([...next]));
+      return next;
+    });
+  }
+
+  async function connectCompany(company: CompanyMatch) {
+    setSentCompanies(prev => new Set(prev).add(company.id));
+    await addLead({
+      companyId: company.id,
+      companyName: company.name,
+      itemType: 'company',
+      itemName: company.name,
+      intent: 'representative_contact',
+      message: 'Médico demonstrou interesse em conexão com a empresa.',
+    });
+  }
+
+  async function interestEvent(ev: Event) {
+    if (registeredEventIds.has(ev.id) || hasLeadInterest(leads, 'event', ev.id, 'event_interest')) return;
+    await addLead({
+      companyId: ev.companyId,
+      companyName: ev.companyName,
+      itemType: 'event',
+      itemId: ev.id,
+      itemName: ev.title,
+      intent: 'event_interest',
+      message: `Médico demonstrou interesse no evento ${ev.title}.`,
+    });
+    await registerInterest(ev.id);
+  }
+
+  async function interestCourse(course: Course) {
+    if (hasLeadInterest(leads, 'course', course.id, 'course_interest')) return;
+    await addLead({
+      companyId: course.companyId,
+      companyName: course.companyName,
+      itemType: 'course',
+      itemId: course.id,
+      itemName: course.title,
+      intent: 'course_interest',
+      message: `Médico demonstrou interesse em ${course.title}.`,
+    });
+  }
+
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <SectionHeader title="Conexões sugeridas para você" />
+      {!suggestionsAvailable ? (
+        <Empty
+          text="Ainda não encontramos conexões compatíveis com seu perfil."
+          hint="Atualize seus interesses para receber sugestões melhores."
+          actionLabel="Atualizar interesses"
+          onAction={onUpdateInterests}
+        />
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {topCompany && (
+            <SuggestionCard
+              eyebrow="Empresa"
+              title={topCompany.name}
+              meta={[
+                topCompany.products.length > 0 ? `${topCompany.products.length} produtos` : '',
+                topCompany.events.length > 0 ? `${topCompany.events.length} eventos` : '',
+              ].filter(Boolean).join(' • ') || 'Perfil comercial ativo'}
+              reason="Publicou oportunidades que podem combinar com sua prática."
+              primaryLabel="Ver empresa"
+              onPrimary={() => onOpenCompany(topCompany.name)}
+              secondaryLabel={sentCompanies.has(topCompany.id) ? 'Conexão enviada' : 'Conectar'}
+              onSecondary={() => { void connectCompany(topCompany); }}
+              secondaryDone={sentCompanies.has(topCompany.id)}
+            />
+          )}
+
+          {representative && (
+            <SuggestionCard
+              eyebrow="Representante"
+              title={`Representante ${representative.name}`}
+              meta="Atendimento comercial direto"
+              reason="Contato disponível para conversas com intenção clara."
+              primaryLabel="Chamar no WhatsApp"
+              primaryHref={buildWhatsappLink(representative.whatsapp, `Olá ${representative.name}, sou médico no Tessy e gostaria de falar com um representante.`)}
+              secondaryLabel={savedContacts.has(representative.id) ? 'Contato salvo' : 'Salvar contato'}
+              onSecondary={() => saveContact(representative.id)}
+              secondaryDone={savedContacts.has(representative.id)}
+            />
+          )}
+
+          {topEvent && (
+            <SuggestionCard
+              eyebrow="Evento"
+              title={topEvent.title}
+              meta={`${eventDateLabel(topEvent)} • ${locationText(topEvent.location)}`}
+              reason={`Para médicos que buscam atualização prática em ${topEvent.category.toLowerCase()}.`}
+              primaryLabel="Ver detalhes"
+              onPrimary={() => onOpenEvents(topEvent.companyName)}
+              secondaryLabel={(registeredEventIds.has(topEvent.id) || hasLeadInterest(leads, 'event', topEvent.id, 'event_interest')) ? 'Interesse enviado' : 'Tenho interesse'}
+              onSecondary={() => { void interestEvent(topEvent); }}
+              secondaryDone={registeredEventIds.has(topEvent.id) || hasLeadInterest(leads, 'event', topEvent.id, 'event_interest')}
+            />
+          )}
+
+          {!topEvent && topCourse && (
+            <SuggestionCard
+              eyebrow="Workshop"
+              title={topCourse.title}
+              meta={`${eventDateLabel({ date: courseDisplayDate(topCourse), time: topCourse.time })} • ${locationText(topCourse.location)}`}
+              reason={`Capacitação alinhada à área ${topCourse.category}.`}
+              primaryLabel="Ver detalhes"
+              onPrimary={() => onOpenCourses(topCourse.companyName)}
+              secondaryLabel={hasLeadInterest(leads, 'course', topCourse.id, 'course_interest') ? 'Interesse enviado' : 'Tenho interesse'}
+              onSecondary={() => { void interestCourse(topCourse); }}
+              secondaryDone={hasLeadInterest(leads, 'course', topCourse.id, 'course_interest')}
+            />
+          )}
+
+          {topProduct && (
+            <SuggestionCard
+              eyebrow="Produto"
+              title={topProduct.name}
+              meta={topProduct.companyName}
+              reason={topProduct.availableFor || 'Produto recomendado para avaliação médica.'}
+              primaryLabel="Ver produtos"
+              onPrimary={() => onOpenProducts(topProduct.companyName)}
+              secondaryLabel={hasLeadInterest(leads, 'product', topProduct.id, 'sample_request') ? 'Interesse enviado' : 'Tenho interesse'}
+              onSecondary={() => {
+                void addLead({
+                  companyId: topProduct.companyId,
+                  companyName: topProduct.companyName,
+                  itemType: 'product',
+                  itemId: topProduct.id,
+                  itemName: topProduct.name,
+                  intent: 'sample_request',
+                  message: 'Médico demonstrou interesse no produto.',
+                });
+              }}
+              secondaryDone={hasLeadInterest(leads, 'product', topProduct.id, 'sample_request')}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SuggestionCard({
+  eyebrow,
+  title,
+  meta,
+  reason,
+  primaryLabel,
+  secondaryLabel,
+  primaryHref,
+  onPrimary,
+  onSecondary,
+  secondaryDone,
+}: {
+  eyebrow: string;
+  title: string;
+  meta: string;
+  reason: string;
+  primaryLabel: string;
+  secondaryLabel: string;
+  primaryHref?: string;
+  onPrimary?: () => void;
+  onSecondary?: () => void;
+  secondaryDone?: boolean;
+}) {
+  const primaryStyle = {
+    flex: 1,
+    padding: '10px 8px',
+    borderRadius: 12,
+    background: 'var(--accent-ink)',
+    color: '#fff',
+    border: 'none',
+    textDecoration: 'none',
+    fontSize: 12,
+    fontWeight: 560,
+    textAlign: 'center' as const,
+    cursor: 'pointer',
+  };
+
+  return (
+    <div style={{
+      padding: 14,
+      borderRadius: 18,
+      background: 'var(--card)',
+      border: '1px solid var(--line)',
+      boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+    }}>
+      <Mono style={{ fontSize: 9, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+        {eyebrow}
+      </Mono>
+      <div style={{ marginTop: 7, fontSize: 16, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.2 }}>
+        {title}
+      </div>
+      <div style={{ marginTop: 4, fontSize: 12, color: 'var(--muted)', lineHeight: 1.35 }}>
+        {meta}
+      </div>
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+        {reason}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        {primaryHref ? (
+          <a href={primaryHref} target="_blank" rel="noopener noreferrer" style={primaryStyle}>
+            {primaryLabel}
+          </a>
+        ) : (
+          <button type="button" onClick={onPrimary} style={primaryStyle}>
+            {primaryLabel}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onSecondary}
+          style={{
+            flex: 1,
+            padding: '10px 8px',
+            borderRadius: 12,
+            background: secondaryDone ? 'rgba(30,169,124,0.10)' : 'var(--chip)',
+            color: secondaryDone ? '#1EA97C' : 'var(--ink-2)',
+            border: `1px solid ${secondaryDone ? 'rgba(30,169,124,0.28)' : 'var(--line)'}`,
+            fontSize: 12,
+            fontWeight: 560,
+            cursor: 'pointer',
+          }}
+        >
+          {secondaryLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CommunityPulse({
+  companies,
+  events,
+  products,
+  courses,
+}: {
+  companies: CompanyMatch[];
+  events: Event[];
+  products: Product[];
+  courses: Course[];
+}) {
+  const items = [
+    companies[0] ? `Nova empresa entrou na Tessy: ${companies[0].name}.` : '',
+    companies.find(company => company.whatsapp) ? 'Representante disponível esta semana para contato direto.' : '',
+    courses[0] ? `Médicos estão demonstrando interesse em ${courses[0].category.toLowerCase()}.` : '',
+    products[0] ? `Produto em destaque para ${products[0].category.toLowerCase()}.` : '',
+    events[0] ? `Evento ${eventFormat(events[0]).toLowerCase()} disponível em ${locationText(events[0].location)}.` : '',
+  ].filter(Boolean).slice(0, 5);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <SectionHeader title="Na comunidade médica" />
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }} className="no-scrollbar">
+        {items.map(item => (
+          <div key={item} style={{
+            flex: '0 0 210px',
+            padding: 13,
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, rgba(74,168,255,0.08), rgba(255,111,77,0.06))',
+            border: '1px solid rgba(74,168,255,0.14)',
+            fontSize: 12,
+            color: 'var(--ink-2)',
+            lineHeight: 1.4,
+          }}>
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProfessionalInterests({ tags, onUpdate }: { tags: string[]; onUpdate: () => void }) {
+  return (
+    <div style={{
+      padding: 14,
+      borderRadius: 18,
+      background: 'var(--card)',
+      border: '1px solid var(--line)',
+      marginBottom: 4,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+        <div>
+          <Mono style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+            Perfil
+          </Mono>
+          <div style={{ marginTop: 6, fontSize: 16, fontWeight: 560, color: 'var(--ink)' }}>
+            Seus interesses profissionais
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onUpdate}
+          style={{
+            padding: '8px 10px',
+            borderRadius: 10,
+            border: '1px solid var(--line)',
+            background: 'var(--chip)',
+            color: 'var(--ink-2)',
+            fontSize: 12,
+            fontWeight: 560,
+            cursor: 'pointer',
+          }}
+        >
+          Atualizar interesses
+        </button>
+      </div>
+      {tags.length > 0 ? (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12 }}>
+          {tags.map(tag => <Chip key={tag} color="var(--accent)">{tag}</Chip>)}
+        </div>
+      ) : (
+        <div style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
+          Complete seu perfil para melhorar suas recomendações.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DoctorActionSheet({
+  open,
+  onClose,
+  onSelect,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSelect: (action: 'companies' | 'representative' | 'interest' | 'events' | 'profile') => void;
+}) {
+  if (!open) return null;
+  const actions: Array<{ key: 'companies' | 'representative' | 'interest' | 'events' | 'profile'; label: string }> = [
+    { key: 'companies', label: 'Buscar empresas' },
+    { key: 'representative', label: 'Encontrar representante' },
+    { key: 'interest', label: 'Publicar interesse' },
+    { key: 'events', label: 'Ver eventos próximos' },
+    { key: 'profile', label: 'Atualizar meu perfil' },
+  ];
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 60,
+      background: 'rgba(15,22,38,0.22)',
+      display: 'flex',
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+      padding: '0 12px max(12px, env(safe-area-inset-bottom))',
+    }}>
+      <button
+        type="button"
+        aria-label="Fechar ações"
+        onClick={onClose}
+        style={{ position: 'absolute', inset: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
+      />
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: 456,
+        padding: 14,
+        borderRadius: 22,
+        background: 'rgba(255,255,255,0.96)',
+        border: '1px solid var(--line)',
+        boxShadow: '0 18px 50px rgba(52,57,73,0.20)',
+      }}>
+        <div style={{ width: 44, height: 4, borderRadius: 999, background: 'rgba(52,57,73,0.16)', margin: '2px auto 12px' }} />
+        <div style={{ fontSize: 17, fontWeight: 560, color: 'var(--ink)', marginBottom: 10 }}>
+          O que você deseja fazer?
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {actions.map(action => (
+            <button
+              key={action.key}
+              type="button"
+              onClick={() => onSelect(action.key)}
+              style={{
+                padding: '13px 14px',
+                borderRadius: 14,
+                border: '1px solid var(--line)',
+                background: 'var(--card)',
+                color: 'var(--ink)',
+                fontSize: 14,
+                fontWeight: 560,
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
 function DoctorWhatsappCard() {
   const { user, updateProfile } = useAuth();
-  const [editing, setEditing] = useState(!user?.whatsapp);
+  const [editing, setEditing] = useState(false);
   const [phone, setPhone] = useState(user?.whatsapp ? fmtPhone(user.whatsapp) : '');
   const [privateOnly, setPrivateOnly] = useState(user?.whatsappConnectionOnly !== false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [showPermissions, setShowPermissions] = useState(false);
 
   async function save() {
     const normalized = normalizePhone(phone);
@@ -369,40 +980,107 @@ function DoctorWhatsappCard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
         <div>
           <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-            Perfil médico
+            Contato profissional
           </Mono>
           <div style={{ marginTop: 6, fontSize: 15, color: 'var(--ink)', fontWeight: 560 }}>
-            WhatsApp profissional
+            Seu canal de contato profissional
           </div>
-          {!editing && (
-            <div style={{ marginTop: 4, fontSize: 12, color: user?.whatsapp ? '#25D366' : 'var(--muted)', fontWeight: 560 }}>
-              {user?.whatsapp ? `${fmtPhone(user.whatsapp)} · privado` : 'WhatsApp ainda não informado.'}
-            </div>
+          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+            Empresas e representantes aprovados podem falar com você por aqui.
+          </div>
+        </div>
+      </div>
+
+      {!editing && (
+        <div style={{ marginTop: 12 }}>
+          {user?.whatsapp ? (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontSize: 18, color: 'var(--ink)', fontWeight: 560 }}>
+                  {fmtPhone(user.whatsapp)}
+                </div>
+                <Chip color="#1EA97C">Visível para empresas aprovadas</Chip>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhone(user.whatsapp ? fmtPhone(user.whatsapp) : '');
+                    setPrivateOnly(user.whatsappConnectionOnly !== false);
+                    setEditing(true);
+                  }}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: 11,
+                    border: '1px solid var(--line)',
+                    background: 'var(--chip)',
+                    color: 'var(--ink-2)',
+                    fontSize: 12,
+                    fontWeight: 560,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Editar WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPermissions(prev => !prev)}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: 11,
+                    border: '1px solid rgba(74,168,255,0.22)',
+                    background: 'rgba(74,168,255,0.08)',
+                    color: 'var(--accent)',
+                    fontSize: 12,
+                    fontWeight: 560,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Ver permissões de contato
+                </button>
+              </div>
+              {showPermissions && (
+                <div style={{
+                  marginTop: 10,
+                  padding: '10px 12px',
+                  borderRadius: 12,
+                  background: 'var(--bg)',
+                  border: '1px solid var(--line)',
+                  fontSize: 12,
+                  color: 'var(--ink-2)',
+                  lineHeight: 1.45,
+                }}>
+                  Seu WhatsApp não aparece publicamente. Empresas veem o botão de conexão e só recebem acesso após aprovação.
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
+                Cadastre seu WhatsApp profissional para receber contatos de empresas, representantes e organizadores de eventos.
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                style={{
+                  marginTop: 10,
+                  width: '100%',
+                  padding: '11px 12px',
+                  borderRadius: 12,
+                  border: 'none',
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 560,
+                  cursor: 'pointer',
+                }}
+              >
+                Cadastrar WhatsApp
+              </button>
+            </>
           )}
         </div>
-        {!editing && (
-          <button
-            type="button"
-            onClick={() => {
-              setPhone(user?.whatsapp ? fmtPhone(user.whatsapp) : '');
-              setPrivateOnly(user?.whatsappConnectionOnly !== false);
-              setEditing(true);
-            }}
-            style={{
-              padding: '8px 10px',
-              borderRadius: 10,
-              border: '1px solid var(--line)',
-              background: 'var(--chip)',
-              color: 'var(--ink-2)',
-              fontSize: 12,
-              fontWeight: 560,
-              cursor: 'pointer',
-            }}
-          >
-            Editar
-          </button>
-        )}
-      </div>
+      )}
 
       {editing && (
         <div style={{ marginTop: 12 }}>
@@ -559,15 +1237,6 @@ function ConnectionRequests({ leads }: { leads: Lead[] }) {
 }
 
 /* ─── Connect view ─── */
-type CompanyMatch = {
-  id: string;
-  name: string;
-  whatsapp?: string;
-  products: Product[];
-  events: Event[];
-  courses: Course[];
-};
-
 function ConnectView({
   events,
   products,
@@ -591,21 +1260,7 @@ function ConnectView({
   const [sentLeadIds, setSentLeadIds] = useState<Set<string>>(new Set());
   const { addLead } = useAuth();
 
-  const companyMap = new Map<string, CompanyMatch>();
-  const ensureCompany = (id: string, name: string, whatsapp?: string) => {
-    const ex = companyMap.get(id) ?? { id, name, whatsapp, products: [], events: [], courses: [] };
-    companyMap.set(id, { ...ex, whatsapp: ex.whatsapp ?? whatsapp });
-    return companyMap.get(id)!;
-  };
-
-  events.forEach(e => ensureCompany(e.companyId, e.companyName, e.companyWhatsapp).events.push(e));
-  products.forEach(p => ensureCompany(p.companyId, p.companyName, p.companyWhatsapp).products.push(p));
-  courses.forEach(c => ensureCompany(c.companyId, c.companyName, c.companyWhatsapp).courses.push(c));
-
-  const companies = [...companyMap.values()].sort((a, b) =>
-    (b.products.length * 3 + b.events.length * 2 + b.courses.length) -
-    (a.products.length * 3 + a.events.length * 2 + a.courses.length),
-  );
+  const companies = buildCompanyMatches(events, products, courses);
 
   function toggleSaved(id: string) {
     setSaved(prev => {
@@ -637,7 +1292,12 @@ function ConnectView({
         </p>
       </div>
 
-      {companies.length === 0 && <Empty text="Nenhuma empresa publicada ainda." />}
+      {companies.length === 0 && (
+        <Empty
+          text="Nenhuma conexão sugerida por enquanto."
+          hint="Complete seu perfil para melhorar suas recomendações."
+        />
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {companies.map(co => {
@@ -707,7 +1367,7 @@ function ConnectView({
                   <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.45 }}>
                     {topProduct
                       ? topProduct.availableFor || topProduct.description
-                      : `${topEvent?.category} · ${topEvent?.location} · ${topEvent?.time}`}
+                      : `${topEvent?.category || 'Evento'} · ${locationText(topEvent?.location)} · ${topEvent ? eventDateLabel(topEvent) : 'Data a confirmar'}`}
                   </div>
                 </div>
               )}
@@ -745,7 +1405,7 @@ function ConnectView({
                   border: `1px solid ${leadSent ? 'rgba(30,169,124,0.28)' : 'rgba(74,168,255,0.22)'}`,
                   fontWeight: 560, fontSize: 13, cursor: 'pointer',
                 }}>
-                  {leadSent ? 'Interesse enviado' : 'Receber amostra'}
+                  {leadSent ? 'Interesse enviado' : 'Tenho interesse'}
                 </button>
                 <button onClick={() => onOpenProducts(co.name)} disabled={co.products.length === 0} style={{
                   padding: '11px 8px', borderRadius: 12,
@@ -803,12 +1463,13 @@ function WebsiteLink({ url }: { url?: string }) {
 
 /* ─── EventCard (full banner) ─── */
 function EventCard({ ev }: { ev: Event }) {
-  const { registerInterest, cancelEventInterest, registeredEventIds, addLead } = useAuth();
+  const { registerInterest, registeredEventIds, addLead, leads } = useAuth();
   const [tint1, tint2] = categoryTint(ev.category);
-  const registered = registeredEventIds.has(ev.id);
+  const registered = registeredEventIds.has(ev.id) || hasLeadInterest(leads, 'event', ev.id, 'event_interest');
   const effectiveRegisteredCount = registered ? Math.max(ev.registeredCount, 1) : ev.registeredCount;
-  const remainingSeats = Math.max(0, ev.maxParticipants - effectiveRegisteredCount);
-  const pct = Math.min(100, Math.round((effectiveRegisteredCount / ev.maxParticipants) * 100));
+  const totalSeats = ev.maxParticipants || 0;
+  const remainingSeats = totalSeats > 0 ? Math.max(0, totalSeats - effectiveRegisteredCount) : 0;
+  const pct = totalSeats > 0 ? Math.min(100, Math.round((effectiveRegisteredCount / totalSeats) * 100)) : 0;
   const full = pct >= 100;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -820,20 +1481,17 @@ function EventCard({ ev }: { ev: Event }) {
     setBusy(true);
     setErr('');
     try {
-      if (registered) {
-        await cancelEventInterest(ev.id);
-      } else {
-        await addLead({
-          companyId: ev.companyId,
-          companyName: ev.companyName,
-          itemType: 'event',
-          itemId: ev.id,
-          itemName: ev.title,
-          intent: 'event_interest',
-          message: `Médico demonstrou interesse no evento ${ev.title}.`,
-        });
-        await registerInterest(ev.id);
-      }
+      if (registered) return;
+      await addLead({
+        companyId: ev.companyId,
+        companyName: ev.companyName,
+        itemType: 'event',
+        itemId: ev.id,
+        itemName: ev.title,
+        intent: 'event_interest',
+        message: `Médico demonstrou interesse no evento ${ev.title}.`,
+      });
+      await registerInterest(ev.id);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro ao atualizar participação.');
     } finally {
@@ -841,22 +1499,25 @@ function EventCard({ ev }: { ev: Event }) {
     }
   }
 
-  const btnLabel = busy ? '...' : registered ? 'Liberar vaga' : full ? 'Esgotado' : 'Participar';
-  const btnBg = full && !registered ? 'var(--chip)' : registered ? 'rgba(232,69,69,0.08)' : 'var(--accent)';
-  const btnColor = full && !registered ? 'var(--muted)' : registered ? 'var(--danger)' : '#fff';
-  const btnBorder = registered ? '1px solid rgba(232,69,69,0.24)' : 'none';
-  const btnCursor = (full && !registered) || busy ? 'not-allowed' : 'pointer';
+  const btnLabel = busy ? '...' : registered ? 'Interesse enviado' : full ? 'Esgotado' : 'Tenho interesse';
+  const btnBg = full && !registered ? 'var(--chip)' : registered ? 'rgba(30,169,124,0.10)' : 'var(--accent)';
+  const btnColor = full && !registered ? 'var(--muted)' : registered ? '#1EA97C' : '#fff';
+  const btnBorder = registered ? '1px solid rgba(30,169,124,0.28)' : 'none';
+  const btnCursor = (full && !registered) || busy || registered ? 'not-allowed' : 'pointer';
   const dateLabel = eventDateLabel(ev);
   const formatLabel = eventFormat(ev);
   const countdown = eventCountdown(ev);
   const eventStatus = full ? 'Inscrições encerradas' : 'Inscrições abertas';
 
   return (
-    <BannerCard tint1={tint1} tint2={tint2} month={monthShort(ev.date)} day={dayNum(ev.date)} format={ev.category}>
+    <BannerCard tint1={tint1} tint2={tint2} month={monthShort(ev.date)} day={dayNum(ev.date)} format={ev.category || 'Evento'}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <CompanyMark code={code} tint={companyTint(ev.companyName)} size={22} radius={6} />
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>{ev.companyName}</span>
         <VerifiedDot size={11} />
+      </div>
+      <div style={{ marginBottom: 6, fontSize: 12, color: 'var(--accent)', fontWeight: 560, lineHeight: 1.35 }}>
+        Para médicos que buscam atualização prática em {(ev.category || 'saúde').toLowerCase()}.
       </div>
       <div style={{ fontSize: 16, fontWeight: 560, letterSpacing: 0, lineHeight: 1.25, color: 'var(--ink)' }}>{ev.title}</div>
       {ev.description && (
@@ -870,7 +1531,7 @@ function EventCard({ ev }: { ev: Event }) {
           {dateLabel}
         </Mono>
         <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-          {ev.location} • {formatLabel}
+          {locationText(ev.location)} • {formatLabel}
         </div>
         {countdown && (
           <div style={{ fontSize: 12, color: full ? 'var(--danger)' : 'var(--accent)', fontWeight: 560 }}>
@@ -887,7 +1548,7 @@ function EventCard({ ev }: { ev: Event }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Vagas</Mono>
           <Mono style={{ fontSize: 10, color: full ? 'var(--danger)' : 'var(--muted)' }}>
-            {remainingSeats} {remainingSeats === 1 ? 'vaga restante' : 'vagas restantes'}
+            {eventSeatText(totalSeats, remainingSeats)}
           </Mono>
         </div>
         <div style={{ height: 4, borderRadius: 999, background: 'var(--line)', overflow: 'hidden' }}>
@@ -907,7 +1568,7 @@ function EventCard({ ev }: { ev: Event }) {
       <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
         <button
           onClick={handleInterest}
-          disabled={(full && !registered) || busy}
+          disabled={(full && !registered) || busy || registered}
           style={{
             flex: 1, padding: '11px 0', borderRadius: 12, border: btnBorder,
             background: btnBg, color: btnColor,
@@ -925,7 +1586,7 @@ function EventCard({ ev }: { ev: Event }) {
             border: '1px solid rgba(37,211,102,0.3)',
             fontSize: 13, fontWeight: 560,
           }}>
-            <WaIcon size={14} /> WhatsApp
+            <WaIcon size={14} /> Falar com organizador
           </a>
         )}
       </div>
@@ -935,11 +1596,12 @@ function EventCard({ ev }: { ev: Event }) {
 
 /* ─── EventRow (compact) ─── */
 function EventRow({ ev }: { ev: Event }) {
-  const { registeredEventIds } = useAuth();
+  const { registeredEventIds, leads } = useAuth();
   const [tint1, tint2] = categoryTint(ev.category);
-  const registered = registeredEventIds.has(ev.id);
+  const registered = registeredEventIds.has(ev.id) || hasLeadInterest(leads, 'event', ev.id, 'event_interest');
   const effectiveRegisteredCount = registered ? Math.max(ev.registeredCount, 1) : ev.registeredCount;
-  const remainingSeats = Math.max(0, ev.maxParticipants - effectiveRegisteredCount);
+  const totalSeats = ev.maxParticipants || 0;
+  const remainingSeats = totalSeats > 0 ? Math.max(0, totalSeats - effectiveRegisteredCount) : 0;
   const countdown = eventCountdown(ev);
   return (
     <RowCard>
@@ -960,13 +1622,13 @@ function EventRow({ ev }: { ev: Event }) {
           {ev.companyName} · {eventDateLabel(ev)}
         </div>
         <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
-          {ev.location} • {eventFormat(ev)}
+          {locationText(ev.location)} • {eventFormat(ev)}
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
           <Chip color="var(--accent)">{ev.category}</Chip>
           {countdown && <Chip color={countdown === 'Evento encerrado' ? 'var(--danger)' : '#1EA97C'}>{countdown}</Chip>}
           <Mono style={{ fontSize: 10, color: 'var(--muted)' }}>
-            {remainingSeats} {remainingSeats === 1 ? 'vaga restante' : 'vagas restantes'}
+            {eventSeatText(totalSeats, remainingSeats)}
           </Mono>
         </div>
       </div>
@@ -976,7 +1638,7 @@ function EventRow({ ev }: { ev: Event }) {
 
 /* ─── ProductCard ─── */
 function ProductCard({ product }: { product: Product }) {
-  const { addLead } = useAuth();
+  const { addLead, leads } = useAuth();
   const [leadSent, setLeadSent] = useState(false);
   const [tint1] = categoryTint(product.category);
   const code = product.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
@@ -989,6 +1651,7 @@ function ProductCard({ product }: { product: Product }) {
   const repTarget = waLink || product.website || '';
   const creatorTarget = creatorLink || product.website || '';
   const canContactRep = !!repTarget;
+  const interestSent = leadSent || hasLeadInterest(leads, 'product', product.id, 'sample_request');
 
   async function sendProductLead(intent: 'representative_contact' | 'sample_request' | 'instagram_partnership') {
     setLeadSent(true);
@@ -1091,7 +1754,7 @@ function ProductCard({ product }: { product: Product }) {
               border: '1px solid rgba(74,168,255,0.22)',
               fontSize: 13, fontWeight: 560, cursor: 'pointer',
             }}>
-            Pedir amostra
+            {interestSent ? 'Interesse enviado' : 'Tenho interesse'}
           </button>
           {creatorTarget && (
             <a href={creatorTarget} target="_blank" rel="noopener noreferrer" onClick={() => { void sendProductLead('instagram_partnership'); }} style={{
@@ -1112,19 +1775,35 @@ function ProductCard({ product }: { product: Product }) {
 
 /* ─── CourseCard (full) ─── */
 function CourseCard({ course }: { course: Course }) {
-  const { addLead } = useAuth();
+  const { addLead, leads } = useAuth();
   const [tint1, tint2] = categoryTint(course.category);
+  const [sent, setSent] = useState(false);
   const code = course.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const waLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Vi "${course.title}" no Tessy e gostaria de falar com o representante.`);
   const interestTarget = course.website || '';
-  const canShowInterest = !!interestTarget;
   const displayDate = courseDisplayDate(course);
-  const schedule = { date: displayDate, time: course.time || '19:00' };
-  const dateLabel = displayDate ? eventDateLabel(schedule) : 'Data a definir';
+  const schedule = { date: displayDate, time: course.time };
+  const dateLabel = displayDate ? eventDateLabel(schedule) : 'Data a confirmar';
   const countdown = displayDate ? eventCountdown(schedule) : '';
-  const placeLabel = course.location?.trim() || (course.modality === 'online' ? 'Online' : 'Local a definir');
+  const placeLabel = course.location?.trim() || (course.modality === 'online' ? 'Online' : 'Local a confirmar');
   const formatLabel = modalityText(course.modality);
   const bannerLabel = course.category === 'Outros' ? 'CAPACITAÇÃO' : course.category;
+  const interestSent = sent || hasLeadInterest(leads, 'course', course.id, 'course_interest');
+
+  async function sendCourseInterest() {
+    if (interestSent) return;
+    setSent(true);
+    await addLead({
+      companyId: course.companyId,
+      companyName: course.companyName,
+      itemType: 'course',
+      itemId: course.id,
+      itemName: course.title,
+      intent: 'course_interest',
+      message: `Médico demonstrou interesse em ${course.title}.`,
+    });
+    if (interestTarget) window.open(interestTarget, '_blank', 'noopener,noreferrer');
+  }
 
   return (
     <BannerCard tint1={tint1} tint2={tint2} month={displayDate ? monthShort(displayDate) : undefined} day={displayDate ? dayNum(displayDate) : undefined} format={bannerLabel}>
@@ -1154,8 +1833,8 @@ function CourseCard({ course }: { course: Course }) {
       </div>
       <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {[
-          { label: 'INSTRUTOR', val: course.instructor },
-          { label: 'DURAÇÃO', val: course.duration },
+          { label: 'INSTRUTOR', val: course.instructor || 'A confirmar' },
+          { label: 'DURAÇÃO', val: course.duration || 'A confirmar' },
           { label: 'PREÇO', val: course.price || 'Sob consulta' },
         ].map(r => (
           <div key={r.label} style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
@@ -1169,31 +1848,20 @@ function CourseCard({ course }: { course: Course }) {
       <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
         <button
           type="button"
-          disabled={!canShowInterest}
+          disabled={interestSent}
           onClick={() => {
-            if (!canShowInterest) return;
-            void addLead({
-              companyId: course.companyId,
-              companyName: course.companyName,
-              itemType: 'course',
-              itemId: course.id,
-              itemName: course.title,
-              intent: 'course_interest',
-              message: `Médico demonstrou interesse em ${course.title}.`,
-            });
-            window.open(interestTarget, '_blank', 'noopener,noreferrer');
+            void sendCourseInterest();
           }}
           style={{
             flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
-            background: canShowInterest
-              ? 'linear-gradient(135deg, var(--accent-ink) 0%, var(--accent) 100%)'
-              : 'var(--chip)',
-            color: canShowInterest ? '#fff' : 'var(--muted)',
+            background: interestSent
+              ? 'rgba(30,169,124,0.10)'
+              : 'linear-gradient(135deg, var(--accent-ink) 0%, var(--accent) 100%)',
+            color: interestSent ? '#1EA97C' : '#fff',
             fontSize: 13, fontWeight: 560,
-            cursor: canShowInterest ? 'pointer' : 'not-allowed',
-            opacity: canShowInterest ? 1 : 0.7,
+            cursor: interestSent ? 'not-allowed' : 'pointer',
           }}>
-          {canShowInterest ? 'Ir para o site' : 'Site não informado'}
+          {interestSent ? 'Interesse enviado' : 'Tenho interesse'}
         </button>
         {waLink && (
           <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
@@ -1214,9 +1882,9 @@ function CourseCard({ course }: { course: Course }) {
 function CourseRow({ course }: { course: Course }) {
   const [tint1, tint2] = categoryTint(course.category);
   const displayDate = courseDisplayDate(course);
-  const schedule = { date: displayDate, time: course.time || '19:00' };
+  const schedule = { date: displayDate, time: course.time };
   const countdown = displayDate ? eventCountdown(schedule) : '';
-  const placeLabel = course.location?.trim() || (course.modality === 'online' ? 'Online' : 'Local a definir');
+  const placeLabel = course.location?.trim() || (course.modality === 'online' ? 'Online' : 'Local a confirmar');
   return (
     <RowCard>
       <div style={{
@@ -1235,7 +1903,7 @@ function CourseRow({ course }: { course: Course }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.2, color: 'var(--ink)' }}>{course.title}</div>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>
-          {eventDateLabel(schedule)} · {course.instructor}
+          {displayDate ? eventDateLabel(schedule) : 'Data a confirmar'} · {course.instructor || 'Instrutor a confirmar'}
         </div>
         <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
           {placeLabel} • {modalityText(course.modality)}
@@ -1251,19 +1919,6 @@ function CourseRow({ course }: { course: Course }) {
 }
 
 /* ─── Shared ─── */
-function StatChip({ label, value, onClick }: { label: string; value: number; onClick: () => void }) {
-  return (
-    <button onClick={onClick} style={{
-      padding: '9px 14px', borderRadius: 12,
-      background: 'var(--card)', border: '1px solid var(--line)',
-      cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 6,
-    }}>
-      <span style={{ fontSize: 20, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>{value}</span>
-      <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 500 }}>{label}</span>
-    </button>
-  );
-}
-
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -1321,14 +1976,48 @@ function FilterChips({ tabs, active, onChange }: {
   );
 }
 
-function Empty({ text }: { text: string }) {
+function Empty({
+  text,
+  hint,
+  actionLabel,
+  onAction,
+}: {
+  text: string;
+  hint?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
   return (
     <div style={{
-      padding: '40px 20px', textAlign: 'center',
+      padding: '26px 18px', textAlign: 'center',
       background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)',
       color: 'var(--muted)', fontSize: 14,
     }}>
-      {text}
+      <div style={{ color: 'var(--ink)', fontWeight: 560 }}>{text}</div>
+      {hint && (
+        <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
+          {hint}
+        </div>
+      )}
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          style={{
+            marginTop: 12,
+            padding: '10px 14px',
+            borderRadius: 12,
+            border: 'none',
+            background: 'var(--accent)',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 560,
+            cursor: 'pointer',
+          }}
+        >
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }
