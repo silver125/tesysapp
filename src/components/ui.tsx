@@ -129,14 +129,14 @@ export function BannerCard({
 }) {
   return (
     <div style={{
-      background: 'var(--card)', borderRadius: 20,
+      background: 'var(--card)', borderRadius: 18,
       border: '1px solid var(--line)', overflow: 'hidden',
     }}>
       {/* banner */}
       <div style={{
-        height: 120,
+        height: 78,
         background: `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
-        position: 'relative', padding: 14,
+        position: 'relative', padding: 11,
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
       }}>
         {/* hatching overlay */}
@@ -148,17 +148,17 @@ export function BannerCard({
         {format && (
           <div style={{
             position: 'relative',
-            padding: '5px 9px', borderRadius: 6,
+            padding: '5px 8px', borderRadius: 6,
             background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(6px)',
             color: '#fff', fontFamily: 'var(--font-mono)',
-            fontSize: 10, fontWeight: 560, letterSpacing: '0.06em',
+            fontSize: 9.5, fontWeight: 560, letterSpacing: '0.06em',
           }}>{format}</div>
         )}
         {/* date badge */}
         {month && day && (
           <div style={{
             position: 'relative',
-            width: 44, height: 44, borderRadius: 12,
+            width: 42, height: 42, borderRadius: 11,
             background: 'rgba(255,255,255,0.95)',
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', color: '#0F1626',
@@ -168,7 +168,7 @@ export function BannerCard({
           </div>
         )}
       </div>
-      <div style={{ padding: '14px 16px 16px' }}>{children}</div>
+      <div style={{ padding: '12px 14px 14px' }}>{children}</div>
     </div>
   );
 }

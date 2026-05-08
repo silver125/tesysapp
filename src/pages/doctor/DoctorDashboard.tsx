@@ -229,7 +229,6 @@ export default function DoctorDashboard() {
   const upcomingEvents = events.filter(isUpcomingEvent);
   const companyMatches = buildCompanyMatches(events, products, courses);
   const recommendedProducts = products.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
-  const representativeCompanies = companyMatches.filter(company => company.whatsapp);
   const interestTags = professionalInterestTags(user, products, courses, events);
   const filtEvents = events.filter(e => {
     const matchQ = !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q);
@@ -246,10 +245,6 @@ export default function DoctorDashboard() {
     return matchQ && matchCat;
   });
 
-  const today = new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
-    .replace('.', '').toUpperCase();
-
-  const firstNameGreet = user?.name?.split(' ')[0] ?? 'Doutor';
   const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
 
   function openTab(k: Tab, nextSearch = '') {
@@ -273,27 +268,25 @@ export default function DoctorDashboard() {
       {tab === 'home' && (
         <div>
           {/* Greeting */}
-          <div style={{ marginBottom: 24 }}>
-            <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-              {today}
-            </Mono>
-            <h1 style={{ marginTop: 10, fontSize: 30, fontWeight: 560, letterSpacing: 0, lineHeight: 1.1 }}>
-              Olá, {firstNameGreet}<span style={{ color: 'var(--accent)' }}>.</span>
+          <div style={{ marginBottom: 14 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, lineHeight: 1.05 }}>
+              Olá<span style={{ color: 'var(--accent)' }}>,</span>
             </h1>
-            <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 6 }}>
-              Você tem novas oportunidades para sua prática médica.
+            <p style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.35 }}>
+              Você tem novas oportunidades na Tessy.
             </p>
           </div>
 
           {/* Opportunity shortcuts */}
-          <div className="no-scrollbar" style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 2 }}>
+          <div className="no-scrollbar" style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto', paddingBottom: 2 }}>
+            <OpportunityMetric label="Empresas sugeridas" value={companyMatches.length} onClick={() => openTab('connect')} />
+            <OpportunityMetric label="Solicitações pendentes" value={pendingConnections.length} onClick={() => openTab('connect')} />
             <OpportunityMetric label="Eventos próximos" value={upcomingEvents.length} onClick={() => openTab('events')} />
-            <OpportunityMetric label="Empresas compatíveis" value={companyMatches.length} onClick={() => openTab('connect')} />
-            <OpportunityMetric label="Representantes disponíveis" value={representativeCompanies.length} onClick={() => openTab('connect')} />
-            <OpportunityMetric label="Produtos recomendados" value={recommendedProducts.length} onClick={() => openTab('products')} />
           </div>
 
-          <DoctorWhatsappCard />
+          {pendingConnections.length > 0 && (
+            <ConnectionRequests leads={pendingConnections} onViewCompany={company => openTab('connect', company)} />
+          )}
 
           <SuggestedConnections
             companies={companyMatches}
@@ -307,15 +300,11 @@ export default function DoctorDashboard() {
             onUpdateInterests={() => openTab('connect')}
           />
 
-          {pendingConnections.length > 0 && (
-            <ConnectionRequests leads={pendingConnections} />
-          )}
-
           {/* Featured event */}
           {events.length > 0 ? (
-            <div style={{ marginBottom: 22 }}>
+            <div style={{ marginBottom: 16 }}>
               <SectionHeader title="Oportunidades em destaque" onSeeAll={() => openTab('events')} />
-              <EventCard ev={events[0]} />
+              <CompactEventOpportunity ev={events[0]} onDetails={() => openTab('events', events[0].title)} />
             </div>
           ) : (
             <Empty
@@ -324,11 +313,13 @@ export default function DoctorDashboard() {
             />
           )}
 
+          <DoctorWhatsappCard />
+
           {/* For you — compact rows */}
           {events.length > 1 && (
-            <div style={{ marginBottom: 22 }}>
+            <div style={{ marginBottom: 16 }}>
               <SectionHeader title="Mais eventos" onSeeAll={() => openTab('events')} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {events.slice(1, 4).map(e => <EventRow key={e.id} ev={e} />)}
               </div>
             </div>
@@ -336,9 +327,9 @@ export default function DoctorDashboard() {
 
           {/* Courses highlight */}
           {courses.length > 0 && (
-            <div style={{ marginBottom: 22 }}>
+            <div style={{ marginBottom: 16 }}>
               <SectionHeader title="Eventos e capacitações médicas" onSeeAll={() => openTab('courses')} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {courses.slice(0, 2).map(c => <CourseRow key={c.id} course={c} />)}
               </div>
             </div>
@@ -474,9 +465,10 @@ function OpportunityMetric({ label, value, onClick }: { label: string; value: nu
       type="button"
       onClick={onClick}
       style={{
-        flex: '0 0 142px',
-        padding: '12px 12px',
-        borderRadius: 16,
+        flex: '0 0 118px',
+        minHeight: 74,
+        padding: '10px 10px',
+        borderRadius: 14,
         background: 'var(--card)',
         border: '1px solid var(--line)',
         cursor: 'pointer',
@@ -484,10 +476,10 @@ function OpportunityMetric({ label, value, onClick }: { label: string; value: nu
         boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
       }}
     >
-      <div style={{ fontSize: 22, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0, lineHeight: 1 }}>
+      <div style={{ fontSize: 20, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0, lineHeight: 1 }}>
         {value}
       </div>
-      <div style={{ marginTop: 6, fontSize: 11, color: 'var(--ink-2)', fontWeight: 560, lineHeight: 1.25 }}>
+      <div style={{ marginTop: 5, fontSize: 10.5, color: 'var(--ink-2)', fontWeight: 560, lineHeight: 1.2 }}>
         {label}
       </div>
     </button>
@@ -581,7 +573,7 @@ function SuggestedConnections({
   }
 
   return (
-    <div style={{ marginBottom: 22 }}>
+    <div style={{ marginBottom: 16 }}>
       <SectionHeader title="Conexões sugeridas para você" />
       {!suggestionsAvailable ? (
         <Empty
@@ -591,7 +583,7 @@ function SuggestedConnections({
           onAction={onUpdateInterests}
         />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
           {topCompany && (
             <SuggestionCard
               eyebrow="Empresa"
@@ -704,40 +696,62 @@ function SuggestionCard({
   secondaryDone?: boolean;
 }) {
   const primaryStyle = {
-    flex: 1,
-    padding: '10px 8px',
-    borderRadius: 12,
+    flex: '0 0 auto',
+    minWidth: 86,
+    minHeight: 38,
+    padding: '8px 10px',
+    borderRadius: 10,
     background: 'var(--accent-ink)',
     color: '#fff',
     border: 'none',
     textDecoration: 'none',
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: 560,
     textAlign: 'center' as const,
     cursor: 'pointer',
+    boxSizing: 'border-box' as const,
   };
 
   return (
     <div style={{
-      padding: 14,
-      borderRadius: 18,
+      padding: 11,
+      borderRadius: 14,
       background: 'var(--card)',
       border: '1px solid var(--line)',
       boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
     }}>
-      <Mono style={{ fontSize: 9, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-        {eyebrow}
-      </Mono>
-      <div style={{ marginTop: 7, fontSize: 16, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.2 }}>
-        {title}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{
+          width: 34,
+          height: 34,
+          borderRadius: 11,
+          flexShrink: 0,
+          background: 'rgba(74,168,255,0.10)',
+          color: 'var(--accent)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 12,
+          fontWeight: 560,
+        }}>
+          {eyebrow.slice(0, 1)}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Mono style={{ fontSize: 8.5, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+            {eyebrow}
+          </Mono>
+          <div style={{ marginTop: 4, fontSize: 14, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.18 }}>
+            {title}
+          </div>
+          <div style={{ marginTop: 3, fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.28 }}>
+            {meta}
+          </div>
+          <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.32 }}>
+            {reason}
+          </div>
+        </div>
       </div>
-      <div style={{ marginTop: 4, fontSize: 12, color: 'var(--muted)', lineHeight: 1.35 }}>
-        {meta}
-      </div>
-      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-        {reason}
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+      <div style={{ display: 'flex', gap: 7, marginTop: 10 }}>
         {primaryHref ? (
           <a href={primaryHref} target="_blank" rel="noopener noreferrer" style={primaryStyle}>
             {primaryLabel}
@@ -752,12 +766,13 @@ function SuggestionCard({
           onClick={onSecondary}
           style={{
             flex: 1,
-            padding: '10px 8px',
-            borderRadius: 12,
+            minHeight: 38,
+            padding: '8px 8px',
+            borderRadius: 10,
             background: secondaryDone ? 'rgba(30,169,124,0.10)' : 'var(--chip)',
             color: secondaryDone ? '#1EA97C' : 'var(--ink-2)',
             border: `1px solid ${secondaryDone ? 'rgba(30,169,124,0.28)' : 'var(--line)'}`,
-            fontSize: 12,
+            fontSize: 11.5,
             fontWeight: 560,
             cursor: 'pointer',
           }}
@@ -970,38 +985,38 @@ function DoctorWhatsappCard() {
 
   return (
     <div style={{
-      marginBottom: 20,
-      padding: 14,
-      borderRadius: 16,
+      marginBottom: 16,
+      padding: 11,
+      borderRadius: 14,
       background: 'var(--card)',
       border: '1px solid var(--line)',
       boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
         <div>
-          <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+          <Mono style={{ fontSize: 8.5, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Contato profissional
           </Mono>
-          <div style={{ marginTop: 6, fontSize: 15, color: 'var(--ink)', fontWeight: 560 }}>
+          <div style={{ marginTop: 5, fontSize: 14, color: 'var(--ink)', fontWeight: 560 }}>
             Seu canal de contato profissional
           </div>
-          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+          <div style={{ marginTop: 3, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
             Empresas e representantes aprovados podem falar com você por aqui.
           </div>
         </div>
       </div>
 
       {!editing && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 10 }}>
           {user?.whatsapp ? (
             <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontSize: 18, color: 'var(--ink)', fontWeight: 560 }}>
+                <div style={{ fontSize: 15, color: 'var(--ink)', fontWeight: 560 }}>
                   {fmtPhone(user.whatsapp)}
                 </div>
                 <Chip color="#1EA97C">Visível para empresas aprovadas</Chip>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 10 }}>
                 <button
                   type="button"
                   onClick={() => {
@@ -1010,8 +1025,9 @@ function DoctorWhatsappCard() {
                     setEditing(true);
                   }}
                   style={{
-                    padding: '10px 8px',
-                    borderRadius: 11,
+                    minHeight: 40,
+                    padding: '8px 8px',
+                    borderRadius: 10,
                     border: '1px solid var(--line)',
                     background: 'var(--chip)',
                     color: 'var(--ink-2)',
@@ -1026,8 +1042,9 @@ function DoctorWhatsappCard() {
                   type="button"
                   onClick={() => setShowPermissions(prev => !prev)}
                   style={{
-                    padding: '10px 8px',
-                    borderRadius: 11,
+                    minHeight: 40,
+                    padding: '8px 8px',
+                    borderRadius: 10,
                     border: '1px solid rgba(74,168,255,0.22)',
                     background: 'rgba(74,168,255,0.08)',
                     color: 'var(--accent)',
@@ -1042,13 +1059,13 @@ function DoctorWhatsappCard() {
               {showPermissions && (
                 <div style={{
                   marginTop: 10,
-                  padding: '10px 12px',
+                  padding: '9px 10px',
                   borderRadius: 12,
                   background: 'var(--bg)',
                   border: '1px solid var(--line)',
-                  fontSize: 12,
+                  fontSize: 11.5,
                   color: 'var(--ink-2)',
-                  lineHeight: 1.45,
+                  lineHeight: 1.35,
                 }}>
                   Seu WhatsApp não aparece publicamente. Empresas veem o botão de conexão e só recebem acesso após aprovação.
                 </div>
@@ -1056,7 +1073,7 @@ function DoctorWhatsappCard() {
             </>
           ) : (
             <>
-              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
+              <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.35 }}>
                 Cadastre seu WhatsApp profissional para receber contatos de empresas, representantes e organizadores de eventos.
               </div>
               <button
@@ -1065,12 +1082,13 @@ function DoctorWhatsappCard() {
                 style={{
                   marginTop: 10,
                   width: '100%',
-                  padding: '11px 12px',
-                  borderRadius: 12,
+                  minHeight: 40,
+                  padding: '8px 12px',
+                  borderRadius: 10,
                   border: 'none',
                   background: 'var(--accent)',
                   color: '#fff',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 560,
                   cursor: 'pointer',
                 }}
@@ -1083,7 +1101,7 @@ function DoctorWhatsappCard() {
       )}
 
       {editing && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 10 }}>
           <div style={{ position: 'relative' }}>
             <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#25D366', display: 'flex' }}>
               <WaIcon size={15} />
@@ -1096,7 +1114,7 @@ function DoctorWhatsappCard() {
               placeholder="(11) 99999-9999"
               style={{
                 width: '100%',
-                padding: '11px 12px 11px 36px',
+                padding: '10px 12px 10px 36px',
                 borderRadius: 10,
                 background: 'var(--bg)',
                 border: '1.5px solid var(--line)',
@@ -1107,10 +1125,10 @@ function DoctorWhatsappCard() {
               }}
             />
           </div>
-          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
+          <div style={{ marginTop: 7, fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.35 }}>
             Use um número que possa receber contatos comerciais, convites, eventos e oportunidades da Tessy.
           </div>
-          <label style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>
+          <label style={{ marginTop: 9, display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
             <input
               type="checkbox"
               checked={privateOnly}
@@ -1127,7 +1145,8 @@ function DoctorWhatsappCard() {
                 onClick={() => setEditing(false)}
                 style={{
                   flex: 1,
-                  padding: '10px',
+                  minHeight: 40,
+                  padding: '8px',
                   borderRadius: 10,
                   border: '1px solid var(--line)',
                   background: 'var(--chip)',
@@ -1146,7 +1165,8 @@ function DoctorWhatsappCard() {
               onClick={() => { void save(); }}
               style={{
                 flex: 2,
-                padding: '10px',
+                minHeight: 40,
+                padding: '8px',
                 borderRadius: 10,
                 border: 'none',
                 background: 'var(--accent)',
@@ -1166,7 +1186,7 @@ function DoctorWhatsappCard() {
   );
 }
 
-function ConnectionRequests({ leads }: { leads: Lead[] }) {
+function ConnectionRequests({ leads, onViewCompany }: { leads: Lead[]; onViewCompany: (company: string) => void }) {
   const { user, approveConnection } = useAuth();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -1188,46 +1208,71 @@ function ConnectionRequests({ leads }: { leads: Lead[] }) {
   }
 
   return (
-    <div style={{ marginBottom: 22 }}>
+    <div style={{ marginBottom: 16 }}>
       <SectionHeader title="Solicitações de conexão" />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
         {leads.slice(0, 3).map(lead => (
           <div key={lead.id} style={{
-            padding: 14,
-            borderRadius: 16,
+            padding: 11,
+            borderRadius: 14,
             background: 'linear-gradient(135deg, rgba(74,168,255,0.10), rgba(255,111,77,0.08))',
             border: '1px solid rgba(74,168,255,0.16)',
           }}>
-            <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 560 }}>
-              {lead.companyName}
-            </div>
-            <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>
-              Solicitou conexão pelo interesse em <b>{lead.itemName}</b>.
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.15 }}>
+                  {lead.companyName}
+                </div>
+                <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.32 }}>
+                  Quer falar sobre <b>{lead.itemName}</b>.
+                </div>
+              </div>
+              <Chip color="var(--accent)">Pendente</Chip>
             </div>
             {!user?.whatsapp && (
               <div style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>
                 WhatsApp ainda não informado.
               </div>
             )}
-            <button
-              type="button"
-              disabled={!user?.whatsapp || busyId === lead.id}
-              onClick={() => { void approve(lead.id); }}
-              style={{
-                marginTop: 10,
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: 11,
-                border: 'none',
-                background: user?.whatsapp ? '#25D366' : 'var(--chip)',
-                color: user?.whatsapp ? '#fff' : 'var(--muted)',
-                fontSize: 13,
-                fontWeight: 560,
-                cursor: user?.whatsapp && busyId !== lead.id ? 'pointer' : 'not-allowed',
-              }}
-            >
-              {busyId === lead.id ? 'Aprovando...' : 'Aprovar conexão'}
-            </button>
+            <div style={{ display: 'flex', gap: 7, marginTop: 9 }}>
+              <button
+                type="button"
+                disabled={!user?.whatsapp || busyId === lead.id}
+                onClick={() => { void approve(lead.id); }}
+                style={{
+                  flex: 1,
+                  minHeight: 40,
+                  padding: '8px 10px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: user?.whatsapp ? 'var(--accent)' : 'var(--chip)',
+                  color: user?.whatsapp ? '#fff' : 'var(--muted)',
+                  fontSize: 12,
+                  fontWeight: 560,
+                  cursor: user?.whatsapp && busyId !== lead.id ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {busyId === lead.id ? 'Aprovando...' : 'Aprovar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewCompany(lead.companyName)}
+                style={{
+                  flex: 1,
+                  minHeight: 40,
+                  padding: '8px 10px',
+                  borderRadius: 10,
+                  border: '1px solid var(--line)',
+                  background: 'var(--card)',
+                  color: 'var(--ink-2)',
+                  fontSize: 12,
+                  fontWeight: 560,
+                  cursor: 'pointer',
+                }}
+              >
+                Ver perfil
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -1462,6 +1507,121 @@ function WebsiteLink({ url }: { url?: string }) {
 }
 
 /* ─── EventCard (full banner) ─── */
+function CompactEventOpportunity({ ev, onDetails }: { ev: Event; onDetails: () => void }) {
+  const { registeredEventIds, leads } = useAuth();
+  const [tint1, tint2] = categoryTint(ev.category);
+  const registered = registeredEventIds.has(ev.id) || hasLeadInterest(leads, 'event', ev.id, 'event_interest');
+  const effectiveRegisteredCount = registered ? Math.max(ev.registeredCount, 1) : ev.registeredCount;
+  const totalSeats = ev.maxParticipants || 0;
+  const remainingSeats = totalSeats > 0 ? Math.max(0, totalSeats - effectiveRegisteredCount) : 0;
+  const countdown = eventCountdown(ev);
+  const waLink = buildWhatsappLink(ev.companyWhatsapp, `Olá! Vi o evento "${ev.title}" no Tessy e gostaria de falar com o organizador.`);
+  const code = ev.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+  return (
+    <div style={{
+      display: 'flex',
+      gap: 11,
+      padding: 12,
+      borderRadius: 16,
+      background: 'var(--card)',
+      border: '1px solid var(--line)',
+      boxShadow: '0 2px 10px rgba(90,80,130,0.05)',
+    }}>
+      <div style={{
+        width: 52,
+        height: 62,
+        flexShrink: 0,
+        borderRadius: 13,
+        background: `linear-gradient(135deg, ${tint1}, ${tint2})`,
+        color: '#fff',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{ fontSize: 9, fontWeight: 560, letterSpacing: '0.08em' }}>{monthShort(ev.date) || 'DATA'}</div>
+        <div style={{ fontSize: 20, fontWeight: 560, lineHeight: 1 }}>{dayNum(ev.date) || '--'}</div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+          <CompanyMark code={code} tint={companyTint(ev.companyName)} size={20} radius={6} />
+          <span style={{ fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {ev.companyName}
+          </span>
+          <VerifiedDot size={10} />
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.18 }}>
+          {ev.title}
+        </div>
+        <div style={{ marginTop: 5, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.3 }}>
+          {eventDateLabel(ev)} · {locationText(ev.location)}
+        </div>
+        <div style={{ marginTop: 7, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Chip color="var(--accent)">{ev.category}</Chip>
+          <Chip color="#1EA97C">{eventSeatText(totalSeats, remainingSeats)}</Chip>
+          {countdown && <Chip color={countdown === 'Evento encerrado' ? 'var(--danger)' : 'var(--accent-ink)'}>{countdown}</Chip>}
+        </div>
+        <div style={{ display: 'flex', gap: 7, marginTop: 10 }}>
+          <button
+            type="button"
+            onClick={onDetails}
+            style={{
+              flex: 1,
+              minHeight: 40,
+              padding: '8px 10px',
+              borderRadius: 10,
+              border: 'none',
+              background: 'var(--accent)',
+              color: '#fff',
+              fontSize: 12,
+              fontWeight: 560,
+              cursor: 'pointer',
+            }}
+          >
+            Ver detalhes
+          </button>
+          {waLink ? (
+            <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+              flex: 1,
+              minHeight: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 5,
+              padding: '8px 10px',
+              borderRadius: 10,
+              textDecoration: 'none',
+              background: 'rgba(37,211,102,0.10)',
+              color: '#25D366',
+              border: '1px solid rgba(37,211,102,0.30)',
+              fontSize: 12,
+              fontWeight: 560,
+              boxSizing: 'border-box',
+            }}>
+              <WaIcon size={13} /> WhatsApp
+            </a>
+          ) : (
+            <button type="button" disabled style={{
+              flex: 1,
+              minHeight: 40,
+              padding: '8px 10px',
+              borderRadius: 10,
+              border: '1px solid var(--line)',
+              background: 'var(--chip)',
+              color: 'var(--muted)',
+              fontSize: 12,
+              fontWeight: 560,
+            }}>
+              Sem WhatsApp
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EventCard({ ev }: { ev: Event }) {
   const { registerInterest, registeredEventIds, addLead, leads } = useAuth();
   const [tint1, tint2] = categoryTint(ev.category);
