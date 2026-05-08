@@ -31,6 +31,56 @@ function formatEventOccupancy(registered: number, total: number) {
   return `${registered} de ${total} vagas preenchidas`;
 }
 
+const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+
+function parseLocalDate(date?: string) {
+  if (!date) return null;
+  const [year, month, day] = date.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function eventDateParts(date?: string) {
+  const parsed = parseLocalDate(date);
+  if (!parsed || Number.isNaN(parsed.getTime())) return { day: '--', month: 'DATA' };
+  return {
+    day: String(parsed.getDate()).padStart(2, '0'),
+    month: MONTHS_PT[parsed.getMonth()] ?? 'DATA',
+  };
+}
+
+function eventSchedule(ev: Event) {
+  const parsed = parseLocalDate(ev.date);
+  if (!parsed || Number.isNaN(parsed.getTime())) return 'Data a confirmar';
+  const day = String(parsed.getDate()).padStart(2, '0');
+  const month = MONTHS_PT[parsed.getMonth()] ?? '';
+  const hour = ev.time ? ` • ${ev.time.replace(':', 'H')}` : '';
+  return `${day} ${month}${hour}`;
+}
+
+function eventCity(location?: string) {
+  const value = location?.trim();
+  if (!value) return 'Local a confirmar';
+  return value.split(',')[0]?.trim() || value;
+}
+
+function availableSpots(ev: Event) {
+  return Math.max(0, ev.maxParticipants - ev.registeredCount);
+}
+
+function eventStatusLabel(ev: Event) {
+  const parsed = parseLocalDate(ev.date);
+  if (!parsed) return 'ATIVO';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  parsed.setHours(0, 0, 0, 0);
+  return parsed.getTime() < today.getTime() ? 'ENCERRADO' : 'ATIVO';
+}
+
+function leadDoctorKey(lead: Lead) {
+  return lead.doctorId || `${lead.doctorName}-${lead.doctorSpecialty ?? ''}`;
+}
+
 function IcoHome(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="19" viewBox="0 0 20 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M2 9l8-7 8 7v9H13v-5H7v5H2z" strokeLinecap="round" strokeLinejoin="round"/></svg>;
@@ -46,6 +96,28 @@ function IcoBox(a: boolean) {
 function IcoBook(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
+}
+
+function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'sample' | 'partnership' }) {
+  const c = 'var(--accent)';
+  if (type === 'event') return IcoCalendar(true);
+  if (type === 'product') return IcoBox(true);
+  if (type === 'course') return IcoBook(true);
+  if (type === 'sample') {
+    return (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
+        <path d="M7 2h6M8 2v5l-3.7 6.6A3 3 0 007 18h6a3 3 0 002.7-4.4L12 7V2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6 12h8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke={c} strokeWidth="1.6">
+      <path d="M7.5 11.8l-1.2 1.2a3 3 0 01-4.2-4.2l2.4-2.4a3 3 0 014.2 0l.4.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13.5 9.2l1.2-1.2a3 3 0 014.2 4.2l-2.4 2.4a3 3 0 01-4.2 0l-.4-.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 13l5-5" strokeLinecap="round" />
+    </svg>
+  );
 }
 const NAV_ITEMS: NavItem[] = [
   { key: 'home',     label: 'Início',   icon: IcoHome },
@@ -119,7 +191,7 @@ function latestLeadByDoctor(leads: Lead[]) {
   const seen = new Set<string>();
 
   return ordered.filter(lead => {
-    const doctorKey = lead.doctorId || `${lead.doctorName}-${lead.doctorSpecialty ?? ''}`;
+    const doctorKey = leadDoctorKey(lead);
     if (seen.has(doctorKey)) return false;
     seen.add(doctorKey);
     return true;
@@ -133,7 +205,7 @@ function eventLeadDoctorCount(event: Event, leads: Lead[]) {
     if (lead.itemType !== 'event' || lead.intent !== 'event_interest') return;
     const sameEvent = lead.itemId === event.id || lead.itemName === event.title;
     if (!sameEvent) return;
-    doctors.add(lead.doctorId || `${lead.doctorName}-${lead.doctorSpecialty ?? ''}`);
+    doctors.add(leadDoctorKey(lead));
   });
 
   return doctors.size;
@@ -169,10 +241,28 @@ export default function CompanyDashboard() {
   const tint = companyTint(user?.company ?? user?.name ?? '');
   const code = (user?.company ?? user?.name ?? 'EM').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
+  const activeOpportunities = myEvents.length + myProducts.length + myCourses.length;
+  const conversationsStarted = myLeads.filter(lead => lead.connectionStatus === 'requested' || lead.connectionStatus === 'approved').length;
+  const suggestedDoctors = myLeads.slice(0, 4);
 
   function goTab(k: string) {
     if (k === 'create') { setTab('create'); return; }
     setTab(k as Tab);
+  }
+
+  function shareEvent(ev: Event) {
+    const text = `${ev.title} · ${eventSchedule(ev)} · ${eventCity(ev.location)}`;
+    const url = ev.website ?? (typeof window !== 'undefined' ? window.location.origin : '');
+    const nav = typeof navigator !== 'undefined'
+      ? navigator as Navigator & { share?: (data: ShareData) => Promise<void>; clipboard?: Clipboard }
+      : undefined;
+    if (nav?.share) {
+      nav.share({ title: ev.title, text, url }).catch(() => undefined);
+      return;
+    }
+    if (nav?.clipboard) {
+      nav.clipboard.writeText(`${text}${url ? `\n${url}` : ''}`).catch(() => undefined);
+    }
   }
 
   const editingEvent = events.find(e => e.id === editingEventId) ?? null;
@@ -301,17 +391,19 @@ export default function CompanyDashboard() {
           {/* Stats */}
           <div style={{ display: 'flex', gap: 0, background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', marginBottom: 20, overflow: 'hidden' }}>
             {[
-              { v: myEvents.length, l: 'eventos' },
-              { v: myProducts.length, l: 'produtos' },
-              { v: myLeads.length, l: 'leads' },
+              { v: activeOpportunities, l: 'oportunidades ativas', go: 'events' as Tab },
+              { v: myLeads.length, l: 'médicos interessados', go: 'leads' as Tab },
+              { v: conversationsStarted, l: 'conversas iniciadas', go: 'leads' as Tab },
             ].map((s, i) => (
-              <div key={s.l} style={{
+              <button key={s.l} onClick={() => setTab(s.go)} style={{
                 flex: 1, textAlign: 'center', padding: '16px 8px',
                 borderRight: i < 2 ? '1px solid var(--line)' : 'none',
+                borderTop: 'none', borderBottom: 'none', borderLeft: 'none',
+                background: 'transparent', cursor: 'pointer',
               }}>
                 <div style={{ fontSize: 26, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>{s.v}</div>
-                <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>{s.l}</Mono>
-              </div>
+                <Mono style={{ fontSize: 8.5, color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1.25 }}>{s.l}</Mono>
+              </button>
             ))}
           </div>
 
@@ -323,21 +415,36 @@ export default function CompanyDashboard() {
                   Comece por aqui
                 </Mono>
                 <div style={{ fontSize: 18, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.15 }}>
-                  Publique sua primeira oportunidade.
+                  O que sua empresa quer divulgar hoje?
                 </div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-              {(['event', 'product', 'course'] as const).map(k => {
-                const cfg = { event: { icon: '📅', label: 'Evento' }, product: { icon: '💊', label: 'Produto' }, course: { icon: '🎓', label: 'Curso' } }[k];
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {[
+                { key: 'event', target: 'event', label: 'Evento' },
+                { key: 'product', target: 'product', label: 'Produto' },
+                { key: 'course', target: 'course', label: 'Curso' },
+                { key: 'sample', target: 'product', label: 'Amostra/Teste' },
+                { key: 'partnership', target: 'product', label: 'Parceria' },
+              ].map(item => {
+                const key = item.key as 'event' | 'product' | 'course' | 'sample' | 'partnership';
+                const target = item.target as 'event' | 'product' | 'course';
                 return (
-                  <button key={k} onClick={() => { setCreateKind(k); setTab('create'); }} style={{
-                    padding: '16px 8px', borderRadius: 14,
+                  <button key={key} onClick={() => { setCreateKind(target); setTab('create'); }} style={{
+                    padding: '13px 10px', borderRadius: 14,
                     background: 'var(--card)', border: '1px solid var(--line)',
-                    cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9,
+                    textAlign: 'left',
                   }}>
-                    <span style={{ fontSize: 24 }}>{cfg.icon}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>{cfg.label}</span>
+                    <span style={{
+                      width: 34, height: 34, borderRadius: 11,
+                      background: 'rgba(74,168,255,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <OpportunityIcon type={key} />
+                    </span>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2 }}>{item.label}</span>
                   </button>
                 );
               })}
@@ -350,47 +457,106 @@ export default function CompanyDashboard() {
             style={{
               width: '100%',
               marginBottom: 24,
-              padding: '14px 16px',
+              padding: 16,
               borderRadius: 18,
-              background: 'var(--card)',
-              border: '1px solid var(--line)',
+              background: 'linear-gradient(135deg, rgba(74,168,255,0.12), rgba(255,112,81,0.10))',
+              border: '1px solid rgba(74,168,255,0.20)',
               boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 14,
               textAlign: 'left',
             }}
           >
-            <div style={{ minWidth: 0 }}>
-              <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                Relacionamento médico
-              </Mono>
-              <div style={{ marginTop: 6, fontSize: 16, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.2 }}>
-                Leads qualificados
+            <div style={{ minWidth: 0, display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 0 }}>
+                <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                  Ponte comercial
+                </Mono>
+                <div style={{ marginTop: 8, fontSize: 18, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.2 }}>
+                  {myLeads.length} {myLeads.length === 1 ? 'médico interessado' : 'médicos interessados'}
+                </div>
+                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.4 }}>
+                  Veja os perfis e inicie uma conversa pelo WhatsApp.
+                </div>
               </div>
-              <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-                {myLeads.length === 0
-                  ? 'Pedidos de amostra, eventos e representantes aparecerão aqui.'
-                  : `${myLeads.length} ${myLeads.length === 1 ? 'médico interessado' : 'médicos interessados'}.`}
+              <div style={{
+                minWidth: 40,
+                height: 40,
+                borderRadius: 13,
+                background: 'var(--card)',
+                color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+                fontWeight: 560,
+                boxShadow: '0 8px 22px rgba(80,100,150,0.08)',
+              }}>
+                {myLeads.length}
               </div>
             </div>
-            <div style={{
-              minWidth: 48,
-              height: 48,
-              borderRadius: 14,
-              background: 'var(--accent-soft)',
-              color: 'var(--accent)',
-              display: 'flex',
+            <span style={{
+              marginTop: 12,
+              display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 22,
+              padding: '9px 13px',
+              borderRadius: 12,
+              background: 'var(--ink)',
+              color: '#fff',
+              fontSize: 12.5,
               fontWeight: 560,
             }}>
-              {myLeads.length}
-            </div>
+              Ver médicos
+            </span>
           </button>
+
+          {/* Suggested doctors */}
+          <div style={{ marginBottom: 24 }}>
+            <SectionTitle title="Médicos para sua empresa conhecer" />
+            {suggestedDoctors.length === 0 ? (
+              <div style={{
+                padding: 16,
+                borderRadius: 18,
+                background: 'var(--card)',
+                border: '1px solid var(--line)',
+              }}>
+                <div style={{ fontSize: 15, color: 'var(--ink)', fontWeight: 560 }}>Ainda sem médicos sugeridos.</div>
+                <p style={{ margin: '5px 0 0', fontSize: 12.5, lineHeight: 1.45, color: 'var(--ink-2)' }}>
+                  Publique uma oportunidade para a Tessy aproximar médicos com interesse real.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 }}>
+                {suggestedDoctors.map(lead => (
+                  <DoctorSuggestionCard key={lead.id} lead={lead} onRequestConnection={requestConnection} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Tessy suggestions */}
+          <div style={{ marginBottom: 24 }}>
+            <SectionTitle title="Sugestões da Tessy" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                'Publique um produto para aumentar sua visibilidade.',
+                'Complete seu perfil para médicos confiarem mais na sua empresa.',
+                'Convide médicos interessados para o seu próximo evento.',
+              ].map(text => (
+                <div key={text} style={{
+                  padding: '12px 14px',
+                  borderRadius: 14,
+                  background: 'var(--card)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--ink-2)',
+                  fontSize: 12.5,
+                  lineHeight: 1.35,
+                }}>
+                  {text}
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Recent events timeline */}
           {myEvents.length > 0 && (
@@ -404,7 +570,15 @@ export default function CompanyDashboard() {
                 }}>ver todos →</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {myEvents.slice(0, 3).map(e => <EventRowCompany key={e.id} ev={e} />)}
+                {myEvents.slice(0, 3).map(e => (
+                  <EventRowCompany
+                    key={e.id}
+                    ev={e}
+                    interestedCount={eventLeadDoctorCount(e, companyLeads)}
+                    onViewInterested={() => setTab('leads')}
+                    onShare={() => shareEvent(e)}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -419,7 +593,17 @@ export default function CompanyDashboard() {
           empty={myEvents.length === 0}
           emptyText="Nenhum evento criado ainda."
         >
-          {myEvents.map(e => <EventCardCompany key={e.id} ev={e} onDelete={() => deleteEvent(e.id)} onEdit={() => setEditingEventId(e.id)} />)}
+          {myEvents.map(e => (
+            <EventCardCompany
+              key={e.id}
+              ev={e}
+              interestedCount={eventLeadDoctorCount(e, companyLeads)}
+              onDelete={() => deleteEvent(e.id)}
+              onEdit={() => setEditingEventId(e.id)}
+              onViewInterested={() => setTab('leads')}
+              onShare={() => shareEvent(e)}
+            />
+          ))}
         </ListTab>
       )}
 
@@ -492,6 +676,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(0);
+  const [selectedChoice, setSelectedChoice] = useState<'event' | 'product' | 'course' | 'sample' | 'partnership'>(kind);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -625,28 +810,49 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             Médicos verão no app deles imediatamente.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(['event', 'product', 'course'] as const).map(k => {
-              const cfg = {
-                event:   { icon: '📅', title: 'Evento', desc: 'Congresso, workshop, webinar' },
-                product: { icon: '💊', title: 'Produto', desc: 'Produto, amostra, representante' },
-                course:  { icon: '🎓', title: 'Workshop ou capacitação', desc: 'Aulas, eventos e cursos médicos' },
-              }[k];
+            {[
+              { id: 'event', target: 'event', title: 'Evento', desc: 'Congresso, workshop, webinar' },
+              { id: 'product', target: 'product', title: 'Produto', desc: 'Produto, tecnologia ou material científico' },
+              { id: 'course', target: 'course', title: 'Curso', desc: 'Eventos e capacitações médicas' },
+              { id: 'sample', target: 'product', title: 'Amostra/Teste', desc: 'Convite para médicos avaliarem uma solução' },
+              { id: 'partnership', target: 'product', title: 'Parceria', desc: 'Divulgação, relacionamento ou ação comercial' },
+            ].map(option => {
+              const id = option.id as 'event' | 'product' | 'course' | 'sample' | 'partnership';
+              const target = option.target as 'event' | 'product' | 'course';
+              const selected = selectedChoice === id;
               return (
-                <button key={k} onClick={() => setKind(k)} style={{
+                <button key={id} onClick={() => {
+                  setSelectedChoice(id);
+                  setKind(target);
+                  if (id === 'sample') {
+                    setPr(p => ({
+                      ...p,
+                      availableFor: 'Médico pode solicitar amostra, teste ou material para avaliação.',
+                      price: 'Amostra/Teste sob consulta',
+                    }));
+                  }
+                  if (id === 'partnership') {
+                    setPr(p => ({
+                      ...p,
+                      availableFor: 'Representante apresenta briefing, condições e proposta de parceria.',
+                      price: 'Parceria sob consulta',
+                    }));
+                  }
+                }} style={{
                   padding: '16px', borderRadius: 16, cursor: 'pointer', textAlign: 'left',
-                  background: kind === k ? 'rgba(74,168,255,0.08)' : 'var(--card)',
-                  border: `2px solid ${kind === k ? 'var(--accent)' : 'var(--line)'}`,
+                  background: selected ? 'rgba(74,168,255,0.08)' : 'var(--card)',
+                  border: `2px solid ${selected ? 'var(--accent)' : 'var(--line)'}`,
                   display: 'flex', alignItems: 'center', gap: 14,
                 }}>
                   <div style={{
                     width: 48, height: 48, borderRadius: 12, background: 'var(--bg)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0,
-                  }}>{cfg.icon}</div>
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}><OpportunityIcon type={id} /></div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{cfg.title}</div>
-                    <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{cfg.desc}</div>
+                    <div style={{ fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{option.title}</div>
+                    <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{option.desc}</div>
                   </div>
-                  {kind === k && (
+                  {selected && (
                     <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>✓</div>
                   )}
                 </button>
@@ -829,8 +1035,25 @@ function ListTab({ title, onAdd, empty, emptyText, children }: {
 }
 
 /* ─── Company view cards ─── */
-function EventRowCompany({ ev }: { ev: Event }) {
+function SectionTitle({ title }: { title: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <h2 style={{ fontSize: 16, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>
+        {title}<span style={{ color: 'var(--accent)' }}>.</span>
+      </h2>
+    </div>
+  );
+}
+
+function EventRowCompany({ ev, interestedCount, onViewInterested, onShare }: {
+  ev: Event;
+  interestedCount: number;
+  onViewInterested: () => void;
+  onShare: () => void;
+}) {
   const [tint1, tint2] = categoryTint(ev.category);
+  const dateParts = eventDateParts(ev.date);
+  const status = eventStatusLabel(ev);
   return (
     <div style={{ display: 'flex', gap: 12, padding: 12, background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)' }}>
       <div style={{
@@ -838,42 +1061,127 @@ function EventRowCompany({ ev }: { ev: Event }) {
         background: `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff',
       }}>
-        <div style={{ fontSize: 9, fontWeight: 560 }}>{ev.date ? ev.date.split('-')[1] : ''}</div>
-        <div style={{ fontSize: 18, fontWeight: 560, lineHeight: 1 }}>{ev.date ? ev.date.split('-')[2] : ''}</div>
+        <div style={{ fontSize: 9, fontWeight: 560 }}>{dateParts.month}</div>
+        <div style={{ fontSize: 18, fontWeight: 560, lineHeight: 1 }}>{dateParts.day}</div>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2 }}>{ev.title}</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{ev.location}</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+          {eventCity(ev.location)} · {eventSchedule(ev)}
+        </div>
         <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <Chip color="var(--accent)">{formatEventOccupancy(ev.registeredCount, ev.maxParticipants)}</Chip>
-          <Mono style={{ fontSize: 10, color: '#1EA97C', fontWeight: 560 }}>✓ ATIVO</Mono>
+          <Chip color="#1EA97C">{availableSpots(ev)} disponíveis</Chip>
+          <Mono style={{ fontSize: 10, color: status === 'ATIVO' ? '#1EA97C' : 'var(--muted)', fontWeight: 560 }}>✓ {status}</Mono>
+        </div>
+        <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={onViewInterested} style={{
+            padding: '7px 9px',
+            borderRadius: 10,
+            background: 'var(--chip)',
+            border: '1px solid var(--line)',
+            color: 'var(--ink)',
+            fontSize: 11.5,
+            fontWeight: 560,
+            cursor: 'pointer',
+          }}>
+            {interestedCount} interessados
+          </button>
+          <button onClick={onShare} style={{
+            padding: '7px 9px',
+            borderRadius: 10,
+            background: 'transparent',
+            border: '1px solid var(--line)',
+            color: 'var(--ink-2)',
+            fontSize: 11.5,
+            fontWeight: 560,
+            cursor: 'pointer',
+          }}>
+            Compartilhar
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function EventCardCompany({ ev, onDelete, onEdit }: { ev: Event; onDelete: () => void; onEdit: () => void }) {
+function EventCardCompany({ ev, interestedCount, onDelete, onEdit, onViewInterested, onShare }: {
+  ev: Event;
+  interestedCount: number;
+  onDelete: () => void;
+  onEdit: () => void;
+  onViewInterested: () => void;
+  onShare: () => void;
+}) {
   const [tint1, tint2] = categoryTint(ev.category);
+  const dateParts = eventDateParts(ev.date);
+  const status = eventStatusLabel(ev);
   return (
     <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
       <div style={{ height: 6, background: `linear-gradient(90deg, ${tint1}, ${tint2})` }} />
       <div style={{ padding: '14px 16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'flex-start' }}>
+          <div style={{
+            width: 48,
+            height: 56,
+            flexShrink: 0,
+            borderRadius: 13,
+            background: `linear-gradient(135deg, ${tint1}, ${tint2})`,
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <div style={{ fontSize: 9, fontWeight: 560 }}>{dateParts.month}</div>
+            <div style={{ fontSize: 20, fontWeight: 560, lineHeight: 1 }}>{dateParts.day}</div>
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Chip color={tint1}>{ev.category}</Chip>
             <div style={{ fontSize: 15, fontWeight: 560, marginTop: 8, color: 'var(--ink)' }}>{ev.title}</div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{fmt(ev.date)} · {ev.location}</div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-              <Mono style={{ fontSize: 10, color: 'var(--ink-2)' }}>👥 {formatEventOccupancy(ev.registeredCount, ev.maxParticipants)}</Mono>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+              {eventCity(ev.location)} · {eventSchedule(ev)}
+            </div>
+            <div style={{ display: 'flex', gap: 7, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Chip color="var(--accent)">{formatEventOccupancy(ev.registeredCount, ev.maxParticipants)}</Chip>
+              <Chip color="#1EA97C">{availableSpots(ev)} vagas disponíveis</Chip>
+              <Chip color="var(--accent-ink)">{interestedCount} médicos interessados</Chip>
+              <Mono style={{ fontSize: 10, color: status === 'ATIVO' ? '#1EA97C' : 'var(--muted)', fontWeight: 560 }}>✓ {status}</Mono>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              <button onClick={onViewInterested} style={{
+                padding: '8px 10px',
+                borderRadius: 10,
+                border: '1px solid var(--line)',
+                background: 'var(--chip)',
+                color: 'var(--ink)',
+                fontSize: 12,
+                fontWeight: 560,
+                cursor: 'pointer',
+              }}>Ver interessados</button>
+              <button onClick={onEdit} style={{
+                padding: '8px 10px',
+                borderRadius: 10,
+                border: '1px solid rgba(91,110,245,0.25)',
+                background: 'rgba(91,110,245,0.10)',
+                color: 'var(--accent)',
+                fontSize: 12,
+                fontWeight: 560,
+                cursor: 'pointer',
+              }}>Editar</button>
+              <button onClick={onShare} style={{
+                padding: '8px 10px',
+                borderRadius: 10,
+                border: '1px solid var(--line)',
+                background: 'transparent',
+                color: 'var(--ink-2)',
+                fontSize: 12,
+                fontWeight: 560,
+                cursor: 'pointer',
+              }}>Compartilhar</button>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 10, flexShrink: 0 }}>
-            <button onClick={onEdit} style={{
-              background: 'rgba(91,110,245,0.10)', border: '1px solid rgba(91,110,245,0.25)',
-              borderRadius: 8, cursor: 'pointer',
-              color: 'var(--accent)', fontSize: 12, fontWeight: 600, padding: '5px 10px',
-            }}>Editar</button>
             <button onClick={onDelete} style={{
               background: 'none', border: 'none', cursor: 'pointer',
               color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '4px 0',
@@ -881,6 +1189,114 @@ function EventCardCompany({ ev, onDelete, onEdit }: { ev: Event; onDelete: () =>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DoctorSuggestionCard({ lead, onRequestConnection }: {
+  lead: Lead;
+  onRequestConnection: (leadId: string) => Promise<void>;
+}) {
+  const [requesting, setRequesting] = useState(false);
+  const connectionStatus = lead.connectionStatus ?? 'none';
+  const isApproved = connectionStatus === 'approved';
+  const isRequested = connectionStatus === 'requested';
+  const waLink = isApproved
+    ? buildWhatsappLink(
+      lead.doctorWhatsapp,
+      `Olá ${lead.doctorName}, vi seu interesse no Tessy sobre "${lead.itemName}". Posso te passar mais detalhes?`,
+    )
+    : '';
+
+  async function handleConnect() {
+    if (waLink) return;
+    setRequesting(true);
+    try {
+      await onRequestConnection(lead.id);
+    } finally {
+      setRequesting(false);
+    }
+  }
+
+  const buttonText = waLink
+    ? 'Conectar no WhatsApp'
+    : isRequested
+      ? 'Aguardando aprovação'
+      : requesting
+        ? 'Solicitando...'
+        : 'Conectar no WhatsApp';
+
+  const buttonStyle = {
+    marginTop: 12,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: 12,
+    border: waLink ? '1px solid rgba(37,211,102,0.32)' : '1px solid var(--ink)',
+    background: waLink ? 'rgba(37,211,102,0.12)' : 'var(--ink)',
+    color: waLink ? '#25D366' : '#fff',
+    fontSize: 12.5,
+    fontWeight: 560,
+    textDecoration: 'none',
+    cursor: isRequested || requesting ? 'not-allowed' : 'pointer',
+    opacity: isRequested || requesting ? 0.72 : 1,
+    boxSizing: 'border-box',
+  } as const;
+
+  return (
+    <div style={{
+      minWidth: 220,
+      maxWidth: 240,
+      padding: 14,
+      borderRadius: 18,
+      background: 'var(--card)',
+      border: '1px solid var(--line)',
+      boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 38,
+          height: 38,
+          borderRadius: 13,
+          background: 'linear-gradient(135deg, rgba(74,168,255,0.22), rgba(255,112,81,0.16))',
+          color: 'var(--ink)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 14,
+          fontWeight: 560,
+          flexShrink: 0,
+        }}>
+          {lead.doctorName.slice(0, 1).toUpperCase()}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 560, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {lead.doctorName}
+          </div>
+          <div style={{ marginTop: 2, color: 'var(--muted)', fontSize: 11.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {lead.doctorSpecialty || 'Especialidade não informada'}
+          </div>
+        </div>
+      </div>
+      <div style={{ marginTop: 11, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <Chip color="var(--accent)">Região não informada</Chip>
+        <Chip color="#1EA97C">{lead.itemType === 'event' ? 'Evento' : lead.itemType === 'product' ? 'Produto' : lead.itemType === 'course' ? 'Workshop' : 'Empresa'}</Chip>
+      </div>
+      <p style={{ margin: '10px 0 0', color: 'var(--ink-2)', fontSize: 12, lineHeight: 1.38 }}>
+        Interesse em {lead.itemName}.
+      </p>
+      {waLink ? (
+        <a href={waLink} target="_blank" rel="noopener noreferrer" style={buttonStyle}>
+          <WaIcon size={14} /> {buttonText}
+        </a>
+      ) : (
+        <button type="button" onClick={handleConnect} disabled={isRequested || requesting} style={buttonStyle}>
+          <WaIcon size={14} /> {buttonText}
+        </button>
+      )}
     </div>
   );
 }
@@ -913,21 +1329,21 @@ function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestCon
     <div>
       <div style={{ marginBottom: 18 }}>
         <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-          Relacionamento médico
+          Ponte comercial
         </Mono>
         <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
-          Leads qualificados<span style={{ color: 'var(--accent)' }}>.</span>
+          Médicos interessados<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
-          Pedidos de amostra, contato com representante, interesse em eventos e propostas de divulgação.
+          Perfis que levantaram a mão para amostras, eventos, produtos ou contato com representante.
         </p>
       </div>
 
       {leads.length === 0 ? (
         <div style={{ padding: 24, borderRadius: 18, background: 'var(--card)', border: '1px solid var(--line)' }}>
-          <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>Nenhum lead ainda.</div>
+          <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>Nenhum médico interessado ainda.</div>
           <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-            Quando um médico clicar em representante, amostra, evento ou divulgação, ele aparecerá aqui.
+            Quando um médico clicar em representante, amostra, evento ou produto, ele aparecerá aqui.
           </p>
         </div>
       ) : (
