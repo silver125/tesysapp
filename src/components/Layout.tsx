@@ -41,7 +41,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
         borderBottom: '1px solid var(--line)',
       }}>
         <div style={{
-          maxWidth: 480, margin: '0 auto', padding: '10px 18px',
+          maxWidth: 480, margin: '0 auto', padding: '8px 14px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         }}>
           {/* Brand */}
@@ -75,7 +75,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
       </header>
 
       {/* Content */}
-      <main style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '20px 16px 96px' }}>
+      <main style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '16px 14px 96px' }}>
         {children}
       </main>
 
