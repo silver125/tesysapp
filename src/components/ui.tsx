@@ -123,9 +123,9 @@ export function Chip({ children, color = 'var(--accent)' }: { children: ReactNod
 
 /* ── Gradient banner card ── */
 export function BannerCard({
-  tint1, tint2, month, day, format, children,
+  tint1, tint2, month, day, format, imageUrl, children,
 }: {
-  tint1: string; tint2: string; month?: string; day?: string; format?: string; children: ReactNode;
+  tint1: string; tint2: string; month?: string; day?: string; format?: string; imageUrl?: string; children: ReactNode;
 }) {
   return (
     <div style={{
@@ -135,7 +135,9 @@ export function BannerCard({
       {/* banner */}
       <div style={{
         height: 78,
-        background: `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
+        background: imageUrl
+          ? `linear-gradient(135deg, rgba(18,24,40,0.54), rgba(74,168,255,0.22)), url(${imageUrl}) center/cover`
+          : `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
         position: 'relative', padding: 11,
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
       }}>

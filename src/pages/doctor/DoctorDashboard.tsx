@@ -213,6 +213,15 @@ function normalizePhone(raw: string) {
   return d.startsWith('55') ? d : `55${d}`;
 }
 
+const VISUAL_FALLBACKS = {
+  clinical: '/hero-clinic-premium.png',
+  community: '/hero-bg.jpg',
+};
+
+function visualUrl(src?: string | null, fallback = VISUAL_FALLBACKS.community) {
+  return src?.trim() || fallback;
+}
+
 function doctorGreeting(user: User | null | undefined) {
   const firstName = user?.name?.trim().split(/\s+/)[0];
   return firstName ? `Olá, Dra. ${firstName}` : 'Olá, Dra.';
@@ -289,6 +298,27 @@ export default function DoctorDashboard() {
               {opportunityCountLabel(todayRelevantCount)}
             </p>
           </div>
+
+          <QuickStartHero
+            pendingCount={pendingConnections.length}
+            event={upcomingEvents[0]}
+            company={companyMatches[0]}
+            onPrimary={() => {
+              if (pendingConnections.length > 0) {
+                setHomeSegment('for-you');
+                return;
+              }
+              if (upcomingEvents[0]) {
+                setHomeSegment('events');
+                return;
+              }
+              if (companyMatches[0]) {
+                setHomeSegment('companies');
+                return;
+              }
+              openTab('connect');
+            }}
+          />
 
           <div className="no-scrollbar" style={{ display: 'flex', gap: 7, marginBottom: 13, overflowX: 'auto', paddingBottom: 2 }}>
             <OpportunityMetric label={companyMatches.length === 1 ? 'empresa sugerida' : 'empresas sugeridas'} value={companyMatches.length} onClick={() => setHomeSegment('companies')} />
@@ -437,6 +467,98 @@ export default function DoctorDashboard() {
         }}
       />
     </Layout>
+  );
+}
+
+function QuickStartHero({
+  pendingCount,
+  event,
+  company,
+  onPrimary,
+}: {
+  pendingCount: number;
+  event?: Event;
+  company?: CompanyMatch;
+  onPrimary: () => void;
+}) {
+  const title = pendingCount > 0
+    ? `${pendingCount} conexão ${pendingCount === 1 ? 'espera' : 'esperam'} sua resposta`
+    : event
+      ? 'Um evento relevante para você'
+      : company
+        ? `${company.name} combina com seu perfil`
+        : 'Complete seu perfil para receber matches';
+  const meta = pendingCount > 0
+    ? 'Aprove ou veja o perfil antes de liberar contato.'
+    : event
+      ? `${eventDateLabel(event)} · ${locationText(event.location)}`
+      : company
+        ? 'Veja produtos, eventos e representante disponível.'
+        : 'Especialidade, cidade e interesses melhoram as sugestões.';
+  const label = pendingCount > 0
+    ? 'Responder'
+    : event
+      ? 'Ver evento'
+      : company
+        ? 'Ver empresa'
+        : 'Atualizar perfil';
+
+  return (
+    <div style={{
+      position: 'relative',
+      minHeight: 126,
+      borderRadius: 18,
+      overflow: 'hidden',
+      marginBottom: 12,
+      border: '1px solid rgba(255,255,255,0.56)',
+      background: `linear-gradient(135deg, rgba(20,26,42,0.62), rgba(74,168,255,0.22)), url(${visualUrl(event?.imageUrl, VISUAL_FALLBACKS.clinical)}) center/cover`,
+      boxShadow: '0 12px 34px rgba(81,92,130,0.14)',
+    }}>
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(135deg, rgba(55,120,238,0.18), rgba(255,111,77,0.20))',
+      }} />
+      <div style={{
+        position: 'relative',
+        minHeight: 126,
+        padding: 14,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}>
+        <div>
+          <Mono style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.78)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+            Comece por aqui
+          </Mono>
+          <div style={{ maxWidth: 230, marginTop: 7, fontSize: 18, lineHeight: 1.08, fontWeight: 560, color: '#fff', letterSpacing: 0 }}>
+            {title}
+          </div>
+          <div style={{ maxWidth: 250, marginTop: 5, fontSize: 11.5, lineHeight: 1.34, color: 'rgba(255,255,255,0.78)' }}>
+            {meta}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onPrimary}
+          style={{
+            alignSelf: 'flex-start',
+            minHeight: 38,
+            padding: '8px 13px',
+            borderRadius: 999,
+            border: '1px solid rgba(255,255,255,0.42)',
+            background: 'rgba(255,255,255,0.92)',
+            color: 'var(--ink)',
+            fontSize: 12,
+            fontWeight: 560,
+            cursor: 'pointer',
+            boxShadow: '0 8px 20px rgba(15,22,38,0.18)',
+          }}
+        >
+          {label}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -642,6 +764,8 @@ function SuggestedConnections({
               key={`company-${company.id}`}
               eyebrow="Empresa"
               title={company.name}
+              visualSrc={visualUrl(company.products[0]?.imageUrl)}
+              visualLabel="Match"
               meta={[
                 company.products.length > 0 ? `${company.products.length} produto${company.products.length > 1 ? 's' : ''}` : '',
                 company.events.length > 0 ? `${company.events.length} evento${company.events.length > 1 ? 's' : ''}` : '',
@@ -661,6 +785,8 @@ function SuggestedConnections({
               key={`rep-${company.id}`}
               eyebrow="Representante"
               title={`Representante ${company.name}`}
+              visualSrc={visualUrl(company.events[0]?.imageUrl)}
+              visualLabel="Contato"
               meta="Contato comercial direto"
               reason="Disponível para conversas com intenção clara."
               tags={['WhatsApp', company.events[0]?.location].filter((tag): tag is string => Boolean(tag)).slice(0, 2)}
@@ -677,6 +803,8 @@ function SuggestedConnections({
               key={`event-${ev.id}`}
               eyebrow="Evento"
               title={ev.title}
+              visualSrc={visualUrl(ev.imageUrl, VISUAL_FALLBACKS.clinical)}
+              visualLabel={monthShort(ev.date) || 'Evento'}
               meta={`${eventDateLabel(ev)} · ${locationText(ev.location)}`}
               reason={`Para atualização prática em ${ev.category.toLowerCase()}.`}
               tags={[eventFormat(ev), eventSeatText(ev.maxParticipants || 0, Math.max(0, (ev.maxParticipants || 0) - ev.registeredCount)), eventCountdown(ev)].filter(Boolean)}
@@ -692,6 +820,8 @@ function SuggestedConnections({
             <SuggestionCard
               eyebrow="Workshop"
               title={topCourse.title}
+              visualSrc={VISUAL_FALLBACKS.clinical}
+              visualLabel="Aula"
               meta={`${eventDateLabel({ date: courseDisplayDate(topCourse), time: topCourse.time })} · ${locationText(topCourse.location)}`}
               reason={`Capacitação alinhada à área ${topCourse.category}.`}
               tags={[modalityText(topCourse.modality), topCourse.category]}
@@ -707,6 +837,8 @@ function SuggestedConnections({
             <SuggestionCard
               eyebrow="Produto"
               title={topProduct.name}
+              visualSrc={visualUrl(topProduct.imageUrl)}
+              visualLabel="Produto"
               meta={topProduct.companyName}
               reason={topProduct.availableFor || 'Produto recomendado para avaliação médica.'}
               tags={[topProduct.category, 'Amostra'].filter(Boolean)}
@@ -736,6 +868,8 @@ function SuggestedConnections({
 function SuggestionCard({
   eyebrow,
   title,
+  visualSrc,
+  visualLabel,
   meta,
   reason,
   tags = [],
@@ -748,6 +882,8 @@ function SuggestionCard({
 }: {
   eyebrow: string;
   title: string;
+  visualSrc?: string;
+  visualLabel?: string;
   meta: string;
   reason: string;
   tags?: string[];
@@ -783,21 +919,39 @@ function SuggestionCard({
       border: '1px solid var(--line)',
       boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '76px minmax(0, 1fr)', alignItems: 'stretch', gap: 10 }}>
         <div style={{
-          width: 30,
-          height: 30,
-          borderRadius: 10,
-          flexShrink: 0,
-          background: 'rgba(74,168,255,0.10)',
-          color: 'var(--accent)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 11,
-          fontWeight: 560,
+          position: 'relative',
+          minHeight: 94,
+          borderRadius: 12,
+          overflow: 'hidden',
+          background: visualSrc
+            ? `linear-gradient(135deg, rgba(18,24,40,0.28), rgba(74,168,255,0.18)), url(${visualSrc}) center/cover`
+            : 'linear-gradient(135deg, rgba(74,168,255,0.22), rgba(255,111,77,0.18))',
         }}>
-          {eyebrow.slice(0, 1)}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(180deg, rgba(15,22,38,0.06), rgba(15,22,38,0.48))',
+          }} />
+          <div style={{
+            position: 'absolute',
+            left: 7,
+            bottom: 7,
+            maxWidth: 58,
+            padding: '4px 6px',
+            borderRadius: 999,
+            background: 'rgba(255,255,255,0.88)',
+            color: 'var(--ink)',
+            fontSize: 8.5,
+            fontWeight: 560,
+            lineHeight: 1,
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}>
+            {visualLabel ?? eyebrow}
+          </div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Mono style={{ fontSize: 8, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
@@ -1629,7 +1783,14 @@ function EventCard({ ev }: { ev: Event }) {
   const eventStatus = full ? 'Inscrições encerradas' : 'Inscrições abertas';
 
   return (
-    <BannerCard tint1={tint1} tint2={tint2} month={monthShort(ev.date)} day={dayNum(ev.date)} format={ev.category || 'Evento'}>
+    <BannerCard
+      tint1={tint1}
+      tint2={tint2}
+      month={monthShort(ev.date)}
+      day={dayNum(ev.date)}
+      format={ev.category || 'Evento'}
+      imageUrl={visualUrl(ev.imageUrl, VISUAL_FALLBACKS.clinical)}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <CompanyMark code={code} tint={companyTint(ev.companyName)} size={22} radius={6} />
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>{ev.companyName}</span>
@@ -1755,7 +1916,26 @@ function ProductCard({ product }: { product: Product }) {
       boxShadow: '0 2px 12px rgba(90,80,130,0.06)',
       overflow: 'hidden',
     }}>
-      <div style={{ height: 5, background: tint1 }} />
+      <div style={{
+        height: 88,
+        padding: 12,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        background: `linear-gradient(135deg, rgba(18,24,40,0.38), rgba(74,168,255,0.18)), url(${visualUrl(product.imageUrl)}) center/cover`,
+      }}>
+        <span style={{
+          padding: '5px 9px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.84)',
+          color: 'var(--ink)',
+          fontSize: 10,
+          fontWeight: 560,
+          letterSpacing: '0.04em',
+        }}>
+          Produto recomendado
+        </span>
+      </div>
       <div style={{ padding: 16 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
           <CompanyMark code={code} tint={companyTint(product.companyName)} size={44} radius={10} />
@@ -1883,7 +2063,14 @@ function CourseCard({ course }: { course: Course }) {
   }
 
   return (
-    <BannerCard tint1={tint1} tint2={tint2} month={displayDate ? monthShort(displayDate) : undefined} day={displayDate ? dayNum(displayDate) : undefined} format={bannerLabel}>
+    <BannerCard
+      tint1={tint1}
+      tint2={tint2}
+      month={displayDate ? monthShort(displayDate) : undefined}
+      day={displayDate ? dayNum(displayDate) : undefined}
+      format={bannerLabel}
+      imageUrl={VISUAL_FALLBACKS.clinical}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
         <CompanyMark code={code} tint={companyTint(course.companyName)} size={22} radius={6} />
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>{course.companyName}</span>
