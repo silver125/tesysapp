@@ -1761,6 +1761,9 @@ function ImageUploadField({
       <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
         {label}
       </Mono>
+      <div style={{ margin: '-3px 0 8px', fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+        Recomendado: 1200 x 675 px, imagem horizontal. Máximo: 5MB.
+      </div>
       <label style={{
         position: 'relative',
         display: 'block',
@@ -1800,7 +1803,7 @@ function ImageUploadField({
               {preview ? 'Imagem selecionada' : 'Adicionar imagem'}
             </div>
             <div style={{ marginTop: 3, fontSize: 11.5, color: 'rgba(255,255,255,0.76)', lineHeight: 1.3 }}>
-              PNG, JPG ou WebP até 5MB. A Tessy aplica o gradiente no card.
+              PNG, JPG ou WebP. A Tessy aplica o gradiente no card.
             </div>
           </div>
           <span style={{
