@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import Layout from '../../components/Layout';
 import type { NavItem } from '../../components/Layout';
 import { useAuth } from '../../context/useAuth';
@@ -6,12 +6,15 @@ import {
   CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import type { Event, Product, Course, CourseModality, Lead } from '../../types';
 
 type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads';
 
 const EVENT_DATE_MIN = '2026-01-01';
 const EVENT_DATE_MAX = '2030-12-31';
+const OPPORTUNITY_IMAGE_BUCKET = 'opportunity-images';
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 function dateInDays(days: number) {
   const date = new Date();
@@ -75,6 +78,42 @@ function eventStatusLabel(ev: Event) {
   today.setHours(0, 0, 0, 0);
   parsed.setHours(0, 0, 0, 0);
   return parsed.getTime() < today.getTime() ? 'ENCERRADO' : 'ATIVO';
+}
+
+function visualImage(src?: string) {
+  return src?.trim() || '/hero-clinic-premium.png';
+}
+
+async function uploadOpportunityImage(file: File, companyId: string, folder: 'events' | 'products' | 'courses') {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase não configurado para upload de imagem.');
+  }
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Envie uma imagem em PNG, JPG ou WebP.');
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw new Error('A imagem deve ter até 5MB.');
+  }
+
+  const extFromName = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const extFromType = file.type.split('/')[1]?.replace('jpeg', 'jpg');
+  const ext = extFromName || extFromType || 'jpg';
+  const uniqueId = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Date.now());
+  const path = `${companyId}/${folder}/${uniqueId}.${ext}`;
+  const { error } = await supabase.storage
+    .from(OPPORTUNITY_IMAGE_BUCKET)
+    .upload(path, file, {
+      cacheControl: '31536000',
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (error) {
+    throw new Error(`Erro ao enviar imagem: ${error.message}`);
+  }
+
+  const { data } = supabase.storage.from(OPPORTUNITY_IMAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 function leadDoctorKey(lead: Lead) {
@@ -682,6 +721,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
 
   // Event state
   const [ev, setEv] = useState({ title: '', description: '', date: dateInDays(30), time: '19:00', location: '', category: EVENT_CATS[1], maxParticipants: '100', website: '' });
+  const [evImage, setEvImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
   // Product state
   const [pr, setPr] = useState({
     name: '',
@@ -691,6 +731,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     price: 'Parceria sob consulta',
     website: '',
   });
+  const [prImage, setPrImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
   // Course state
   const [co, setCo] = useState({
     title: '',
@@ -705,6 +746,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     price: '',
     website: '',
   });
+  const [coImage, setCoImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
 
   const totalSteps = kind === 'event' ? 3 : kind === 'course' ? 3 : 2;
 
@@ -738,6 +780,19 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     setStep(s => s + 1);
   }
 
+  function setImageDraft(
+    setter: Dispatch<SetStateAction<{ file: File | null; preview: string }>>,
+    file: File | null,
+  ) {
+    setter(prev => {
+      if (prev.preview.startsWith('blob:')) URL.revokeObjectURL(prev.preview);
+      return {
+        file,
+        preview: file ? URL.createObjectURL(file) : '',
+      };
+    });
+  }
+
   // Normaliza URL do site: adiciona https:// se faltando, vazio → undefined
   function normalizeUrl(raw: string): string | undefined {
     const trimmed = raw.trim();
@@ -753,22 +808,28 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     setSaving(true);
     try {
       if (kind === 'event') {
+        const imageUrl = evImage.file ? await uploadOpportunityImage(evImage.file, company.id, 'events') : undefined;
         await onSaveEvent({
           ...ev,
           maxParticipants: Number(ev.maxParticipants) || 100,
           website: normalizeUrl(ev.website),
+          imageUrl,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else if (kind === 'product') {
+        const imageUrl = prImage.file ? await uploadOpportunityImage(prImage.file, company.id, 'products') : undefined;
         await onSaveProduct({
           ...pr,
           website: normalizeUrl(pr.website),
+          imageUrl,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else {
+        const imageUrl = coImage.file ? await uploadOpportunityImage(coImage.file, company.id, 'courses') : undefined;
         await onSaveCourse({
           ...co,
           website: normalizeUrl(co.website),
+          imageUrl,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       }
@@ -871,6 +932,11 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <WField label="TÍTULO" value={ev.title} onChange={v => setEv(p => ({ ...p, title: v }))} placeholder="Ex: Simpósio de Cardiologia 2025" />
             <WField label="DESCRIÇÃO" value={ev.description} onChange={v => setEv(p => ({ ...p, description: v }))} placeholder="Descreva o evento..." as="textarea" />
+            <ImageUploadField
+              label="IMAGEM DE CAPA"
+              preview={evImage.preview}
+              onChange={file => setImageDraft(setEvImage, file)}
+            />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <WField label="CATEGORIA" value={ev.category} onChange={v => setEv(p => ({ ...p, category: v }))} as="select" options={EVENT_CATS} />
               <WField label="VAGAS" value={ev.maxParticipants} onChange={v => setEv(p => ({ ...p, maxParticipants: v }))} type="number" min="1" inputMode="numeric" />
@@ -906,6 +972,11 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <WField label="NOME DO PRODUTO" value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder="Ex: SkinBiome Serum" />
             <WField label="RESUMO CLÍNICO / COMERCIAL" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="O que é, para quem é e por que vale uma conversa." as="textarea" />
+            <ImageUploadField
+              label="FOTO DO PRODUTO"
+              preview={prImage.preview}
+              onChange={file => setImageDraft(setPrImage, file)}
+            />
             <WField label="CATEGORIA" value={pr.category} onChange={v => setPr(p => ({ ...p, category: v }))} as="select" options={PRODUCT_CATS} />
             <WField label="PRÓXIMO PASSO PARA O MÉDICO" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Ex: Solicitar amostra, falar com representante, receber material científico." as="textarea" />
             <WField label="CONDIÇÕES" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Ex: Amostra disponível, sob consulta, parceria regional..." />
@@ -924,6 +995,11 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             <WField label="TÍTULO" value={co.title} onChange={v => setCo(p => ({ ...p, title: v }))} placeholder="Ex: Atualização em ECG" />
             <WField label="INSTRUTOR / PROFESSOR" value={co.instructor} onChange={v => setCo(p => ({ ...p, instructor: v }))} placeholder="Dr. João Silva" />
             <WField label="DESCRIÇÃO" value={co.description} onChange={v => setCo(p => ({ ...p, description: v }))} placeholder="Descreva o workshop ou capacitação..." as="textarea" />
+            <ImageUploadField
+              label="IMAGEM DO WORKSHOP"
+              preview={coImage.preview}
+              onChange={file => setImageDraft(setCoImage, file)}
+            />
             <WField label="CATEGORIA" value={co.category} onChange={v => setCo(p => ({ ...p, category: v }))} as="select" options={COURSE_CATS} />
           </div>
         </div>
@@ -1118,7 +1194,22 @@ function EventCardCompany({ ev, interestedCount, onDelete, onEdit, onViewInteres
   const status = eventStatusLabel(ev);
   return (
     <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
-      <div style={{ height: 6, background: `linear-gradient(90deg, ${tint1}, ${tint2})` }} />
+      <div style={{
+        height: 72,
+        padding: 12,
+        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(74,168,255,0.18), rgba(255,111,77,0.18)), url(${visualImage(ev.imageUrl)}) center/cover`,
+      }}>
+        <span style={{
+          padding: '5px 9px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.88)',
+          color: 'var(--ink)',
+          fontSize: 10,
+          fontWeight: 560,
+        }}>
+          {ev.category}
+        </span>
+      </div>
       <div style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'flex-start' }}>
           <div style={{
@@ -1480,10 +1571,25 @@ function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestCon
 }
 
 function ProductCardCompany({ product, onDelete }: { product: Product; onDelete: () => void }) {
-  const [tint1, tint2] = categoryTint(product.category);
+  const [tint1] = categoryTint(product.category);
   return (
     <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
-      <div style={{ height: 6, background: `linear-gradient(90deg, ${tint1}, ${tint2})` }} />
+      <div style={{
+        height: 72,
+        padding: 12,
+        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(74,168,255,0.18), rgba(255,111,77,0.18)), url(${visualImage(product.imageUrl)}) center/cover`,
+      }}>
+        <span style={{
+          padding: '5px 9px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.88)',
+          color: 'var(--ink)',
+          fontSize: 10,
+          fontWeight: 560,
+        }}>
+          Produto
+        </span>
+      </div>
       <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1521,12 +1627,27 @@ function ProductCardCompany({ product, onDelete }: { product: Product; onDelete:
 }
 
 function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () => void }) {
-  const [tint1, tint2] = categoryTint(course.category);
+  const [tint1] = categoryTint(course.category);
   const displayDate = courseDisplayDate(course);
   const placeLabel = course.location?.trim() || (course.modality === 'online' ? 'Online' : 'Local a definir');
   return (
     <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
-      <div style={{ height: 6, background: `linear-gradient(90deg, ${tint1}, ${tint2})` }} />
+      <div style={{
+        height: 72,
+        padding: 12,
+        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(74,168,255,0.18), rgba(255,111,77,0.18)), url(${visualImage(course.imageUrl)}) center/cover`,
+      }}>
+        <span style={{
+          padding: '5px 9px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.88)',
+          color: 'var(--ink)',
+          fontSize: 10,
+          fontWeight: 560,
+        }}>
+          Workshop
+        </span>
+      </div>
       <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1548,6 +1669,100 @@ function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () 
           color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
         }}>Excluir</button>
       </div>
+    </div>
+  );
+}
+
+function ImageUploadField({
+  label,
+  preview,
+  onChange,
+  showRemove = true,
+}: {
+  label: string;
+  preview: string;
+  onChange: (file: File | null) => void;
+  showRemove?: boolean;
+}) {
+  return (
+    <div>
+      <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+        {label}
+      </Mono>
+      <label style={{
+        position: 'relative',
+        display: 'block',
+        minHeight: 126,
+        borderRadius: 18,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        border: '1px solid var(--line)',
+        background: preview
+          ? `linear-gradient(135deg, rgba(18,24,40,0.34), rgba(74,168,255,0.18), rgba(255,111,77,0.18)), url(${preview}) center/cover`
+          : 'linear-gradient(135deg, rgba(74,168,255,0.22), rgba(255,111,77,0.18))',
+        boxShadow: '0 8px 24px rgba(90,80,130,0.08)',
+      }}>
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          onChange={event => onChange(event.target.files?.[0] ?? null)}
+          style={{ display: 'none' }}
+        />
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(15,22,38,0.08), rgba(15,22,38,0.48))',
+        }} />
+        <div style={{
+          position: 'absolute',
+          left: 14,
+          right: 14,
+          bottom: 14,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+        }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 560, color: '#fff', lineHeight: 1.15 }}>
+              {preview ? 'Imagem selecionada' : 'Adicionar imagem'}
+            </div>
+            <div style={{ marginTop: 3, fontSize: 11.5, color: 'rgba(255,255,255,0.76)', lineHeight: 1.3 }}>
+              PNG, JPG ou WebP até 5MB. A Tessy aplica o gradiente no card.
+            </div>
+          </div>
+          <span style={{
+            flexShrink: 0,
+            padding: '8px 10px',
+            borderRadius: 999,
+            background: 'rgba(255,255,255,0.92)',
+            color: 'var(--ink)',
+            fontSize: 11.5,
+            fontWeight: 560,
+          }}>
+            {preview ? 'Trocar' : 'Upload'}
+          </span>
+        </div>
+      </label>
+      {preview && showRemove && (
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          style={{
+            marginTop: 8,
+            padding: '7px 10px',
+            borderRadius: 10,
+            border: '1px solid var(--line)',
+            background: 'var(--chip)',
+            color: 'var(--ink-2)',
+            fontSize: 11.5,
+            fontWeight: 560,
+            cursor: 'pointer',
+          }}
+        >
+          Remover imagem
+        </button>
+      )}
     </div>
   );
 }
@@ -1593,6 +1808,8 @@ function EditEventModal({ event, onSave, onClose }: {
   const [category,        setCategory]        = useState(event.category);
   const [maxParticipants, setMaxParticipants] = useState(String(event.maxParticipants));
   const [website,         setWebsite]         = useState(event.website ?? '');
+  const [imageFile,       setImageFile]       = useState<File | null>(null);
+  const [imagePreview,    setImagePreview]    = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr]       = useState('');
 
@@ -1619,6 +1836,9 @@ function EditEventModal({ event, onSave, onClose }: {
     setErr('');
     setSaving(true);
     try {
+      const nextImageUrl = imageFile
+        ? await uploadOpportunityImage(imageFile, event.companyId, 'events')
+        : event.imageUrl;
       await onSave({
         title:           title.trim(),
         description:     description.trim(),
@@ -1628,6 +1848,7 @@ function EditEventModal({ event, onSave, onClose }: {
         category,
         maxParticipants: max,
         website:         normalizeUrl(website),
+        imageUrl:        nextImageUrl,
       });
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro ao salvar.');
@@ -1676,6 +1897,16 @@ function EditEventModal({ event, onSave, onClose }: {
             <WField label="VAGAS" value={maxParticipants} onChange={setMaxParticipants} type="number" min="1" inputMode="numeric" />
           </div>
           <WField label="WEBSITE (opcional)" value={website} onChange={setWebsite} type="url" placeholder="www.seusite.com.br" />
+          <ImageUploadField
+            label="IMAGEM DE CAPA"
+            preview={imagePreview || event.imageUrl || ''}
+            showRemove={!!imagePreview}
+            onChange={file => {
+              if (imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+              setImageFile(file);
+              setImagePreview(file ? URL.createObjectURL(file) : '');
+            }}
+          />
 
           <div style={{
             padding: '10px 12px', borderRadius: 10,

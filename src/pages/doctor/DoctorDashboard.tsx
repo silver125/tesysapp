@@ -820,7 +820,7 @@ function SuggestedConnections({
             <SuggestionCard
               eyebrow="Workshop"
               title={topCourse.title}
-              visualSrc={VISUAL_FALLBACKS.clinical}
+              visualSrc={visualUrl(topCourse.imageUrl, VISUAL_FALLBACKS.clinical)}
               visualLabel="Aula"
               meta={`${eventDateLabel({ date: courseDisplayDate(topCourse), time: topCourse.time })} · ${locationText(topCourse.location)}`}
               reason={`Capacitação alinhada à área ${topCourse.category}.`}
@@ -2069,7 +2069,7 @@ function CourseCard({ course }: { course: Course }) {
       month={displayDate ? monthShort(displayDate) : undefined}
       day={displayDate ? dayNum(displayDate) : undefined}
       format={bannerLabel}
-      imageUrl={VISUAL_FALLBACKS.clinical}
+      imageUrl={visualUrl(course.imageUrl, VISUAL_FALLBACKS.clinical)}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
         <CompanyMark code={code} tint={companyTint(course.companyName)} size={22} radius={6} />

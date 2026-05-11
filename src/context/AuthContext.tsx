@@ -60,6 +60,7 @@ function dbToEvent(row: Record<string, unknown>): Event {
     companyName:      row.company_name     as string,
     companyWhatsapp:  row.company_whatsapp as string | undefined,
     website:          row.website          as string | undefined,
+    imageUrl:         row.image_url        as string | undefined,
     createdAt:        row.created_at       as string,
   };
 }
@@ -75,6 +76,7 @@ function dbToProduct(row: Record<string, unknown>): Product {
     companyName:     row.company_name    as string,
     companyWhatsapp: row.company_whatsapp as string | undefined,
     website:         row.website         as string | undefined,
+    imageUrl:        row.image_url       as string | undefined,
     availableFor:    row.available_for   as string,
     createdAt:       row.created_at      as string,
   };
@@ -86,6 +88,7 @@ function dbToCourse(row: Record<string, unknown>): Course {
     title:           row.title            as string,
     description:     row.description      as string,
     category:        row.category         as string,
+    imageUrl:        row.image_url        as string | undefined,
     modality:        row.modality         as 'online' | 'presencial' | 'hibrido',
     date:            row.date             as string | undefined,
     time:            row.time             as string | undefined,
@@ -583,6 +586,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         company_name:     data.companyName,
         company_whatsapp: data.companyWhatsapp ?? null,
         website:          data.website ?? null,
+        image_url:        data.imageUrl ?? null,
       }),
       12000,
       'Publicar evento',
@@ -611,6 +615,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (patch.maxParticipants !== undefined) dbPatch.max_participants  = patch.maxParticipants;
     if (patch.companyWhatsapp !== undefined) dbPatch.company_whatsapp  = patch.companyWhatsapp;
     if (patch.website         !== undefined) dbPatch.website           = patch.website ?? null;
+    if (patch.imageUrl        !== undefined) dbPatch.image_url         = patch.imageUrl ?? null;
 
     const { error } = await supabase.from('events').update(dbPatch).eq('id', id);
     if (error) throw new Error(error.message);
@@ -748,6 +753,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         company_whatsapp: data.companyWhatsapp ?? null,
         available_for:    data.availableFor,
         website:          data.website ?? null,
+        image_url:        data.imageUrl ?? null,
       }),
       12000,
       'Publicar produto',
@@ -783,6 +789,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       date:             data.date ?? null,
       time:             data.time ?? null,
       location:         data.location ?? null,
+      image_url:        data.imageUrl ?? null,
     };
 
     const result = await withTimeout(
@@ -791,7 +798,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       'Publicar curso',
     );
     let error = result.error;
-    if (error && /column .* (date|time|location)|date.* column|time.* column|location.* column/i.test(error.message)) {
+    if (error && /column .* (date|time|location|image_url)|date.* column|time.* column|location.* column|image_url.* column/i.test(error.message)) {
       const fallback = await withTimeout(
         supabase.from('courses').insert(basePayload),
         12000,

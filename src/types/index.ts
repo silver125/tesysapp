@@ -93,6 +93,7 @@ export interface Course {
   title: string;
   description: string;
   category: string;
+  imageUrl?: string;
   modality: CourseModality;
   date?: string;
   time?: string;
