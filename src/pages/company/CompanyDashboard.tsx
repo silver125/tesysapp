@@ -116,6 +116,25 @@ async function uploadOpportunityImage(file: File, companyId: string, folder: 'ev
   return data.publicUrl;
 }
 
+function isMissingImageBucketError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.toLowerCase().includes('bucket not found')
+    || message.toLowerCase().includes('bucket de imagens');
+}
+
+async function uploadOpportunityImageIfReady(file: File | null, companyId: string, folder: 'events' | 'products' | 'courses') {
+  if (!file) return undefined;
+  try {
+    return await uploadOpportunityImage(file, companyId, folder);
+  } catch (error) {
+    if (isMissingImageBucketError(error)) {
+      console.warn('Bucket de imagens do Tessy ainda não existe. Publicando com imagem padrão.', error);
+      return undefined;
+    }
+    throw error;
+  }
+}
+
 function leadDoctorKey(lead: Lead) {
   return lead.doctorId || `${lead.doctorName}-${lead.doctorSpecialty ?? ''}`;
 }
@@ -831,7 +850,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     setSaving(true);
     try {
       if (kind === 'event') {
-        const imageUrl = evImage.file ? await uploadOpportunityImage(evImage.file, company.id, 'events') : undefined;
+        const imageUrl = await uploadOpportunityImageIfReady(evImage.file, company.id, 'events');
         await onSaveEvent({
           ...ev,
           maxParticipants: Number(ev.maxParticipants) || 100,
@@ -840,7 +859,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else if (kind === 'product') {
-        const imageUrl = prImage.file ? await uploadOpportunityImage(prImage.file, company.id, 'products') : undefined;
+        const imageUrl = await uploadOpportunityImageIfReady(prImage.file, company.id, 'products');
         await onSaveProduct({
           ...pr,
           website: normalizeUrl(pr.website),
@@ -848,7 +867,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else {
-        const imageUrl = coImage.file ? await uploadOpportunityImage(coImage.file, company.id, 'courses') : undefined;
+        const imageUrl = await uploadOpportunityImageIfReady(coImage.file, company.id, 'courses');
         await onSaveCourse({
           ...co,
           website: normalizeUrl(co.website),
@@ -1890,7 +1909,7 @@ function EditEventModal({ event, onSave, onClose }: {
     setSaving(true);
     try {
       const nextImageUrl = imageFile
-        ? await uploadOpportunityImage(imageFile, event.companyId, 'events')
+        ? await uploadOpportunityImageIfReady(imageFile, event.companyId, 'events')
         : event.imageUrl;
       await onSave({
         title:           title.trim(),
