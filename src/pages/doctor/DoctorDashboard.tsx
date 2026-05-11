@@ -267,7 +267,6 @@ export default function DoctorDashboard() {
   });
 
   const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
-  const representativesAvailable = companyMatches.filter(company => company.whatsapp);
   const todayRelevantCount = Math.min(9, companyMatches.length + pendingConnections.length + upcomingEvents.length);
 
   function openTab(k: Tab, nextSearch = '') {
@@ -325,12 +324,6 @@ export default function DoctorDashboard() {
             <OpportunityMetric label="solicitações" value={pendingConnections.length} onClick={() => setHomeSegment('for-you')} />
             <OpportunityMetric label={upcomingEvents.length === 1 ? 'evento próximo' : 'eventos próximos'} value={upcomingEvents.length} onClick={() => setHomeSegment('events')} />
           </div>
-
-          <CommunityPulse
-            companies={companyMatches}
-            representatives={representativesAvailable}
-            events={upcomingEvents}
-          />
 
           {pendingConnections.length > 0 && (
             <ConnectionRequests leads={pendingConnections} onViewCompany={company => openTab('connect', company)} />
@@ -1001,56 +994,6 @@ function SuggestionCard({
         >
           {secondaryLabel}
         </button>
-      </div>
-    </div>
-  );
-}
-
-function CommunityPulse({
-  companies,
-  representatives,
-  events,
-}: {
-  companies: CompanyMatch[];
-  representatives: CompanyMatch[];
-  events: Event[];
-}) {
-  const items = [
-    companies.length > 0
-      ? `${companies.length} ${companies.length === 1 ? 'empresa publicou' : 'empresas publicaram'} oportunidades esta semana`
-      : 'Novas empresas aparecem conforme seu perfil evolui',
-    representatives.length > 0
-      ? `${representatives.length} ${representatives.length === 1 ? 'representante disponível' : 'representantes disponíveis'} para contato direto`
-      : 'Representantes aparecem quando houver contato disponível',
-    events.length > 0
-      ? `${events.length} ${events.length === 1 ? 'evento próximo' : 'eventos próximos'} da sua especialidade`
-      : 'Eventos próximos aparecem quando forem publicados',
-  ];
-
-  if (items.length === 0) return null;
-
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <SectionHeader title="Movimento da sua rede" />
-      <div style={{ display: 'grid', gap: 6 }}>
-        {items.map(item => (
-          <div key={item} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            minHeight: 34,
-            padding: '8px 10px',
-            borderRadius: 12,
-            background: 'linear-gradient(135deg, rgba(74,168,255,0.08), rgba(255,111,77,0.06))',
-            border: '1px solid rgba(74,168,255,0.14)',
-            fontSize: 11.5,
-            color: 'var(--ink-2)',
-            lineHeight: 1.28,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
-            <span>{item}</span>
-          </div>
-        ))}
       </div>
     </div>
   );
