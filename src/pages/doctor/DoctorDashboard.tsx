@@ -224,7 +224,7 @@ function visualUrl(src?: string | null, fallback = VISUAL_FALLBACKS.community) {
 
 function doctorGreeting(user: User | null | undefined) {
   const firstName = user?.name?.trim().split(/\s+/)[0];
-  return firstName ? `Olá, Dra. ${firstName}` : 'Olá, Dra.';
+  return firstName ? `Olá, ${firstName}` : 'Olá';
 }
 
 function opportunityCountLabel(count: number) {
@@ -495,39 +495,61 @@ function QuickStartHero({
       : company
         ? 'Ver empresa'
         : 'Atualizar perfil';
+  const detail = pendingCount > 0
+    ? 'Aprovação pendente'
+    : event
+      ? eventCountdown(event) || 'Evento disponível'
+      : company
+        ? 'Match sugerido'
+        : 'Perfil incompleto';
+  const image = visualUrl(event?.imageUrl ?? company?.events[0]?.imageUrl ?? company?.products[0]?.imageUrl, VISUAL_FALLBACKS.clinical);
 
   return (
     <div style={{
       position: 'relative',
-      minHeight: 126,
-      borderRadius: 18,
+      minHeight: 138,
+      borderRadius: 22,
       overflow: 'hidden',
       marginBottom: 12,
-      border: '1px solid rgba(255,255,255,0.56)',
-      background: `linear-gradient(135deg, rgba(20,26,42,0.62), rgba(74,168,255,0.22)), url(${visualUrl(event?.imageUrl, VISUAL_FALLBACKS.clinical)}) center/cover`,
-      boxShadow: '0 12px 34px rgba(81,92,130,0.14)',
+      border: '1px solid rgba(255,255,255,0.72)',
+      background: `linear-gradient(135deg, rgba(17,23,39,0.72), rgba(74,168,255,0.18), rgba(255,111,77,0.20)), url(${image}) center/cover`,
+      boxShadow: '0 18px 44px rgba(79,92,128,0.16)',
     }}>
       <div style={{
         position: 'absolute',
         inset: 0,
-        background: 'linear-gradient(135deg, rgba(55,120,238,0.18), rgba(255,111,77,0.20))',
+        background: 'linear-gradient(90deg, rgba(15,22,38,0.66), rgba(15,22,38,0.24) 58%, rgba(255,255,255,0.08))',
       }} />
       <div style={{
         position: 'relative',
-        minHeight: 126,
+        minHeight: 138,
         padding: 14,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
       }}>
+        <div style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          padding: '6px 8px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.88)',
+          color: 'var(--ink)',
+          fontSize: 10,
+          fontWeight: 560,
+          boxShadow: '0 10px 26px rgba(15,22,38,0.12)',
+        }}>
+          {detail}
+        </div>
         <div>
           <Mono style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.78)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
             Comece por aqui
           </Mono>
-          <div style={{ maxWidth: 230, marginTop: 7, fontSize: 18, lineHeight: 1.08, fontWeight: 560, color: '#fff', letterSpacing: 0 }}>
+          <div style={{ maxWidth: 230, marginTop: 8, fontSize: 19, lineHeight: 1.06, fontWeight: 600, color: '#fff', letterSpacing: 0 }}>
             {title}
           </div>
-          <div style={{ maxWidth: 250, marginTop: 5, fontSize: 11.5, lineHeight: 1.34, color: 'rgba(255,255,255,0.78)' }}>
+          <div style={{ maxWidth: 260, marginTop: 6, fontSize: 11.5, lineHeight: 1.36, color: 'rgba(255,255,255,0.78)' }}>
             {meta}
           </div>
         </div>
@@ -537,7 +559,7 @@ function QuickStartHero({
           style={{
             alignSelf: 'flex-start',
             minHeight: 38,
-            padding: '8px 13px',
+            padding: '8px 14px',
             borderRadius: 999,
             border: '1px solid rgba(255,255,255,0.42)',
             background: 'rgba(255,255,255,0.92)',
@@ -563,18 +585,31 @@ function OpportunityMetric({ label, value, onClick }: { label: string; value: nu
       style={{
         flex: '0 0 auto',
         minHeight: 38,
-        padding: '7px 11px',
+        padding: '7px 11px 7px 8px',
         borderRadius: 999,
-        background: 'var(--card)',
+        background: 'rgba(255,255,255,0.78)',
         border: '1px solid var(--line)',
         cursor: 'pointer',
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 6,
-        boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+        gap: 7,
+        boxShadow: '0 8px 20px rgba(88,98,130,0.05)',
       }}
     >
-      <div style={{ fontSize: 14, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0, lineHeight: 1 }}>
+      <div style={{
+        width: 25,
+        height: 25,
+        borderRadius: 999,
+        background: value > 0 ? 'linear-gradient(135deg, rgba(74,168,255,0.20), rgba(255,111,77,0.14))' : 'var(--chip)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 13,
+        fontWeight: 600,
+        color: 'var(--ink)',
+        letterSpacing: 0,
+        lineHeight: 1,
+      }}>
         {value}
       </div>
       <div style={{ fontSize: 10.5, color: 'var(--ink-2)', fontWeight: 560, lineHeight: 1, whiteSpace: 'nowrap' }}>
@@ -593,7 +628,16 @@ function HomeSegmentTabs({ active, onChange }: { active: HomeSegment; onChange: 
   ];
 
   return (
-    <div className="no-scrollbar" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8, marginBottom: 8 }}>
+    <div className="no-scrollbar" style={{
+      display: 'flex',
+      gap: 6,
+      overflowX: 'auto',
+      padding: 4,
+      marginBottom: 10,
+      borderRadius: 999,
+      background: 'rgba(255,255,255,0.66)',
+      border: '1px solid rgba(216,222,236,0.78)',
+    }}>
       {tabs.map(([value, label]) => {
         const selected = value === active;
         return (
@@ -606,12 +650,13 @@ function HomeSegmentTabs({ active, onChange }: { active: HomeSegment; onChange: 
               minHeight: 34,
               padding: '7px 12px',
               borderRadius: 999,
-              border: `1px solid ${selected ? 'rgba(74,168,255,0.28)' : 'var(--line)'}`,
-              background: selected ? 'rgba(74,168,255,0.10)' : 'var(--card)',
+              border: `1px solid ${selected ? 'rgba(74,168,255,0.25)' : 'transparent'}`,
+              background: selected ? '#fff' : 'transparent',
               color: selected ? 'var(--accent)' : 'var(--ink-2)',
               fontSize: 11.5,
               fontWeight: 560,
               cursor: 'pointer',
+              boxShadow: selected ? '0 8px 18px rgba(70,90,130,0.08)' : 'none',
             }}
           >
             {label}
@@ -887,15 +932,16 @@ function SuggestionCard({
   onSecondary?: () => void;
   secondaryDone?: boolean;
 }) {
+  const isWhatsappPrimary = primaryLabel.toLowerCase().includes('whatsapp');
   const primaryStyle = {
     flex: '0 0 auto',
-    minWidth: 82,
-    minHeight: 36,
-    padding: '8px 9px',
-    borderRadius: 10,
-    background: 'var(--accent-ink)',
-    color: '#fff',
-    border: 'none',
+    minWidth: 86,
+    minHeight: 38,
+    padding: '8px 10px',
+    borderRadius: 12,
+    background: isWhatsappPrimary ? 'rgba(37,211,102,0.12)' : 'var(--accent-ink)',
+    color: isWhatsappPrimary ? '#18A957' : '#fff',
+    border: isWhatsappPrimary ? '1px solid rgba(37,211,102,0.28)' : 'none',
     textDecoration: 'none',
     fontSize: 11,
     fontWeight: 560,
@@ -907,16 +953,16 @@ function SuggestionCard({
   return (
     <div style={{
       padding: 10,
-      borderRadius: 14,
-      background: 'var(--card)',
-      border: '1px solid var(--line)',
-      boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+      borderRadius: 18,
+      background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.82))',
+      border: '1px solid rgba(216,222,236,0.92)',
+      boxShadow: '0 10px 28px rgba(85,96,130,0.06)',
     }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '76px minmax(0, 1fr)', alignItems: 'stretch', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '88px minmax(0, 1fr)', alignItems: 'stretch', gap: 11 }}>
         <div style={{
           position: 'relative',
-          minHeight: 94,
-          borderRadius: 12,
+          minHeight: 108,
+          borderRadius: 14,
           overflow: 'hidden',
           background: visualSrc
             ? `linear-gradient(135deg, rgba(18,24,40,0.28), rgba(74,168,255,0.18)), url(${visualSrc}) center/cover`
@@ -931,7 +977,7 @@ function SuggestionCard({
             position: 'absolute',
             left: 7,
             bottom: 7,
-            maxWidth: 58,
+            maxWidth: 72,
             padding: '4px 6px',
             borderRadius: 999,
             background: 'rgba(255,255,255,0.88)',
@@ -950,13 +996,13 @@ function SuggestionCard({
           <Mono style={{ fontSize: 8, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
             {eyebrow}
           </Mono>
-          <div style={{ marginTop: 3, fontSize: 13.5, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.15 }}>
+          <div style={{ marginTop: 4, fontSize: 14.5, color: 'var(--ink)', fontWeight: 600, lineHeight: 1.14 }}>
             {title}
           </div>
-          <div style={{ marginTop: 2, fontSize: 11, color: 'var(--muted)', lineHeight: 1.25 }}>
+          <div style={{ marginTop: 3, fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.25 }}>
             {meta}
           </div>
-          <div style={{ marginTop: 4, fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.3 }}>
+          <div style={{ marginTop: 5, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.34 }}>
             {reason}
           </div>
           {tags.length > 0 && (
@@ -981,9 +1027,9 @@ function SuggestionCard({
           onClick={onSecondary}
           style={{
             flex: 1,
-            minHeight: 36,
+            minHeight: 38,
             padding: '8px 8px',
-            borderRadius: 10,
+            borderRadius: 12,
             background: secondaryDone ? 'rgba(30,169,124,0.10)' : 'var(--chip)',
             color: secondaryDone ? '#1EA97C' : 'var(--ink-2)',
             border: `1px solid ${secondaryDone ? 'rgba(30,169,124,0.28)' : 'var(--line)'}`,

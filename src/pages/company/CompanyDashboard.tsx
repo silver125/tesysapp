@@ -314,12 +314,22 @@ export default function CompanyDashboard() {
       {tab === 'home' && (
         <div>
           {/* Company header */}
-          <div style={{ marginBottom: 24, padding: '14px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            marginBottom: 14,
+            padding: 14,
+            borderRadius: 22,
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.94), rgba(242,247,255,0.82))',
+            border: '1px solid rgba(216,222,236,0.92)',
+            boxShadow: '0 12px 34px rgba(85,96,130,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <CompanyMark code={code} tint={tint} size={60} />
               {!editingProfile ? (
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h1 style={{ fontSize: 22, fontWeight: 560, letterSpacing: 0, lineHeight: 1.1 }}>
+                  <Mono style={{ display: 'block', fontSize: 8.5, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 5 }}>
+                    Perfil comercial
+                  </Mono>
+                  <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: 0, lineHeight: 1.08 }}>
                     {user?.company ?? user?.name}<span style={{ color: 'var(--accent)' }}>.</span>
                   </h1>
                   {user?.whatsapp ? (
@@ -403,7 +413,6 @@ export default function CompanyDashboard() {
                 </div>
               )}
 
-              {/* Edit toggle */}
               {!editingProfile && (
                 <button
                   onClick={() => {
@@ -413,10 +422,11 @@ export default function CompanyDashboard() {
                   }}
                   title="Editar perfil"
                   style={{
-                    width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                    background: 'var(--chip)', border: '1px solid var(--line)',
+                    width: 38, height: 38, borderRadius: 13, flexShrink: 0,
+                    background: '#fff', border: '1px solid var(--line)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', color: 'var(--muted)',
+                    boxShadow: '0 8px 18px rgba(80,90,120,0.07)',
                   }}
                 >
                   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -428,20 +438,32 @@ export default function CompanyDashboard() {
           </div>
 
           {/* Stats */}
-          <div style={{ display: 'flex', gap: 0, background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', marginBottom: 20, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
             {[
               { v: activeOpportunities, l: 'oportunidades ativas', go: 'events' as Tab },
               { v: myLeads.length, l: 'médicos interessados', go: 'leads' as Tab },
               { v: conversationsStarted, l: 'conversas iniciadas', go: 'leads' as Tab },
             ].map((s, i) => (
               <button key={s.l} onClick={() => setTab(s.go)} style={{
-                flex: 1, textAlign: 'center', padding: '16px 8px',
-                borderRight: i < 2 ? '1px solid var(--line)' : 'none',
-                borderTop: 'none', borderBottom: 'none', borderLeft: 'none',
-                background: 'transparent', cursor: 'pointer',
+                minHeight: 78,
+                textAlign: 'left',
+                padding: '11px 10px',
+                borderRadius: 16,
+                border: '1px solid var(--line)',
+                background: i === 1 ? 'linear-gradient(135deg, rgba(74,168,255,0.12), rgba(255,111,77,0.08))' : 'rgba(255,255,255,0.84)',
+                cursor: 'pointer',
+                boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
               }}>
-                <div style={{ fontSize: 26, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>{s.v}</div>
-                <Mono style={{ fontSize: 8.5, color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1.25 }}>{s.l}</Mono>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
+                  <span style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: 999,
+                    background: i === 1 ? 'var(--accent)' : 'rgba(111,122,144,0.38)',
+                  }} />
+                  <div style={{ fontSize: 23, fontWeight: 600, color: 'var(--ink)', letterSpacing: 0, lineHeight: 1 }}>{s.v}</div>
+                </div>
+                <Mono style={{ display: 'block', fontSize: 8, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.2 }}>{s.l}</Mono>
               </button>
             ))}
           </div>
@@ -462,7 +484,7 @@ export default function CompanyDashboard() {
               {[
                 { key: 'event', target: 'event', label: 'Evento' },
                 { key: 'product', target: 'product', label: 'Produto' },
-                { key: 'course', target: 'course', label: 'Curso' },
+                { key: 'course', target: 'course', label: 'Workshop' },
                 { key: 'sample', target: 'product', label: 'Amostra/Teste' },
                 { key: 'partnership', target: 'product', label: 'Parceria' },
               ].map(item => {
@@ -470,10 +492,11 @@ export default function CompanyDashboard() {
                 const target = item.target as 'event' | 'product' | 'course';
                 return (
                   <button key={key} onClick={() => { setCreateKind(target); setTab('create'); }} style={{
-                    padding: '13px 10px', borderRadius: 14,
-                    background: 'var(--card)', border: '1px solid var(--line)',
+                  padding: '12px 10px', borderRadius: 16,
+                    background: 'rgba(255,255,255,0.86)', border: '1px solid var(--line)',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9,
                     textAlign: 'left',
+                    boxShadow: '0 8px 20px rgba(85,96,130,0.04)',
                   }}>
                     <span style={{
                       width: 34, height: 34, borderRadius: 11,
@@ -496,11 +519,11 @@ export default function CompanyDashboard() {
             style={{
               width: '100%',
               marginBottom: 24,
-              padding: 16,
-              borderRadius: 18,
-              background: 'linear-gradient(135deg, rgba(74,168,255,0.12), rgba(255,112,81,0.10))',
+              padding: 15,
+              borderRadius: 22,
+              background: 'linear-gradient(135deg, rgba(74,168,255,0.14), rgba(255,112,81,0.12))',
               border: '1px solid rgba(74,168,255,0.20)',
-              boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+              boxShadow: '0 14px 36px rgba(85,96,130,0.08)',
               cursor: 'pointer',
               textAlign: 'left',
             }}
@@ -510,7 +533,7 @@ export default function CompanyDashboard() {
                 <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                   Ponte comercial
                 </Mono>
-                <div style={{ marginTop: 8, fontSize: 18, color: 'var(--ink)', fontWeight: 560, lineHeight: 1.2 }}>
+                <div style={{ marginTop: 8, fontSize: 19, color: 'var(--ink)', fontWeight: 600, lineHeight: 1.16 }}>
                   {myLeads.length} {myLeads.length === 1 ? 'médico interessado' : 'médicos interessados'}
                 </div>
                 <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.4 }}>
@@ -538,7 +561,7 @@ export default function CompanyDashboard() {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '9px 13px',
+              padding: '9px 14px',
               borderRadius: 12,
               background: 'var(--ink)',
               color: '#fff',
@@ -874,7 +897,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             {[
               { id: 'event', target: 'event', title: 'Evento', desc: 'Congresso, workshop, webinar' },
               { id: 'product', target: 'product', title: 'Produto', desc: 'Produto, tecnologia ou material científico' },
-              { id: 'course', target: 'course', title: 'Curso', desc: 'Eventos e capacitações médicas' },
+              { id: 'course', target: 'course', title: 'Workshop', desc: 'Eventos e capacitações médicas' },
               { id: 'sample', target: 'product', title: 'Amostra/Teste', desc: 'Convite para médicos avaliarem uma solução' },
               { id: 'partnership', target: 'product', title: 'Parceria', desc: 'Divulgação, relacionamento ou ação comercial' },
             ].map(option => {
@@ -1131,24 +1154,54 @@ function EventRowCompany({ ev, interestedCount, onViewInterested, onShare }: {
   const dateParts = eventDateParts(ev.date);
   const status = eventStatusLabel(ev);
   return (
-    <div style={{ display: 'flex', gap: 12, padding: 12, background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)' }}>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '82px minmax(0, 1fr)',
+      gap: 12,
+      padding: 10,
+      background: 'rgba(255,255,255,0.88)',
+      borderRadius: 18,
+      border: '1px solid var(--line)',
+      boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
+    }}>
       <div style={{
-        width: 50, flexShrink: 0, borderRadius: 10,
-        background: `linear-gradient(135deg, ${tint1} 0%, ${tint2} 100%)`,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff',
+        minHeight: 92,
+        position: 'relative',
+        flexShrink: 0,
+        borderRadius: 15,
+        overflow: 'hidden',
+        background: `linear-gradient(135deg, rgba(18,24,40,0.54), rgba(74,168,255,0.18)), url(${visualImage(ev.imageUrl)}) center/cover`,
       }}>
-        <div style={{ fontSize: 9, fontWeight: 560 }}>{dateParts.month}</div>
-        <div style={{ fontSize: 18, fontWeight: 560, lineHeight: 1 }}>{dateParts.day}</div>
+        <div style={{
+          position: 'absolute',
+          left: 8,
+          bottom: 8,
+          width: 40,
+          height: 44,
+          borderRadius: 12,
+          background: `linear-gradient(135deg, ${tint1}, ${tint2})`,
+          color: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 10px 22px rgba(15,22,38,0.18)',
+        }}>
+          <div style={{ fontSize: 8, fontWeight: 560 }}>{dateParts.month}</div>
+          <div style={{ fontSize: 17, fontWeight: 600, lineHeight: 1 }}>{dateParts.day}</div>
+        </div>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2 }}>{ev.title}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.18 }}>{ev.title}</div>
+          <Mono style={{ fontSize: 9, color: status === 'ATIVO' ? '#1EA97C' : 'var(--muted)', fontWeight: 560, flexShrink: 0 }}>✓ {status}</Mono>
+        </div>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
           {eventCity(ev.location)} · {eventSchedule(ev)}
         </div>
         <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <Chip color="var(--accent)">{formatEventOccupancy(ev.registeredCount, ev.maxParticipants)}</Chip>
           <Chip color="#1EA97C">{availableSpots(ev)} disponíveis</Chip>
-          <Mono style={{ fontSize: 10, color: status === 'ATIVO' ? '#1EA97C' : 'var(--muted)', fontWeight: 560 }}>✓ {status}</Mono>
         </div>
         <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={onViewInterested} style={{
@@ -1339,21 +1392,21 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
 
   return (
     <div style={{
-      minWidth: 220,
-      maxWidth: 240,
-      padding: 14,
-      borderRadius: 18,
-      background: 'var(--card)',
-      border: '1px solid var(--line)',
-      boxShadow: '0 2px 10px rgba(90,80,130,0.04)',
+      minWidth: 226,
+      maxWidth: 248,
+      padding: 13,
+      borderRadius: 20,
+      background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.84))',
+      border: '1px solid rgba(216,222,236,0.92)',
+      boxShadow: '0 10px 28px rgba(85,96,130,0.06)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
-          width: 38,
-          height: 38,
-          borderRadius: 13,
-          background: 'linear-gradient(135deg, rgba(74,168,255,0.22), rgba(255,112,81,0.16))',
-          color: 'var(--ink)',
+          width: 42,
+          height: 42,
+          borderRadius: 15,
+          background: 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+          color: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -1373,7 +1426,7 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
         </div>
       </div>
       <div style={{ marginTop: 11, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <Chip color="var(--accent)">Região não informada</Chip>
+        <Chip color="var(--accent)">Perfil médico</Chip>
         <Chip color="#1EA97C">{lead.itemType === 'event' ? 'Evento' : lead.itemType === 'product' ? 'Produto' : lead.itemType === 'course' ? 'Workshop' : 'Empresa'}</Chip>
       </div>
       <p style={{ margin: '10px 0 0', color: 'var(--ink-2)', fontSize: 12, lineHeight: 1.38 }}>
