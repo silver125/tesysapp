@@ -19,6 +19,27 @@ function withTimeout<T>(p: PromiseLike<T>, ms: number, label = 'Servidor'): Prom
   ]);
 }
 
+function isMissingDbColumnError(error: unknown, columns: string[]) {
+  const message = error instanceof Error
+    ? error.message
+    : typeof error === 'object' && error && 'message' in error
+      ? String((error as { message?: unknown }).message)
+      : String(error ?? '');
+
+  return columns.some(column => {
+    const escaped = column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:'${escaped}' column|column .*${escaped}|${escaped}.* column|${escaped}.*schema cache)`, 'i').test(message);
+  });
+}
+
+function omitDbColumns<T extends Record<string, unknown>>(payload: T, columns: string[]) {
+  const next: Record<string, unknown> = { ...payload };
+  columns.forEach(column => {
+    delete next[column];
+  });
+  return next;
+}
+
 // ── Helpers de conversão DB → App ────────────────────────────────────────────
 function dbToUser(profile: Record<string, unknown>, email: string): User {
   // Suporta tanto schema novo (name, company) quanto existente (first_name, company_name)
@@ -572,25 +593,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Eventos ──
   const addEvent = async (data: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
     assertSupabaseConfigured();
-    const { error } = await withTimeout(
-      supabase.from('events').insert({
-        title:            data.title,
-        description:      data.description,
-        date:             data.date,
-        time:             data.time,
-        location:         data.location,
-        category:         data.category,
-        max_participants: data.maxParticipants,
-        registered_count: 0,
-        company_id:       data.companyId,
-        company_name:     data.companyName,
-        company_whatsapp: data.companyWhatsapp ?? null,
-        website:          data.website ?? null,
-        image_url:        data.imageUrl ?? null,
-      }),
+    const payload = {
+      title:            data.title,
+      description:      data.description,
+      date:             data.date,
+      time:             data.time,
+      location:         data.location,
+      category:         data.category,
+      max_participants: data.maxParticipants,
+      registered_count: 0,
+      company_id:       data.companyId,
+      company_name:     data.companyName,
+      company_whatsapp: data.companyWhatsapp ?? null,
+      website:          data.website ?? null,
+      image_url:        data.imageUrl ?? null,
+    };
+
+    let result = await withTimeout(
+      supabase.from('events').insert(payload),
       12000,
       'Publicar evento',
     );
+    if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
+      console.warn('Coluna image_url ausente em events. Publicando evento sem imagem.', result.error.message);
+      result = await withTimeout(
+        supabase.from('events').insert(omitDbColumns(payload, ['image_url'])),
+        12000,
+        'Publicar evento',
+      );
+    }
+    const { error } = result;
     if (error) throw new Error(error.message);
     refreshData(); // background, não bloqueia
   };
@@ -617,7 +649,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (patch.website         !== undefined) dbPatch.website           = patch.website ?? null;
     if (patch.imageUrl        !== undefined) dbPatch.image_url         = patch.imageUrl ?? null;
 
-    const { error } = await supabase.from('events').update(dbPatch).eq('id', id);
+    let result = await supabase.from('events').update(dbPatch).eq('id', id);
+    if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
+      const fallbackPatch = omitDbColumns(dbPatch, ['image_url']);
+      if (Object.keys(fallbackPatch).length > 0) {
+        console.warn('Coluna image_url ausente em events. Salvando edição sem imagem.', result.error.message);
+        result = await supabase.from('events').update(fallbackPatch).eq('id', id);
+      }
+    }
+    const { error } = result;
     if (error) throw new Error(error.message);
 
     // Atualização otimista local
@@ -742,22 +782,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Produtos ──
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
-    const { error } = await withTimeout(
-      supabase.from('products').insert({
-        name:             data.name,
-        description:      data.description,
-        category:         data.category,
-        price:            data.price ?? null,
-        company_id:       data.companyId,
-        company_name:     data.companyName,
-        company_whatsapp: data.companyWhatsapp ?? null,
-        available_for:    data.availableFor,
-        website:          data.website ?? null,
-        image_url:        data.imageUrl ?? null,
-      }),
+    const payload = {
+      name:             data.name,
+      description:      data.description,
+      category:         data.category,
+      price:            data.price ?? null,
+      company_id:       data.companyId,
+      company_name:     data.companyName,
+      company_whatsapp: data.companyWhatsapp ?? null,
+      available_for:    data.availableFor,
+      website:          data.website ?? null,
+      image_url:        data.imageUrl ?? null,
+    };
+
+    let result = await withTimeout(
+      supabase.from('products').insert(payload),
       12000,
       'Publicar produto',
     );
+    if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
+      console.warn('Coluna image_url ausente em products. Publicando produto sem imagem.', result.error.message);
+      result = await withTimeout(
+        supabase.from('products').insert(omitDbColumns(payload, ['image_url'])),
+        12000,
+        'Publicar produto',
+      );
+    }
+    const { error } = result;
     if (error) throw new Error(error.message);
     refreshData(); // background, não bloqueia
   };
@@ -798,7 +849,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       'Publicar curso',
     );
     let error = result.error;
-    if (error && /column .* (date|time|location|image_url)|date.* column|time.* column|location.* column|image_url.* column/i.test(error.message)) {
+    if (error && isMissingDbColumnError(error, ['date', 'time', 'location', 'image_url'])) {
       const fallback = await withTimeout(
         supabase.from('courses').insert(basePayload),
         12000,
