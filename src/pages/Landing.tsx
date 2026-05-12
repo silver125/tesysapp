@@ -14,8 +14,8 @@ const findCards = [
     text: 'Encontre congressos, aulas, imersões e encontros médicos.',
   },
   {
-    title: 'Cursos',
-    text: 'Descubra formações alinhadas à sua especialidade.',
+    title: 'Workshops',
+    text: 'Descubra capacitações alinhadas à sua especialidade.',
   },
   {
     title: 'Produtos',
@@ -30,7 +30,7 @@ const findCards = [
 const doctorBenefits = [
   'Produtos para sua área',
   'Representantes da sua região',
-  'Eventos e cursos médicos',
+  'Workshops e eventos médicos',
   'Serviços úteis para sua prática',
 ];
 
@@ -90,7 +90,7 @@ export default function Landing() {
           </h1>
 
           <p>
-            Encontre representantes, eventos, cursos, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
+            Encontre representantes, eventos, workshops, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
           </p>
 
           <div className="tl-hero-actions">
@@ -132,7 +132,7 @@ export default function Landing() {
                 <div className="tl-phone-stats">
                   <span><strong>1</strong> Eventos</span>
                   <span><strong>1</strong> Produtos</span>
-                  <span><strong>0</strong> Cursos</span>
+                  <span><strong>0</strong> Workshops</span>
                 </div>
               </div>
 
@@ -207,7 +207,7 @@ export default function Landing() {
       <section className="tl-mobile-intro">
         <h2>Comunidade para quem vive o mundo da medicina.</h2>
         <p>
-          Encontre representantes, eventos, cursos, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
+          Encontre representantes, eventos, workshops, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
         </p>
 
         <div className="tl-mobile-hero-actions">

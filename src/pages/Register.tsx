@@ -251,7 +251,7 @@ export default function Register() {
               type="text"
               value={data.name}
               onChange={v => update('name', v)}
-              placeholder="Dra. Ana Silva"
+              placeholder="Ana Silva"
               autoComplete="name"
             />
 

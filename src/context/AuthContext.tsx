@@ -655,6 +655,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (Object.keys(fallbackPatch).length > 0) {
         console.warn('Coluna image_url ausente em events. Salvando edição sem imagem.', result.error.message);
         result = await supabase.from('events').update(fallbackPatch).eq('id', id);
+      } else {
+        console.warn('Coluna image_url ausente em events. Ignorando atualização isolada de imagem.', result.error.message);
+        setEvents(prev => prev.map(e => e.id === id ? { ...e, ...patch, imageUrl: e.imageUrl } as Event : e));
+        return;
       }
     }
     const { error } = result;
