@@ -55,6 +55,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+const WEEKDAYS_PT = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 
 function pickScheduleDate(item: ScheduleLike) {
   return item.start_date || item.event_date || item.date || '';
@@ -227,6 +228,14 @@ function doctorGreeting(user: User | null | undefined) {
   return firstName ? `Olá, ${firstName}` : 'Olá';
 }
 
+function todayLabel(now = new Date()) {
+  return `${WEEKDAYS_PT[now.getDay()]}, ${String(now.getDate()).padStart(2, '0')} ${MONTHS_PT[now.getMonth()]}`;
+}
+
+function doctorProfileLabel(user: User | null | undefined) {
+  return user?.specialty?.trim() || 'Perfil médico';
+}
+
 function opportunityCountLabel(count: number) {
   if (count <= 0) return 'Novas oportunidades aparecerão aqui.';
   return `${count} ${count === 1 ? 'oportunidade relevante' : 'oportunidades relevantes'} para você hoje`;
@@ -289,14 +298,11 @@ export default function DoctorDashboard() {
       {/* ── HOME ── */}
       {tab === 'home' && (
         <div>
-          <div style={{ marginBottom: 12 }}>
-            <h1 style={{ fontSize: 24, fontWeight: 560, letterSpacing: 0, lineHeight: 1.06, color: 'var(--ink)' }}>
-              {doctorGreeting(user)}<span style={{ color: 'var(--accent)' }}>.</span>
-            </h1>
-            <p style={{ fontSize: 12.5, color: 'var(--ink-2)', marginTop: 4, lineHeight: 1.3 }}>
-              {opportunityCountLabel(todayRelevantCount)}
-            </p>
-          </div>
+          <DoctorHomeIntro
+            user={user}
+            opportunityCount={todayRelevantCount}
+            visualSrc={visualUrl(upcomingEvents[0]?.imageUrl ?? companyMatches[0]?.products[0]?.imageUrl, VISUAL_FALLBACKS.clinical)}
+          />
 
           <QuickStartHero
             pendingCount={pendingConnections.length}
@@ -463,6 +469,87 @@ export default function DoctorDashboard() {
   );
 }
 
+function DoctorHomeIntro({
+  user,
+  opportunityCount,
+  visualSrc,
+}: {
+  user: User | null | undefined;
+  opportunityCount: number;
+  visualSrc: string;
+}) {
+  return (
+    <section style={{
+      position: 'relative',
+      marginBottom: 11,
+      padding: 13,
+      borderRadius: 21,
+      overflow: 'hidden',
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.96), rgba(241,246,255,0.86) 55%, rgba(255,246,243,0.74))',
+      border: '1px solid rgba(216,222,236,0.88)',
+      boxShadow: '0 12px 34px rgba(88,98,130,0.07)',
+    }}>
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        opacity: 0.34,
+        background: 'radial-gradient(circle at 0% 0%, rgba(74,168,255,0.18), transparent 32%), radial-gradient(circle at 100% 20%, rgba(255,111,77,0.12), transparent 34%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+            <span style={{
+              padding: '5px 8px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.78)',
+              border: '1px solid rgba(216,222,236,0.82)',
+              color: 'var(--muted)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 8.5,
+              fontWeight: 560,
+              letterSpacing: '0.08em',
+            }}>
+              {todayLabel()}
+            </span>
+            <span style={{
+              padding: '5px 8px',
+              borderRadius: 999,
+              background: 'rgba(74,168,255,0.10)',
+              border: '1px solid rgba(74,168,255,0.18)',
+              color: 'var(--accent)',
+              fontSize: 10,
+              fontWeight: 560,
+              maxWidth: 170,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+            }}>
+              {doctorProfileLabel(user)}
+            </span>
+          </div>
+          <h1 style={{ fontSize: 25, fontWeight: 560, letterSpacing: 0, lineHeight: 1.02, color: 'var(--ink)' }}>
+            {doctorGreeting(user)}<span style={{ color: 'var(--accent)' }}>.</span>
+          </h1>
+          <p style={{ fontSize: 12.5, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.32, maxWidth: 272 }}>
+            {opportunityCountLabel(opportunityCount)}
+          </p>
+        </div>
+        <div style={{
+          width: 58,
+          height: 72,
+          borderRadius: 18,
+          flexShrink: 0,
+          overflow: 'hidden',
+          border: '1px solid rgba(255,255,255,0.78)',
+          background: `linear-gradient(180deg, rgba(15,22,38,0.10), rgba(15,22,38,0.34)), url(${visualSrc}) center/cover`,
+          boxShadow: '0 12px 28px rgba(52,57,73,0.12)',
+        }} />
+      </div>
+    </section>
+  );
+}
+
 function QuickStartHero({
   pendingCount,
   event,
@@ -507,23 +594,23 @@ function QuickStartHero({
   return (
     <div style={{
       position: 'relative',
-      minHeight: 138,
-      borderRadius: 22,
+      minHeight: 132,
+      borderRadius: 20,
       overflow: 'hidden',
-      marginBottom: 12,
+      marginBottom: 10,
       border: '1px solid rgba(255,255,255,0.72)',
-      background: `linear-gradient(135deg, rgba(17,23,39,0.72), rgba(74,168,255,0.18), rgba(255,111,77,0.20)), url(${image}) center/cover`,
-      boxShadow: '0 18px 44px rgba(79,92,128,0.16)',
+      background: `linear-gradient(135deg, rgba(17,23,39,0.62), rgba(74,168,255,0.16), rgba(255,111,77,0.18)), url(${image}) center/cover`,
+      boxShadow: '0 16px 36px rgba(79,92,128,0.14)',
     }}>
       <div style={{
         position: 'absolute',
         inset: 0,
-        background: 'linear-gradient(90deg, rgba(15,22,38,0.66), rgba(15,22,38,0.24) 58%, rgba(255,255,255,0.08))',
+        background: 'linear-gradient(90deg, rgba(15,22,38,0.70), rgba(15,22,38,0.22) 60%, rgba(255,255,255,0.10))',
       }} />
       <div style={{
         position: 'relative',
-        minHeight: 138,
-        padding: 14,
+        minHeight: 132,
+        padding: 13,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -532,11 +619,11 @@ function QuickStartHero({
           position: 'absolute',
           top: 12,
           right: 12,
-          padding: '6px 8px',
+          padding: '5px 7px',
           borderRadius: 999,
           background: 'rgba(255,255,255,0.88)',
           color: 'var(--ink)',
-          fontSize: 10,
+          fontSize: 9.5,
           fontWeight: 560,
           boxShadow: '0 10px 26px rgba(15,22,38,0.12)',
         }}>
@@ -546,10 +633,10 @@ function QuickStartHero({
           <Mono style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.78)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
             Comece por aqui
           </Mono>
-          <div style={{ maxWidth: 230, marginTop: 8, fontSize: 19, lineHeight: 1.06, fontWeight: 600, color: '#fff', letterSpacing: 0 }}>
+          <div style={{ maxWidth: 224, marginTop: 7, fontSize: 18, lineHeight: 1.06, fontWeight: 600, color: '#fff', letterSpacing: 0 }}>
             {title}
           </div>
-          <div style={{ maxWidth: 260, marginTop: 6, fontSize: 11.5, lineHeight: 1.36, color: 'rgba(255,255,255,0.78)' }}>
+          <div style={{ maxWidth: 254, marginTop: 5, fontSize: 11, lineHeight: 1.35, color: 'rgba(255,255,255,0.78)' }}>
             {meta}
           </div>
         </div>
@@ -558,13 +645,13 @@ function QuickStartHero({
           onClick={onPrimary}
           style={{
             alignSelf: 'flex-start',
-            minHeight: 38,
-            padding: '8px 14px',
+            minHeight: 35,
+            padding: '7px 13px',
             borderRadius: 999,
             border: '1px solid rgba(255,255,255,0.42)',
             background: 'rgba(255,255,255,0.92)',
             color: 'var(--ink)',
-            fontSize: 12,
+            fontSize: 11.5,
             fontWeight: 560,
             cursor: 'pointer',
             boxShadow: '0 8px 20px rgba(15,22,38,0.18)',
@@ -757,10 +844,10 @@ function SuggestedConnections({
 
   const representatives = companies.filter(company => company.whatsapp);
   const titleBySegment: Record<HomeSegment, string> = {
-    'for-you': 'Para você agora',
-    companies: 'Empresas relevantes',
+    'for-you': 'Melhores conexões agora',
+    companies: 'Empresas para conhecer',
     representatives: 'Representantes disponíveis',
-    events: 'Eventos próximos',
+    events: 'Eventos relevantes',
   };
 
   const emptyTextBySegment: Record<HomeSegment, string> = {
@@ -935,15 +1022,15 @@ function SuggestionCard({
   const isWhatsappPrimary = primaryLabel.toLowerCase().includes('whatsapp');
   const primaryStyle = {
     flex: '0 0 auto',
-    minWidth: 86,
-    minHeight: 38,
-    padding: '8px 10px',
-    borderRadius: 12,
+    minWidth: 82,
+    minHeight: 35,
+    padding: '7px 10px',
+    borderRadius: 11,
     background: isWhatsappPrimary ? 'rgba(37,211,102,0.12)' : 'var(--accent-ink)',
     color: isWhatsappPrimary ? '#18A957' : '#fff',
     border: isWhatsappPrimary ? '1px solid rgba(37,211,102,0.28)' : 'none',
     textDecoration: 'none',
-    fontSize: 11,
+    fontSize: 10.8,
     fontWeight: 560,
     textAlign: 'center' as const,
     cursor: 'pointer',
@@ -952,16 +1039,26 @@ function SuggestionCard({
 
   return (
     <div style={{
-      padding: 10,
+      position: 'relative',
+      overflow: 'hidden',
+      padding: 9,
       borderRadius: 18,
       background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.82))',
       border: '1px solid rgba(216,222,236,0.92)',
       boxShadow: '0 10px 28px rgba(85,96,130,0.06)',
     }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '88px minmax(0, 1fr)', alignItems: 'stretch', gap: 11 }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 2,
+        background: 'linear-gradient(90deg, rgba(74,168,255,0.72), rgba(255,111,77,0.50))',
+      }} />
+      <div style={{ display: 'grid', gridTemplateColumns: '82px minmax(0, 1fr)', alignItems: 'stretch', gap: 10 }}>
         <div style={{
           position: 'relative',
-          minHeight: 108,
+          minHeight: 100,
           borderRadius: 14,
           overflow: 'hidden',
           background: visualSrc
@@ -977,12 +1074,12 @@ function SuggestionCard({
             position: 'absolute',
             left: 7,
             bottom: 7,
-            maxWidth: 72,
+            maxWidth: 68,
             padding: '4px 6px',
             borderRadius: 999,
             background: 'rgba(255,255,255,0.88)',
             color: 'var(--ink)',
-            fontSize: 8.5,
+            fontSize: 8,
             fontWeight: 560,
             lineHeight: 1,
             overflow: 'hidden',
@@ -993,26 +1090,26 @@ function SuggestionCard({
           </div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <Mono style={{ fontSize: 8, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+          <Mono style={{ fontSize: 7.8, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
             {eyebrow}
           </Mono>
-          <div style={{ marginTop: 4, fontSize: 14.5, color: 'var(--ink)', fontWeight: 600, lineHeight: 1.14 }}>
+          <div style={{ marginTop: 4, fontSize: 14, color: 'var(--ink)', fontWeight: 600, lineHeight: 1.12 }}>
             {title}
           </div>
-          <div style={{ marginTop: 3, fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.25 }}>
+          <div style={{ marginTop: 3, fontSize: 11, color: 'var(--muted)', lineHeight: 1.22 }}>
             {meta}
           </div>
-          <div style={{ marginTop: 5, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.34 }}>
+          <div style={{ marginTop: 5, fontSize: 11.2, color: 'var(--ink-2)', lineHeight: 1.32 }}>
             {reason}
           </div>
           {tags.length > 0 && (
-            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 7 }}>
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 6 }}>
               {tags.slice(0, 3).map(tag => <Chip key={tag} color={tag.toLowerCase().includes('whatsapp') ? '#25D366' : 'var(--accent)'}>{tag}</Chip>)}
             </div>
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 7, marginTop: 9 }}>
+      <div style={{ display: 'flex', gap: 7, marginTop: 8 }}>
         {primaryHref ? (
           <a href={primaryHref} target="_blank" rel="noopener noreferrer" style={primaryStyle}>
             {primaryLabel}
@@ -1027,13 +1124,13 @@ function SuggestionCard({
           onClick={onSecondary}
           style={{
             flex: 1,
-            minHeight: 38,
-            padding: '8px 8px',
-            borderRadius: 12,
+            minHeight: 35,
+            padding: '7px 8px',
+            borderRadius: 11,
             background: secondaryDone ? 'rgba(30,169,124,0.10)' : 'var(--chip)',
             color: secondaryDone ? '#1EA97C' : 'var(--ink-2)',
             border: `1px solid ${secondaryDone ? 'rgba(30,169,124,0.28)' : 'var(--line)'}`,
-            fontSize: 11,
+            fontSize: 10.8,
             fontWeight: 560,
             cursor: 'pointer',
           }}
