@@ -175,15 +175,6 @@ function matchesDoctorProfile(user: User | null | undefined, ...texts: Array<str
   return texts.some(text => text?.toLowerCase().includes(specialty));
 }
 
-function professionalInterestTags(user: User | null | undefined, products: Product[], courses: Course[], events: Event[]) {
-  const tags = new Set<string>();
-  if (user?.specialty) tags.add(user.specialty);
-  [...products, ...courses, ...events].forEach(item => {
-    if ('category' in item && item.category) tags.add(item.category);
-  });
-  return [...tags].slice(0, 5);
-}
-
 function eventFormat(ev: Pick<Event, 'category' | 'location'>) {
   const text = `${ev.category} ${ev.location}`.toLowerCase();
   if (text.includes('híbrido') || text.includes('hibrido')) return 'Híbrido';
@@ -259,7 +250,6 @@ export default function DoctorDashboard() {
   const upcomingEvents = events.filter(isUpcomingEvent);
   const companyMatches = buildCompanyMatches(events, products, courses);
   const recommendedProducts = products.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
-  const interestTags = professionalInterestTags(user, products, courses, events);
   const filtEvents = events.filter(e => {
     const matchQ = !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q);
     const filter = evFilter.toLowerCase();
@@ -325,17 +315,21 @@ export default function DoctorDashboard() {
             }}
           />
 
-          <div className="no-scrollbar" style={{ display: 'flex', gap: 7, marginBottom: 13, overflowX: 'auto', paddingBottom: 2 }}>
-            <OpportunityMetric label={companyMatches.length === 1 ? 'empresa sugerida' : 'empresas sugeridas'} value={companyMatches.length} onClick={() => setHomeSegment('companies')} />
-            <OpportunityMetric label="solicitações" value={pendingConnections.length} onClick={() => setHomeSegment('for-you')} />
-            <OpportunityMetric label={upcomingEvents.length === 1 ? 'evento próximo' : 'eventos próximos'} value={upcomingEvents.length} onClick={() => setHomeSegment('events')} />
-          </div>
+          <DoctorQuickActions
+            active={homeSegment}
+            companiesCount={companyMatches.length}
+            representativesCount={companyMatches.filter(company => company.whatsapp).length}
+            eventsCount={upcomingEvents.length}
+            productsCount={recommendedProducts.length}
+            onCompanies={() => setHomeSegment('companies')}
+            onRepresentatives={() => setHomeSegment('representatives')}
+            onEvents={() => setHomeSegment('events')}
+            onProducts={() => openTab('products')}
+          />
 
           {pendingConnections.length > 0 && (
             <ConnectionRequests leads={pendingConnections} onViewCompany={company => openTab('connect', company)} />
           )}
-
-          <HomeSegmentTabs active={homeSegment} onChange={setHomeSegment} />
 
           <SuggestedConnections
             activeSegment={homeSegment}
@@ -351,11 +345,6 @@ export default function DoctorDashboard() {
           />
 
           <DoctorWhatsappCard />
-
-          <ProfessionalInterests
-            tags={interestTags}
-            onUpdate={() => openTab('connect')}
-          />
         </div>
       )}
 
@@ -664,92 +653,113 @@ function QuickStartHero({
   );
 }
 
-function OpportunityMetric({ label, value, onClick }: { label: string; value: number; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        flex: '0 0 auto',
-        minHeight: 38,
-        padding: '7px 11px 7px 8px',
-        borderRadius: 999,
-        background: 'rgba(255,255,255,0.78)',
-        border: '1px solid var(--line)',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 7,
-        boxShadow: '0 8px 20px rgba(88,98,130,0.05)',
-      }}
-    >
-      <div style={{
-        width: 25,
-        height: 25,
-        borderRadius: 999,
-        background: value > 0 ? 'linear-gradient(135deg, rgba(74,168,255,0.20), rgba(255,111,77,0.14))' : 'var(--chip)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 13,
-        fontWeight: 600,
-        color: 'var(--ink)',
-        letterSpacing: 0,
-        lineHeight: 1,
-      }}>
-        {value}
-      </div>
-      <div style={{ fontSize: 10.5, color: 'var(--ink-2)', fontWeight: 560, lineHeight: 1, whiteSpace: 'nowrap' }}>
-        {label}
-      </div>
-    </button>
-  );
-}
-
-function HomeSegmentTabs({ active, onChange }: { active: HomeSegment; onChange: (value: HomeSegment) => void }) {
-  const tabs: Array<[HomeSegment, string]> = [
-    ['for-you', 'Para você'],
-    ['companies', 'Empresas'],
-    ['representatives', 'Representantes'],
-    ['events', 'Eventos'],
+function DoctorQuickActions({
+  active,
+  companiesCount,
+  representativesCount,
+  eventsCount,
+  productsCount,
+  onCompanies,
+  onRepresentatives,
+  onEvents,
+  onProducts,
+}: {
+  active: HomeSegment;
+  companiesCount: number;
+  representativesCount: number;
+  eventsCount: number;
+  productsCount: number;
+  onCompanies: () => void;
+  onRepresentatives: () => void;
+  onEvents: () => void;
+  onProducts: () => void;
+}) {
+  const items: Array<{
+    key: HomeSegment | 'products';
+    label: string;
+    count: number;
+    hint: string;
+    onClick: () => void;
+  }> = [
+    { key: 'events', label: 'Eventos', count: eventsCount, hint: 'próximos', onClick: onEvents },
+    { key: 'companies', label: 'Empresas', count: companiesCount, hint: 'sugeridas', onClick: onCompanies },
+    { key: 'representatives', label: 'Representantes', count: representativesCount, hint: 'contato', onClick: onRepresentatives },
+    { key: 'products', label: 'Produtos', count: productsCount, hint: 'para ver', onClick: onProducts },
   ];
 
   return (
-    <div className="no-scrollbar" style={{
-      display: 'flex',
-      gap: 6,
-      overflowX: 'auto',
-      padding: 4,
-      marginBottom: 10,
-      borderRadius: 999,
-      background: 'rgba(255,255,255,0.66)',
-      border: '1px solid rgba(216,222,236,0.78)',
-    }}>
-      {tabs.map(([value, label]) => {
-        const selected = value === active;
-        return (
-          <button
-            key={value}
-            type="button"
-            onClick={() => onChange(value)}
-            style={{
-              flex: '0 0 auto',
-              minHeight: 34,
-              padding: '7px 12px',
-              borderRadius: 999,
-              border: `1px solid ${selected ? 'rgba(74,168,255,0.25)' : 'transparent'}`,
-              background: selected ? '#fff' : 'transparent',
-              color: selected ? 'var(--accent)' : 'var(--ink-2)',
-              fontSize: 11.5,
-              fontWeight: 560,
-              cursor: 'pointer',
-              boxShadow: selected ? '0 8px 18px rgba(70,90,130,0.08)' : 'none',
-            }}
-          >
-            {label}
-          </button>
-        );
-      })}
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
+        <span style={{ fontSize: 13, fontWeight: 560, color: 'var(--ink)' }}>
+          O que você quer ver?
+        </span>
+        <button
+          type="button"
+          onClick={onEvents}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--accent)',
+            fontSize: 11,
+            fontWeight: 560,
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          Ver agenda
+        </button>
+      </div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 7,
+      }}>
+        {items.map(item => {
+          const selected = item.key === active;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={item.onClick}
+              style={{
+                minHeight: 58,
+                padding: '9px 10px',
+                borderRadius: 16,
+                border: `1px solid ${selected ? 'rgba(74,168,255,0.32)' : 'rgba(216,222,236,0.86)'}`,
+                background: selected
+                  ? 'linear-gradient(135deg, rgba(74,168,255,0.14), rgba(255,255,255,0.96))'
+                  : 'rgba(255,255,255,0.82)',
+                boxShadow: selected ? '0 10px 24px rgba(74,168,255,0.10)' : '0 6px 18px rgba(88,98,130,0.04)',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 560, color: selected ? 'var(--accent)' : 'var(--ink)' }}>
+                  {item.label}
+                </span>
+                <span style={{
+                  minWidth: 24,
+                  height: 24,
+                  borderRadius: 999,
+                  background: selected ? 'var(--accent)' : 'var(--chip)',
+                  color: selected ? '#fff' : 'var(--ink-2)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                }}>
+                  {item.count}
+                </span>
+              </div>
+              <div style={{ marginTop: 5, fontSize: 10.5, color: 'var(--muted)', lineHeight: 1 }}>
+                {item.hint}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -844,11 +854,20 @@ function SuggestedConnections({
 
   const representatives = companies.filter(company => company.whatsapp);
   const titleBySegment: Record<HomeSegment, string> = {
-    'for-you': 'Melhores conexões agora',
+    'for-you': 'Sugestão para agora',
     companies: 'Empresas para conhecer',
     representatives: 'Representantes disponíveis',
     events: 'Eventos relevantes',
   };
+  const companyItems = activeSegment === 'companies' ? companies.slice(0, 3) : activeSegment === 'for-you' && topCompany ? [topCompany] : [];
+  const representativeItems = activeSegment === 'representatives'
+    ? representatives.slice(0, 3)
+    : activeSegment === 'for-you' && !topCompany && !topEvent && representative
+      ? [representative]
+      : [];
+  const eventItems = activeSegment === 'events' ? events.slice(0, 3) : activeSegment === 'for-you' && topEvent ? [topEvent] : [];
+  const showForYouCourse = activeSegment === 'for-you' && !topCompany && !topEvent && !representative && !topProduct && topCourse;
+  const showForYouProduct = activeSegment === 'for-you' && !topCompany && !topEvent && !representative && topProduct;
 
   const emptyTextBySegment: Record<HomeSegment, string> = {
     'for-you': 'Ainda não encontramos oportunidades compatíveis com seu perfil.',
@@ -884,7 +903,7 @@ function SuggestedConnections({
         />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          {(activeSegment === 'for-you' || activeSegment === 'companies') && companies.slice(0, activeSegment === 'companies' ? 4 : 1).map(company => (
+          {companyItems.map(company => (
             <SuggestionCard
               key={`company-${company.id}`}
               eyebrow="Empresa"
@@ -905,7 +924,7 @@ function SuggestedConnections({
             />
           ))}
 
-          {(activeSegment === 'for-you' || activeSegment === 'representatives') && representatives.slice(0, activeSegment === 'representatives' ? 4 : 1).map(company => (
+          {representativeItems.map(company => (
             <SuggestionCard
               key={`rep-${company.id}`}
               eyebrow="Representante"
@@ -923,7 +942,7 @@ function SuggestedConnections({
             />
           ))}
 
-          {(activeSegment === 'for-you' || activeSegment === 'events') && events.slice(0, activeSegment === 'events' ? 4 : 1).map(ev => (
+          {eventItems.map(ev => (
             <SuggestionCard
               key={`event-${ev.id}`}
               eyebrow="Evento"
@@ -941,7 +960,7 @@ function SuggestedConnections({
             />
           ))}
 
-          {activeSegment === 'for-you' && topCourse && !topEvent && (
+          {showForYouCourse && (
             <SuggestionCard
               eyebrow="Workshop"
               title={topCourse.title}
@@ -958,7 +977,7 @@ function SuggestedConnections({
             />
           )}
 
-          {activeSegment === 'for-you' && topProduct && (
+          {showForYouProduct && (
             <SuggestionCard
               eyebrow="Produto"
               title={topProduct.name}
@@ -1138,54 +1157,6 @@ function SuggestionCard({
           {secondaryLabel}
         </button>
       </div>
-    </div>
-  );
-}
-
-function ProfessionalInterests({ tags, onUpdate }: { tags: string[]; onUpdate: () => void }) {
-  return (
-    <div style={{
-      padding: 14,
-      borderRadius: 18,
-      background: 'var(--card)',
-      border: '1px solid var(--line)',
-      marginBottom: 4,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-        <div>
-          <Mono style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-            Perfil
-          </Mono>
-          <div style={{ marginTop: 6, fontSize: 16, fontWeight: 560, color: 'var(--ink)' }}>
-            Seus interesses profissionais
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onUpdate}
-          style={{
-            padding: '8px 10px',
-            borderRadius: 10,
-            border: '1px solid var(--line)',
-            background: 'var(--chip)',
-            color: 'var(--ink-2)',
-            fontSize: 12,
-            fontWeight: 560,
-            cursor: 'pointer',
-          }}
-        >
-          Atualizar interesses
-        </button>
-      </div>
-      {tags.length > 0 ? (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12 }}>
-          {tags.map(tag => <Chip key={tag} color="var(--accent)">{tag}</Chip>)}
-        </div>
-      ) : (
-        <div style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
-          Complete seu perfil para melhorar suas recomendações.
-        </div>
-      )}
     </div>
   );
 }
