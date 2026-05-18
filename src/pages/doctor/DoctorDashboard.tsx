@@ -221,6 +221,17 @@ function doctorProfileLabel(user: User | null | undefined) {
   return user?.specialty?.trim() || 'Perfil médico';
 }
 
+function doctorCityLabel(user: User | null | undefined) {
+  const profile = user as (User & { city?: string; cidade?: string; location?: string }) | null | undefined;
+  return profile?.city?.trim() || profile?.cidade?.trim() || profile?.location?.trim() || profile?.crmState?.trim() || '';
+}
+
+function doctorMetaLine(user: User | null | undefined) {
+  const specialty = doctorProfileLabel(user);
+  const city = doctorCityLabel(user);
+  return city ? `${specialty} · ${city}` : specialty;
+}
+
 function opportunityCountLabel(pending: number, eventsCount: number, companiesCount: number) {
   const pendingText = `${pending} ${pending === 1 ? 'solicitação pendente' : 'solicitações pendentes'}`;
   const eventText = `${eventsCount} ${eventsCount === 1 ? 'evento próximo' : 'eventos próximos'}`;
@@ -267,9 +278,17 @@ export default function DoctorDashboard() {
   const featuredCompany = companyMatches[0];
   const featuredEvent = upcomingEvents[0];
   const featuredProduct = recommendedProducts[0];
+  const priorityLead = pendingConnections[0];
+  const priorityCompany = priorityLead
+    ? companyMatches.find(company => company.id === priorityLead.companyId) ?? featuredCompany
+    : featuredCompany;
 
   function scrollToPendingConnections() {
     document.getElementById('pending-connections')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function scrollToPriority() {
+    document.getElementById('priority-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function approvePriorityConnection() {
@@ -317,13 +336,14 @@ export default function DoctorDashboard() {
             pendingCount={pendingConnections.length}
             eventCount={upcomingEvents.length}
             companyCount={companyMatches.length}
-            visualSrc={visualUrl(featuredEvent?.imageUrl ?? featuredCompany?.products[0]?.imageUrl, VISUAL_FALLBACKS.clinical)}
+            onViewPriorities={scrollToPriority}
           />
 
           <PriorityCard
-            lead={pendingConnections[0]}
+            lead={priorityLead}
             event={featuredEvent}
-            company={featuredCompany}
+            company={priorityCompany}
+            user={user}
             userHasWhatsapp={Boolean(user?.whatsapp)}
             busy={priorityBusy}
             error={priorityError}
@@ -483,81 +503,92 @@ function DashboardHeader({
   pendingCount,
   eventCount,
   companyCount,
-  visualSrc,
+  onViewPriorities,
 }: {
   user: User | null | undefined;
   pendingCount: number;
   eventCount: number;
   companyCount: number;
-  visualSrc: string;
+  onViewPriorities: () => void;
 }) {
+  const summary = [
+    { value: pendingCount, label: pendingCount === 1 ? 'solicitação pendente' : 'solicitações pendentes' },
+    { value: eventCount, label: eventCount === 1 ? 'evento recomendado' : 'eventos recomendados' },
+    { value: companyCount, label: companyCount === 1 ? 'empresa compatível' : 'empresas compatíveis' },
+  ];
+
   return (
     <section style={{
       position: 'relative',
       marginBottom: 10,
-      padding: 12,
+      padding: 13,
       borderRadius: 18,
       overflow: 'hidden',
       background: 'linear-gradient(135deg, rgba(255,255,255,0.96), rgba(241,246,255,0.86) 55%, rgba(255,246,243,0.74))',
       border: '1px solid rgba(216,222,236,0.88)',
-      boxShadow: '0 12px 34px rgba(88,98,130,0.07)',
+      boxShadow: '0 10px 28px rgba(88,98,130,0.065)',
     }}>
       <div style={{
         position: 'absolute',
         inset: 0,
-        opacity: 0.34,
+        opacity: 0.25,
         background: 'radial-gradient(circle at 0% 0%, rgba(74,168,255,0.18), transparent 32%), radial-gradient(circle at 100% 20%, rgba(255,111,77,0.12), transparent 34%)',
         pointerEvents: 'none',
       }} />
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-            <span style={{
-              padding: '5px 8px',
-              borderRadius: 999,
-              background: 'rgba(255,255,255,0.78)',
-              border: '1px solid rgba(216,222,236,0.82)',
-              color: 'var(--muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 8.5,
-              fontWeight: 560,
-              letterSpacing: '0.08em',
-            }}>
+      <div style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <Mono style={{ fontSize: 8.5, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
               {todayLabel()}
-            </span>
-            <span style={{
-              padding: '5px 8px',
-              borderRadius: 999,
-              background: 'rgba(74,168,255,0.10)',
-              border: '1px solid rgba(74,168,255,0.18)',
-              color: 'var(--accent)',
-              fontSize: 10,
-              fontWeight: 560,
-              maxWidth: 170,
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-            }}>
-              {doctorProfileLabel(user)}
-            </span>
+            </Mono>
+            <h1 style={{ marginTop: 7, fontSize: 22, fontWeight: 560, letterSpacing: 0, lineHeight: 1.05, color: 'var(--ink)' }}>
+              {doctorGreeting(user)}<span style={{ color: 'var(--accent)' }}>.</span>
+            </h1>
+            <p style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {doctorMetaLine(user)}
+            </p>
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 560, letterSpacing: 0, lineHeight: 1.04, color: 'var(--ink)' }}>
-            {doctorGreeting(user)}<span style={{ color: 'var(--accent)' }}>.</span>
-          </h1>
-          <p style={{ fontSize: 12.5, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.32, maxWidth: 272 }}>
-            {opportunityCountLabel(pendingCount, eventCount, companyCount)}
-          </p>
+          <button
+            type="button"
+            onClick={onViewPriorities}
+            style={{
+              height: 34,
+              padding: '0 12px',
+              borderRadius: 999,
+              border: '1px solid rgba(74,168,255,0.24)',
+              background: 'rgba(74,168,255,0.09)',
+              color: 'var(--accent)',
+              fontSize: 11.5,
+              fontWeight: 600,
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            Ver prioridades
+          </button>
         </div>
-        <div style={{
-          width: 52,
-          height: 62,
-          borderRadius: 16,
-          flexShrink: 0,
-          overflow: 'hidden',
-          border: '1px solid rgba(255,255,255,0.78)',
-          background: `linear-gradient(180deg, rgba(15,22,38,0.10), rgba(15,22,38,0.34)), url(${visualSrc}) center/cover`,
-          boxShadow: '0 12px 28px rgba(52,57,73,0.12)',
-        }} />
+
+        <p style={{ marginTop: 10, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+          {opportunityCountLabel(pendingCount, eventCount, companyCount)}
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 7, marginTop: 11 }}>
+          {summary.map(item => (
+            <div
+              key={item.label}
+              style={{
+                minHeight: 48,
+                padding: '8px 7px',
+                borderRadius: 13,
+                background: 'rgba(255,255,255,0.72)',
+                border: '1px solid rgba(216,222,236,0.72)',
+              }}
+            >
+              <div style={{ fontSize: 18, lineHeight: 1, color: 'var(--ink)', fontWeight: 620 }}>{item.value}</div>
+              <div style={{ marginTop: 4, fontSize: 9.6, lineHeight: 1.15, color: 'var(--muted)' }}>{item.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -567,6 +598,7 @@ function PriorityCard({
   lead,
   event,
   company,
+  user,
   userHasWhatsapp,
   busy,
   error,
@@ -579,6 +611,7 @@ function PriorityCard({
   lead?: Lead;
   event?: Event;
   company?: CompanyMatch;
+  user: User | null | undefined;
   userHasWhatsapp: boolean;
   busy: boolean;
   error: string;
@@ -589,86 +622,96 @@ function PriorityCard({
   onUpdateProfile: () => void;
 }) {
   const mode = lead ? 'lead' : event ? 'event' : company ? 'company' : 'profile';
+  const score = lead ? Math.max(92, compatibilityScore(company, user)) : compatibilityScore(company, user);
   const title = lead
-    ? 'Uma empresa aguarda sua aprovação'
+    ? `${lead.companyName} solicitou conexão com você`
     : event
-      ? 'Próximo evento para sua agenda'
+      ? 'Próximo evento recomendado'
       : company
-        ? 'Empresa compatível com seu perfil'
-        : 'Melhore suas recomendações';
-  const detail = lead
-    ? `${lead.companyName} quer falar sobre ${lead.itemName || 'uma oportunidade'}.`
-    : event
-      ? `${event.title} · ${eventDateLabel(event)} · ${locationText(event.location)}`
-      : company
-        ? `${company.name} tem ${company.events.length + company.products.length + company.courses.length || 1} oportunidade ativa.`
-        : 'Complete especialidade, cidade e contato profissional para receber sugestões melhores.';
-  const badge = lead ? 'Pendente' : event ? eventCountdown(event) || 'Evento' : company ? 'Alta compatibilidade' : 'Perfil';
+        ? `${company.name} combina com seu perfil`
+        : 'Complete seu perfil para melhorar as recomendações';
+  const interest = lead?.itemName || event?.title || company?.events[0]?.title || company?.products[0]?.name || 'Oportunidade Tessy';
+  const type = lead ? leadTypeLabel(lead) : event ? 'Evento' : company ? 'Empresa' : 'Perfil';
   const image = visualUrl(event?.imageUrl ?? company?.events[0]?.imageUrl ?? company?.products[0]?.imageUrl, VISUAL_FALLBACKS.clinical);
+  const leadAge = lead ? leadAgeLabel(lead.connectionRequestedAt || lead.createdAt) : event ? eventCountdown(event) : 'Alta compatibilidade';
 
   return (
-    <section style={{
-      position: 'relative',
-      overflow: 'hidden',
-      borderRadius: 20,
-      marginBottom: 10,
-      background: 'rgba(255,255,255,0.92)',
-      border: '1px solid rgba(216,222,236,0.92)',
-      boxShadow: '0 16px 34px rgba(85,96,130,0.08)',
-    }}>
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: `linear-gradient(90deg, rgba(15,22,38,0.68), rgba(15,22,38,0.20) 62%, rgba(255,255,255,0.12)), url(${image}) center/cover`,
-        opacity: 0.94,
-      }} />
+    <section id="priority-card" style={{ marginBottom: 12 }}>
+      <SectionHeader title="Prioridade agora" />
       <div style={{
         position: 'relative',
-        padding: 13,
-        minHeight: 138,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
+        overflow: 'hidden',
+        borderRadius: 18,
+        background: 'rgba(255,255,255,0.96)',
+        border: '1px solid rgba(216,222,236,0.92)',
+        boxShadow: '0 12px 30px rgba(85,96,130,0.075)',
       }}>
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
-            <Mono style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.76)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-              Prioridade agora
-            </Mono>
-            <span style={{
-              padding: '5px 8px',
-              borderRadius: 999,
-              background: mode === 'lead' ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.82)',
-              color: mode === 'lead' ? 'var(--accent)' : 'var(--ink)',
-              fontSize: 9.5,
-              fontWeight: 560,
-              boxShadow: '0 8px 22px rgba(15,22,38,0.12)',
-            }}>
-              {badge}
-            </span>
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(135deg, rgba(74,168,255,0.08), transparent 42%, rgba(255,111,77,0.07))',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: mode === 'profile' ? '1fr' : '1fr 78px', gap: 12, padding: 13 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginBottom: 8 }}>
+              <span style={{
+                padding: '5px 8px',
+                borderRadius: 999,
+                background: mode === 'lead' ? 'rgba(255,111,77,0.10)' : 'rgba(74,168,255,0.10)',
+                color: mode === 'lead' ? '#d65f4f' : 'var(--accent)',
+                fontSize: 9.5,
+                fontWeight: 620,
+              }}>
+                {leadAge}
+              </span>
+              <span style={{
+                padding: '5px 8px',
+                borderRadius: 999,
+                background: 'rgba(15,22,38,0.05)',
+                color: 'var(--ink-2)',
+                fontSize: 9.5,
+                fontWeight: 600,
+              }}>
+                Tipo: {type}
+              </span>
+            </div>
+            <h2 style={{ fontSize: 16.5, lineHeight: 1.15, color: 'var(--ink)', fontWeight: 620, letterSpacing: 0 }}>
+              {title}
+            </h2>
+            <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
+              <PriorityMeta label="Interesse" value={interest} />
+              {mode !== 'profile' && <PriorityMeta label="Compatibilidade" value={`${score || 92}%`} />}
+            </div>
+            {error && <p style={{ marginTop: 8, fontSize: 11, color: '#d65f4f' }}>{error}</p>}
           </div>
-          <h2 style={{ marginTop: 11, maxWidth: 266, fontSize: 20, lineHeight: 1.05, color: '#fff', fontWeight: 600, letterSpacing: 0 }}>
-            {title}
-          </h2>
-          <p style={{ marginTop: 7, maxWidth: 292, fontSize: 12.2, lineHeight: 1.36, color: 'rgba(255,255,255,0.82)' }}>
-            {detail}
-          </p>
-          {error && <p style={{ marginTop: 6, fontSize: 11, color: '#FFE1DD' }}>{error}</p>}
+
+          {mode !== 'profile' && (
+            <div style={{
+              width: 78,
+              minHeight: 94,
+              borderRadius: 15,
+              background: `linear-gradient(180deg, rgba(15,22,38,0.10), rgba(15,22,38,0.40)), url(${image}) center/cover`,
+              border: '1px solid rgba(255,255,255,0.72)',
+              boxShadow: '0 10px 22px rgba(85,96,130,0.11)',
+            }} />
+          )}
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+
+        <div style={{ position: 'relative', display: 'flex', gap: 8, padding: '0 13px 13px' }}>
           {mode === 'lead' ? (
             <>
-              <button type="button" onClick={onAnalyze} style={priorityButtonStyle('light')}>Analisar solicitação</button>
+              <button type="button" onClick={onAnalyze} style={priorityButtonStyle('light')}>Ver solicitação</button>
               <button type="button" onClick={onApprove} disabled={busy || !userHasWhatsapp} style={priorityButtonStyle('solid', busy || !userHasWhatsapp)}>
-                {busy ? 'Aprovando...' : 'Aprovar rápido'}
+                {busy ? 'Aprovando...' : 'Aprovar'}
               </button>
             </>
           ) : mode === 'event' ? (
-            <button type="button" onClick={onOpenEvent} style={priorityButtonStyle('light')}>Ver detalhes</button>
+            <button type="button" onClick={onOpenEvent} style={priorityButtonStyle('solid')}>Ver evento</button>
           ) : mode === 'company' ? (
-            <button type="button" onClick={onOpenCompany} style={priorityButtonStyle('light')}>Conhecer empresa</button>
+            <button type="button" onClick={onOpenCompany} style={priorityButtonStyle('solid')}>Conhecer empresa</button>
           ) : (
-            <button type="button" onClick={onUpdateProfile} style={priorityButtonStyle('light')}>Atualizar perfil</button>
+            <button type="button" onClick={onUpdateProfile} style={priorityButtonStyle('solid')}>Atualizar perfil</button>
           )}
         </div>
       </div>
@@ -703,10 +746,10 @@ function QuickAccessGrid({
     onClick: () => void;
     icon: string;
   }> = [
-    { key: 'events', label: 'Eventos próximos', count: eventsCount, hint: 'presenciais e online', onClick: onEvents, icon: 'calendar' },
-    { key: 'companies', label: 'Empresas compatíveis', count: companiesCount, hint: 'marcas do seu perfil', onClick: onCompanies, icon: 'company' },
-    { key: 'representatives', label: 'Representantes', count: representativesCount, hint: 'contatos disponíveis', onClick: onRepresentatives, icon: 'rep' },
-    { key: 'products', label: 'Produtos para conhecer', count: productsCount, hint: 'novidades recomendadas', onClick: onProducts, icon: 'product' },
+    { key: 'events', label: 'Eventos recomendados', count: eventsCount, hint: 'Aulas, encontros e imersões', onClick: onEvents, icon: 'calendar' },
+    { key: 'companies', label: 'Empresas para conectar', count: companiesCount, hint: 'Marcas compatíveis', onClick: onCompanies, icon: 'company' },
+    { key: 'representatives', label: 'Representantes disponíveis', count: representativesCount, hint: 'Contato comercial direto', onClick: onRepresentatives, icon: 'rep' },
+    { key: 'products', label: 'Novidades da indústria', count: productsCount, hint: 'Produtos e tecnologias', onClick: onProducts, icon: 'product' },
   ];
 
   return (
@@ -724,8 +767,8 @@ function QuickAccessGrid({
               type="button"
               onClick={item.onClick}
               style={{
-                minHeight: 84,
-                padding: 11,
+                minHeight: 78,
+                padding: 10,
                 borderRadius: 16,
                 border: '1px solid rgba(216,222,236,0.88)',
                 background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,252,255,0.86))',
@@ -735,28 +778,28 @@ function QuickAccessGrid({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                <span style={{ width: 28, height: 28, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', background: 'rgba(74,168,255,0.10)' }}>
+                <span style={{ width: 26, height: 26, borderRadius: 9, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', background: 'rgba(74,168,255,0.10)' }}>
                   <QuickAccessIcon type={item.icon} />
                 </span>
                 <span style={{
-                  minWidth: 30,
-                  height: 28,
+                  minWidth: 28,
+                  height: 26,
                   borderRadius: 999,
                   background: 'rgba(15,22,38,0.05)',
                   color: 'var(--ink)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 14,
+                  fontSize: 13.5,
                   fontWeight: 600,
                 }}>
                   {item.count}
                 </span>
               </div>
-              <div style={{ marginTop: 9, fontSize: 12.2, lineHeight: 1.14, fontWeight: 600, color: 'var(--ink)' }}>
+              <div style={{ marginTop: 8, fontSize: 11.8, lineHeight: 1.15, fontWeight: 620, color: 'var(--ink)' }}>
                   {item.label}
               </div>
-              <div style={{ marginTop: 4, fontSize: 10.5, color: 'var(--muted)', lineHeight: 1.25 }}>
+              <div style={{ marginTop: 4, fontSize: 10.2, color: 'var(--muted)', lineHeight: 1.2 }}>
                 {item.hint}
               </div>
             </button>
@@ -767,21 +810,41 @@ function QuickAccessGrid({
   );
 }
 
+function PriorityMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+      <span style={{
+        flexShrink: 0,
+        color: 'var(--muted)',
+        fontSize: 9,
+        fontFamily: 'var(--font-mono)',
+        letterSpacing: '0.09em',
+        textTransform: 'uppercase',
+      }}>
+        {label}:
+      </span>
+      <span style={{ minWidth: 0, color: 'var(--ink-2)', fontSize: 11.5, fontWeight: 560, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
 
 function priorityButtonStyle(variant: 'solid' | 'light', disabled = false): CSSProperties {
   return {
     flex: 1,
-    minHeight: 42,
-    padding: '9px 12px',
-    borderRadius: 13,
-    border: variant === 'light' ? '1px solid rgba(255,255,255,0.52)' : 'none',
-    background: variant === 'solid' ? 'rgba(74,168,255,0.98)' : 'rgba(255,255,255,0.92)',
+    minHeight: 40,
+    padding: '8px 12px',
+    borderRadius: 12,
+    border: variant === 'light' ? '1px solid rgba(216,222,236,0.92)' : 'none',
+    background: variant === 'solid' ? 'rgba(74,168,255,0.98)' : 'rgba(247,248,255,0.92)',
     color: variant === 'solid' ? '#fff' : 'var(--ink)',
-    fontSize: 12.2,
+    fontSize: 12,
     fontWeight: 600,
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.58 : 1,
-    boxShadow: variant === 'solid' ? '0 10px 22px rgba(74,168,255,0.24)' : '0 8px 18px rgba(15,22,38,0.14)',
+    boxShadow: variant === 'solid' ? '0 10px 22px rgba(74,168,255,0.22)' : 'none',
   };
 }
 

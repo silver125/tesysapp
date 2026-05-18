@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { CompanyMark, TessyMark } from './ui';
@@ -22,6 +22,7 @@ interface LayoutProps {
 export default function Layout({ children, navItems, activeKey, onNavChange }: LayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const code = user?.name
     ?.split(' ')
@@ -34,52 +35,100 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', color: 'var(--ink)' }}>
-      {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 20,
         background: 'rgba(247,248,255,0.9)', backdropFilter: 'blur(14px)',
         borderBottom: '1px solid var(--line)',
       }}>
         <div style={{
-          maxWidth: 480, margin: '0 auto', padding: '8px 14px',
+          maxWidth: 480, margin: '0 auto', padding: '6px 14px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         }}>
-          {/* Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <TessyMark size={32} />
-            <span style={{ fontWeight: 560, fontSize: 17, letterSpacing: 0, color: 'var(--accent-ink)' }}>
+            <TessyMark size={30} />
+            <span style={{ fontWeight: 560, fontSize: 16, letterSpacing: 0, color: 'var(--accent-ink)' }}>
               Tessy<span style={{ color: 'var(--lavender)' }}>.app</span>
             </span>
           </div>
 
-          {/* User + logout */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ display: 'none' }} className="sm:flex items-center gap-2">
               <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
                 {user?.role === 'medico' ? 'médico' : 'empresa'}
               </span>
             </div>
-            <CompanyMark code={code} tint={tint} size={30} radius={8} />
             <button
-              onClick={() => { logout(); navigate('/', { replace: true }); }}
+              type="button"
+              aria-label="Abrir menu do perfil"
+              aria-expanded={profileOpen}
+              onClick={() => setProfileOpen(open => !open)}
               style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--muted)', fontSize: 12,
-                fontFamily: 'var(--font-mono)', letterSpacing: '0.04em',
+                width: 34,
+                height: 34,
+                borderRadius: 999,
+                border: '1px solid rgba(216,222,236,0.92)',
+                background: 'rgba(255,255,255,0.72)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                cursor: 'pointer',
+                boxShadow: '0 8px 22px rgba(88,98,130,0.08)',
               }}
             >
-              sair
+              <CompanyMark code={code} tint={tint} size={30} radius={999} />
             </button>
+            {profileOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 42,
+                right: 0,
+                width: 194,
+                padding: 10,
+                borderRadius: 16,
+                border: '1px solid rgba(216,222,236,0.95)',
+                background: 'rgba(255,255,255,0.98)',
+                boxShadow: '0 18px 42px rgba(37,44,66,0.14)',
+                zIndex: 40,
+              }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.name ?? 'Perfil'}
+                </div>
+                <div style={{ marginTop: 2, fontSize: 10.5, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  {user?.role === 'medico' ? 'médico' : 'empresa'}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    logout();
+                    navigate('/', { replace: true });
+                  }}
+                  style={{
+                    marginTop: 10,
+                    width: '100%',
+                    height: 34,
+                    borderRadius: 11,
+                    border: '1px solid rgba(216,222,236,0.86)',
+                    background: 'rgba(247,248,255,0.92)',
+                    color: 'var(--ink)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Sair
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Content */}
       <main style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '16px 14px 96px' }}>
         {children}
       </main>
 
-      {/* Bottom tab bar */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20,
         background: 'rgba(255,255,255,0.94)', backdropFilter: 'blur(16px)',
