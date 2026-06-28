@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { CSSProperties } from 'react';
-import Layout from '../../components/Layout';
-import type { NavItem } from '../../components/Layout';
+import Layout, { type NavItem } from '../../components/Layout';
+import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import { useAuth } from '../../context/useAuth';
 import {
   CompanyMark, VerifiedDot, Mono, BannerCard, Chip, ModalityBadge,
@@ -390,7 +390,7 @@ export default function DoctorDashboard() {
                 onApprove={() => { void approvePriorityConnection(); }}
                 onOpenEvent={() => openTab('events', featuredEvent?.companyName ?? '')}
                 onOpenCompany={() => openTab('connect', featuredCompany?.name ?? '')}
-                onUpdateProfile={() => openTab('connect')}
+                onUpdateProfile={() => openProfileSettings()}
               />
             </div>
           )}
@@ -418,7 +418,7 @@ export default function DoctorDashboard() {
             onOpenEvents={() => openTab('events', featuredEvent?.companyName ?? '')}
           />
 
-          <ProfileNudgeCard user={user} onUpdate={() => openTab('connect')} />
+          <ProfileNudgeCard user={user} onUpdate={openProfileSettings} />
         </div>
       )}
 
@@ -512,7 +512,7 @@ export default function DoctorDashboard() {
           if (action === 'representative') openTab('connect');
           if (action === 'interest') openTab('products');
           if (action === 'events') openTab('events');
-          if (action === 'profile') openTab('home');
+          if (action === 'profile') openProfileSettings();
         }}
       />
 

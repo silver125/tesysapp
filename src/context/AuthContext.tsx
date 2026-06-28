@@ -42,6 +42,46 @@ function omitDbColumns<T extends Record<string, unknown>>(payload: T, columns: s
   return next;
 }
 
+type CompanyOwnedTable = 'events' | 'products' | 'courses' | 'locations';
+
+async function deleteCompanyOwnedRow(
+  table: CompanyOwnedTable,
+  id: string,
+  companyId: string,
+  label: string,
+) {
+  const { data, error } = await withTimeout(
+    supabase
+      .from(table)
+      .delete()
+      .eq('id', id)
+      .eq('company_id', companyId)
+      .select('id'),
+    12000,
+    `Excluir ${label}`,
+  );
+  if (error) throw new Error(error.message);
+  if (!data?.length) {
+    throw new Error(`Não foi possível excluir ${label.toLowerCase()}. Tente novamente.`);
+  }
+}
+
+async function cleanupLeadsForDeletedItem(
+  companyId: string,
+  itemId: string,
+  itemType: 'event' | 'product' | 'course',
+) {
+  const { error } = await supabase
+    .from('leads')
+    .delete()
+    .eq('company_id', companyId)
+    .eq('item_id', itemId)
+    .eq('item_type', itemType);
+  if (error && !/policy|permission|42501/i.test(error.message)) {
+    console.warn(`Não foi possível limpar leads do ${itemType} excluído:`, error.message);
+  }
+}
+
 // ── Helpers de conversão DB → App ────────────────────────────────────────────
 function dbToUser(profile: Record<string, unknown>, email: string): User {
   // Suporta tanto schema novo (name, company) quanto existente (first_name, company_name)
@@ -382,15 +422,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
-    const eventsChannel = supabase
-      .channel('tessy-events-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
-        refreshData();
-      })
-      .subscribe();
+    const liveTables = ['events', 'products', 'courses', 'locations'] as const;
+    const channels = liveTables.map(table =>
+      supabase
+        .channel(`tessy-${table}-live`)
+        .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+          refreshData();
+        })
+        .subscribe(),
+    );
 
     return () => {
-      supabase.removeChannel(eventsChannel);
+      channels.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
     };
   }, [refreshData]);
 
@@ -647,18 +692,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ── Atualizar perfil ──
-  const updateProfile = async (data: { name?: string; company?: string; whatsapp?: string; whatsappConnectionOnly?: boolean }) => {
+  const updateProfile = async (data: {
+    name?: string;
+    company?: string;
+    whatsapp?: string;
+    whatsappConnectionOnly?: boolean;
+    specialty?: string;
+    crm?: string;
+    crmState?: string;
+  }) => {
     if (!user) return;
     assertSupabaseConfigured();
     const updates: Record<string, string | boolean | undefined> = {};
-    if (data.name)      { updates.name    = data.name;    }
-    if (data.company)   { updates.company = data.company; updates.name = data.company; }
+    if (data.name) { updates.name = data.name; }
+    if (data.company) { updates.company = data.company; updates.name = data.company; }
     if (data.whatsapp !== undefined) { updates.whatsapp = data.whatsapp; }
     if (data.whatsappConnectionOnly !== undefined) { updates.whatsapp_connection_only = data.whatsappConnectionOnly; }
+    if (data.specialty !== undefined) { updates.specialty = data.specialty; }
+    if (data.crm !== undefined) { updates.crm = data.crm; }
+    if (data.crmState !== undefined) { updates.crm_state = data.crmState; }
 
     const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
     if (error) throw new Error(error.message);
     setUser(prev => prev ? { ...prev, ...data } : prev);
+  };
+
+  const deleteAccount = async () => {
+    if (!user) return;
+    assertSupabaseConfigured();
+
+    const { error: rpcError } = await supabase.rpc('delete_own_account');
+    if (rpcError) {
+      const { error: profileError } = await supabase.from('profiles').delete().eq('id', user.id);
+      if (profileError) throw new Error(profileError.message);
+    }
+
+    try {
+      localStorage.removeItem(`tessy-onboarding-done-${user.id}`);
+      localStorage.removeItem(`tessy-onboarding-pending-${user.id}`);
+      localStorage.removeItem(`tessy-doctor-preferences-${user.id}`);
+    } catch {
+      /* localStorage pode estar indisponível. */
+    }
+
+    await supabase.auth.signOut();
+    setUser(null);
   };
 
   // ── Eventos ──
@@ -699,9 +777,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteEvent = async (id: string) => {
+    if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem excluir eventos.');
     assertSupabaseConfigured();
-    await supabase.from('events').delete().eq('id', id);
+    await deleteCompanyOwnedRow('events', id, user.id, 'evento');
+    await cleanupLeadsForDeletedItem(user.id, id, 'event');
     setEvents(prev => prev.filter(e => e.id !== id));
+    setLeads(prev => prev.filter(lead => !(lead.companyId === user.id && lead.itemId === id && lead.itemType === 'event')));
+    await Promise.all([refreshData(), refreshLeads()]);
   };
 
   // ── Atualizar evento (título, data, hora, local, vagas, etc.) ──
@@ -908,9 +990,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteProduct = async (id: string) => {
+    if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem excluir produtos.');
     assertSupabaseConfigured();
-    await supabase.from('products').delete().eq('id', id);
+    await deleteCompanyOwnedRow('products', id, user.id, 'produto');
+    await cleanupLeadsForDeletedItem(user.id, id, 'product');
     setProducts(prev => prev.filter(p => p.id !== id));
+    setLeads(prev => prev.filter(lead => !(lead.companyId === user.id && lead.itemId === id && lead.itemType === 'product')));
+    await Promise.all([refreshData(), refreshLeads()]);
   };
 
   // ── Cursos ──
@@ -956,9 +1042,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteCourse = async (id: string) => {
+    if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem excluir workshops.');
     assertSupabaseConfigured();
-    await supabase.from('courses').delete().eq('id', id);
+    await deleteCompanyOwnedRow('courses', id, user.id, 'workshop');
+    await cleanupLeadsForDeletedItem(user.id, id, 'course');
     setCourses(prev => prev.filter(c => c.id !== id));
+    setLeads(prev => prev.filter(lead => !(lead.companyId === user.id && lead.itemId === id && lead.itemType === 'course')));
+    await Promise.all([refreshData(), refreshLeads()]);
   };
 
   // ── Locais de atendimento / distribuição ──
@@ -993,9 +1083,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteLocation = async (id: string) => {
+    if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem excluir locais.');
     assertSupabaseConfigured();
-    await supabase.from('locations').delete().eq('id', id);
+    await deleteCompanyOwnedRow('locations', id, user.id, 'local');
     setLocations(prev => prev.filter(l => l.id !== id));
+    await refreshData();
   };
 
   const addLead = async (input: LeadInput) => {
@@ -1124,7 +1216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, isLoading, authReady,
-      login, register, logout, completeOnboarding, updateProfile,
+      login, register, logout, completeOnboarding, updateProfile, deleteAccount,
       events, products, courses, leads, locations,
       addEvent, addProduct, addCourse, addLead,
       addLocation, deleteLocation,

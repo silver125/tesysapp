@@ -9,7 +9,16 @@ export interface AuthContextType {
   register: (input: RegisterInput) => Promise<User>;
   logout: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
-  updateProfile: (data: { name?: string; company?: string; whatsapp?: string; whatsappConnectionOnly?: boolean }) => Promise<void>;
+  updateProfile: (data: {
+    name?: string;
+    company?: string;
+    whatsapp?: string;
+    whatsappConnectionOnly?: boolean;
+    specialty?: string;
+    crm?: string;
+    crmState?: string;
+  }) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   events: Event[];
   products: Product[];
   courses: Course[];

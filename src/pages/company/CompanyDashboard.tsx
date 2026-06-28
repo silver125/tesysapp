@@ -1,6 +1,6 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
-import Layout from '../../components/Layout';
-import type { NavItem } from '../../components/Layout';
+import Layout, { type NavItem } from '../../components/Layout';
+import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import { useAuth } from '../../context/useAuth';
 import {
   CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
@@ -185,7 +185,7 @@ function IcoBook(a: boolean) {
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
 }
 
-function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'sample' | 'partnership' | 'location' }) {
+function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'partnership' | 'location' }) {
   const c = 'var(--accent)';
   if (type === 'event') return IcoCalendar(true);
   if (type === 'product') return IcoBox(true);
@@ -195,14 +195,6 @@ function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'sam
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
         <path d="M10 18s6-5.2 6-10a6 6 0 10-12 0c0 4.8 6 10 6 10z" strokeLinejoin="round" />
         <circle cx="10" cy="8" r="2.2" />
-      </svg>
-    );
-  }
-  if (type === 'sample') {
-    return (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
-        <path d="M7 2h6M8 2v5l-3.7 6.6A3 3 0 007 18h6a3 3 0 002.7-4.4L12 7V2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M6 12h8" strokeLinecap="round" />
       </svg>
     );
   }
@@ -274,13 +266,6 @@ function fmtPhone(raw: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
-function formatDisplayPhone(raw: string) {
-  // stored as 5511999999999 → (11) 99999-9999
-  const d = raw.replace(/\D/g, '');
-  const local = d.startsWith('55') ? d.slice(2) : d;
-  return fmtPhone(local);
-}
-
 function latestLeadByDoctor(leads: Lead[]) {
   const ordered = [...leads].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const seen = new Set<string>();
@@ -307,16 +292,15 @@ function eventLeadDoctorCount(event: Event, leads: Lead[]) {
 }
 
 export default function CompanyDashboard() {
-  const { user, events, products, courses, leads, locations, addEvent, addProduct, addCourse, addLocation, deleteLocation, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent, requestConnection } = useAuth();
+  const { user, events, products, courses, leads, locations, addEvent, addProduct, addCourse, addLocation, deleteLocation, deleteEvent, deleteProduct, deleteCourse, updateEvent, requestConnection } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
-  const [editingProfile, setEditingProfile] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editWa, setEditWa] = useState('');
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [openProductId, setOpenProductId] = useState<string | null>(null);
   const [openCourseId, setOpenCourseId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const companyLeads = (leads ?? []).filter(l => l.companyId === user?.id);
   const myEvents = (events ?? [])
@@ -349,6 +333,31 @@ export default function CompanyDashboard() {
     setTab(k as Tab);
   }
 
+  function openCreate(target: 'event' | 'product' | 'course' | 'location') {
+    if (target === 'location') { setTab('locations'); return; }
+    setCreateKind(target);
+    setTab('create');
+  }
+
+  async function handleDeleteItem(
+    kind: 'event' | 'product' | 'course',
+    id: string,
+    close: () => void,
+  ) {
+    setDeleteError('');
+    setDeletingId(id);
+    try {
+      if (kind === 'event') await deleteEvent(id);
+      if (kind === 'product') await deleteProduct(id);
+      if (kind === 'course') await deleteCourse(id);
+      close();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   function shareEvent(ev: Event) {
     const text = `${ev.title} · ${eventSchedule(ev)} · ${eventCity(ev.location)}`;
     const url = ev.website ?? (typeof window !== 'undefined' ? window.location.origin : '');
@@ -373,159 +382,168 @@ export default function CompanyDashboard() {
       {/* ── HOME ── */}
       {tab === 'home' && (
         <div>
+          {/* Welcome hero */}
+          <div style={{
+            marginBottom: 14,
+            padding: '16px 16px 14px',
+            borderRadius: 22,
+            background: 'linear-gradient(135deg, #F58220 0%, #FF9A4D 52%, #FFB366 100%)',
+            boxShadow: '0 16px 40px rgba(245,130,32,0.28)',
+            color: '#fff',
+          }}>
+            <Mono style={{ fontSize: 9, color: 'rgba(255,255,255,0.82)', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+              Vitrine comercial Tessy
+            </Mono>
+            <div style={{ marginTop: 8, fontSize: 20, fontWeight: 620, lineHeight: 1.15, letterSpacing: -0.2 }}>
+              Sua marca na mão de médicos qualificados
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: 12.5, lineHeight: 1.45, color: 'rgba(255,255,255,0.92)' }}>
+              {activeOpportunities === 0
+                ? 'Publique eventos, produtos ou workshops e receba interesses reais.'
+                : `${activeOpportunities} oportunidade${activeOpportunities === 1 ? '' : 's'} ativa${activeOpportunities === 1 ? '' : 's'} · ${myLeads.length} médico${myLeads.length === 1 ? '' : 's'} interessado${myLeads.length === 1 ? '' : 's'}`}
+            </p>
+            <button
+              onClick={() => openCreate('product')}
+              style={{
+                marginTop: 14,
+                padding: '10px 16px',
+                borderRadius: 12,
+                border: 'none',
+                background: '#fff',
+                color: 'var(--accent)',
+                fontSize: 13,
+                fontWeight: 620,
+                cursor: 'pointer',
+                boxShadow: '0 8px 22px rgba(80,40,0,0.14)',
+              }}
+            >
+              {activeOpportunities === 0 ? 'Publicar primeira oportunidade →' : 'Publicar nova oportunidade →'}
+            </button>
+          </div>
+
           {/* Company header */}
           <div style={{
             marginBottom: 14,
             padding: 14,
             borderRadius: 22,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.94), rgba(242,247,255,0.82))',
-            border: '1px solid rgba(216,222,236,0.92)',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,247,240,0.88))',
+            border: '1px solid rgba(245,130,32,0.12)',
             boxShadow: '0 12px 34px rgba(85,96,130,0.06)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <CompanyMark code={code} tint={tint} size={60} />
-              {!editingProfile ? (
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Mono style={{ display: 'block', fontSize: 8.5, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 5 }}>
-                    Perfil comercial
-                  </Mono>
-                  <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: 0, lineHeight: 1.08 }}>
-                    {user?.company ?? user?.name}<span style={{ color: 'var(--accent)' }}>.</span>
-                  </h1>
-                  {user?.whatsapp ? (
-                    <a
-                      href={buildWhatsappLink(user.whatsapp)}
-                      target="_blank" rel="noreferrer"
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, color: '#25D366', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
-                    >
-                      <WaIcon size={14} /> {user.whatsapp}
-                    </a>
-                  ) : (
-                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>WhatsApp não configurado</div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
-                      NOME DA EMPRESA
-                    </div>
-                    <input
-                      value={editName}
-                      onChange={e => setEditName(e.target.value)}
-                      placeholder="Nome da empresa"
-                      style={{
-                        width: '100%', padding: '9px 12px', borderRadius: 8,
-                        background: 'var(--bg)', border: '1.5px solid var(--accent)',
-                        color: 'var(--ink)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
-                      WHATSAPP
-                    </div>
-                    <div style={{ position: 'relative' }}>
-                      <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#25D366', display: 'flex' }}>
-                        <WaIcon size={14} />
-                      </span>
-                      <input
-                        value={editWa}
-                        onChange={e => setEditWa(fmtPhone(e.target.value))}
-                        placeholder="(11) 99999-9999"
-                        type="tel"
-                        style={{
-                          width: '100%', padding: '9px 12px 9px 32px', borderRadius: 8,
-                          background: 'var(--bg)', border: '1.5px solid #25D366',
-                          color: 'var(--ink)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => setEditingProfile(false)}
-                      style={{
-                        flex: 1, padding: '9px', borderRadius: 8,
-                        background: 'var(--chip)', border: '1px solid var(--line)',
-                        color: 'var(--ink-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                      }}
-                    >Cancelar</button>
-                    <button
-                      onClick={() => {
-                        const trimName = editName.trim();
-                        const rawWa = editWa.replace(/\D/g, '');
-                        if (trimName.length > 1) {
-                          updateProfile({
-                            name: trimName, company: trimName,
-                            whatsapp: rawWa ? (rawWa.startsWith('55') ? rawWa : `55${rawWa}`) : user?.whatsapp,
-                          });
-                        }
-                        setEditingProfile(false);
-                      }}
-                      style={{
-                        flex: 2, padding: '9px', borderRadius: 8, border: 'none',
-                        background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 560, cursor: 'pointer',
-                        boxShadow: '0 4px 16px rgba(74,168,255,0.3)',
-                      }}
-                    >Salvar</button>
-                  </div>
-                </div>
-              )}
-
-              {!editingProfile && (
-                <button
-                  onClick={() => {
-                    setEditName(user?.company ?? user?.name ?? '');
-                    setEditWa(user?.whatsapp ? formatDisplayPhone(user.whatsapp) : '');
-                    setEditingProfile(true);
-                  }}
-                  title="Editar perfil"
-                  style={{
-                    width: 38, height: 38, borderRadius: 13, flexShrink: 0,
-                    background: '#fff', border: '1px solid var(--line)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', color: 'var(--muted)',
-                    boxShadow: '0 8px 18px rgba(80,90,120,0.07)',
-                  }}
-                >
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M10.5 1.5L13.5 4.5L5 13H2V10L10.5 1.5Z" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Mono style={{ display: 'block', fontSize: 8.5, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 5 }}>
+                  Perfil comercial
+                </Mono>
+                <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: 0, lineHeight: 1.08 }}>
+                  {user?.company ?? user?.name}<span style={{ color: 'var(--accent)' }}>.</span>
+                </h1>
+                <p style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+                  Perfil visível para médicos na vitrine Tessy
+                </p>
+                {user?.whatsapp ? (
+                  <a
+                    href={buildWhatsappLink(user.whatsapp)}
+                    target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, color: '#25D366', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
+                  >
+                    <WaIcon size={14} /> {user.whatsapp}
+                  </a>
+                ) : (
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>WhatsApp não configurado</div>
+                )}
+              </div>
+              <button
+                onClick={() => openProfileSettings()}
+                title="Editar perfil"
+                style={{
+                  width: 38, height: 38, borderRadius: 13, flexShrink: 0,
+                  background: '#fff', border: '1px solid var(--line)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'var(--muted)',
+                  boxShadow: '0 8px 18px rgba(80,90,120,0.07)',
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M10.5 1.5L13.5 4.5L5 13H2V10L10.5 1.5Z" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
             </div>
           </div>
 
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
             {[
-              { v: activeOpportunities, l: 'oportunidades ativas', go: 'events' as Tab },
-              { v: myLeads.length, l: 'médicos interessados', go: 'leads' as Tab },
-              { v: conversationsStarted, l: 'conversas iniciadas', go: 'leads' as Tab },
-            ].map((s, i) => (
+              { v: activeOpportunities, l: 'oportunidades', go: 'events' as Tab, accent: true },
+              { v: myLeads.length, l: 'interessados', go: 'leads' as Tab, accent: myLeads.length > 0 },
+              { v: conversationsStarted, l: 'conversas', go: 'leads' as Tab, accent: conversationsStarted > 0 },
+            ].map((s) => (
               <button key={s.l} onClick={() => setTab(s.go)} style={{
-                minHeight: 78,
+                minHeight: 82,
                 textAlign: 'left',
                 padding: '11px 10px',
                 borderRadius: 16,
-                border: '1px solid var(--line)',
-                background: i === 1 ? 'linear-gradient(135deg, rgba(74,168,255,0.12), rgba(255,111,77,0.08))' : 'rgba(255,255,255,0.84)',
+                border: s.accent ? '1px solid rgba(245,130,32,0.22)' : '1px solid var(--line)',
+                background: s.accent
+                  ? 'linear-gradient(135deg, rgba(245,130,32,0.14), rgba(255,255,255,0.92))'
+                  : 'rgba(255,255,255,0.84)',
                 cursor: 'pointer',
-                boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
+                boxShadow: s.accent ? '0 10px 26px rgba(245,130,32,0.10)' : '0 8px 22px rgba(85,96,130,0.05)',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
-                  <span style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: 999,
-                    background: i === 1 ? 'var(--accent)' : 'rgba(111,122,144,0.38)',
-                  }} />
-                  <div style={{ fontSize: 23, fontWeight: 600, color: 'var(--ink)', letterSpacing: 0, lineHeight: 1 }}>{s.v}</div>
-                </div>
-                <Mono style={{ display: 'block', fontSize: 8, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.2 }}>{s.l}</Mono>
+                <div style={{ fontSize: 24, fontWeight: 620, color: s.accent ? 'var(--accent-ink)' : 'var(--ink)', letterSpacing: 0, lineHeight: 1 }}>{s.v}</div>
+                <Mono style={{ display: 'block', marginTop: 6, fontSize: 8, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.2 }}>{s.l}</Mono>
               </button>
             ))}
+          </div>
+
+          {/* Quick create */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+              <div>
+                <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+                  Comece por aqui
+                </Mono>
+                <div style={{ fontSize: 18, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.15 }}>
+                  O que sua empresa quer divulgar hoje?
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {[
+                { key: 'event', target: 'event', label: 'Evento', desc: 'Congressos e encontros' },
+                { key: 'product', target: 'product', label: 'Produto', desc: 'Tecnologia e materiais' },
+                { key: 'course', target: 'course', label: 'Workshop', desc: 'Capacitações médicas' },
+                { key: 'partnership', target: 'product', label: 'Parceria', desc: 'Relacionamento comercial' },
+                { key: 'location', target: 'location', label: 'Local', desc: 'Pontos de atendimento' },
+              ].map(item => {
+                const key = item.key as 'event' | 'product' | 'course' | 'partnership' | 'location';
+                const target = item.target as 'event' | 'product' | 'course' | 'location';
+                return (
+                  <button key={key} onClick={() => openCreate(target)} style={{
+                    padding: '12px 10px', borderRadius: 16,
+                    background: 'rgba(255,255,255,0.92)', border: '1px solid var(--line)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9,
+                    textAlign: 'left',
+                    boxShadow: '0 8px 20px rgba(85,96,130,0.04)',
+                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                  }}>
+                    <span style={{
+                      width: 36, height: 36, borderRadius: 12,
+                      background: 'rgba(245,130,32,0.10)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <OpportunityIcon type={key} />
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: 'block', fontSize: 12.5, fontWeight: 620, color: 'var(--ink)', lineHeight: 1.2 }}>{item.label}</span>
+                      <span style={{ display: 'block', marginTop: 2, fontSize: 10.5, color: 'var(--muted)', lineHeight: 1.2 }}>{item.desc}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Photo emphasis banner */}
@@ -548,52 +566,6 @@ export default function CompanyDashboard() {
             </div>
           </div>
 
-          {/* Quick create */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-              <div>
-                <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-                  Comece por aqui
-                </Mono>
-                <div style={{ fontSize: 18, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.15 }}>
-                  O que sua empresa quer divulgar hoje?
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {[
-                { key: 'event', target: 'event', label: 'Evento' },
-                { key: 'product', target: 'product', label: 'Produto' },
-                { key: 'course', target: 'course', label: 'Workshop' },
-                { key: 'sample', target: 'product', label: 'Amostra/Teste' },
-                { key: 'partnership', target: 'product', label: 'Parceria' },
-                { key: 'location', target: 'location', label: 'Local de atendimento' },
-              ].map(item => {
-                const key = item.key as 'event' | 'product' | 'course' | 'sample' | 'partnership' | 'location';
-                const target = item.target as 'event' | 'product' | 'course' | 'location';
-                return (
-                  <button key={key} onClick={() => { if (target === 'location') { setTab('locations'); return; } setCreateKind(target); setTab('create'); }} style={{
-                  padding: '12px 10px', borderRadius: 16,
-                    background: 'rgba(255,255,255,0.86)', border: '1px solid var(--line)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9,
-                    textAlign: 'left',
-                    boxShadow: '0 8px 20px rgba(85,96,130,0.04)',
-                  }}>
-                    <span style={{
-                      width: 34, height: 34, borderRadius: 11,
-                      background: 'rgba(74,168,255,0.08)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <OpportunityIcon type={key} />
-                    </span>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2 }}>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Leads access */}
           <button
             onClick={() => setTab('leads')}
@@ -602,8 +574,8 @@ export default function CompanyDashboard() {
               marginBottom: 24,
               padding: 15,
               borderRadius: 22,
-              background: 'linear-gradient(135deg, rgba(74,168,255,0.14), rgba(255,112,81,0.12))',
-              border: '1px solid rgba(74,168,255,0.20)',
+              background: 'linear-gradient(135deg, rgba(245,130,32,0.16), rgba(255,112,81,0.12))',
+              border: '1px solid rgba(245,130,32,0.22)',
               boxShadow: '0 14px 36px rgba(85,96,130,0.08)',
               cursor: 'pointer',
               textAlign: 'left',
@@ -644,12 +616,12 @@ export default function CompanyDashboard() {
               justifyContent: 'center',
               padding: '9px 14px',
               borderRadius: 12,
-              background: 'var(--ink)',
+              background: myLeads.length > 0 ? 'var(--ink)' : 'var(--accent)',
               color: '#fff',
               fontSize: 12.5,
               fontWeight: 560,
             }}>
-              Ver médicos
+              {myLeads.length > 0 ? 'Ver médicos →' : 'Aguardando interesses'}
             </span>
           </button>
 
@@ -667,6 +639,22 @@ export default function CompanyDashboard() {
                 <p style={{ margin: '5px 0 0', fontSize: 12.5, lineHeight: 1.45, color: 'var(--ink-2)' }}>
                   Publique uma oportunidade para a Tessy aproximar médicos com interesse real.
                 </p>
+                <button
+                  onClick={() => openCreate('event')}
+                  style={{
+                    marginTop: 12,
+                    padding: '9px 14px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 12.5,
+                    fontWeight: 620,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Criar primeiro evento →
+                </button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 }}>
@@ -682,21 +670,33 @@ export default function CompanyDashboard() {
             <SectionTitle title="Sugestões da Tessy" />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                'Publique um produto para aumentar sua visibilidade.',
-                'Complete seu perfil para médicos confiarem mais na sua empresa.',
-                'Convide médicos interessados para o seu próximo evento.',
-              ].map(text => (
-                <div key={text} style={{
+                { text: 'Publique um produto para aumentar sua visibilidade na vitrine.', cta: 'Criar produto', action: () => openCreate('product') },
+                { text: 'Complete seu perfil com WhatsApp para médicos iniciarem conversa.', cta: 'Editar perfil', action: () => openProfileSettings() },
+                { text: 'Convide médicos interessados para o seu próximo evento.', cta: 'Criar evento', action: () => openCreate('event') },
+              ].map(item => (
+                <button key={item.text} onClick={item.action} style={{
                   padding: '12px 14px',
                   borderRadius: 14,
                   background: 'var(--card)',
                   border: '1px solid var(--line)',
-                  color: 'var(--ink-2)',
-                  fontSize: 12.5,
-                  lineHeight: 1.35,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
                 }}>
-                  {text}
-                </div>
+                  <span style={{ color: 'var(--ink-2)', fontSize: 12.5, lineHeight: 1.35 }}>{item.text}</span>
+                  <span style={{
+                    flexShrink: 0,
+                    fontSize: 11,
+                    fontWeight: 620,
+                    color: 'var(--accent)',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {item.cta} →
+                  </span>
+                </button>
               ))}
             </div>
           </div>
@@ -785,7 +785,11 @@ export default function CompanyDashboard() {
 
       {/* ── LEADS ── */}
       {tab === 'leads' && (
-        <LeadInbox leads={myLeads} onRequestConnection={requestConnection} />
+        <LeadInbox
+          leads={myLeads}
+          onRequestConnection={requestConnection}
+          onStartPublishing={() => openCreate('product')}
+        />
       )}
 
       {/* ── LOCATIONS ── */}
@@ -812,6 +816,26 @@ export default function CompanyDashboard() {
       )}
     </Layout>
 
+    {deleteError && (
+      <div style={{
+        position: 'fixed',
+        left: '50%',
+        bottom: 96,
+        transform: 'translateX(-50%)',
+        zIndex: 130,
+        width: 'min(440px, calc(100vw - 28px))',
+        padding: '11px 14px',
+        borderRadius: 14,
+        background: 'rgba(242,92,84,0.96)',
+        color: '#fff',
+        fontSize: 12.5,
+        lineHeight: 1.4,
+        boxShadow: '0 14px 36px rgba(80,40,40,0.22)',
+      }}>
+        {deleteError}
+      </div>
+    )}
+
     {/* ── EDIT EVENT MODAL ── */}
     {editingEvent && (
       <EditEventModal
@@ -837,7 +861,7 @@ export default function CompanyDashboard() {
               onViewInterested={() => { setOpenEventId(null); setTab('leads'); }}
               onEdit={() => { setOpenEventId(null); setEditingEventId(ev.id); }}
               onShare={() => shareEvent(ev)}
-              onDelete={() => { deleteEvent(ev.id); setOpenEventId(null); }}
+              onDelete={() => { void handleDeleteItem('event', ev.id, () => setOpenEventId(null)); }}
             />
           </div>
         );
@@ -850,7 +874,11 @@ export default function CompanyDashboard() {
         if (!p) return null;
         return (
           <div style={{ padding: '4px 16px 8px' }}>
-            <ProductCardCompany product={p} onDelete={() => { deleteProduct(p.id); setOpenProductId(null); }} />
+            <ProductCardCompany
+              product={p}
+              deleting={deletingId === p.id}
+              onDelete={() => { void handleDeleteItem('product', p.id, () => setOpenProductId(null)); }}
+            />
           </div>
         );
       })()}
@@ -862,7 +890,11 @@ export default function CompanyDashboard() {
         if (!c) return null;
         return (
           <div style={{ padding: '4px 16px 8px' }}>
-            <CourseCardCompany course={c} onDelete={() => { deleteCourse(c.id); setOpenCourseId(null); }} />
+            <CourseCardCompany
+              course={c}
+              deleting={deletingId === c.id}
+              onDelete={() => { void handleDeleteItem('course', c.id, () => setOpenCourseId(null)); }}
+            />
           </div>
         );
       })()}
@@ -882,7 +914,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(0);
-  const [selectedChoice, setSelectedChoice] = useState<'event' | 'product' | 'course' | 'sample' | 'partnership'>(kind);
+  const [selectedChoice, setSelectedChoice] = useState<'event' | 'product' | 'course' | 'partnership'>(kind);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -1051,23 +1083,15 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
               { id: 'event', target: 'event', title: 'Evento', desc: 'Congresso, workshop, webinar' },
               { id: 'product', target: 'product', title: 'Produto', desc: 'Produto, tecnologia ou material científico' },
               { id: 'course', target: 'course', title: 'Workshop', desc: 'Eventos e capacitações médicas' },
-              { id: 'sample', target: 'product', title: 'Amostra/Teste', desc: 'Convite para médicos avaliarem uma solução' },
               { id: 'partnership', target: 'product', title: 'Parceria', desc: 'Divulgação, relacionamento ou ação comercial' },
             ].map(option => {
-              const id = option.id as 'event' | 'product' | 'course' | 'sample' | 'partnership';
+              const id = option.id as 'event' | 'product' | 'course' | 'partnership';
               const target = option.target as 'event' | 'product' | 'course';
               const selected = selectedChoice === id;
               return (
                 <button key={id} onClick={() => {
                   setSelectedChoice(id);
                   setKind(target);
-                  if (id === 'sample') {
-                    setPr(p => ({
-                      ...p,
-                      availableFor: 'Médico pode solicitar amostra, teste ou material para avaliação.',
-                      price: 'Amostra/Teste sob consulta',
-                    }));
-                  }
                   if (id === 'partnership') {
                     setPr(p => ({
                       ...p,
@@ -1077,12 +1101,13 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
                   }
                 }} style={{
                   padding: '16px', borderRadius: 16, cursor: 'pointer', textAlign: 'left',
-                  background: selected ? 'rgba(74,168,255,0.08)' : 'var(--card)',
+                  background: selected ? 'rgba(245,130,32,0.10)' : 'var(--card)',
                   border: `2px solid ${selected ? 'var(--accent)' : 'var(--line)'}`,
                   display: 'flex', alignItems: 'center', gap: 14,
                 }}>
                   <div style={{
-                    width: 48, height: 48, borderRadius: 12, background: 'var(--bg)',
+                    width: 48, height: 48, borderRadius: 12,
+                    background: selected ? 'rgba(245,130,32,0.14)' : 'var(--bg)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}><OpportunityIcon type={id} /></div>
                   <div style={{ flex: 1 }}>
@@ -1228,7 +1253,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
                 {MODALITIES.map(m => (
                   <button key={m.value} onClick={() => setCo(p => ({ ...p, modality: m.value }))} style={{
                     padding: '14px 8px', borderRadius: 12, cursor: 'pointer',
-                    background: co.modality === m.value ? 'rgba(74,168,255,0.08)' : 'var(--card)',
+                    background: co.modality === m.value ? 'rgba(245,130,32,0.10)' : 'var(--card)',
                     border: `1.5px solid ${co.modality === m.value ? 'var(--accent)' : 'var(--line)'}`,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                     fontSize: 12, fontWeight: 600, color: co.modality === m.value ? '#6FA4FF' : 'var(--ink-2)',
@@ -1277,7 +1302,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             flex: 1, height: 52, borderRadius: 14, border: 'none',
             background: 'var(--accent)', color: '#fff', cursor: 'pointer',
             fontSize: 15, fontWeight: 560,
-            boxShadow: '0 6px 24px rgba(74,168,255,0.3)',
+            boxShadow: '0 6px 24px rgba(245,130,32,0.32)',
           }}>
             Continuar →
           </button>
@@ -1287,7 +1312,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
             cursor: saving ? 'not-allowed' : 'pointer',
             fontSize: 15, fontWeight: 560, opacity: saving ? 0.8 : 1,
-            boxShadow: '0 6px 24px rgba(74,168,255,0.3)',
+            boxShadow: '0 6px 24px rgba(245,130,32,0.32)',
           }}>
             {saving
               ? 'Publicando...'
@@ -1361,7 +1386,7 @@ function EventRowCompany({ ev, interestedCount, onViewInterested, onShare }: {
         flexShrink: 0,
         borderRadius: 15,
         overflow: 'hidden',
-        background: `linear-gradient(135deg, rgba(18,24,40,0.54), rgba(74,168,255,0.18)), url(${visualImage(ev.imageUrl)}) center/cover`,
+        background: `linear-gradient(135deg, rgba(18,24,40,0.54), rgba(245,130,32,0.20)), url(${visualImage(ev.imageUrl)}) center/cover`,
       }}>
         <div style={{
           position: 'absolute',
@@ -1486,7 +1511,7 @@ function EventCardCompany({ ev, interestedCount, onDelete, onEdit, onViewInteres
       <div style={{
         height: 72,
         padding: 12,
-        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(74,168,255,0.18), rgba(255,111,77,0.18)), url(${visualImage(ev.imageUrl)}) center/cover`,
+        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(245,130,32,0.20), rgba(255,111,77,0.18)), url(${visualImage(ev.imageUrl)}) center/cover`,
       }}>
         <span style={{
           padding: '5px 9px',
@@ -1681,7 +1706,11 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
   );
 }
 
-function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestConnection: (leadId: string) => Promise<void> }) {
+function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
+  leads: Lead[];
+  onRequestConnection: (leadId: string) => Promise<void>;
+  onStartPublishing?: () => void;
+}) {
   const [requestingId, setRequestingId] = useState<string | null>(null);
   const [requestError, setRequestError] = useState('');
 
@@ -1712,11 +1741,36 @@ function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestCon
       </div>
 
       {leads.length === 0 ? (
-        <div style={{ padding: 24, borderRadius: 18, background: 'var(--card)', border: '1px solid var(--line)' }}>
+        <div style={{
+          padding: 24,
+          borderRadius: 18,
+          background: 'linear-gradient(135deg, rgba(245,130,32,0.08), rgba(255,255,255,0.96))',
+          border: '1px solid rgba(245,130,32,0.16)',
+        }}>
           <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>Nenhum médico interessado ainda.</div>
           <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-            Quando um médico clicar em representante, amostra, evento ou produto, ele aparecerá aqui.
+            Quando um médico demonstrar interesse em evento, produto ou representante, ele aparecerá aqui para você iniciar a conversa.
           </p>
+          {onStartPublishing && (
+            <button
+              type="button"
+              onClick={onStartPublishing}
+              style={{
+                marginTop: 14,
+                padding: '10px 16px',
+                borderRadius: 12,
+                border: 'none',
+                background: 'var(--accent)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 620,
+                cursor: 'pointer',
+                boxShadow: '0 8px 22px rgba(245,130,32,0.24)',
+              }}
+            >
+              Publicar oportunidade →
+            </button>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1962,7 +2016,7 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
           width: '100%', padding: '13px', borderRadius: 12, border: 'none',
           background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
           fontSize: 14, fontWeight: 560, cursor: saving ? 'not-allowed' : 'pointer',
-          boxShadow: '0 6px 20px rgba(74,168,255,0.3)',
+          boxShadow: '0 6px 20px rgba(245,130,32,0.32)',
         }}>
           {saving ? 'Salvando...' : '+ Adicionar local'}
         </button>
@@ -2006,14 +2060,18 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
   );
 }
 
-function ProductCardCompany({ product, onDelete }: { product: Product; onDelete: () => void }) {
+function ProductCardCompany({ product, onDelete, deleting = false }: {
+  product: Product;
+  onDelete: () => void;
+  deleting?: boolean;
+}) {
   const [tint1] = categoryTint(product.category);
   return (
     <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
       <div style={{
         height: 72,
         padding: 12,
-        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(74,168,255,0.18), rgba(255,111,77,0.18)), url(${visualImage(product.imageUrl)}) center/cover`,
+        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(245,130,32,0.20), rgba(255,111,77,0.18)), url(${visualImage(product.imageUrl)}) center/cover`,
       }}>
         <span style={{
           padding: '5px 9px',
@@ -2039,8 +2097,8 @@ function ProductCardCompany({ product, onDelete }: { product: Product; onDelete:
               marginTop: 9,
               padding: '9px 10px',
               borderRadius: 10,
-              background: 'rgba(74,168,255,0.06)',
-              border: '1px solid rgba(74,168,255,0.14)',
+              background: 'rgba(245,130,32,0.08)',
+              border: '1px solid rgba(245,130,32,0.16)',
               color: 'var(--ink-2)',
               fontSize: 12,
               lineHeight: 1.4,
@@ -2053,16 +2111,21 @@ function ProductCardCompany({ product, onDelete }: { product: Product; onDelete:
             {product.website && <Chip color="var(--accent-ink)">Material</Chip>}
           </div>
         </div>
-        <button onClick={onDelete} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
+        <button onClick={onDelete} disabled={deleting} style={{
+          background: 'none', border: 'none', cursor: deleting ? 'not-allowed' : 'pointer',
           color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
-        }}>Excluir</button>
+          opacity: deleting ? 0.6 : 1,
+        }}>{deleting ? 'Excluindo…' : 'Excluir'}</button>
       </div>
     </div>
   );
 }
 
-function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () => void }) {
+function CourseCardCompany({ course, onDelete, deleting = false }: {
+  course: Course;
+  onDelete: () => void;
+  deleting?: boolean;
+}) {
   const [tint1] = categoryTint(course.category);
   const displayDate = courseDisplayDate(course);
   const placeLabel = course.location?.trim() || (course.modality === 'online' ? 'Online' : 'Local a definir');
@@ -2071,7 +2134,7 @@ function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () 
       <div style={{
         height: 72,
         padding: 12,
-        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(74,168,255,0.18), rgba(255,111,77,0.18)), url(${visualImage(course.imageUrl)}) center/cover`,
+        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(245,130,32,0.20), rgba(255,111,77,0.18)), url(${visualImage(course.imageUrl)}) center/cover`,
       }}>
         <span style={{
           padding: '5px 9px',
@@ -2100,10 +2163,11 @@ function CourseCardCompany({ course, onDelete }: { course: Course; onDelete: () 
           </div>
           {course.price && <div style={{ marginTop: 8 }}><Chip color="#1EA97C">{course.price}</Chip></div>}
         </div>
-        <button onClick={onDelete} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
+        <button onClick={onDelete} disabled={deleting} style={{
+          background: 'none', border: 'none', cursor: deleting ? 'not-allowed' : 'pointer',
           color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
-        }}>Excluir</button>
+          opacity: deleting ? 0.6 : 1,
+        }}>{deleting ? 'Excluindo…' : 'Excluir'}</button>
       </div>
     </div>
   );
@@ -2137,8 +2201,8 @@ function ImageUploadField({
         cursor: 'pointer',
         border: '1px solid var(--line)',
         background: preview
-          ? `linear-gradient(135deg, rgba(18,24,40,0.34), rgba(74,168,255,0.18), rgba(255,111,77,0.18)), url(${preview}) center/cover`
-          : 'linear-gradient(135deg, rgba(74,168,255,0.22), rgba(255,111,77,0.18))',
+          ? `linear-gradient(135deg, rgba(18,24,40,0.34), rgba(245,130,32,0.20), rgba(255,111,77,0.18)), url(${preview}) center/cover`
+          : 'linear-gradient(135deg, rgba(245,130,32,0.24), rgba(255,111,77,0.18))',
         boxShadow: '0 8px 24px rgba(90,80,130,0.08)',
       }}>
         <input
@@ -2381,7 +2445,7 @@ function EditEventModal({ event, onSave, onClose }: {
             background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
             fontSize: 14, fontWeight: 560,
             cursor: saving ? 'not-allowed' : 'pointer',
-            boxShadow: '0 6px 20px rgba(74,168,255,0.30)',
+            boxShadow: '0 6px 20px rgba(245,130,32,0.32)',
           }}>
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>

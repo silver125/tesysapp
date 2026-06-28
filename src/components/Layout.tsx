@@ -1,9 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { CompanyMark, TessyMark } from './ui';
 import { companyTint } from '../lib/uiHelpers';
 import OnboardingModal from './OnboardingModal';
+import ProfileSettingsSheet from './ProfileSettingsSheet';
+import { openDeleteAccountDialog, openProfileSettings } from '../lib/profileSettingsEvents';
 
 export interface NavItem {
   label: string;
@@ -23,6 +25,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const code = user?.name
     ?.split(' ')
@@ -32,6 +35,26 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
     .toUpperCase() ?? '??';
 
   const tint = companyTint(user?.name ?? 'T');
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    function handleOutside(event: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [profileOpen]);
+
+  const menuButtonStyle = {
+    width: '100%',
+    height: 36,
+    borderRadius: 11,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  } as const;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', color: 'var(--ink)' }}>
@@ -51,7 +74,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
             </span>
           </div>
 
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div ref={profileMenuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ display: 'none' }} className="sm:flex items-center gap-2">
               <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
                 {user?.role === 'medico' ? 'médico' : 'empresa'}
@@ -83,7 +106,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
                 position: 'absolute',
                 top: 42,
                 right: 0,
-                width: 194,
+                width: 210,
                 padding: 10,
                 borderRadius: 16,
                 border: '1px solid rgba(216,222,236,0.95)',
@@ -92,7 +115,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
                 zIndex: 40,
               }}>
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user?.name ?? 'Perfil'}
+                  {user?.role === 'empresa' ? (user.company ?? user.name) : (user?.name ?? 'Perfil')}
                 </div>
                 <div style={{ marginTop: 2, fontSize: 10.5, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   {user?.role === 'medico' ? 'médico' : 'empresa'}
@@ -101,20 +124,47 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
                   type="button"
                   onClick={() => {
                     setProfileOpen(false);
+                    openProfileSettings();
+                  }}
+                  style={{
+                    ...menuButtonStyle,
+                    marginTop: 10,
+                    border: '1px solid rgba(245,130,32,0.22)',
+                    background: 'rgba(245,130,32,0.08)',
+                    color: 'var(--accent-ink)',
+                  }}
+                >
+                  Editar perfil
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    openDeleteAccountDialog();
+                  }}
+                  style={{
+                    ...menuButtonStyle,
+                    marginTop: 8,
+                    border: '1px solid rgba(242,92,84,0.18)',
+                    background: 'rgba(242,92,84,0.06)',
+                    color: '#F25C54',
+                  }}
+                >
+                  Excluir conta
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
                     logout();
                     navigate('/', { replace: true });
                   }}
                   style={{
-                    marginTop: 10,
-                    width: '100%',
-                    height: 34,
-                    borderRadius: 11,
+                    ...menuButtonStyle,
+                    marginTop: 8,
                     border: '1px solid rgba(216,222,236,0.86)',
                     background: 'rgba(247,248,255,0.92)',
                     color: 'var(--ink)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
                   }}
                 >
                   Sair
@@ -227,6 +277,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
       </nav>
 
       <OnboardingModal />
+      <ProfileSettingsSheet />
     </div>
   );
 }
