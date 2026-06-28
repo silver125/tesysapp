@@ -48,6 +48,23 @@ export default class ErrorBoundary extends Component<Props, State> {
             <p style={{ marginTop: 8, fontSize: 13.5, lineHeight: 1.45, color: '#6F7686' }}>
               Recarregue a página. Se continuar em branco, saia e entre de novo.
             </p>
+            {this.state.error?.message && (
+              <p style={{
+                marginTop: 10,
+                padding: '8px 10px',
+                borderRadius: 10,
+                background: '#F7F8FF',
+                border: '1px solid #E3E7F2',
+                fontSize: 11,
+                lineHeight: 1.4,
+                color: '#9299A8',
+                fontFamily: 'monospace',
+                wordBreak: 'break-word',
+                textAlign: 'left',
+              }}>
+                {this.state.error.message}
+              </p>
+            )}
             <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"

@@ -150,7 +150,22 @@ async function uploadOpportunityImageIfReady(file: File | null, companyId: strin
 }
 
 function leadDoctorKey(lead: Lead) {
-  return lead.doctorId || `${lead.doctorName}-${lead.doctorSpecialty ?? ''}`;
+  return lead.doctorId || `${safeDoctorName(lead.doctorName)}-${lead.doctorSpecialty ?? ''}`;
+}
+
+function safeDoctorName(name?: string | null) {
+  return name?.trim() || 'Médico';
+}
+
+function leadIntentMeta(intent: Lead['intent'] | string | null | undefined) {
+  const labels: Record<string, { label: string; color: string }> = {
+    representative_contact: { label: 'Representante', color: 'var(--accent)' },
+    sample_request: { label: 'Amostra', color: '#1EA97C' },
+    instagram_partnership: { label: 'Instagram', color: '#E63E8C' },
+    event_interest: { label: 'Evento', color: 'var(--accent-ink)' },
+    course_interest: { label: 'Workshop', color: '#F58220' },
+  };
+  return labels[intent ?? ''] ?? { label: 'Interesse', color: 'var(--accent)' };
 }
 
 function IcoHome(a: boolean) {
@@ -303,17 +318,17 @@ export default function CompanyDashboard() {
   const [openProductId, setOpenProductId] = useState<string | null>(null);
   const [openCourseId, setOpenCourseId] = useState<string | null>(null);
 
-  const companyLeads = leads.filter(l => l.companyId === user?.id);
-  const myEvents = events
+  const companyLeads = (leads ?? []).filter(l => l.companyId === user?.id);
+  const myEvents = (events ?? [])
     .filter(e => e.companyId === user?.id)
     .map(event => {
       const leadCount = eventLeadDoctorCount(event, companyLeads);
       const registeredCount = Math.max(event.registeredCount, leadCount);
       return registeredCount === event.registeredCount ? event : { ...event, registeredCount };
     });
-  const myProducts = products.filter(p => p.companyId === user?.id);
-  const myCourses  = courses.filter(c => c.companyId === user?.id);
-  const myLocations = locations.filter(l => l.companyId === user?.id);
+  const myProducts = (products ?? []).filter(p => p.companyId === user?.id);
+  const myCourses  = (courses ?? []).filter(c => c.companyId === user?.id);
+  const myLocations = (locations ?? []).filter(l => l.companyId === user?.id);
   const eventById = new Map(myEvents.map(event => [event.id, event]));
   const eventByName = new Map(myEvents.map(event => [event.title, event]));
   const activeLeads = companyLeads.filter(lead => {
@@ -1527,7 +1542,7 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
   const waLink = isApproved
     ? buildWhatsappLink(
       lead.doctorWhatsapp,
-      `Olá ${lead.doctorName}, vi seu interesse no Tessy sobre "${lead.itemName}". Posso te passar mais detalhes?`,
+      `Olá ${safeDoctorName(lead.doctorName)}, vi seu interesse no Tessy sobre "${lead.itemName ?? 'sua solicitação'}". Posso te passar mais detalhes?`,
     )
     : '';
 
@@ -1593,11 +1608,11 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
           fontWeight: 560,
           flexShrink: 0,
         }}>
-          {lead.doctorName.slice(0, 1).toUpperCase()}
+          {safeDoctorName(lead.doctorName).slice(0, 1).toUpperCase()}
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 560, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {lead.doctorName}
+            {safeDoctorName(lead.doctorName)}
           </div>
           <div style={{ marginTop: 2, color: 'var(--muted)', fontSize: 11.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {lead.doctorSpecialty || 'Especialidade não informada'}
@@ -1609,7 +1624,7 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
         <Chip color="#1EA97C">{lead.itemType === 'event' ? 'Evento' : lead.itemType === 'product' ? 'Produto' : lead.itemType === 'course' ? 'Workshop' : 'Empresa'}</Chip>
       </div>
       <p style={{ margin: '10px 0 0', color: 'var(--ink-2)', fontSize: 12, lineHeight: 1.38 }}>
-        Interesse em {lead.itemName}.
+        Interesse em {lead.itemName || 'sua solicitação'}.
       </p>
       {waLink ? (
         <a href={waLink} target="_blank" rel="noopener noreferrer" style={buttonStyle}>
@@ -1627,14 +1642,6 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
 function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestConnection: (leadId: string) => Promise<void> }) {
   const [requestingId, setRequestingId] = useState<string | null>(null);
   const [requestError, setRequestError] = useState('');
-
-  const intentLabel: Record<Lead['intent'], { label: string; color: string }> = {
-    representative_contact: { label: 'Representante', color: 'var(--accent)' },
-    sample_request: { label: 'Amostra', color: '#1EA97C' },
-    instagram_partnership: { label: 'Instagram', color: '#E63E8C' },
-    event_interest: { label: 'Evento', color: 'var(--accent-ink)' },
-    course_interest: { label: 'Workshop', color: '#F58220' },
-  };
 
   async function requestDoctorConnection(leadId: string) {
     setRequestingId(leadId);
@@ -1685,14 +1692,14 @@ function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestCon
             </div>
           )}
           {leads.map(lead => {
-            const intent = intentLabel[lead.intent];
+            const intent = leadIntentMeta(lead.intent);
             const connectionStatus = lead.connectionStatus ?? 'none';
             const isApproved = connectionStatus === 'approved';
             const isRequested = connectionStatus === 'requested';
             const waLink = isApproved
               ? buildWhatsappLink(
                 lead.doctorWhatsapp,
-                `Olá ${lead.doctorName}, vi seu interesse no Tessy sobre "${lead.itemName}". Posso te passar mais detalhes?`,
+                `Olá ${safeDoctorName(lead.doctorName)}, vi seu interesse no Tessy sobre "${lead.itemName ?? 'sua solicitação'}". Posso te passar mais detalhes?`,
               )
               : '';
             return (
@@ -1707,7 +1714,7 @@ function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestCon
                   <div style={{ minWidth: 0 }}>
                     <Chip color={intent.color}>{intent.label}</Chip>
                     <div style={{ marginTop: 10, fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>
-                      {lead.doctorName}
+                      {safeDoctorName(lead.doctorName)}
                     </div>
                     <div style={{ marginTop: 3, color: 'var(--muted)', fontSize: 12 }}>
                       {lead.doctorSpecialty || 'Especialidade não informada'}

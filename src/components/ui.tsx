@@ -106,12 +106,13 @@ export function ModalityBadge({ modality }: { modality: string }) {
 
 /* ── Small pill chip (category badge) ── */
 export function Chip({ children, color = 'var(--accent)' }: { children: ReactNode; color?: string }) {
-  const softBg = color.startsWith('#') ? `${color}18` : `color-mix(in srgb, ${color} 12%, transparent)`;
-  const softBorder = color.startsWith('#') ? `${color}35` : `color-mix(in srgb, ${color} 26%, transparent)`;
+  const safeColor = color || 'var(--accent)';
+  const softBg = safeColor.startsWith('#') ? `${safeColor}18` : `color-mix(in srgb, ${safeColor} 12%, transparent)`;
+  const softBorder = safeColor.startsWith('#') ? `${safeColor}35` : `color-mix(in srgb, ${safeColor} 26%, transparent)`;
   return (
     <span style={{
       padding: '4px 9px', borderRadius: 999,
-      background: softBg, color,
+      background: softBg, color: safeColor,
       border: `1px solid ${softBorder}`,
       fontFamily: 'var(--font-mono)',
       fontSize: 10, fontWeight: 560, letterSpacing: '0.04em', flexShrink: 0,

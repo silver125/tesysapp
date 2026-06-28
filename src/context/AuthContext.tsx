@@ -145,23 +145,24 @@ function dbToCourse(row: Record<string, unknown>): Course {
 }
 
 function dbToLead(row: Record<string, unknown>): Lead {
+  const intent = String(row.intent ?? 'representative_contact') as Lead['intent'];
   return {
     id:              row.id               as string,
     companyId:       row.company_id       as string,
-    companyName:     row.company_name     as string,
+    companyName:     (row.company_name as string | null) || 'Empresa',
     doctorId:        row.doctor_id        as string,
-    doctorName:      row.doctor_name      as string,
+    doctorName:      (row.doctor_name as string | null) || 'Médico',
     doctorSpecialty: row.doctor_specialty as string | undefined,
     doctorWhatsapp:  row.doctor_whatsapp  as string | undefined,
-    itemType:        row.item_type        as Lead['itemType'],
+    itemType:        (row.item_type as Lead['itemType']) ?? 'company',
     itemId:          row.item_id          as string | undefined,
-    itemName:        row.item_name        as string,
-    intent:          row.intent           as Lead['intent'],
+    itemName:        (row.item_name as string | null) || 'Interesse',
+    intent,
     message:         row.message          as string | undefined,
     connectionStatus: (row.connection_status as Lead['connectionStatus'] | undefined) ?? 'none',
     connectionRequestedAt: row.connection_requested_at as string | undefined,
     connectionApprovedAt:  row.connection_approved_at  as string | undefined,
-    createdAt:       row.created_at       as string,
+    createdAt:       (row.created_at as string | null) || new Date().toISOString(),
   };
 }
 
