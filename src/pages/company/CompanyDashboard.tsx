@@ -6,10 +6,24 @@ import {
   CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
+import { MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
-import type { Event, Product, Course, CourseModality, Lead } from '../../types';
+import type { Event, Product, Course, CourseModality, Lead, Location, LocationType } from '../../types';
 
-type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads';
+type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads' | 'locations';
+
+const LOCATION_TYPES: { value: LocationType; label: string }[] = [
+  { value: 'ponto_venda',  label: 'Ponto de venda' },
+  { value: 'distribuidor', label: 'Distribuidor' },
+  { value: 'clinica',      label: 'Clínica parceira' },
+  { value: 'farmacia',     label: 'Farmácia' },
+  { value: 'loja',         label: 'Loja' },
+  { value: 'outro',        label: 'Outro' },
+];
+
+function locationTypeLabel(type: LocationType) {
+  return LOCATION_TYPES.find(t => t.value === type)?.label ?? 'Local';
+}
 
 const EVENT_DATE_MIN = '2026-01-01';
 const EVENT_DATE_MAX = '2030-12-31';
@@ -156,11 +170,19 @@ function IcoBook(a: boolean) {
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
 }
 
-function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'sample' | 'partnership' }) {
+function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'sample' | 'partnership' | 'location' }) {
   const c = 'var(--accent)';
   if (type === 'event') return IcoCalendar(true);
   if (type === 'product') return IcoBox(true);
   if (type === 'course') return IcoBook(true);
+  if (type === 'location') {
+    return (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
+        <path d="M10 18s6-5.2 6-10a6 6 0 10-12 0c0 4.8 6 10 6 10z" strokeLinejoin="round" />
+        <circle cx="10" cy="8" r="2.2" />
+      </svg>
+    );
+  }
   if (type === 'sample') {
     return (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
@@ -270,13 +292,16 @@ function eventLeadDoctorCount(event: Event, leads: Lead[]) {
 }
 
 export default function CompanyDashboard() {
-  const { user, events, products, courses, leads, addEvent, addProduct, addCourse, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent, requestConnection } = useAuth();
+  const { user, events, products, courses, leads, locations, addEvent, addProduct, addCourse, addLocation, deleteLocation, deleteEvent, deleteProduct, deleteCourse, updateProfile, updateEvent, requestConnection } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
   const [editingProfile, setEditingProfile] = useState(false);
   const [editName, setEditName] = useState('');
   const [editWa, setEditWa] = useState('');
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [openEventId, setOpenEventId] = useState<string | null>(null);
+  const [openProductId, setOpenProductId] = useState<string | null>(null);
+  const [openCourseId, setOpenCourseId] = useState<string | null>(null);
 
   const companyLeads = leads.filter(l => l.companyId === user?.id);
   const myEvents = events
@@ -288,6 +313,7 @@ export default function CompanyDashboard() {
     });
   const myProducts = products.filter(p => p.companyId === user?.id);
   const myCourses  = courses.filter(c => c.companyId === user?.id);
+  const myLocations = locations.filter(l => l.companyId === user?.id);
   const eventById = new Map(myEvents.map(event => [event.id, event]));
   const eventByName = new Map(myEvents.map(event => [event.title, event]));
   const activeLeads = companyLeads.filter(lead => {
@@ -506,11 +532,12 @@ export default function CompanyDashboard() {
                 { key: 'course', target: 'course', label: 'Workshop' },
                 { key: 'sample', target: 'product', label: 'Amostra/Teste' },
                 { key: 'partnership', target: 'product', label: 'Parceria' },
+                { key: 'location', target: 'location', label: 'Local de atendimento' },
               ].map(item => {
-                const key = item.key as 'event' | 'product' | 'course' | 'sample' | 'partnership';
-                const target = item.target as 'event' | 'product' | 'course';
+                const key = item.key as 'event' | 'product' | 'course' | 'sample' | 'partnership' | 'location';
+                const target = item.target as 'event' | 'product' | 'course' | 'location';
                 return (
-                  <button key={key} onClick={() => { setCreateKind(target); setTab('create'); }} style={{
+                  <button key={key} onClick={() => { if (target === 'location') { setTab('locations'); return; } setCreateKind(target); setTab('create'); }} style={{
                   padding: '12px 10px', borderRadius: 16,
                     background: 'rgba(255,255,255,0.86)', border: '1px solid var(--line)',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9,
@@ -673,16 +700,14 @@ export default function CompanyDashboard() {
           onAdd={() => { setCreateKind('event'); setTab('create'); }}
           empty={myEvents.length === 0}
           emptyText="Nenhum evento criado ainda."
+          grid
         >
           {myEvents.map(e => (
-            <EventCardCompany
+            <EventCompactCard
               key={e.id}
               ev={e}
               interestedCount={eventLeadDoctorCount(e, companyLeads)}
-              onDelete={() => deleteEvent(e.id)}
-              onEdit={() => setEditingEventId(e.id)}
-              onViewInterested={() => setTab('leads')}
-              onShare={() => shareEvent(e)}
+              onOpen={() => setOpenEventId(e.id)}
             />
           ))}
         </ListTab>
@@ -695,8 +720,9 @@ export default function CompanyDashboard() {
           onAdd={() => { setCreateKind('product'); setTab('create'); }}
           empty={myProducts.length === 0}
           emptyText="Nenhum produto criado ainda."
+          grid
         >
-          {myProducts.map(p => <ProductCardCompany key={p.id} product={p} onDelete={() => deleteProduct(p.id)} />)}
+          {myProducts.map(p => <ProductCompactCard key={p.id} product={p} onOpen={() => setOpenProductId(p.id)} />)}
         </ListTab>
       )}
 
@@ -707,14 +733,25 @@ export default function CompanyDashboard() {
           onAdd={() => { setCreateKind('course'); setTab('create'); }}
           empty={myCourses.length === 0}
           emptyText="Nenhuma capacitação criada ainda."
+          grid
         >
-          {myCourses.map(c => <CourseCardCompany key={c.id} course={c} onDelete={() => deleteCourse(c.id)} />)}
+          {myCourses.map(c => <CourseCompactCard key={c.id} course={c} onOpen={() => setOpenCourseId(c.id)} />)}
         </ListTab>
       )}
 
       {/* ── LEADS ── */}
       {tab === 'leads' && (
         <LeadInbox leads={myLeads} onRequestConnection={requestConnection} />
+      )}
+
+      {/* ── LOCATIONS ── */}
+      {tab === 'locations' && (
+        <LocationsManager
+          locations={myLocations}
+          company={companyInfo}
+          onAdd={addLocation}
+          onDelete={deleteLocation}
+        />
       )}
 
       {/* ── CREATE WIZARD ── */}
@@ -742,6 +779,50 @@ export default function CompanyDashboard() {
         }}
       />
     )}
+
+    {/* ── MANAGE SHEETS (vitrine) ── */}
+    <Sheet open={openEventId !== null} onClose={() => setOpenEventId(null)}>
+      {(() => {
+        const ev = events.find(e => e.id === openEventId);
+        if (!ev) return null;
+        return (
+          <div style={{ padding: '4px 16px 8px' }}>
+            <EventCardCompany
+              ev={ev}
+              interestedCount={eventLeadDoctorCount(ev, companyLeads)}
+              onViewInterested={() => { setOpenEventId(null); setTab('leads'); }}
+              onEdit={() => { setOpenEventId(null); setEditingEventId(ev.id); }}
+              onShare={() => shareEvent(ev)}
+              onDelete={() => { deleteEvent(ev.id); setOpenEventId(null); }}
+            />
+          </div>
+        );
+      })()}
+    </Sheet>
+
+    <Sheet open={openProductId !== null} onClose={() => setOpenProductId(null)}>
+      {(() => {
+        const p = products.find(x => x.id === openProductId);
+        if (!p) return null;
+        return (
+          <div style={{ padding: '4px 16px 8px' }}>
+            <ProductCardCompany product={p} onDelete={() => { deleteProduct(p.id); setOpenProductId(null); }} />
+          </div>
+        );
+      })()}
+    </Sheet>
+
+    <Sheet open={openCourseId !== null} onClose={() => setOpenCourseId(null)}>
+      {(() => {
+        const c = courses.find(x => x.id === openCourseId);
+        if (!c) return null;
+        return (
+          <div style={{ padding: '4px 16px 8px' }}>
+            <CourseCardCompany course={c} onDelete={() => { deleteCourse(c.id); setOpenCourseId(null); }} />
+          </div>
+        );
+      })()}
+    </Sheet>
     </>
   );
 }
@@ -797,6 +878,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     if (step === 0) return ''; // kind selection, always valid
     if (kind === 'event') {
       if (step === 1 && !ev.title.trim()) return 'Informe o título do evento.';
+      if (step === 1 && !evImage.file) return 'Adicione uma foto de capa — anúncios com foto recebem muito mais contatos.';
       if (step === 2 && !ev.date) return 'Selecione a data do evento.';
       if (step === 2 && !isEventDateInAllowedRange(ev.date)) return 'Selecione uma data entre 2026 e 2030.';
       if (step === 2 && !ev.location.trim()) return 'Informe o local do evento.';
@@ -804,10 +886,12 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     if (kind === 'product') {
       if (step === 1 && !pr.name.trim()) return 'Informe o nome do produto.';
       if (step === 1 && !pr.description.trim()) return 'Informe a descrição do produto.';
+      if (step === 1 && !prImage.file) return 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
     }
     if (kind === 'course') {
       if (step === 1 && !co.title.trim()) return 'Informe o título da capacitação.';
       if (step === 1 && !co.instructor.trim()) return 'Informe o nome do instrutor.';
+      if (step === 1 && !coImage.file) return 'Adicione uma imagem — anúncios com foto recebem muito mais contatos.';
       if (step === 2 && !co.date) return 'Selecione a data.';
       if (step === 2 && !co.location.trim()) return 'Informe o local ou cidade.';
       if (step === 2 && !co.duration.trim()) return 'Informe a duração da capacitação.';
@@ -975,7 +1059,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             <WField label="TÍTULO" value={ev.title} onChange={v => setEv(p => ({ ...p, title: v }))} placeholder="Ex: Simpósio de Cardiologia 2025" />
             <WField label="DESCRIÇÃO" value={ev.description} onChange={v => setEv(p => ({ ...p, description: v }))} placeholder="Descreva o evento..." as="textarea" />
             <ImageUploadField
-              label="IMAGEM DE CAPA"
+              label="IMAGEM DE CAPA (obrigatória)"
               preview={evImage.preview}
               onChange={file => setImageDraft(setEvImage, file)}
             />
@@ -1015,7 +1099,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             <WField label="NOME DO PRODUTO" value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder="Ex: SkinBiome Serum" />
             <WField label="RESUMO CLÍNICO / COMERCIAL" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="O que é, para quem é e por que vale uma conversa." as="textarea" />
             <ImageUploadField
-              label="FOTO DO PRODUTO"
+              label="FOTO DO PRODUTO (obrigatória)"
               preview={prImage.preview}
               onChange={file => setImageDraft(setPrImage, file)}
             />
@@ -1038,7 +1122,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             <WField label="INSTRUTOR / PROFESSOR" value={co.instructor} onChange={v => setCo(p => ({ ...p, instructor: v }))} placeholder="Dr. João Silva" />
             <WField label="DESCRIÇÃO" value={co.description} onChange={v => setCo(p => ({ ...p, description: v }))} placeholder="Descreva o workshop ou capacitação..." as="textarea" />
             <ImageUploadField
-              label="IMAGEM DO WORKSHOP"
+              label="IMAGEM DO WORKSHOP (obrigatória)"
               preview={coImage.preview}
               onChange={file => setImageDraft(setCoImage, file)}
             />
@@ -1130,8 +1214,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
 }
 
 /* ─── List tab wrapper ─── */
-function ListTab({ title, onAdd, empty, emptyText, children }: {
-  title: string; onAdd: () => void; empty: boolean; emptyText: string; children: React.ReactNode;
+function ListTab({ title, onAdd, empty, emptyText, grid = false, children }: {
+  title: string; onAdd: () => void; empty: boolean; emptyText: string; grid?: boolean; children: React.ReactNode;
 }) {
   return (
     <div>
@@ -1146,7 +1230,9 @@ function ListTab({ title, onAdd, empty, emptyText, children }: {
       </div>
       {empty
         ? <div style={{ padding: '48px 20px', textAlign: 'center', background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', color: 'var(--muted)', fontSize: 14 }}>{emptyText}</div>
-        : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
+        : grid
+          ? <MarketGrid>{children}</MarketGrid>
+          : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
       }
     </div>
   );
@@ -1250,6 +1336,51 @@ function EventRowCompany({ ev, interestedCount, onViewInterested, onShare }: {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─── Compact vitrine cards (grid) ─── */
+function EventCompactCard({ ev, interestedCount, onOpen }: {
+  ev: Event; interestedCount: number; onOpen: () => void;
+}) {
+  const dateParts = eventDateParts(ev.date);
+  return (
+    <MarketCard
+      image={visualImage(ev.imageUrl)}
+      topLeft={<PhotoBadge color="var(--accent)">{dateParts.day} {dateParts.month}</PhotoBadge>}
+      topRight={interestedCount > 0 ? <PhotoBadge color="#1EA97C">{interestedCount} interessados</PhotoBadge> : undefined}
+      title={ev.title}
+      subtitle={`${eventCity(ev.location)} · ${eventSchedule(ev)}`}
+      tag={<Chip color="var(--accent-ink)">{ev.category}</Chip>}
+      onClick={onOpen}
+    />
+  );
+}
+
+function ProductCompactCard({ product, onOpen }: { product: Product; onOpen: () => void }) {
+  return (
+    <MarketCard
+      image={visualImage(product.imageUrl)}
+      topLeft={<PhotoBadge color="#25D366">Representante</PhotoBadge>}
+      title={product.name}
+      subtitle={product.description}
+      tag={product.price ? <Chip color="#1EA97C">{product.price}</Chip> : <Chip color="var(--accent-ink)">{product.category}</Chip>}
+      onClick={onOpen}
+    />
+  );
+}
+
+function CourseCompactCard({ course, onOpen }: { course: Course; onOpen: () => void }) {
+  const displayDate = courseDisplayDate(course);
+  return (
+    <MarketCard
+      image={visualImage(course.imageUrl)}
+      topLeft={<PhotoBadge color="var(--accent)">{modalityLabel(course.modality)}</PhotoBadge>}
+      title={course.title}
+      subtitle={`${course.instructor}${displayDate ? ` · ${fmt(displayDate)}` : ''}`}
+      tag={<Chip color="var(--accent-ink)">{course.category}</Chip>}
+      onClick={onOpen}
+    />
   );
 }
 
@@ -1642,6 +1773,161 @@ function LeadInbox({ leads, onRequestConnection }: { leads: Lead[]; onRequestCon
   );
 }
 
+/* ─── Locations manager ─── */
+function LocationsManager({ locations, company, onAdd, onDelete }: {
+  locations: Location[];
+  company: { id: string; name: string; whatsapp?: string };
+  onAdd: (location: Omit<Location, 'id' | 'createdAt'>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [name, setName] = useState('');
+  const [type, setType] = useState<LocationType>('ponto_venda');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [stateUf, setStateUf] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [website, setWebsite] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  function normalizeUrl(raw: string): string | undefined {
+    const trimmed = raw.trim();
+    if (!trimmed) return undefined;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  }
+
+  function reset() {
+    setName(''); setType('ponto_venda'); setAddress('');
+    setCity(''); setStateUf(''); setWhatsapp(''); setWebsite(''); setNotes('');
+  }
+
+  async function handleSave() {
+    if (!name.trim()) { setError('Informe o nome do local.'); return; }
+    if (!city.trim() && !address.trim()) { setError('Informe ao menos a cidade ou o endereço.'); return; }
+    setError('');
+    setSaving(true);
+    try {
+      const rawWa = whatsapp.replace(/\D/g, '');
+      await onAdd({
+        companyId: company.id,
+        companyName: company.name,
+        name: name.trim(),
+        type,
+        address: address.trim() || undefined,
+        city: city.trim() || undefined,
+        state: stateUf.trim() || undefined,
+        whatsapp: rawWa ? (rawWa.startsWith('55') ? rawWa : `55${rawWa}`) : undefined,
+        website: normalizeUrl(website),
+        notes: notes.trim() || undefined,
+      });
+      reset();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao salvar local.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 18 }}>
+        <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+          Onde encontrar
+        </Mono>
+        <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
+          Locais de atendimento<span style={{ color: 'var(--accent)' }}>.</span>
+        </h1>
+        <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
+          Pontos de venda, distribuidores e clínicas onde seus produtos podem ser encontrados. Médicos veem esses locais ao conhecer sua empresa.
+        </p>
+      </div>
+
+      {/* Form */}
+      <div style={{
+        padding: 16, borderRadius: 18, background: 'var(--card)',
+        border: '1px solid var(--line)', marginBottom: 18,
+        display: 'flex', flexDirection: 'column', gap: 16,
+      }}>
+        <WField label="NOME DO LOCAL" value={name} onChange={setName} placeholder="Ex: Farmácia Central / Distribuidora Sul" />
+        <WField
+          label="TIPO"
+          value={locationTypeLabel(type)}
+          onChange={label => {
+            const found = LOCATION_TYPES.find(t => t.label === label);
+            if (found) setType(found.value);
+          }}
+          as="select"
+          options={LOCATION_TYPES.map(t => t.label)}
+        />
+        <WField label="ENDEREÇO (opcional)" value={address} onChange={setAddress} placeholder="Rua, número, bairro" />
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+          <WField label="CIDADE" value={city} onChange={setCity} placeholder="São Paulo" />
+          <WField label="UF" value={stateUf} onChange={v => setStateUf(v.toUpperCase().slice(0, 2))} placeholder="SP" />
+        </div>
+        <WField label="WHATSAPP (opcional)" value={whatsapp} onChange={v => setWhatsapp(fmtPhone(v))} placeholder="(11) 99999-9999" type="tel" />
+        <WField label="WEBSITE (opcional)" value={website} onChange={setWebsite} placeholder="www.local.com.br" type="url" />
+        <WField label="OBSERVAÇÕES (opcional)" value={notes} onChange={setNotes} placeholder="Horário, ponto de referência, etc." as="textarea" />
+
+        {error && (
+          <div style={{
+            padding: '10px 12px', borderRadius: 10,
+            background: 'rgba(242,92,84,0.1)', border: '1px solid rgba(242,92,84,0.3)',
+            color: '#F25C54', fontSize: 13,
+          }}>
+            {error}
+          </div>
+        )}
+
+        <button onClick={handleSave} disabled={saving} style={{
+          width: '100%', padding: '13px', borderRadius: 12, border: 'none',
+          background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
+          fontSize: 14, fontWeight: 560, cursor: saving ? 'not-allowed' : 'pointer',
+          boxShadow: '0 6px 20px rgba(74,168,255,0.3)',
+        }}>
+          {saving ? 'Salvando...' : '+ Adicionar local'}
+        </button>
+      </div>
+
+      {/* List */}
+      {locations.length === 0 ? (
+        <div style={{ padding: '32px 20px', textAlign: 'center', background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', color: 'var(--muted)', fontSize: 14 }}>
+          Nenhum local cadastrado ainda.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {locations.map(loc => (
+            <div key={loc.id} style={{
+              padding: 14, borderRadius: 16, background: 'var(--card)',
+              border: '1px solid var(--line)',
+              display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start',
+            }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Chip color="#F58220">{locationTypeLabel(loc.type)}</Chip>
+                  {loc.whatsapp && <Chip color="#25D366">WhatsApp</Chip>}
+                </div>
+                <div style={{ marginTop: 8, fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{loc.name}</div>
+                <div style={{ marginTop: 3, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
+                  {[loc.address, loc.city, loc.state].filter(Boolean).join(' · ') || 'Sem endereço'}
+                </div>
+                {loc.notes && (
+                  <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>{loc.notes}</div>
+                )}
+              </div>
+              <button onClick={() => { void onDelete(loc.id); }} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
+              }}>Excluir</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProductCardCompany({ product, onDelete }: { product: Product; onDelete: () => void }) {
   const [tint1] = categoryTint(product.category);
   return (
@@ -1762,7 +2048,7 @@ function ImageUploadField({
         {label}
       </Mono>
       <div style={{ margin: '-3px 0 8px', fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-        Recomendado: 1200 x 675 px, imagem horizontal. Máximo: 5MB.
+        📸 Anúncios com foto recebem muito mais contatos de médicos. Recomendado: 1200 x 675 px, horizontal. Máximo: 5MB.
       </div>
       <label style={{
         position: 'relative',

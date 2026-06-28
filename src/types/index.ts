@@ -13,6 +13,31 @@ export interface User {
   whatsappConnectionOnly?: boolean;
   bio?: string;
   onboardingCompletedAt?: string | null;
+  points?: number;
+}
+
+export type LocationType =
+  | 'ponto_venda'
+  | 'distribuidor'
+  | 'clinica'
+  | 'farmacia'
+  | 'loja'
+  | 'outro';
+
+export interface Location {
+  id: string;
+  companyId: string;
+  companyName: string;
+  name: string;
+  type: LocationType;
+  address?: string;
+  city?: string;
+  state?: string;
+  whatsapp?: string;
+  phone?: string;
+  website?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface Event {

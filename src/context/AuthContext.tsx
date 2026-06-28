@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { User, UserRole, Event, Product, Course, Lead, LeadInput } from '../types';
+import type { User, UserRole, Event, Product, Course, Lead, LeadInput, Location } from '../types';
 import { assertSupabaseConfigured, isSupabaseConfigured, supabase, upsertProfileWithToken } from '../lib/supabase';
 import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
+import { POINTS_PER_CONNECTION } from '../lib/gamification';
 
 // Helper: timeout para evitar travas infinitas em chamadas Supabase
 // Aceita PromiseLike para suportar o query builder do supabase-js (thenable)
@@ -63,6 +64,25 @@ function dbToUser(profile: Record<string, unknown>, email: string): User {
     whatsappConnectionOnly: profile.whatsapp_connection_only !== false,
     bio:       profile.bio       as string | undefined,
     onboardingCompletedAt: profile.onboarding_completed_at as string | null | undefined,
+    points:    typeof profile.points === 'number' ? profile.points : Number(profile.points ?? 0) || 0,
+  };
+}
+
+function dbToLocation(row: Record<string, unknown>): Location {
+  return {
+    id:          row.id           as string,
+    companyId:   row.company_id   as string,
+    companyName: row.company_name as string,
+    name:        row.name         as string,
+    type:        (row.type as Location['type']) ?? 'ponto_venda',
+    address:     row.address      as string | undefined,
+    city:        row.city         as string | undefined,
+    state:       row.state        as string | undefined,
+    whatsapp:    row.whatsapp     as string | undefined,
+    phone:       row.phone        as string | undefined,
+    website:     row.website      as string | undefined,
+    notes:       row.notes        as string | undefined,
+    createdAt:   row.created_at   as string,
   };
 }
 
@@ -229,6 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [courses,  setCourses]  = useState<Course[]>([]);
   const [leads,    setLeads]    = useState<Lead[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
   const userId = user?.id;
 
@@ -282,10 +303,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Carrega eventos/produtos/cursos públicos
   const refreshData = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    const [evRes, prRes, coRes] = await Promise.all([
+    const [evRes, prRes, coRes, loRes] = await Promise.all([
       supabase.from('events').select('*').order('created_at', { ascending: false }),
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('courses').select('*').order('created_at', { ascending: false }),
+      supabase.from('locations').select('*').order('created_at', { ascending: false }),
     ]);
     if (evRes.data) {
       const mappedEvents = evRes.data.map(r => dbToEvent(r as Record<string, unknown>));
@@ -314,6 +336,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (prRes.data) setProducts(prRes.data.map(r => dbToProduct(r as Record<string, unknown>)));
     if (coRes.data) setCourses(coRes.data.map(r => dbToCourse(r as Record<string, unknown>)));
+    // Tabela de locais pode ainda não existir (migração não aplicada) — ignora erro.
+    if (loRes.data) setLocations(loRes.data.map(r => dbToLocation(r as Record<string, unknown>)));
   }, []);
 
   useEffect(() => {
@@ -871,6 +895,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCourses(prev => prev.filter(c => c.id !== id));
   };
 
+  // ── Locais de atendimento / distribuição ──
+  const addLocation = async (data: Omit<Location, 'id' | 'createdAt'>) => {
+    assertSupabaseConfigured();
+    const payload = {
+      company_id:   data.companyId,
+      company_name: data.companyName,
+      name:         data.name,
+      type:         data.type,
+      address:      data.address ?? null,
+      city:         data.city ?? null,
+      state:        data.state ?? null,
+      whatsapp:     data.whatsapp ?? null,
+      phone:        data.phone ?? null,
+      website:      data.website ?? null,
+      notes:        data.notes ?? null,
+    };
+
+    const { error } = await withTimeout(
+      supabase.from('locations').insert(payload),
+      12000,
+      'Publicar local',
+    );
+    if (error) {
+      if (/locations.*(does not exist|schema cache)/i.test(error.message)) {
+        throw new Error('Tabela de locais ainda não criada. Rode supabase/create_locations_table.sql no Supabase.');
+      }
+      throw new Error(error.message);
+    }
+    refreshData(); // background, não bloqueia
+  };
+
+  const deleteLocation = async (id: string) => {
+    assertSupabaseConfigured();
+    await supabase.from('locations').delete().eq('id', id);
+    setLocations(prev => prev.filter(l => l.id !== id));
+  };
+
   const addLead = async (input: LeadInput) => {
     if (!user) throw new Error('Você precisa estar logado.');
     const lead: Lead = {
@@ -966,28 +1027,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const approveConnection = async (leadId: string) => {
     if (!user || user.role !== 'medico') throw new Error('Apenas médicos podem aprovar conexão.');
+    const target = leads.find(lead => lead.id === leadId);
+    // Só premia pontos na primeira vez que a conexão é concretizada.
+    const awardsPoints = Boolean(target) && target?.connectionStatus !== 'approved';
     const now = new Date().toISOString();
     setLeads(prev => prev.map(lead => lead.id === leadId
       ? { ...lead, connectionStatus: 'approved', connectionApprovedAt: now, doctorWhatsapp: user.whatsapp }
       : lead,
     ));
+    if (awardsPoints) {
+      setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + POINTS_PER_CONNECTION } : prev);
+    }
 
     if (!isSupabaseConfigured) return;
 
     const { error } = await supabase.rpc('approve_lead_connection', { p_lead_id: leadId });
     if (error) {
+      if (awardsPoints) {
+        setUser(prev => prev ? { ...prev, points: Math.max(0, (prev.points ?? 0) - POINTS_PER_CONNECTION) } : prev);
+      }
       await refreshLeads();
       throw new Error(error.message);
     }
     await refreshLeads();
+    // Recarrega o total autoritativo de pontos do perfil.
+    const fresh = await fetchProfile(user.id, user.email);
+    if (fresh) setUser(prev => prev ? { ...prev, points: fresh.points ?? prev.points } : prev);
   };
 
   return (
     <AuthContext.Provider value={{
       user, isLoading, authReady,
       login, register, logout, completeOnboarding, updateProfile,
-      events, products, courses, leads,
+      events, products, courses, leads, locations,
       addEvent, addProduct, addCourse, addLead,
+      addLocation, deleteLocation,
       requestConnection, approveConnection,
       deleteEvent, deleteProduct, deleteCourse,
       updateEvent,

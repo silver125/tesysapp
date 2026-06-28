@@ -8,7 +8,10 @@ import {
   WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
-import type { Event, Product, Course, Lead, User, LeadIntent, LeadItemType } from '../../types';
+import { getLevelProgress, countApprovedConnections, getBadges, POINTS_PER_CONNECTION } from '../../lib/gamification';
+import { CategoryRail, FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
+import type { CategoryItem } from '../../components/market';
+import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
 type Tab = 'home' | 'events' | 'products' | 'courses' | 'connect';
 type ScheduleLike = { date?: string | null; time?: string | null; start_date?: string | null; event_date?: string | null };
@@ -19,6 +22,7 @@ type CompanyMatch = {
   products: Product[];
   events: Event[];
   courses: Course[];
+  locations: Location[];
 };
 
 function IcoHome(a: boolean) {
@@ -151,10 +155,10 @@ function hasLeadInterest(leads: Lead[], itemType: LeadItemType, itemId: string |
   return leads.some(lead => leadKey(lead.itemType, lead.itemId, lead.intent) === leadKey(itemType, itemId, intent));
 }
 
-function buildCompanyMatches(events: Event[], products: Product[], courses: Course[]) {
+function buildCompanyMatches(events: Event[], products: Product[], courses: Course[], locations: Location[] = []) {
   const companyMap = new Map<string, CompanyMatch>();
   const ensureCompany = (id: string, name: string, whatsapp?: string) => {
-    const ex = companyMap.get(id) ?? { id, name, whatsapp, products: [], events: [], courses: [] };
+    const ex = companyMap.get(id) ?? { id, name, whatsapp, products: [], events: [], courses: [], locations: [] };
     companyMap.set(id, { ...ex, whatsapp: ex.whatsapp ?? whatsapp });
     return companyMap.get(id)!;
   };
@@ -162,6 +166,7 @@ function buildCompanyMatches(events: Event[], products: Product[], courses: Cour
   events.forEach(e => ensureCompany(e.companyId, e.companyName, e.companyWhatsapp).events.push(e));
   products.forEach(p => ensureCompany(p.companyId, p.companyName, p.companyWhatsapp).products.push(p));
   courses.forEach(c => ensureCompany(c.companyId, c.companyName, c.companyWhatsapp).courses.push(c));
+  locations.forEach(l => ensureCompany(l.companyId, l.companyName, l.whatsapp).locations.push(l));
 
   return [...companyMap.values()].sort((a, b) =>
     (b.products.length * 3 + b.events.length * 2 + b.courses.length) -
@@ -180,6 +185,24 @@ function eventFormat(ev: Pick<Event, 'category' | 'location'>) {
   if (text.includes('híbrido') || text.includes('hibrido')) return 'Híbrido';
   if (text.includes('online') || text.includes('virtual') || text.includes('webinar')) return 'Online';
   return 'Presencial';
+}
+
+function locationTypeLabel(type: Location['type']) {
+  const labels: Record<Location['type'], string> = {
+    ponto_venda: 'Ponto de venda',
+    distribuidor: 'Distribuidor',
+    clinica: 'Clínica parceira',
+    farmacia: 'Farmácia',
+    loja: 'Loja',
+    outro: 'Local',
+  };
+  return labels[type] ?? 'Local';
+}
+
+function locationPlace(loc: Location) {
+  const parts = [loc.city?.trim(), loc.state?.trim()].filter(Boolean);
+  if (parts.length > 0) return parts.join(' · ');
+  return loc.address?.trim() || 'Local a confirmar';
 }
 
 function modalityText(modality: Course['modality']) {
@@ -240,7 +263,7 @@ function opportunityCountLabel(pending: number, eventsCount: number, companiesCo
 }
 
 export default function DoctorDashboard() {
-  const { user, events, products, courses, leads, refreshData, approveConnection } = useAuth();
+  const { user, events, products, courses, leads, locations, refreshData, approveConnection } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
@@ -248,6 +271,9 @@ export default function DoctorDashboard() {
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [priorityBusy, setPriorityBusy] = useState(false);
   const [priorityError, setPriorityError] = useState('');
+  const [openProduct, setOpenProduct] = useState<Product | null>(null);
+  const [openEvent, setOpenEvent] = useState<Event | null>(null);
+  const [openCourse, setOpenCourse] = useState<Course | null>(null);
 
   // Refresh data every time the doctor switches tabs so new items from companies appear
   useEffect(() => {
@@ -256,7 +282,7 @@ export default function DoctorDashboard() {
 
   const q = search.toLowerCase();
   const upcomingEvents = events.filter(isUpcomingEvent);
-  const companyMatches = buildCompanyMatches(events, products, courses);
+  const companyMatches = buildCompanyMatches(events, products, courses, locations);
   const recommendedProducts = products.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
   const filtEvents = events.filter(e => {
     const matchQ = !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q);
@@ -339,6 +365,17 @@ export default function DoctorDashboard() {
             onViewPriorities={scrollToPriority}
           />
 
+          <div style={{ marginBottom: 6 }}>
+            <BrowseRail active="" onSelect={openTab} />
+          </div>
+
+          <ProgressCard
+            points={user?.points ?? 0}
+            connections={countApprovedConnections(leads)}
+            pendingCount={pendingConnections.length}
+            onApprovePending={scrollToPendingConnections}
+          />
+
           <PriorityCard
             lead={priorityLead}
             event={featuredEvent}
@@ -391,84 +428,66 @@ export default function DoctorDashboard() {
       {/* ── EVENTS ── */}
       {tab === 'events' && (
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 4 }}>
-            Eventos<span style={{ color: 'var(--accent)' }}>.</span>
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
-            <b style={{ color: 'var(--accent)' }}>{events.length}</b> eventos disponíveis.
-          </p>
+          <MarketHead title="Eventos" count={events.length} countWord="evento" />
+          <BrowseRail active="events" onSelect={openTab} />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos..." />
-          <FilterChips
-            tabs={[['all','TODOS'],['congresso','CONGRESSO'],['workshop','WORKSHOP'],['online','ONLINE']]}
+          <FilterBar
+            chips={[['all','Todos'],['congresso','Congresso'],['workshop','Workshop'],['online','Online']]}
             active={evFilter} onChange={setEvFilter}
           />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filtEvents.length === 0
-              ? <Empty text="Nenhum evento disponível no momento." hint="Novas oportunidades aparecerão aqui quando forem publicadas." />
-              : filtEvents.map(e => <EventCard key={e.id} ev={e} />)
-            }
-          </div>
+          {filtEvents.length === 0
+            ? <Empty text="Nenhum evento disponível no momento." hint="Novas oportunidades aparecerão aqui quando forem publicadas." />
+            : <MarketGrid>{filtEvents.map(e => <EventMarketCard key={e.id} ev={e} onOpen={() => setOpenEvent(e)} />)}</MarketGrid>
+          }
         </div>
       )}
 
       {/* ── PRODUCTS ── */}
       {tab === 'products' && (
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 4 }}>
-            Produtos e representantes<span style={{ color: 'var(--accent)' }}>.</span>
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
-            Empresas e startups com contato comercial direto para médicos.
-          </p>
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar empresa, produto ou representante..." />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filtProducts.length === 0
-              ? <Empty text="Nenhum produto recomendado ainda." hint="Atualize seus interesses para receber sugestões mais precisas." />
-              : filtProducts.map(p => <ProductCard key={p.id} product={p} />)
-            }
-          </div>
+          <MarketHead title="Produtos" subtitle="Novidades da indústria com contato direto." count={products.length} countWord="produto" />
+          <BrowseRail active="products" onSelect={openTab} />
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar produto, empresa ou representante..." />
+          {filtProducts.length === 0
+            ? <Empty text="Nenhum produto recomendado ainda." hint="Atualize seus interesses para receber sugestões mais precisas." />
+            : <MarketGrid>{filtProducts.map(p => <ProductMarketCard key={p.id} product={p} onOpen={() => setOpenProduct(p)} />)}</MarketGrid>
+          }
         </div>
       )}
 
       {/* ── COURSES ── */}
       {tab === 'courses' && (
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 4 }}>
-            Eventos e capacitações médicas<span style={{ color: 'var(--accent)' }}>.</span>
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
-            Workshops, aulas e oportunidades selecionadas para médicos.
-          </p>
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar workshops e eventos..." />
-          <FilterChips
-            tabs={[
-              ['all','TODOS'],
-              ['Nutrologia','NUTROLOGIA'],
-              ['Endocrinologia','ENDOCRINOLOGIA'],
-              ['Dermatologia','DERMATOLOGIA'],
-              ['Cirurgia Plástica','CIR. PLÁSTICA'],
-              ['Cardiologia','CARDIOLOGIA'],
-              ['Oncologia','ONCOLOGIA'],
-              ['Neurologia','NEUROLOGIA'],
-              ['Ortopedia','ORTOPEDIA'],
-              ['Pediatria','PEDIATRIA'],
-              ['Gastroenterologia','GASTRO'],
-              ['Ginecologia','GINECOLOGIA'],
-              ['Oftalmologia','OFTALMOLOGIA'],
-              ['Psiquiatria','PSIQUIATRIA'],
-              ['Pneumologia','PNEUMOLOGIA'],
-              ['Clínica Médica','CLÍNICA MÉD.'],
-              ['Outros','OUTROS'],
+          <MarketHead title="Workshops" subtitle="Capacitações e aulas selecionadas para médicos." count={courses.length} countWord="workshop" />
+          <BrowseRail active="courses" onSelect={openTab} />
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar workshops e capacitações..." />
+          <FilterBar
+            chips={[
+              ['all','Todos'],
+              ['Nutrologia','Nutrologia'],
+              ['Endocrinologia','Endocrinologia'],
+              ['Dermatologia','Dermatologia'],
+              ['Cirurgia Plástica','Cir. Plástica'],
+              ['Cardiologia','Cardiologia'],
+              ['Oncologia','Oncologia'],
+              ['Neurologia','Neurologia'],
+              ['Ortopedia','Ortopedia'],
+              ['Pediatria','Pediatria'],
+              ['Gastroenterologia','Gastro'],
+              ['Ginecologia','Ginecologia'],
+              ['Oftalmologia','Oftalmologia'],
+              ['Psiquiatria','Psiquiatria'],
+              ['Pneumologia','Pneumologia'],
+              ['Clínica Médica','Clínica Méd.'],
+              ['Outros','Outros'],
             ]}
             active={courseFilter}
             onChange={setCourseFilter}
           />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filtCourses.length === 0
-              ? <Empty text="Nenhuma capacitação encontrada." hint="Quando empresas publicarem workshops e eventos médicos, eles aparecem aqui." />
-              : filtCourses.map(c => <CourseCard key={c.id} course={c} />)
-            }
-          </div>
+          {filtCourses.length === 0
+            ? <Empty text="Nenhuma capacitação encontrada." hint="Quando empresas publicarem workshops e eventos médicos, eles aparecem aqui." />
+            : <MarketGrid>{filtCourses.map(c => <CourseMarketCard key={c.id} course={c} onOpen={() => setOpenCourse(c)} />)}</MarketGrid>
+          }
         </div>
       )}
 
@@ -478,6 +497,7 @@ export default function DoctorDashboard() {
           events={events}
           products={products}
           courses={courses}
+          locations={locations}
           onOpenProducts={company => openTab('products', company)}
           onOpenEvents={company => openTab('events', company)}
         />
@@ -494,7 +514,108 @@ export default function DoctorDashboard() {
           if (action === 'profile') openTab('home');
         }}
       />
+
+      <Sheet open={openProduct !== null} onClose={() => setOpenProduct(null)}>
+        <div style={{ padding: '4px 14px 14px' }}>
+          {openProduct && <ProductCard product={openProduct} />}
+        </div>
+      </Sheet>
+      <Sheet open={openEvent !== null} onClose={() => setOpenEvent(null)}>
+        <div style={{ padding: '4px 14px 14px' }}>
+          {openEvent && <EventCard ev={openEvent} />}
+        </div>
+      </Sheet>
+      <Sheet open={openCourse !== null} onClose={() => setOpenCourse(null)}>
+        <div style={{ padding: '4px 14px 14px' }}>
+          {openCourse && <CourseCard course={openCourse} />}
+        </div>
+      </Sheet>
     </Layout>
+  );
+}
+
+/* ─── Cabeçalho de vitrine ─── */
+function MarketHead({ title, subtitle, count, countWord }: {
+  title: string; subtitle?: string; count: number; countWord: string;
+}) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 4 }}>
+        {title}<span style={{ color: 'var(--accent)' }}>.</span>
+      </h1>
+      <p style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.4 }}>
+        {subtitle ? `${subtitle} ` : ''}
+        <b style={{ color: 'var(--accent)' }}>{count}</b> {count === 1 ? countWord : `${countWord}s`} {count === 1 ? 'disponível' : 'disponíveis'}.
+      </p>
+    </div>
+  );
+}
+
+/* ─── Rail de categorias do médico (troca de vitrine) ─── */
+function railIcon(kind: string, active: boolean) {
+  const c = active ? 'var(--accent)' : '#6F7A90';
+  if (kind === 'products') return <svg width="24" height="24" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
+  if (kind === 'events') return <svg width="23" height="23" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><rect x="1.5" y="3.5" width="16" height="14" rx="3"/><path d="M13.5 2v3M5.5 2v3M1.5 8.5h16" strokeLinecap="round"/></svg>;
+  if (kind === 'courses') return <svg width="22" height="22" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
+  if (kind === 'connect') return <svg width="23" height="23" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M4 17V4.5A1.5 1.5 0 015.5 3h9A1.5 1.5 0 0116 4.5V17"/><path d="M7 7h2M11 7h2M7 10h2M11 10h2M8 17v-4h4v4" strokeLinecap="round"/></svg>;
+  return null;
+}
+
+function BrowseRail({ active, onSelect }: { active: string; onSelect: (tab: Tab) => void }) {
+  const items: CategoryItem[] = [
+    { key: 'products', label: 'Produtos', icon: railIcon('products', active === 'products'), active: active === 'products' },
+    { key: 'events',   label: 'Eventos',  icon: railIcon('events', active === 'events'),     active: active === 'events' },
+    { key: 'courses',  label: 'Workshops', icon: railIcon('courses', active === 'courses'),   active: active === 'courses' },
+    { key: 'connect',  label: 'Representantes', icon: railIcon('connect', active === 'connect'),   active: active === 'connect' },
+  ];
+  return <CategoryRail items={items} onSelect={key => onSelect(key as Tab)} />;
+}
+
+/* ─── Cards compactos de vitrine ─── */
+function ProductMarketCard({ product, onOpen }: { product: Product; onOpen: () => void }) {
+  const [tint1] = categoryTint(product.category);
+  const hasPrice = /^r\$/i.test(product.price?.trim() ?? '');
+  return (
+    <MarketCard
+      image={visualUrl(product.imageUrl)}
+      topLeft={<PhotoBadge color="#1EA97C">Amostra</PhotoBadge>}
+      highlight={hasPrice ? product.price : undefined}
+      title={product.name}
+      subtitle={`${product.companyName} • ${product.category}`}
+      tag={<Chip color={tint1}>{product.category}</Chip>}
+      onClick={onOpen}
+    />
+  );
+}
+
+function EventMarketCard({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
+  const countdown = eventCountdown(ev);
+  const dateBadge = `${dayNum(ev.date)} ${monthShort(ev.date)}`.trim();
+  return (
+    <MarketCard
+      image={visualUrl(ev.imageUrl, VISUAL_FALLBACKS.clinical)}
+      topLeft={dateBadge ? <PhotoBadge color="var(--accent)">{dateBadge}</PhotoBadge> : undefined}
+      topRight={<PhotoBadge solid={false}>{eventFormat(ev)}</PhotoBadge>}
+      title={ev.title}
+      subtitle={`${ev.companyName} • ${locationText(ev.location)}`}
+      tag={countdown ? <Chip color="var(--accent)">{countdown}</Chip> : undefined}
+      onClick={onOpen}
+    />
+  );
+}
+
+function CourseMarketCard({ course, onOpen }: { course: Course; onOpen: () => void }) {
+  const hasPrice = /^r\$/i.test(course.price?.trim() ?? '');
+  return (
+    <MarketCard
+      image={visualUrl(course.imageUrl, VISUAL_FALLBACKS.clinical)}
+      topLeft={<PhotoBadge color="#F58220">{modalityText(course.modality)}</PhotoBadge>}
+      highlight={hasPrice ? course.price : undefined}
+      title={course.title}
+      subtitle={`${course.companyName} • ${course.category}`}
+      tag={<Chip color="var(--accent-ink)">{course.instructor || 'Capacitação'}</Chip>}
+      onClick={onOpen}
+    />
   );
 }
 
@@ -588,6 +709,142 @@ function DashboardHeader({
               <div style={{ marginTop: 4, fontSize: 9.6, lineHeight: 1.15, color: 'var(--muted)' }}>{item.label}</div>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProgressCard({
+  points,
+  connections,
+  pendingCount,
+  onApprovePending,
+}: {
+  points: number;
+  connections: number;
+  pendingCount: number;
+  onApprovePending: () => void;
+}) {
+  const progress = getLevelProgress(points);
+  const badges = getBadges(connections, points);
+  const unlockedBadges = badges.filter(b => b.unlocked);
+  const nextBadge = badges.find(b => !b.unlocked);
+  const accent = progress.level.color;
+
+  return (
+    <section style={{ marginBottom: 12 }}>
+      <SectionHeader title="Seu progresso Tessy" />
+      <div style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 18,
+        padding: 14,
+        background: 'linear-gradient(135deg, rgba(15,22,38,0.96), rgba(36,46,72,0.96))',
+        boxShadow: '0 14px 32px rgba(15,22,38,0.18)',
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0, opacity: 0.5, pointerEvents: 'none',
+          background: `radial-gradient(circle at 88% -10%, ${accent}55, transparent 42%)`,
+        }} />
+        <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ minWidth: 0 }}>
+              <Mono style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                Nível {progress.level.index + 1}
+              </Mono>
+              <div style={{ marginTop: 5, fontSize: 19, fontWeight: 650, color: '#fff', lineHeight: 1.1 }}>
+                {progress.level.name}
+              </div>
+            </div>
+            <div style={{
+              flexShrink: 0,
+              padding: '7px 12px',
+              borderRadius: 13,
+              background: 'rgba(255,255,255,0.12)',
+              border: '1px solid rgba(255,255,255,0.16)',
+              textAlign: 'right',
+            }}>
+              <div style={{ fontSize: 19, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{progress.points}</div>
+              <div style={{ marginTop: 2, fontSize: 8.5, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>pontos</div>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ marginTop: 12 }}>
+            <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.14)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', borderRadius: 999, width: `${progress.percent}%`, background: `linear-gradient(90deg, ${accent}, #fff)`, transition: 'width 0.5s' }} />
+            </div>
+            <div style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.74)', lineHeight: 1.35 }}>
+              {progress.isMax
+                ? 'Nível máximo alcançado. Você é referência na Tessy!'
+                : `Faltam ${progress.pointsForNextLevel} pts para "${progress.next?.name}".`}
+            </div>
+          </div>
+
+          {/* Connections + how to earn */}
+          <div style={{
+            marginTop: 12,
+            padding: '9px 11px',
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#fff' }}>
+                {connections} {connections === 1 ? 'conexão concretizada' : 'conexões concretizadas'}
+              </div>
+              <div style={{ marginTop: 2, fontSize: 10.5, color: 'rgba(255,255,255,0.62)', lineHeight: 1.3 }}>
+                +{POINTS_PER_CONNECTION} pts a cada conexão aprovada.
+              </div>
+            </div>
+            {pendingCount > 0 && (
+              <button type="button" onClick={onApprovePending} style={{
+                flexShrink: 0,
+                padding: '8px 11px',
+                borderRadius: 10,
+                border: 'none',
+                background: accent,
+                color: '#0F1626',
+                fontSize: 11.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}>
+                Ganhar +{POINTS_PER_CONNECTION}
+              </button>
+            )}
+          </div>
+
+          {/* Badges */}
+          <div style={{ marginTop: 12, display: 'flex', gap: 7, flexWrap: 'wrap', alignItems: 'center' }}>
+            {badges.map(badge => (
+              <span
+                key={badge.id}
+                title={`${badge.label} — ${badge.description}`}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '5px 9px',
+                  borderRadius: 999,
+                  background: badge.unlocked ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${badge.unlocked ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.10)'}`,
+                  color: badge.unlocked ? '#fff' : 'rgba(255,255,255,0.40)',
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  filter: badge.unlocked ? 'none' : 'grayscale(1)',
+                }}
+              >
+                <span style={{ fontSize: 12 }}>{badge.icon}</span>
+                {badge.label}
+              </span>
+            ))}
+          </div>
+          {nextBadge && (
+            <div style={{ marginTop: 8, fontSize: 10.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.35 }}>
+              Próximo selo: <b style={{ color: 'rgba(255,255,255,0.85)' }}>{nextBadge.label}</b> — {nextBadge.description}
+            </div>
+          )}
+          {unlockedBadges.length === 0 && !nextBadge && null}
         </div>
       </div>
     </section>
@@ -1288,12 +1545,14 @@ function ConnectView({
   events,
   products,
   courses,
+  locations,
   onOpenProducts,
   onOpenEvents,
 }: {
   events: Event[];
   products: Product[];
   courses: Course[];
+  locations: Location[];
   onOpenProducts: (company: string) => void;
   onOpenEvents: (company: string) => void;
 }) {
@@ -1307,7 +1566,7 @@ function ConnectView({
   const [sentLeadIds, setSentLeadIds] = useState<Set<string>>(new Set());
   const { addLead } = useAuth();
 
-  const companies = buildCompanyMatches(events, products, courses);
+  const companies = buildCompanyMatches(events, products, courses, locations);
 
   function toggleSaved(id: string) {
     setSaved(prev => {
@@ -1393,6 +1652,7 @@ function ConnectView({
                     {co.products.length > 0 && <Chip color="#1EA97C">{co.products.length} produto{co.products.length > 1 ? 's' : ''}</Chip>}
                     {co.events.length > 0 && <Chip color="var(--accent)">{co.events.length} evento{co.events.length > 1 ? 's' : ''}</Chip>}
                     {co.courses.length > 0 && <Chip color="var(--accent-ink)">{co.courses.length} treinamento{co.courses.length > 1 ? 's' : ''}</Chip>}
+                    {co.locations.length > 0 && <Chip color="#F58220">{co.locations.length} local{co.locations.length > 1 ? 'is' : ''}</Chip>}
                   </div>
                 </div>
               </div>
@@ -1415,6 +1675,51 @@ function ConnectView({
                     {topProduct
                       ? topProduct.availableFor || topProduct.description
                       : `${topEvent?.category || 'Evento'} · ${locationText(topEvent?.location)} · ${topEvent ? eventDateLabel(topEvent) : 'Data a confirmar'}`}
+                  </div>
+                </div>
+              )}
+
+              {co.locations.length > 0 && (
+                <div style={{
+                  marginTop: 12,
+                  padding: '12px 12px',
+                  borderRadius: 14,
+                  background: 'rgba(245,130,32,0.06)',
+                  border: '1px solid rgba(245,130,32,0.18)',
+                }}>
+                  <Mono style={{ display: 'block', fontSize: 9, color: '#F58220', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>
+                    Onde encontrar
+                  </Mono>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {co.locations.slice(0, 3).map(loc => {
+                      const locWa = buildWhatsappLink(loc.whatsapp, `Olá ${loc.companyName}, sou médico no Tessy e gostaria de informações sobre o local "${loc.name}".`);
+                      return (
+                        <div key={loc.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.25 }}>{loc.name}</div>
+                            <div style={{ marginTop: 2, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+                              {locationTypeLabel(loc.type)} · {locationPlace(loc)}
+                            </div>
+                            {loc.address && (
+                              <div style={{ marginTop: 1, fontSize: 11, color: 'var(--muted)', lineHeight: 1.35 }}>{loc.address}</div>
+                            )}
+                          </div>
+                          {locWa && (
+                            <a href={locWa} target="_blank" rel="noopener noreferrer" style={{
+                              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+                              padding: '6px 9px', borderRadius: 10, textDecoration: 'none',
+                              background: 'rgba(37,211,102,0.12)', color: '#25D366',
+                              border: '1px solid rgba(37,211,102,0.3)', fontSize: 11, fontWeight: 600,
+                            }}>
+                              <WaIcon size={12} /> Contato
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {co.locations.length > 3 && (
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>+{co.locations.length - 3} outros locais</div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1951,25 +2256,6 @@ function SearchBar({ value, onChange, placeholder }: { value: string; onChange: 
         onFocus={e => e.target.style.borderColor = 'var(--accent)'}
         onBlur={e => e.target.style.borderColor = 'var(--line)'}
       />
-    </div>
-  );
-}
-
-function FilterChips({ tabs, active, onChange }: {
-  tabs: [string, string][]; active: string; onChange: (v: string) => void;
-}) {
-  return (
-    <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 12, marginBottom: 4 }} className="no-scrollbar">
-      {tabs.map(([v, l]) => (
-        <button key={v} onClick={() => onChange(v)} style={{
-          padding: '8px 14px', borderRadius: 10, flexShrink: 0,
-          background: active === v ? 'var(--accent)' : 'var(--card)',
-          border: `1px solid ${active === v ? 'var(--accent)' : 'var(--line)'}`,
-          color: active === v ? '#fff' : 'var(--ink-2)',
-          fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 560,
-          letterSpacing: '0.08em', cursor: 'pointer',
-        }}>{l}</button>
-      ))}
     </div>
   );
 }
