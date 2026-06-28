@@ -118,6 +118,8 @@ function dbToProduct(row: Record<string, unknown>): Product {
     website:         row.website         as string | undefined,
     imageUrl:        row.image_url       as string | undefined,
     availableFor:    row.available_for   as string,
+    anvisaRegularized: row.anvisa_regularized === true,
+    commerciallyAvailable: row.commercially_available === true,
     createdAt:       row.created_at      as string,
   };
 }
@@ -855,7 +857,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Produtos ──
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
-    const payload = {
+    const payload: Record<string, unknown> = {
       name:             data.name,
       description:      data.description,
       category:         data.category,
@@ -867,6 +869,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       website:          data.website ?? null,
       image_url:        data.imageUrl ?? null,
     };
+
+    if (data.anvisaRegularized) payload.anvisa_regularized = true;
+    if (data.commerciallyAvailable) payload.commercially_available = true;
 
     let result = await withTimeout(
       supabase.from('products').insert(payload),
@@ -881,8 +886,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         'Publicar produto',
       );
     }
+    if (result.error && isMissingDbColumnError(result.error, ['anvisa_regularized', 'commercially_available'])) {
+      console.warn('Colunas de compliance Anvisa ausentes. Tentando publicar sem elas.', result.error.message);
+      result = await withTimeout(
+        supabase.from('products').insert(omitDbColumns(payload, ['anvisa_regularized', 'commercially_available'])),
+        12000,
+        'Publicar produto',
+      );
+    }
     const { error } = result;
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (/anvisa|regularizacao|disponibilidade comercial/i.test(error.message)) {
+        throw new Error(
+          'Marque as confirmações de regularização Anvisa e disponibilidade comercial antes de publicar. '
+          + 'Se o erro continuar, rode supabase/fix_product_anvisa_compliance.sql no Supabase.',
+        );
+      }
+      throw new Error(error.message);
+    }
     refreshData(); // background, não bloqueia
   };
 

@@ -70,6 +70,8 @@ export interface Product {
   companyWhatsapp?: string;
   website?: string;
   availableFor: string;
+  anvisaRegularized?: boolean;
+  commerciallyAvailable?: boolean;
   createdAt: string;
 }
 

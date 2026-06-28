@@ -914,6 +914,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     website: '',
   });
   const [coImage, setCoImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
+  const [anvisaConfirmed, setAnvisaConfirmed] = useState(false);
+  const [commercialConfirmed, setCommercialConfirmed] = useState(false);
 
   const totalSteps = kind === 'event' ? 3 : kind === 'course' ? 3 : 2;
 
@@ -931,6 +933,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       if (step === 1 && !pr.name.trim()) return 'Informe o nome do produto.';
       if (step === 1 && !pr.description.trim()) return 'Informe a descrição do produto.';
       if (step === 1 && !prImage.file) return 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
+      if (step === 1 && !anvisaConfirmed) return 'Confirme a regularização vigente na Anvisa.';
+      if (step === 1 && !commercialConfirmed) return 'Confirme a disponibilidade comercial do produto.';
     }
     if (kind === 'course') {
       if (step === 1 && !co.title.trim()) return 'Informe o título da capacitação.';
@@ -992,6 +996,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           ...pr,
           website: normalizeUrl(pr.website),
           imageUrl,
+          anvisaRegularized: anvisaConfirmed,
+          commerciallyAvailable: commercialConfirmed,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else {
@@ -1151,6 +1157,42 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             <WField label="PRÓXIMO PASSO PARA O MÉDICO" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Ex: Solicitar amostra, falar com representante, receber material científico." as="textarea" />
             <WField label="CONDIÇÕES" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Ex: Amostra disponível, sob consulta, parceria regional..." />
             <WField label="SITE OU MATERIAL (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.empresa.com.br/produto" type="url" />
+
+            <div style={{
+              padding: '12px 14px',
+              borderRadius: 14,
+              background: 'rgba(245,130,32,0.06)',
+              border: '1px solid rgba(245,130,32,0.18)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}>
+              <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>
+                Declaração regulatória (obrigatória)
+              </div>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={anvisaConfirmed}
+                  onChange={e => setAnvisaConfirmed(e.target.checked)}
+                  style={{ marginTop: 3, accentColor: 'var(--accent)' }}
+                />
+                <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+                  Confirmo que o produto possui <b>regularização vigente na Anvisa</b> (ou categoria isenta aplicável).
+                </span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={commercialConfirmed}
+                  onChange={e => setCommercialConfirmed(e.target.checked)}
+                  style={{ marginTop: 3, accentColor: 'var(--accent)' }}
+                />
+                <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+                  Confirmo a <b>disponibilidade comercial</b> do produto para divulgação a médicos.
+                </span>
+              </label>
+            </div>
           </div>
         </div>
       )}
