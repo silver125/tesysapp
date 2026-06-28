@@ -308,7 +308,6 @@ export default function DoctorDashboard() {
   });
 
   const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
-  const representativesCount = companyMatches.filter(company => company.whatsapp).length;
   const featuredCompany = companyMatches[0];
   const featuredEvent = upcomingEvents[0];
   const featuredProduct = recommendedProducts[0];
@@ -319,10 +318,6 @@ export default function DoctorDashboard() {
 
   function scrollToPendingConnections() {
     document.getElementById('pending-connections')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function scrollToPriority() {
-    document.getElementById('priority-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function approvePriorityConnection() {
@@ -405,27 +400,8 @@ export default function DoctorDashboard() {
           )}
 
           <div style={{ marginTop: 16 }}>
-            <SectionHeader title="Mais para você" />
+            <SectionHeader title="Mais para você" onSeeAll={() => openTab('connect')} />
           </div>
-
-          <DashboardHeader
-            user={user}
-            pendingCount={pendingConnections.length}
-            eventCount={upcomingEvents.length}
-            companyCount={companyMatches.length}
-            onViewPriorities={scrollToPriority}
-          />
-
-          <QuickAccessGrid
-            companiesCount={companyMatches.length}
-            representativesCount={representativesCount}
-            eventsCount={upcomingEvents.length}
-            productsCount={recommendedProducts.length}
-            onCompanies={() => openTab('connect')}
-            onRepresentatives={() => openTab('connect')}
-            onEvents={() => openTab('events')}
-            onProducts={() => openTab('products')}
-          />
 
           <UpcomingEventCard
             event={featuredEvent}
@@ -607,7 +583,6 @@ function BrowseRail({ active, onSelect }: { active: string; onSelect: (tab: Tab)
 
 /* ─── Cards compactos de vitrine ─── */
 function ProductMarketCard({ product, onOpen }: { product: Product; onOpen: () => void }) {
-  const [tint1] = categoryTint(product.category);
   const hasPrice = /^r\$/i.test(product.price?.trim() ?? '');
   return (
     <MarketCard
@@ -616,7 +591,6 @@ function ProductMarketCard({ product, onOpen }: { product: Product; onOpen: () =
       highlight={hasPrice ? product.price : undefined}
       title={product.name}
       subtitle={`${product.companyName} • ${product.category}`}
-      tag={<Chip color={tint1}>{product.category}</Chip>}
       onClick={onOpen}
     />
   );
@@ -653,7 +627,7 @@ function CourseMarketCard({ course, onOpen }: { course: Course; onOpen: () => vo
   );
 }
 
-function DashboardHeader({
+export function DashboardHeader({
   user,
   pendingCount,
   eventCount,
@@ -1000,7 +974,7 @@ function PriorityCard({
   );
 }
 
-function QuickAccessGrid({
+export function QuickAccessGrid({
   companiesCount,
   representativesCount,
   eventsCount,
