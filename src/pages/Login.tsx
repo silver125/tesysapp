@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { TessyMark } from '../components/ui';
+import { dashboardPathForRole, normalizeUserRole } from '../lib/authRoutes';
 
 const authImage = 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1400&q=84';
 
@@ -17,7 +18,8 @@ export default function Login() {
     setError('');
     try {
       const u = await login(email, password);
-      navigate(u.role === 'medico' ? '/medico' : '/empresa', { replace: true });
+      const dest = dashboardPathForRole(normalizeUserRole(u.role));
+      navigate(dest ?? '/entrar', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao entrar.');
     }

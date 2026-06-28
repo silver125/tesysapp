@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { User, UserRole, Event, Product, Course, Lead, LeadInput, Location } from '../types';
+import type { User, Event, Product, Course, Lead, LeadInput, Location } from '../types';
 import { assertSupabaseConfigured, isSupabaseConfigured, supabase, upsertProfileWithToken } from '../lib/supabase';
 import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
 import { POINTS_PER_CONNECTION } from '../lib/gamification';
+import { normalizeUserRole } from '../lib/authRoutes';
 
 // Helper: timeout para evitar travas infinitas em chamadas Supabase
 // Aceita PromiseLike para suportar o query builder do supabase-js (thenable)
@@ -48,9 +49,7 @@ function dbToUser(profile: Record<string, unknown>, email: string): User {
   const lastName = (profile.last_name ?? '') as string;
   const fullName = lastName ? `${name} ${lastName}`.trim() : name;
   const company = (profile.company ?? profile.company_name ?? undefined) as string | undefined;
-  // Normaliza role: "doctor" → "medico"
-  const rawRole = profile.role as string;
-  const role: UserRole = rawRole === 'doctor' ? 'medico' : rawRole as UserRole;
+  const role = normalizeUserRole(profile.role) ?? 'medico';
   return {
     id:        profile.id        as string,
     name:      fullName,
@@ -289,19 +288,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshProfile = useCallback(async () => {
     if (!isSupabaseConfigured || !userId) return;
     try {
-      const { data, error } = await supabase
+      let result = await supabase
         .from('profiles')
         .select('points, whatsapp')
         .eq('id', userId)
         .single();
+
+      if (result.error && isMissingDbColumnError(result.error, ['points'])) {
+        result = await supabase
+          .from('profiles')
+          .select('whatsapp')
+          .eq('id', userId)
+          .single();
+      }
+
+      const { data, error } = result;
       if (error || !data) return;
-      const freshPoints = typeof data.points === 'number'
-        ? data.points
-        : Number((data as Record<string, unknown>).points ?? NaN);
+
+      const row = data as Record<string, unknown>;
+      const freshPoints = typeof row.points === 'number'
+        ? row.points
+        : Number(row.points ?? NaN);
       setUser(prev => {
         if (!prev) return prev;
         const points = Number.isFinite(freshPoints) ? freshPoints : prev.points;
-        const whatsapp = (data.whatsapp as string | undefined) ?? prev.whatsapp;
+        const whatsapp = (row.whatsapp as string | undefined) ?? prev.whatsapp;
         if (points === prev.points && whatsapp === prev.whatsapp) return prev;
         return { ...prev, points, whatsapp };
       });
@@ -406,12 +417,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const interval = window.setInterval(() => {
       refreshData();
       refreshLeads();
-    }, 2000);
+    }, 8000);
 
     // Saldo de pontos pode mudar no banco (ao aprovar conexões) — relê com folga.
     const profileInterval = window.setInterval(() => {
       refreshProfile();
-    }, 4000);
+    }, 15000);
 
     return () => {
       window.clearInterval(interval);

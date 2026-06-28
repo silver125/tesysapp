@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { TessyMark, WaIcon } from '../components/ui';
 import type { UserRole } from '../types';
+import { dashboardPathForRole, normalizeUserRole } from '../lib/authRoutes';
 
 type FormData = {
   role: UserRole | null;
@@ -86,7 +87,8 @@ export default function Register() {
         whatsapp: data.whatsapp.trim() ? normalizePhone(data.whatsapp) : undefined,
         whatsappConnectionOnly: data.role === 'medico' ? data.whatsappConnectionOnly : undefined,
       });
-      navigate(data.role === 'medico' ? '/medico' : '/empresa', { replace: true });
+      const dest = dashboardPathForRole(normalizeUserRole(data.role));
+      navigate(dest ?? '/entrar', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar conta.');
     }
