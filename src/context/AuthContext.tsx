@@ -285,6 +285,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLeads(merged.filter((lead, index, arr) => arr.findIndex(other => isSameLead(other, lead)) === index));
   }, [userId, user?.role]);
 
+  // Relê o perfil do usuário logado (pontos, whatsapp) para manter o saldo em dia.
+  const refreshProfile = useCallback(async () => {
+    if (!isSupabaseConfigured || !userId) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('points, whatsapp')
+        .eq('id', userId)
+        .single();
+      if (error || !data) return;
+      const freshPoints = typeof data.points === 'number'
+        ? data.points
+        : Number((data as Record<string, unknown>).points ?? NaN);
+      setUser(prev => {
+        if (!prev) return prev;
+        const points = Number.isFinite(freshPoints) ? freshPoints : prev.points;
+        const whatsapp = (data.whatsapp as string | undefined) ?? prev.whatsapp;
+        if (points === prev.points && whatsapp === prev.whatsapp) return prev;
+        return { ...prev, points, whatsapp };
+      });
+    } catch {
+      /* silencioso: mantém o valor atual */
+    }
+  }, [userId]);
+
   // Carrega IDs de eventos em que o usuário já clicou "Tenho interesse" (localStorage)
   useEffect(() => {
     if (!userId) { setRegisteredEventIds(new Set()); return; }
@@ -383,8 +408,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshLeads();
     }, 2000);
 
-    return () => window.clearInterval(interval);
-  }, [refreshData, refreshLeads, user?.role]);
+    // Saldo de pontos pode mudar no banco (ao aprovar conexões) — relê com folga.
+    const profileInterval = window.setInterval(() => {
+      refreshProfile();
+    }, 4000);
+
+    return () => {
+      window.clearInterval(interval);
+      window.clearInterval(profileInterval);
+    };
+  }, [refreshData, refreshLeads, refreshProfile, user?.role]);
 
   useEffect(() => {
     if (user?.role !== 'empresa') return;

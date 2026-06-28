@@ -826,7 +826,7 @@ function ProgressCard({
           </div>
         </div>
 
-        {pendingCount > 0 && (
+        {pendingCount > 0 ? (
           <button type="button" onClick={onApprovePending} style={{
             marginTop: 12,
             width: '100%',
@@ -843,6 +843,22 @@ function ProgressCard({
           }}>
             Aprovar conexão e ganhar +{POINTS_PER_CONNECTION} pts ({pendingCount} pendente{pendingCount > 1 ? 's' : ''})
           </button>
+        ) : (
+          <div style={{
+            marginTop: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '9px 11px',
+            borderRadius: 12,
+            background: 'rgba(245,130,32,0.08)',
+            border: '1px solid rgba(245,130,32,0.18)',
+          }}>
+            <span style={{ fontSize: 15, lineHeight: 1 }}>💡</span>
+            <span style={{ fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+              Ganhe <b style={{ color: 'var(--accent)' }}>+{POINTS_PER_CONNECTION} pts</b> cada vez que aprovar a conexão de uma empresa interessada no seu perfil.
+            </span>
+          </div>
         )}
       </div>
     </section>
