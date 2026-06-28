@@ -6,7 +6,7 @@ import {
   CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
-import { MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
+import { MarketGrid, MarketCard, PhotoBadge, Sheet, Breadcrumb } from '../../components/market';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import type { Event, Product, Course, CourseModality, Lead, Location, LocationType } from '../../types';
 
@@ -513,6 +513,26 @@ export default function CompanyDashboard() {
             ))}
           </div>
 
+          {/* Photo emphasis banner */}
+          <div style={{
+            marginBottom: 18,
+            padding: '12px 14px',
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, rgba(245,130,32,0.10), rgba(255,255,255,0.92))',
+            border: '1px solid rgba(245,130,32,0.20)',
+            display: 'flex', alignItems: 'center', gap: 11,
+          }}>
+            <span style={{ fontSize: 22, lineHeight: 1 }}>📸</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>
+                Anúncios com foto recebem muito mais contatos
+              </div>
+              <div style={{ marginTop: 2, fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+                Toda publicação na vitrine pede uma imagem — capriche na primeira foto.
+              </div>
+            </div>
+          </div>
+
           {/* Quick create */}
           <div style={{ marginBottom: 24 }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
@@ -695,6 +715,8 @@ export default function CompanyDashboard() {
 
       {/* ── EVENTS ── */}
       {tab === 'events' && (
+        <>
+        <Breadcrumb items={['início', 'eventos']} />
         <ListTab
           title="Meus eventos"
           onAdd={() => { setCreateKind('event'); setTab('create'); }}
@@ -711,10 +733,13 @@ export default function CompanyDashboard() {
             />
           ))}
         </ListTab>
+        </>
       )}
 
       {/* ── PRODUCTS ── */}
       {tab === 'products' && (
+        <>
+        <Breadcrumb items={['início', 'produtos']} />
         <ListTab
           title="Meus produtos"
           onAdd={() => { setCreateKind('product'); setTab('create'); }}
@@ -724,10 +749,13 @@ export default function CompanyDashboard() {
         >
           {myProducts.map(p => <ProductCompactCard key={p.id} product={p} onOpen={() => setOpenProductId(p.id)} />)}
         </ListTab>
+        </>
       )}
 
       {/* ── COURSES ── */}
       {tab === 'courses' && (
+        <>
+        <Breadcrumb items={['início', 'workshops']} />
         <ListTab
           title="Minhas capacitações"
           onAdd={() => { setCreateKind('course'); setTab('create'); }}
@@ -737,6 +765,7 @@ export default function CompanyDashboard() {
         >
           {myCourses.map(c => <CourseCompactCard key={c.id} course={c} onOpen={() => setOpenCourseId(c.id)} />)}
         </ListTab>
+        </>
       )}
 
       {/* ── LEADS ── */}

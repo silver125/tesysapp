@@ -48,10 +48,10 @@ export function CategoryRail({ items, onSelect }: {
             alignItems: 'center',
             justifyContent: 'center',
             background: item.active
-              ? 'linear-gradient(135deg, rgba(74,168,255,0.18), rgba(185,193,234,0.30))'
+              ? 'linear-gradient(135deg, rgba(245,130,32,0.16), rgba(255,196,140,0.26))'
               : 'var(--card)',
-            border: `1px solid ${item.active ? 'rgba(74,168,255,0.45)' : 'var(--line)'}`,
-            boxShadow: item.active ? '0 8px 20px rgba(74,168,255,0.18)' : '0 4px 14px rgba(85,96,130,0.06)',
+            border: `1px solid ${item.active ? 'rgba(245,130,32,0.45)' : 'var(--line)'}`,
+            boxShadow: item.active ? '0 8px 20px rgba(245,130,32,0.18)' : '0 4px 14px rgba(85,96,130,0.06)',
             color: item.active ? 'var(--accent)' : 'var(--ink-2)',
             transition: 'all 0.2s var(--ease)',
           }}>
@@ -101,12 +101,36 @@ export function FilterBar({ chips, active, onChange }: {
               fontWeight: 600,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
-              boxShadow: isActive ? '0 8px 18px rgba(74,168,255,0.22)' : 'none',
+              boxShadow: isActive ? '0 8px 18px rgba(245,130,32,0.22)' : 'none',
               transition: 'all 0.18s var(--ease)',
             }}
           >
             {label}
           </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Breadcrumb (início › seção) ── */
+export function Breadcrumb({ items }: { items: string[] }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+      {items.map((item, i) => {
+        const isLast = i === items.length - 1;
+        return (
+          <span key={`${item}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              fontSize: 11.5,
+              fontWeight: isLast ? 700 : 600,
+              color: i === 0 ? 'var(--accent)' : isLast ? 'var(--ink)' : 'var(--ink-2)',
+              textTransform: 'lowercase',
+            }}>
+              {item}
+            </span>
+            {!isLast && <span style={{ fontSize: 11, color: 'var(--muted)' }}>›</span>}
+          </span>
         );
       })}
     </div>

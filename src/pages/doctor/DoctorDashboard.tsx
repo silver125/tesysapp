@@ -9,7 +9,7 @@ import {
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
 import { getLevelProgress, countApprovedConnections, getBadges, POINTS_PER_CONNECTION } from '../../lib/gamification';
-import { CategoryRail, FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
+import { CategoryRail, FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet, Breadcrumb } from '../../components/market';
 import type { CategoryItem } from '../../components/market';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
@@ -268,6 +268,7 @@ export default function DoctorDashboard() {
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
   const [courseFilter, setCourseFilter] = useState('all');
+  const [productFilter, setProductFilter] = useState('all');
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [priorityBusy, setPriorityBusy] = useState(false);
   const [priorityError, setPriorityError] = useState('');
@@ -292,7 +293,14 @@ export default function DoctorDashboard() {
       || eventFormat(e).toLowerCase().includes(filter);
     return matchQ && matchFilter;
   });
-  const filtProducts = products.filter(p => !q || p.name.toLowerCase().includes(q) || p.companyName.toLowerCase().includes(q));
+  const filtProducts = products.filter(p => {
+    const matchQ = !q || p.name.toLowerCase().includes(q) || p.companyName.toLowerCase().includes(q);
+    const matchCat = productFilter === 'all' || p.category?.toLowerCase() === productFilter.toLowerCase();
+    return matchQ && matchCat;
+  });
+  const homeProducts = (recommendedProducts.length > 0 ? recommendedProducts : products)
+    .filter(p => productFilter === 'all' || p.category?.toLowerCase() === productFilter.toLowerCase());
+  const productChips = productCategoryChips(products);
   const filtCourses  = courses.filter(c => {
     const matchQ = !q || c.title.toLowerCase().includes(q) || c.companyName.toLowerCase().includes(q);
     const matchCat = courseFilter === 'all' || c.category.toLowerCase() === courseFilter.toLowerCase();
@@ -357,18 +365,6 @@ export default function DoctorDashboard() {
       {/* ── HOME ── */}
       {tab === 'home' && (
         <div>
-          <DashboardHeader
-            user={user}
-            pendingCount={pendingConnections.length}
-            eventCount={upcomingEvents.length}
-            companyCount={companyMatches.length}
-            onViewPriorities={scrollToPriority}
-          />
-
-          <div style={{ marginBottom: 6 }}>
-            <BrowseRail active="" onSelect={openTab} />
-          </div>
-
           <ProgressCard
             points={user?.points ?? 0}
             connections={countApprovedConnections(leads)}
@@ -376,19 +372,48 @@ export default function DoctorDashboard() {
             onApprovePending={scrollToPendingConnections}
           />
 
-          <PriorityCard
-            lead={priorityLead}
-            event={featuredEvent}
-            company={priorityCompany}
+          <Breadcrumb items={['início', 'produtos']} />
+          <BrowseRail active="products" onSelect={openTab} />
+          <FilterBar chips={productChips} active={productFilter} onChange={setProductFilter} />
+
+          {homeProducts.length === 0
+            ? <Empty text="Nenhum produto disponível ainda." hint="Novidades das empresas aparecem aqui assim que publicadas." />
+            : <MarketGrid>{homeProducts.map(p => <ProductMarketCard key={p.id} product={p} onOpen={() => setOpenProduct(p)} />)}</MarketGrid>
+          }
+
+          {priorityLead && (
+            <div style={{ marginTop: 16 }}>
+              <PriorityCard
+                lead={priorityLead}
+                event={featuredEvent}
+                company={priorityCompany}
+                user={user}
+                userHasWhatsapp={Boolean(user?.whatsapp)}
+                busy={priorityBusy}
+                error={priorityError}
+                onAnalyze={scrollToPendingConnections}
+                onApprove={() => { void approvePriorityConnection(); }}
+                onOpenEvent={() => openTab('events', featuredEvent?.companyName ?? '')}
+                onOpenCompany={() => openTab('connect', featuredCompany?.name ?? '')}
+                onUpdateProfile={() => openTab('connect')}
+              />
+            </div>
+          )}
+
+          {pendingConnections.length > 0 && (
+            <PendingConnections leads={pendingConnections} onViewCompany={company => openTab('connect', company)} />
+          )}
+
+          <div style={{ marginTop: 16 }}>
+            <SectionHeader title="Mais para você" />
+          </div>
+
+          <DashboardHeader
             user={user}
-            userHasWhatsapp={Boolean(user?.whatsapp)}
-            busy={priorityBusy}
-            error={priorityError}
-            onAnalyze={scrollToPendingConnections}
-            onApprove={() => { void approvePriorityConnection(); }}
-            onOpenEvent={() => openTab('events', featuredEvent?.companyName ?? '')}
-            onOpenCompany={() => openTab('connect', featuredCompany?.name ?? '')}
-            onUpdateProfile={() => openTab('connect')}
+            pendingCount={pendingConnections.length}
+            eventCount={upcomingEvents.length}
+            companyCount={companyMatches.length}
+            onViewPriorities={scrollToPriority}
           />
 
           <QuickAccessGrid
@@ -407,10 +432,6 @@ export default function DoctorDashboard() {
             onView={() => openTab('events', featuredEvent?.companyName ?? '')}
           />
 
-          {pendingConnections.length > 0 && (
-            <PendingConnections leads={pendingConnections} onViewCompany={company => openTab('connect', company)} />
-          )}
-
           <RecommendedCard
             user={user}
             company={featuredCompany}
@@ -428,6 +449,7 @@ export default function DoctorDashboard() {
       {/* ── EVENTS ── */}
       {tab === 'events' && (
         <div>
+          <Breadcrumb items={['início', 'eventos']} />
           <MarketHead title="Eventos" count={events.length} countWord="evento" />
           <BrowseRail active="events" onSelect={openTab} />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos..." />
@@ -445,9 +467,11 @@ export default function DoctorDashboard() {
       {/* ── PRODUCTS ── */}
       {tab === 'products' && (
         <div>
+          <Breadcrumb items={['início', 'produtos']} />
           <MarketHead title="Produtos" subtitle="Novidades da indústria com contato direto." count={products.length} countWord="produto" />
           <BrowseRail active="products" onSelect={openTab} />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar produto, empresa ou representante..." />
+          <FilterBar chips={productChips} active={productFilter} onChange={setProductFilter} />
           {filtProducts.length === 0
             ? <Empty text="Nenhum produto recomendado ainda." hint="Atualize seus interesses para receber sugestões mais precisas." />
             : <MarketGrid>{filtProducts.map(p => <ProductMarketCard key={p.id} product={p} onOpen={() => setOpenProduct(p)} />)}</MarketGrid>
@@ -458,6 +482,7 @@ export default function DoctorDashboard() {
       {/* ── COURSES ── */}
       {tab === 'courses' && (
         <div>
+          <Breadcrumb items={['início', 'workshops']} />
           <MarketHead title="Workshops" subtitle="Capacitações e aulas selecionadas para médicos." count={courses.length} countWord="workshop" />
           <BrowseRail active="courses" onSelect={openTab} />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar workshops e capacitações..." />
@@ -549,6 +574,15 @@ function MarketHead({ title, subtitle, count, countWord }: {
       </p>
     </div>
   );
+}
+
+function productCategoryChips(products: Product[]): [string, string][] {
+  const cats: string[] = [];
+  for (const p of products) {
+    const c = p.category?.trim();
+    if (c && !cats.includes(c)) cats.push(c);
+  }
+  return [['all', 'Todos'], ...cats.slice(0, 8).map(c => [c, c] as [string, string])];
 }
 
 /* ─── Rail de categorias do médico (troca de vitrine) ─── */
@@ -715,6 +749,50 @@ function DashboardHeader({
   );
 }
 
+function ProgressRing({ percent, size = 64 }: { percent: number; size?: number }) {
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - Math.max(0, Math.min(100, percent)) / 100);
+  const inner = size * 0.30;
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(15,22,38,0.08)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke="var(--accent)" strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={offset}
+          style={{ transition: 'stroke-dashoffset 0.6s var(--ease)' }}
+        />
+      </svg>
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        width: inner * 2, height: inner * 2, borderRadius: '50%',
+        background: 'linear-gradient(135deg, var(--accent-blue), #5B6EF5)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 6px 16px rgba(74,168,255,0.35)',
+        color: '#fff', fontSize: inner * 0.95, lineHeight: 1,
+      }}>
+        ★
+      </div>
+    </div>
+  );
+}
+
+function ProgressChip({ icon, children }: { icon: string; children: React.ReactNode }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '5px 9px', borderRadius: 999,
+      background: 'var(--chip)', border: '1px solid var(--line)',
+      color: 'var(--ink)', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
+    }}>
+      <span style={{ fontSize: 12 }}>{icon}</span>{children}
+    </span>
+  );
+}
+
 function ProgressCard({
   points,
   connections,
@@ -728,124 +806,70 @@ function ProgressCard({
 }) {
   const progress = getLevelProgress(points);
   const badges = getBadges(connections, points);
-  const unlockedBadges = badges.filter(b => b.unlocked);
-  const nextBadge = badges.find(b => !b.unlocked);
-  const accent = progress.level.color;
+  const unlockedBadges = badges.filter(b => b.unlocked).length;
 
   return (
     <section style={{ marginBottom: 12 }}>
-      <SectionHeader title="Seu progresso Tessy" />
       <div style={{
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 18,
         padding: 14,
-        background: 'linear-gradient(135deg, rgba(15,22,38,0.96), rgba(36,46,72,0.96))',
-        boxShadow: '0 14px 32px rgba(15,22,38,0.18)',
+        background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF7F0 60%, #FFF1F4 100%)',
+        border: '1px solid rgba(216,222,236,0.9)',
+        boxShadow: '0 12px 30px rgba(85,96,130,0.07)',
       }}>
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.5, pointerEvents: 'none',
-          background: `radial-gradient(circle at 88% -10%, ${accent}55, transparent 42%)`,
-        }} />
-        <div style={{ position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-            <div style={{ minWidth: 0 }}>
-              <Mono style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                Nível {progress.level.index + 1}
-              </Mono>
-              <div style={{ marginTop: 5, fontSize: 19, fontWeight: 650, color: '#fff', lineHeight: 1.1 }}>
-                {progress.level.name}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+          <ProgressRing percent={progress.percent} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--accent-ink)', lineHeight: 1.1 }}>
+                  Seu progresso Tessy
+                </div>
+                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--ink-2)' }}>
+                  Nível {progress.level.index + 1} · <b style={{ color: 'var(--accent)' }}>{progress.level.name}</b>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <ProgressChip icon="🤝">{connections}</ProgressChip>
+                <ProgressChip icon="⭐">{unlockedBadges}</ProgressChip>
+                <ProgressChip icon="🏆">Nível {progress.level.index + 1}</ProgressChip>
               </div>
             </div>
-            <div style={{
-              flexShrink: 0,
-              padding: '7px 12px',
-              borderRadius: 13,
-              background: 'rgba(255,255,255,0.12)',
-              border: '1px solid rgba(255,255,255,0.16)',
-              textAlign: 'right',
-            }}>
-              <div style={{ fontSize: 19, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{progress.points}</div>
-              <div style={{ marginTop: 2, fontSize: 8.5, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>pontos</div>
-            </div>
-          </div>
 
-          {/* Progress bar */}
-          <div style={{ marginTop: 12 }}>
-            <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.14)', overflow: 'hidden' }}>
-              <div style={{ height: '100%', borderRadius: 999, width: `${progress.percent}%`, background: `linear-gradient(90deg, ${accent}, #fff)`, transition: 'width 0.5s' }} />
-            </div>
-            <div style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.74)', lineHeight: 1.35 }}>
-              {progress.isMax
-                ? 'Nível máximo alcançado. Você é referência na Tessy!'
-                : `Faltam ${progress.pointsForNextLevel} pts para "${progress.next?.name}".`}
-            </div>
-          </div>
-
-          {/* Connections + how to earn */}
-          <div style={{
-            marginTop: 12,
-            padding: '9px 11px',
-            borderRadius: 12,
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#fff' }}>
-                {connections} {connections === 1 ? 'conexão concretizada' : 'conexões concretizadas'}
+            <div style={{ marginTop: 11 }}>
+              <div style={{ height: 8, borderRadius: 999, background: 'rgba(15,22,38,0.07)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: 999, width: `${progress.percent}%`, background: 'linear-gradient(90deg, #F58220, #FFB066)', transition: 'width 0.6s var(--ease)' }} />
               </div>
-              <div style={{ marginTop: 2, fontSize: 10.5, color: 'rgba(255,255,255,0.62)', lineHeight: 1.3 }}>
-                +{POINTS_PER_CONNECTION} pts a cada conexão aprovada.
+              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>{progress.points} pontos</span>
+                <span style={{ fontSize: 10.5, color: 'var(--muted)', lineHeight: 1.3, textAlign: 'right' }}>
+                  {progress.isMax ? 'Nível máximo!' : `+${progress.pointsForNextLevel} p/ ${progress.next?.name}`}
+                </span>
               </div>
             </div>
-            {pendingCount > 0 && (
-              <button type="button" onClick={onApprovePending} style={{
-                flexShrink: 0,
-                padding: '8px 11px',
-                borderRadius: 10,
-                border: 'none',
-                background: accent,
-                color: '#0F1626',
-                fontSize: 11.5,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}>
-                Ganhar +{POINTS_PER_CONNECTION}
-              </button>
-            )}
           </div>
-
-          {/* Badges */}
-          <div style={{ marginTop: 12, display: 'flex', gap: 7, flexWrap: 'wrap', alignItems: 'center' }}>
-            {badges.map(badge => (
-              <span
-                key={badge.id}
-                title={`${badge.label} — ${badge.description}`}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '5px 9px',
-                  borderRadius: 999,
-                  background: badge.unlocked ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${badge.unlocked ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.10)'}`,
-                  color: badge.unlocked ? '#fff' : 'rgba(255,255,255,0.40)',
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  filter: badge.unlocked ? 'none' : 'grayscale(1)',
-                }}
-              >
-                <span style={{ fontSize: 12 }}>{badge.icon}</span>
-                {badge.label}
-              </span>
-            ))}
-          </div>
-          {nextBadge && (
-            <div style={{ marginTop: 8, fontSize: 10.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.35 }}>
-              Próximo selo: <b style={{ color: 'rgba(255,255,255,0.85)' }}>{nextBadge.label}</b> — {nextBadge.description}
-            </div>
-          )}
-          {unlockedBadges.length === 0 && !nextBadge && null}
         </div>
+
+        {pendingCount > 0 && (
+          <button type="button" onClick={onApprovePending} style={{
+            marginTop: 12,
+            width: '100%',
+            minHeight: 40,
+            padding: '10px 12px',
+            borderRadius: 12,
+            border: 'none',
+            background: 'var(--accent)',
+            color: '#fff',
+            fontSize: 12.5,
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 10px 22px rgba(245,130,32,0.22)',
+          }}>
+            Aprovar conexão e ganhar +{POINTS_PER_CONNECTION} pts ({pendingCount} pendente{pendingCount > 1 ? 's' : ''})
+          </button>
+        )}
       </div>
     </section>
   );
@@ -1580,11 +1604,12 @@ function ConnectView({
 
   return (
     <div>
+      <Breadcrumb items={['início', 'representantes']} />
       <div style={{
         padding: '18px 16px',
         borderRadius: 18,
-        background: 'linear-gradient(135deg, rgba(74,168,255,0.12) 0%, rgba(30,169,124,0.10) 100%)',
-        border: '1px solid rgba(74,168,255,0.16)',
+        background: 'linear-gradient(135deg, rgba(245,130,32,0.12) 0%, rgba(30,169,124,0.10) 100%)',
+        border: '1px solid rgba(245,130,32,0.16)',
         marginBottom: 18,
       }}>
         <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
