@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type { CSSProperties } from 'react';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import { useAuth } from '../../context/useAuth';
@@ -8,8 +7,7 @@ import {
   WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
-import { getLevelProgress, countApprovedConnections, getBadges, POINTS_PER_CONNECTION } from '../../lib/gamification';
-import { CategoryRail, FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet, Breadcrumb } from '../../components/market';
+import { CategoryRail, FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import type { CategoryItem } from '../../components/market';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
@@ -37,25 +35,21 @@ function IcoBox(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
 }
-function IcoBook(a: boolean) {
+function IcoCompanies(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
-  return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
-}
-function IcoBigConnect() {
   return (
-    <svg width="52" height="52" viewBox="0 0 52 52">
-      <circle cx="26" cy="26" r="26" fill="var(--accent)"/>
-      <path d="M26 14v24M14 26h24" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
+      <path d="M4 17V4.5A1.5 1.5 0 015.5 3h9A1.5 1.5 0 0116 4.5V17" strokeLinejoin="round" />
+      <path d="M7 7h2M11 7h2M7 10h2M11 10h2M8 17v-4h4v4" strokeLinecap="round" />
     </svg>
   );
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'home',     label: 'Início',   icon: IcoHome },
-  { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
-  { key: 'connect',  label: '',         icon: () => <IcoBigConnect />, big: true },
-  { key: 'products', label: 'Produtos', icon: IcoBox },
-  { key: 'courses',  label: 'Workshops', icon: IcoBook },
+  { key: 'home',     label: 'Para você', icon: IcoHome },
+  { key: 'products', label: 'Produtos',  icon: IcoBox },
+  { key: 'events',   label: 'Eventos',   icon: IcoCalendar },
+  { key: 'connect',  label: 'Empresas',  icon: IcoCompanies },
 ];
 
 const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
@@ -214,14 +208,6 @@ function modalityText(modality: Course['modality']) {
   return labels[modality] ?? modality;
 }
 
-function fmtPhone(raw: string) {
-  const d = raw.replace(/\D/g, '').replace(/^55/, '').slice(0, 11);
-  if (d.length <= 2) return d;
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-}
-
 const VISUAL_FALLBACKS = {
   clinical: '/hero-clinic-premium.png',
   community: '/hero-bg.jpg',
@@ -255,23 +241,14 @@ function doctorMetaLine(user: User | null | undefined) {
   return city ? `${specialty} · ${city}` : specialty;
 }
 
-function opportunityCountLabel(pending: number, eventsCount: number, companiesCount: number) {
-  const pendingText = `${pending} ${pending === 1 ? 'solicitação pendente' : 'solicitações pendentes'}`;
-  const eventText = `${eventsCount} ${eventsCount === 1 ? 'evento próximo' : 'eventos próximos'}`;
-  const companyText = `${companiesCount} ${companiesCount === 1 ? 'empresa sugerida' : 'empresas sugeridas'}`;
-  return `Você tem ${pendingText}, ${eventText} e ${companyText} hoje.`;
-}
 
 export default function DoctorDashboard() {
-  const { user, events, products, courses, leads, locations, refreshData, approveConnection } = useAuth();
+  const { user, events, products, courses, leads, locations, refreshData } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
   const [courseFilter, setCourseFilter] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
-  const [actionSheetOpen, setActionSheetOpen] = useState(false);
-  const [priorityBusy, setPriorityBusy] = useState(false);
-  const [priorityError, setPriorityError] = useState('');
   const [openProduct, setOpenProduct] = useState<Product | null>(null);
   const [openEvent, setOpenEvent] = useState<Event | null>(null);
   const [openCourse, setOpenCourse] = useState<Course | null>(null);
@@ -283,7 +260,6 @@ export default function DoctorDashboard() {
 
   const q = search.toLowerCase();
   const upcomingEvents = events.filter(isUpcomingEvent);
-  const companyMatches = buildCompanyMatches(events, products, courses, locations);
   const recommendedProducts = products.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
   const filtEvents = events.filter(e => {
     const matchQ = !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q);
@@ -299,7 +275,10 @@ export default function DoctorDashboard() {
     return matchQ && matchCat;
   });
   const homeProducts = (recommendedProducts.length > 0 ? recommendedProducts : products)
-    .filter(p => productFilter === 'all' || p.category?.toLowerCase() === productFilter.toLowerCase());
+    .filter(p => productFilter === 'all' || p.category?.toLowerCase() === productFilter.toLowerCase())
+    .filter(p => !q || p.name.toLowerCase().includes(q) || p.companyName.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
+  const homeEvents = upcomingEvents
+    .filter(e => !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q));
   const productChips = productCategoryChips(products);
   const filtCourses  = courses.filter(c => {
     const matchQ = !q || c.title.toLowerCase().includes(q) || c.companyName.toLowerCase().includes(q);
@@ -308,49 +287,17 @@ export default function DoctorDashboard() {
   });
 
   const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
-  const featuredCompany = companyMatches[0];
-  const featuredEvent = upcomingEvents[0];
-  const featuredProduct = recommendedProducts[0];
-  const priorityLead = pendingConnections[0];
-  const priorityCompany = priorityLead
-    ? companyMatches.find(company => company.id === priorityLead.companyId) ?? featuredCompany
-    : featuredCompany;
 
   function scrollToPendingConnections() {
     document.getElementById('pending-connections')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  async function approvePriorityConnection() {
-    const lead = pendingConnections[0];
-    if (!lead) return;
-    if (!user?.whatsapp) {
-      setPriorityError('Cadastre seu WhatsApp profissional antes de aprovar conexões.');
-      return;
-    }
-
-    setPriorityBusy(true);
-    setPriorityError('');
-    try {
-      await approveConnection(lead.id);
-      await refreshData();
-    } catch (err) {
-      setPriorityError(err instanceof Error ? err.message : 'Erro ao aprovar conexão.');
-    } finally {
-      setPriorityBusy(false);
-    }
-  }
-
   function openTab(k: Tab, nextSearch = '') {
     setTab(k);
     setSearch(nextSearch);
-    setActionSheetOpen(false);
   }
 
   function goTab(k: string) {
-    if (k === 'connect') {
-      setActionSheetOpen(true);
-      return;
-    }
     openTab(k as Tab);
   }
 
@@ -360,72 +307,70 @@ export default function DoctorDashboard() {
       {/* ── HOME ── */}
       {tab === 'home' && (
         <div>
-          <ProgressCard
-            points={user?.points ?? 0}
-            connections={countApprovedConnections(leads)}
+          <QuickHomeHeader
+            user={user}
             pendingCount={pendingConnections.length}
-            onApprovePending={scrollToPendingConnections}
+            points={user?.points ?? 0}
+            onPendingClick={scrollToPendingConnections}
           />
 
-          <Breadcrumb items={['início', 'produtos']} />
-          <BrowseRail active="products" onSelect={openTab} />
-          <FilterBar chips={productChips} active={productFilter} onChange={setProductFilter} />
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Buscar produto, evento ou empresa..."
+          />
 
-          {homeProducts.length === 0
-            ? <Empty text="Nenhum produto disponível ainda." hint="Novidades das empresas aparecem aqui assim que publicadas." />
-            : <MarketGrid>{homeProducts.map(p => <ProductMarketCard key={p.id} product={p} onOpen={() => setOpenProduct(p)} />)}</MarketGrid>
-          }
-
-          {priorityLead && (
-            <div style={{ marginTop: 16 }}>
-              <PriorityCard
-                lead={priorityLead}
-                event={featuredEvent}
-                company={priorityCompany}
-                user={user}
-                userHasWhatsapp={Boolean(user?.whatsapp)}
-                busy={priorityBusy}
-                error={priorityError}
-                onAnalyze={scrollToPendingConnections}
-                onApprove={() => { void approvePriorityConnection(); }}
-                onOpenEvent={() => openTab('events', featuredEvent?.companyName ?? '')}
-                onOpenCompany={() => openTab('connect', featuredCompany?.name ?? '')}
-                onUpdateProfile={() => openProfileSettings()}
-              />
-            </div>
+          {pendingConnections.length > 0 && (
+            <PendingInboxBanner
+              lead={pendingConnections[0]}
+              total={pendingConnections.length}
+              onSeeAll={scrollToPendingConnections}
+            />
           )}
+
+          {!user?.whatsapp && (
+            <SlimProfileBanner onFix={openProfileSettings} />
+          )}
+
+          <BrowseRail active="products" onSelect={openTab} />
+
+          {homeProducts.length === 0 && homeEvents.length === 0
+            ? <Empty text="Nada encontrado agora." hint="Novidades das empresas aparecem aqui assim que publicadas." />
+            : (
+              <>
+                {homeProducts.length > 0 && (
+                  <>
+                    <SectionHeader title="Produtos para você" onSeeAll={() => openTab('products')} />
+                    <MarketGrid>
+                      {homeProducts.slice(0, 6).map(p => (
+                        <ProductMarketCard key={p.id} product={p} onOpen={() => setOpenProduct(p)} />
+                      ))}
+                    </MarketGrid>
+                  </>
+                )}
+
+                {homeEvents.length > 0 && (
+                  <div style={{ marginTop: homeProducts.length > 0 ? 18 : 0 }}>
+                    <SectionHeader title="Eventos em breve" onSeeAll={() => openTab('events')} />
+                    <MarketGrid>
+                      {homeEvents.slice(0, 4).map(e => (
+                        <EventMarketCard key={e.id} ev={e} onOpen={() => setOpenEvent(e)} />
+                      ))}
+                    </MarketGrid>
+                  </div>
+                )}
+              </>
+            )}
 
           {pendingConnections.length > 0 && (
             <PendingConnections leads={pendingConnections} onViewCompany={company => openTab('connect', company)} />
           )}
-
-          <div style={{ marginTop: 16 }}>
-            <SectionHeader title="Mais para você" onSeeAll={() => openTab('connect')} />
-          </div>
-
-          <UpcomingEventCard
-            event={featuredEvent}
-            onView={() => openTab('events', featuredEvent?.companyName ?? '')}
-          />
-
-          <RecommendedCard
-            user={user}
-            company={featuredCompany}
-            product={featuredProduct}
-            event={featuredEvent}
-            onOpenCompany={() => openTab('connect', featuredCompany?.name ?? '')}
-            onOpenProducts={() => openTab('products', featuredProduct?.companyName ?? '')}
-            onOpenEvents={() => openTab('events', featuredEvent?.companyName ?? '')}
-          />
-
-          <ProfileNudgeCard user={user} onUpdate={openProfileSettings} />
         </div>
       )}
 
       {/* ── EVENTS ── */}
       {tab === 'events' && (
         <div>
-          <Breadcrumb items={['início', 'eventos']} />
           <MarketHead title="Eventos" count={events.length} countWord="evento" />
           <BrowseRail active="events" onSelect={openTab} />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos..." />
@@ -443,8 +388,7 @@ export default function DoctorDashboard() {
       {/* ── PRODUCTS ── */}
       {tab === 'products' && (
         <div>
-          <Breadcrumb items={['início', 'produtos']} />
-          <MarketHead title="Produtos" subtitle="Novidades da indústria com contato direto." count={products.length} countWord="produto" />
+          <MarketHead title="Produtos" subtitle="Toque para ver detalhes e falar com o representante." count={products.length} countWord="produto" />
           <BrowseRail active="products" onSelect={openTab} />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar produto, empresa ou representante..." />
           <FilterBar chips={productChips} active={productFilter} onChange={setProductFilter} />
@@ -458,8 +402,7 @@ export default function DoctorDashboard() {
       {/* ── COURSES ── */}
       {tab === 'courses' && (
         <div>
-          <Breadcrumb items={['início', 'workshops']} />
-          <MarketHead title="Workshops" subtitle="Capacitações e aulas selecionadas para médicos." count={courses.length} countWord="workshop" />
+          <MarketHead title="Workshops" subtitle="Capacitações publicadas pelas empresas." count={courses.length} countWord="workshop" />
           <BrowseRail active="courses" onSelect={openTab} />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar workshops e capacitações..." />
           <FilterBar
@@ -503,18 +446,6 @@ export default function DoctorDashboard() {
           onOpenEvents={company => openTab('events', company)}
         />
       )}
-
-      <DoctorActionSheet
-        open={actionSheetOpen}
-        onClose={() => setActionSheetOpen(false)}
-        onSelect={action => {
-          if (action === 'companies') openTab('connect');
-          if (action === 'representative') openTab('connect');
-          if (action === 'interest') openTab('products');
-          if (action === 'events') openTab('events');
-          if (action === 'profile') openProfileSettings();
-        }}
-      />
 
       <Sheet open={openProduct !== null} onClose={() => setOpenProduct(null)}>
         <div style={{ padding: '4px 14px 14px' }}>
@@ -574,11 +505,188 @@ function railIcon(kind: string, active: boolean) {
 function BrowseRail({ active, onSelect }: { active: string; onSelect: (tab: Tab) => void }) {
   const items: CategoryItem[] = [
     { key: 'products', label: 'Produtos', icon: railIcon('products', active === 'products'), active: active === 'products' },
-    { key: 'events',   label: 'Eventos',  icon: railIcon('events', active === 'events'),     active: active === 'events' },
-    { key: 'courses',  label: 'Workshops', icon: railIcon('courses', active === 'courses'),   active: active === 'courses' },
-    { key: 'connect',  label: 'Representantes', icon: railIcon('connect', active === 'connect'),   active: active === 'connect' },
+    { key: 'events', label: 'Eventos', icon: railIcon('events', active === 'events'), active: active === 'events' },
+    { key: 'courses', label: 'Workshops', icon: railIcon('courses', active === 'courses'), active: active === 'courses' },
+    { key: 'connect', label: 'Empresas', icon: railIcon('connect', active === 'connect'), active: active === 'connect' },
   ];
   return <CategoryRail items={items} onSelect={key => onSelect(key as Tab)} />;
+}
+
+function QuickHomeHeader({
+  user,
+  pendingCount,
+  points,
+  onPendingClick,
+}: {
+  user: User | null | undefined;
+  pendingCount: number;
+  points: number;
+  onPendingClick: () => void;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+      <div style={{ minWidth: 0 }}>
+        <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          {todayLabel()}
+        </Mono>
+        <h1 style={{ marginTop: 5, fontSize: 21, fontWeight: 620, lineHeight: 1.08, color: 'var(--ink)' }}>
+          {doctorGreeting(user)}<span style={{ color: 'var(--accent)' }}>.</span>
+        </h1>
+        <p style={{ marginTop: 3, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.25 }}>
+          {doctorMetaLine(user)}
+        </p>
+      </div>
+      {pendingCount > 0 ? (
+        <button
+          type="button"
+          onClick={onPendingClick}
+          style={{
+            flexShrink: 0,
+            minWidth: 88,
+            padding: '10px 12px',
+            borderRadius: 14,
+            border: 'none',
+            background: 'var(--accent)',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 650,
+            cursor: 'pointer',
+            boxShadow: '0 10px 24px rgba(245,130,32,0.24)',
+          }}
+        >
+          {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
+        </button>
+      ) : (
+        <div style={{
+          flexShrink: 0,
+          padding: '8px 11px',
+          borderRadius: 12,
+          background: 'rgba(245,130,32,0.10)',
+          border: '1px solid rgba(245,130,32,0.18)',
+          fontSize: 11.5,
+          fontWeight: 620,
+          color: 'var(--accent-ink)',
+        }}>
+          {points} pts
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PendingInboxBanner({
+  lead,
+  total,
+  onSeeAll,
+}: {
+  lead: Lead;
+  total: number;
+  onSeeAll: () => void;
+}) {
+  const { user, approveConnection } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function approveNow() {
+    if (!user?.whatsapp) {
+      openProfileSettings();
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await approveConnection(lead.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao aprovar.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section style={{ marginBottom: 14 }}>
+      <div style={{
+        padding: 14,
+        borderRadius: 18,
+        background: 'linear-gradient(135deg, #F58220 0%, #FF9A4D 100%)',
+        color: '#fff',
+        boxShadow: '0 14px 34px rgba(245,130,32,0.28)',
+      }}>
+        <Mono style={{ fontSize: 9, color: 'rgba(255,255,255,0.82)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+          Ação rápida
+        </Mono>
+        <div style={{ marginTop: 6, fontSize: 16, fontWeight: 620, lineHeight: 1.2 }}>
+          {lead.companyName} quer falar com você
+        </div>
+        <p style={{ marginTop: 4, fontSize: 12.5, lineHeight: 1.35, color: 'rgba(255,255,255,0.92)' }}>
+          Sobre: {lead.itemName || 'oportunidade comercial'}
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => { void approveNow(); }}
+            style={{
+              flex: 1,
+              minHeight: 42,
+              borderRadius: 12,
+              border: 'none',
+              background: '#fff',
+              color: 'var(--accent)',
+              fontSize: 13,
+              fontWeight: 650,
+              cursor: busy ? 'not-allowed' : 'pointer',
+              opacity: busy ? 0.75 : 1,
+            }}
+          >
+            {busy ? 'Aprovando…' : user?.whatsapp ? 'Aprovar e liberar WhatsApp' : 'Cadastrar WhatsApp'}
+          </button>
+          {total > 1 && (
+            <button
+              type="button"
+              onClick={onSeeAll}
+              style={{
+                minHeight: 42,
+                padding: '0 12px',
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.35)',
+                background: 'rgba(255,255,255,0.12)',
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              +{total - 1}
+            </button>
+          )}
+        </div>
+        {error && <p style={{ marginTop: 8, fontSize: 11.5, color: '#fff' }}>{error}</p>}
+      </div>
+    </section>
+  );
+}
+
+function SlimProfileBanner({ onFix }: { onFix: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onFix}
+      style={{
+        width: '100%',
+        marginBottom: 14,
+        padding: '11px 12px',
+        borderRadius: 14,
+        border: '1px solid rgba(245,130,32,0.22)',
+        background: 'rgba(245,130,32,0.08)',
+        textAlign: 'left',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>Cadastre seu WhatsApp</div>
+      <div style={{ marginTop: 2, fontSize: 11.5, color: 'var(--ink-2)' }}>Necessário para aprovar contatos comerciais em 1 toque.</div>
+    </button>
+  );
 }
 
 /* ─── Cards compactos de vitrine ─── */
@@ -587,7 +695,7 @@ function ProductMarketCard({ product, onOpen }: { product: Product; onOpen: () =
   return (
     <MarketCard
       image={visualUrl(product.imageUrl)}
-      topLeft={<PhotoBadge color="#1EA97C">Amostra</PhotoBadge>}
+      topLeft={<PhotoBadge color="#1EA97C">Produto</PhotoBadge>}
       highlight={hasPrice ? product.price : undefined}
       title={product.name}
       subtitle={`${product.companyName} • ${product.category}`}
@@ -627,510 +735,6 @@ function CourseMarketCard({ course, onOpen }: { course: Course; onOpen: () => vo
   );
 }
 
-export function DashboardHeader({
-  user,
-  pendingCount,
-  eventCount,
-  companyCount,
-  onViewPriorities,
-}: {
-  user: User | null | undefined;
-  pendingCount: number;
-  eventCount: number;
-  companyCount: number;
-  onViewPriorities: () => void;
-}) {
-  const summary = [
-    { value: pendingCount, label: pendingCount === 1 ? 'solicitação pendente' : 'solicitações pendentes' },
-    { value: eventCount, label: eventCount === 1 ? 'evento recomendado' : 'eventos recomendados' },
-    { value: companyCount, label: companyCount === 1 ? 'empresa compatível' : 'empresas compatíveis' },
-  ];
-
-  return (
-    <section style={{
-      position: 'relative',
-      marginBottom: 10,
-      padding: 13,
-      borderRadius: 18,
-      overflow: 'hidden',
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.96), rgba(241,246,255,0.86) 55%, rgba(255,246,243,0.74))',
-      border: '1px solid rgba(216,222,236,0.88)',
-      boxShadow: '0 10px 28px rgba(88,98,130,0.065)',
-    }}>
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        opacity: 0.25,
-        background: 'radial-gradient(circle at 0% 0%, rgba(74,168,255,0.18), transparent 32%), radial-gradient(circle at 100% 20%, rgba(255,111,77,0.12), transparent 34%)',
-        pointerEvents: 'none',
-      }} />
-      <div style={{ position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div style={{ minWidth: 0 }}>
-            <Mono style={{ fontSize: 8.5, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-              {todayLabel()}
-            </Mono>
-            <h1 style={{ marginTop: 7, fontSize: 22, fontWeight: 560, letterSpacing: 0, lineHeight: 1.05, color: 'var(--ink)' }}>
-              {doctorGreeting(user)}<span style={{ color: 'var(--accent)' }}>.</span>
-            </h1>
-            <p style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {doctorMetaLine(user)}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onViewPriorities}
-            style={{
-              height: 34,
-              padding: '0 12px',
-              borderRadius: 999,
-              border: '1px solid rgba(74,168,255,0.24)',
-              background: 'rgba(74,168,255,0.09)',
-              color: 'var(--accent)',
-              fontSize: 11.5,
-              fontWeight: 600,
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            Ver prioridades
-          </button>
-        </div>
-
-        <p style={{ marginTop: 10, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-          {opportunityCountLabel(pendingCount, eventCount, companyCount)}
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 7, marginTop: 11 }}>
-          {summary.map(item => (
-            <div
-              key={item.label}
-              style={{
-                minHeight: 48,
-                padding: '8px 7px',
-                borderRadius: 13,
-                background: 'rgba(255,255,255,0.72)',
-                border: '1px solid rgba(216,222,236,0.72)',
-              }}
-            >
-              <div style={{ fontSize: 18, lineHeight: 1, color: 'var(--ink)', fontWeight: 620 }}>{item.value}</div>
-              <div style={{ marginTop: 4, fontSize: 9.6, lineHeight: 1.15, color: 'var(--muted)' }}>{item.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProgressRing({ percent, size = 64 }: { percent: number; size?: number }) {
-  const stroke = 6;
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - Math.max(0, Math.min(100, percent)) / 100);
-  const inner = size * 0.30;
-  return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(15,22,38,0.08)" strokeWidth={stroke} />
-        <circle
-          cx={size / 2} cy={size / 2} r={r} fill="none"
-          stroke="var(--accent)" strokeWidth={stroke} strokeLinecap="round"
-          strokeDasharray={circ} strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 0.6s var(--ease)' }}
-        />
-      </svg>
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-        width: inner * 2, height: inner * 2, borderRadius: '50%',
-        background: 'linear-gradient(135deg, var(--accent-blue), #5B6EF5)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 6px 16px rgba(74,168,255,0.35)',
-        color: '#fff', fontSize: inner * 0.95, lineHeight: 1,
-      }}>
-        ★
-      </div>
-    </div>
-  );
-}
-
-function ProgressChip({ icon, children }: { icon: string; children: React.ReactNode }) {
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      padding: '5px 9px', borderRadius: 999,
-      background: 'var(--chip)', border: '1px solid var(--line)',
-      color: 'var(--ink)', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
-    }}>
-      <span style={{ fontSize: 12 }}>{icon}</span>{children}
-    </span>
-  );
-}
-
-function ProgressCard({
-  points,
-  connections,
-  pendingCount,
-  onApprovePending,
-}: {
-  points: number;
-  connections: number;
-  pendingCount: number;
-  onApprovePending: () => void;
-}) {
-  const progress = getLevelProgress(points);
-  const badges = getBadges(connections, points);
-  const unlockedBadges = badges.filter(b => b.unlocked).length;
-
-  return (
-    <section style={{ marginBottom: 12 }}>
-      <div style={{
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: 18,
-        padding: 14,
-        background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF7F0 60%, #FFF1F4 100%)',
-        border: '1px solid rgba(216,222,236,0.9)',
-        boxShadow: '0 12px 30px rgba(85,96,130,0.07)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-          <ProgressRing percent={progress.percent} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--accent-ink)', lineHeight: 1.1 }}>
-                  Seu progresso Tessy
-                </div>
-                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--ink-2)' }}>
-                  Nível {progress.level.index + 1} · <b style={{ color: 'var(--accent)' }}>{progress.level.name}</b>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <ProgressChip icon="🤝">{connections}</ProgressChip>
-                <ProgressChip icon="⭐">{unlockedBadges}</ProgressChip>
-                <ProgressChip icon="🏆">Nível {progress.level.index + 1}</ProgressChip>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 11 }}>
-              <div style={{ height: 8, borderRadius: 999, background: 'rgba(15,22,38,0.07)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 999, width: `${progress.percent}%`, background: 'linear-gradient(90deg, #F58220, #FFB066)', transition: 'width 0.6s var(--ease)' }} />
-              </div>
-              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <span style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>{progress.points} pontos</span>
-                <span style={{ fontSize: 10.5, color: 'var(--muted)', lineHeight: 1.3, textAlign: 'right' }}>
-                  {progress.isMax ? 'Nível máximo!' : `+${progress.pointsForNextLevel} p/ ${progress.next?.name}`}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {pendingCount > 0 ? (
-          <button type="button" onClick={onApprovePending} style={{
-            marginTop: 12,
-            width: '100%',
-            minHeight: 40,
-            padding: '10px 12px',
-            borderRadius: 12,
-            border: 'none',
-            background: 'var(--accent)',
-            color: '#fff',
-            fontSize: 12.5,
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 10px 22px rgba(245,130,32,0.22)',
-          }}>
-            Aprovar conexão e ganhar +{POINTS_PER_CONNECTION} pts ({pendingCount} pendente{pendingCount > 1 ? 's' : ''})
-          </button>
-        ) : (
-          <div style={{
-            marginTop: 12,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '9px 11px',
-            borderRadius: 12,
-            background: 'rgba(245,130,32,0.08)',
-            border: '1px solid rgba(245,130,32,0.18)',
-          }}>
-            <span style={{ fontSize: 15, lineHeight: 1 }}>💡</span>
-            <span style={{ fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-              Ganhe <b style={{ color: 'var(--accent)' }}>+{POINTS_PER_CONNECTION} pts</b> cada vez que aprovar a conexão de uma empresa interessada no seu perfil.
-            </span>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function PriorityCard({
-  lead,
-  event,
-  company,
-  user,
-  userHasWhatsapp,
-  busy,
-  error,
-  onAnalyze,
-  onApprove,
-  onOpenEvent,
-  onOpenCompany,
-  onUpdateProfile,
-}: {
-  lead?: Lead;
-  event?: Event;
-  company?: CompanyMatch;
-  user: User | null | undefined;
-  userHasWhatsapp: boolean;
-  busy: boolean;
-  error: string;
-  onAnalyze: () => void;
-  onApprove: () => void;
-  onOpenEvent: () => void;
-  onOpenCompany: () => void;
-  onUpdateProfile: () => void;
-}) {
-  const mode = lead ? 'lead' : event ? 'event' : company ? 'company' : 'profile';
-  const score = lead ? Math.max(92, compatibilityScore(company, user)) : compatibilityScore(company, user);
-  const title = lead
-    ? `${lead.companyName} solicitou conexão com você`
-    : event
-      ? 'Próximo evento recomendado'
-      : company
-        ? `${company.name} combina com seu perfil`
-        : 'Complete seu perfil para melhorar as recomendações';
-  const interest = lead?.itemName || event?.title || company?.events[0]?.title || company?.products[0]?.name || 'Oportunidade Tessy';
-  const type = lead ? leadTypeLabel(lead) : event ? 'Evento' : company ? 'Empresa' : 'Perfil';
-  const image = visualUrl(event?.imageUrl ?? company?.events[0]?.imageUrl ?? company?.products[0]?.imageUrl, VISUAL_FALLBACKS.clinical);
-  const leadAge = lead ? leadAgeLabel(lead.connectionRequestedAt || lead.createdAt) : event ? eventCountdown(event) : 'Alta compatibilidade';
-
-  return (
-    <section id="priority-card" style={{ marginBottom: 12 }}>
-      <SectionHeader title="Prioridade agora" />
-      <div style={{
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: 18,
-        background: 'rgba(255,255,255,0.96)',
-        border: '1px solid rgba(216,222,236,0.92)',
-        boxShadow: '0 12px 30px rgba(85,96,130,0.075)',
-      }}>
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(135deg, rgba(74,168,255,0.08), transparent 42%, rgba(255,111,77,0.07))',
-          pointerEvents: 'none',
-        }} />
-        <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: mode === 'profile' ? '1fr' : '1fr 78px', gap: 12, padding: 13 }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginBottom: 8 }}>
-              <span style={{
-                padding: '5px 8px',
-                borderRadius: 999,
-                background: mode === 'lead' ? 'rgba(255,111,77,0.10)' : 'rgba(74,168,255,0.10)',
-                color: mode === 'lead' ? '#d65f4f' : 'var(--accent)',
-                fontSize: 9.5,
-                fontWeight: 620,
-              }}>
-                {leadAge}
-              </span>
-              <span style={{
-                padding: '5px 8px',
-                borderRadius: 999,
-                background: 'rgba(15,22,38,0.05)',
-                color: 'var(--ink-2)',
-                fontSize: 9.5,
-                fontWeight: 600,
-              }}>
-                Tipo: {type}
-              </span>
-            </div>
-            <h2 style={{ fontSize: 16.5, lineHeight: 1.15, color: 'var(--ink)', fontWeight: 620, letterSpacing: 0 }}>
-              {title}
-            </h2>
-            <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
-              <PriorityMeta label="Interesse" value={interest} />
-              {mode !== 'profile' && <PriorityMeta label="Compatibilidade" value={`${score || 92}%`} />}
-            </div>
-            {error && <p style={{ marginTop: 8, fontSize: 11, color: '#d65f4f' }}>{error}</p>}
-          </div>
-
-          {mode !== 'profile' && (
-            <div style={{
-              width: 78,
-              minHeight: 94,
-              borderRadius: 15,
-              background: `linear-gradient(180deg, rgba(15,22,38,0.10), rgba(15,22,38,0.40)), url(${image}) center/cover`,
-              border: '1px solid rgba(255,255,255,0.72)',
-              boxShadow: '0 10px 22px rgba(85,96,130,0.11)',
-            }} />
-          )}
-        </div>
-
-        <div style={{ position: 'relative', display: 'flex', gap: 8, padding: '0 13px 13px' }}>
-          {mode === 'lead' ? (
-            <>
-              <button type="button" onClick={onAnalyze} style={priorityButtonStyle('light')}>Ver solicitação</button>
-              <button type="button" onClick={onApprove} disabled={busy || !userHasWhatsapp} style={priorityButtonStyle('solid', busy || !userHasWhatsapp)}>
-                {busy ? 'Aprovando...' : 'Aprovar'}
-              </button>
-            </>
-          ) : mode === 'event' ? (
-            <button type="button" onClick={onOpenEvent} style={priorityButtonStyle('solid')}>Ver evento</button>
-          ) : mode === 'company' ? (
-            <button type="button" onClick={onOpenCompany} style={priorityButtonStyle('solid')}>Conhecer empresa</button>
-          ) : (
-            <button type="button" onClick={onUpdateProfile} style={priorityButtonStyle('solid')}>Atualizar perfil</button>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function QuickAccessGrid({
-  companiesCount,
-  representativesCount,
-  eventsCount,
-  productsCount,
-  onCompanies,
-  onRepresentatives,
-  onEvents,
-  onProducts,
-}: {
-  companiesCount: number;
-  representativesCount: number;
-  eventsCount: number;
-  productsCount: number;
-  onCompanies: () => void;
-  onRepresentatives: () => void;
-  onEvents: () => void;
-  onProducts: () => void;
-}) {
-  const items: Array<{
-    key: 'events' | 'companies' | 'representatives' | 'products';
-    label: string;
-    count: number;
-    hint: string;
-    onClick: () => void;
-    icon: string;
-  }> = [
-    { key: 'events', label: 'Eventos recomendados', count: eventsCount, hint: 'Aulas, encontros e imersões', onClick: onEvents, icon: 'calendar' },
-    { key: 'companies', label: 'Empresas para conectar', count: companiesCount, hint: 'Marcas compatíveis', onClick: onCompanies, icon: 'company' },
-    { key: 'representatives', label: 'Representantes disponíveis', count: representativesCount, hint: 'Contato comercial direto', onClick: onRepresentatives, icon: 'rep' },
-    { key: 'products', label: 'Novidades da indústria', count: productsCount, hint: 'Produtos e tecnologias', onClick: onProducts, icon: 'product' },
-  ];
-
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <SectionHeader title="Atalhos inteligentes" />
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-      }}>
-        {items.map(item => {
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={item.onClick}
-              style={{
-                minHeight: 78,
-                padding: 10,
-                borderRadius: 16,
-                border: '1px solid rgba(216,222,236,0.88)',
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,252,255,0.86))',
-                boxShadow: '0 8px 22px rgba(88,98,130,0.05)',
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                <span style={{ width: 26, height: 26, borderRadius: 9, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', background: 'rgba(74,168,255,0.10)' }}>
-                  <QuickAccessIcon type={item.icon} />
-                </span>
-                <span style={{
-                  minWidth: 28,
-                  height: 26,
-                  borderRadius: 999,
-                  background: 'rgba(15,22,38,0.05)',
-                  color: 'var(--ink)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 13.5,
-                  fontWeight: 600,
-                }}>
-                  {item.count}
-                </span>
-              </div>
-              <div style={{ marginTop: 8, fontSize: 11.8, lineHeight: 1.15, fontWeight: 620, color: 'var(--ink)' }}>
-                  {item.label}
-              </div>
-              <div style={{ marginTop: 4, fontSize: 10.2, color: 'var(--muted)', lineHeight: 1.2 }}>
-                {item.hint}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function PriorityMeta({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
-      <span style={{
-        flexShrink: 0,
-        color: 'var(--muted)',
-        fontSize: 9,
-        fontFamily: 'var(--font-mono)',
-        letterSpacing: '0.09em',
-        textTransform: 'uppercase',
-      }}>
-        {label}:
-      </span>
-      <span style={{ minWidth: 0, color: 'var(--ink-2)', fontSize: 11.5, fontWeight: 560, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-
-function priorityButtonStyle(variant: 'solid' | 'light', disabled = false): CSSProperties {
-  return {
-    flex: 1,
-    minHeight: 40,
-    padding: '8px 12px',
-    borderRadius: 12,
-    border: variant === 'light' ? '1px solid rgba(216,222,236,0.92)' : 'none',
-    background: variant === 'solid' ? 'rgba(74,168,255,0.98)' : 'rgba(247,248,255,0.92)',
-    color: variant === 'solid' ? '#fff' : 'var(--ink)',
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.58 : 1,
-    boxShadow: variant === 'solid' ? '0 10px 22px rgba(74,168,255,0.22)' : 'none',
-  };
-}
-
-function QuickAccessIcon({ type }: { type: string }) {
-  if (type === 'calendar') {
-    return <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="14" height="13" rx="3"/><path d="M7 2.5v3M13 2.5v3M3 8h14" strokeLinecap="round"/></svg>;
-  }
-  if (type === 'company') {
-    return <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 17V4.5A1.5 1.5 0 015.5 3h9A1.5 1.5 0 0116 4.5V17"/><path d="M7 7h2M11 7h2M7 10h2M11 10h2M8 17v-4h4v4" strokeLinecap="round"/></svg>;
-  }
-  if (type === 'rep') {
-    return <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="8" cy="7" r="3"/><path d="M3 17a5 5 0 0110 0"/><path d="M14 6.5a3 3 0 010 6" strokeLinecap="round"/></svg>;
-  }
-  return <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3.5 6.5L10 3l6.5 3.5v7L10 17l-6.5-3.5v-7z"/><path d="M3.8 6.7L10 10l6.2-3.3M10 17v-7" strokeLinecap="round"/></svg>;
-}
 
 function leadTypeLabel(lead: Lead) {
   if (lead.itemType === 'event') return 'Evento';
@@ -1147,101 +751,6 @@ function leadAgeLabel(date?: string) {
   if (diffDays <= 0) return 'Hoje';
   if (diffDays === 1) return 'Pendente há 1 dia';
   return `Pendente há ${diffDays} dias`;
-}
-
-function compatibilityScore(company?: CompanyMatch, user?: User | null) {
-  if (!company) return 0;
-  const texts = [
-    company.name,
-    ...company.products.map(product => `${product.name} ${product.category} ${product.description} ${product.availableFor}`),
-    ...company.events.map(event => `${event.title} ${event.category} ${event.description}`),
-    ...company.courses.map(course => `${course.title} ${course.category} ${course.description}`),
-  ];
-  let score = 76;
-  if (matchesDoctorProfile(user, ...texts)) score += 9;
-  if (company.whatsapp) score += 4;
-  if (company.events.length > 0) score += 3;
-  if (company.products.length > 0) score += 3;
-  return Math.min(94, score);
-}
-
-function UpcomingEventCard({ event, onView }: { event?: Event; onView: () => void }) {
-  return (
-    <section style={{ marginBottom: 14 }}>
-      <SectionHeader title="Agenda e oportunidades" />
-      {!event ? (
-        <Empty text="Nenhum evento próximo no momento." hint="Novas oportunidades aparecerão aqui quando empresas publicarem eventos." />
-      ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '78px minmax(0, 1fr)',
-          gap: 11,
-          alignItems: 'stretch',
-          padding: 10,
-          borderRadius: 18,
-          background: 'rgba(255,255,255,0.94)',
-          border: '1px solid rgba(216,222,236,0.92)',
-          boxShadow: '0 10px 28px rgba(85,96,130,0.06)',
-        }}>
-          <div style={{
-            position: 'relative',
-            minHeight: 92,
-            borderRadius: 15,
-            overflow: 'hidden',
-            background: `linear-gradient(180deg, rgba(15,22,38,0.08), rgba(15,22,38,0.48)), url(${visualUrl(event.imageUrl, VISUAL_FALLBACKS.clinical)}) center/cover`,
-          }}>
-            <div style={{
-              position: 'absolute',
-              right: 7,
-              top: 7,
-              width: 42,
-              height: 46,
-              borderRadius: 13,
-              background: 'rgba(255,255,255,0.94)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 10px 20px rgba(15,22,38,0.12)',
-            }}>
-              <span style={{ fontSize: 8.5, color: 'var(--accent)', fontWeight: 700 }}>{monthShort(pickScheduleDate(event)) || 'DATA'}</span>
-              <span style={{ fontSize: 18, color: 'var(--ink)', fontWeight: 650, lineHeight: 1 }}>{dayNum(pickScheduleDate(event)) || '--'}</span>
-            </div>
-          </div>
-          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Chip color="var(--accent)">{eventCountdown(event) || 'Evento'}</Chip>
-                <Chip color="#1EA97C">{eventFormat(event)}</Chip>
-              </div>
-              <h3 style={{ marginTop: 7, fontSize: 15.5, lineHeight: 1.14, fontWeight: 650, color: 'var(--ink)' }}>{event.title}</h3>
-              <p style={{ marginTop: 5, fontSize: 11.5, lineHeight: 1.35, color: 'var(--ink-2)' }}>
-                {eventDateLabel(event)} · {locationText(event.location)}
-              </p>
-              <p style={{ marginTop: 4, fontSize: 10.8, color: 'var(--muted)' }}>
-                {eventSeatText(event.maxParticipants, Math.max(0, event.maxParticipants - event.registeredCount))}
-              </p>
-            </div>
-            <button type="button" onClick={onView} style={{
-              alignSelf: 'flex-start',
-              marginTop: 8,
-              minHeight: 35,
-              padding: '8px 12px',
-              borderRadius: 11,
-              border: 'none',
-              background: 'var(--accent-ink)',
-              color: '#fff',
-              fontSize: 11.5,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}>
-              Ver detalhes
-            </button>
-          </div>
-        </div>
-      )}
-    </section>
-  );
 }
 
 function PendingConnections({ leads, onViewCompany }: { leads: Lead[]; onViewCompany: (company: string) => void }) {
@@ -1267,7 +776,7 @@ function PendingConnections({ leads, onViewCompany }: { leads: Lead[]; onViewCom
 
   return (
     <section id="pending-connections" style={{ marginBottom: 14, scrollMarginTop: 16 }}>
-      <SectionHeader title="Solicitações pendentes" />
+      <SectionHeader title={`Mais solicitações (${leads.length})`} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {leads.slice(0, 3).map(lead => (
           <div key={lead.id} style={{
@@ -1331,228 +840,6 @@ function PendingConnections({ leads, onViewCompany }: { leads: Lead[]; onViewCom
   );
 }
 
-function RecommendedCard({
-  user,
-  company,
-  product,
-  event,
-  onOpenCompany,
-  onOpenProducts,
-  onOpenEvents,
-}: {
-  user: User | null | undefined;
-  company?: CompanyMatch;
-  product?: Product;
-  event?: Event;
-  onOpenCompany: () => void;
-  onOpenProducts: () => void;
-  onOpenEvents: () => void;
-}) {
-  if (!company && !product && !event) {
-    return (
-      <section style={{ marginBottom: 14 }}>
-        <SectionHeader title="Recomendado para você" />
-        <Empty text="Nenhuma recomendação por enquanto." hint="Complete seu perfil para receber empresas, produtos e eventos compatíveis." />
-      </section>
-    );
-  }
-
-  const score = compatibilityScore(company, user);
-  const visual = visualUrl(company?.products[0]?.imageUrl ?? company?.events[0]?.imageUrl ?? product?.imageUrl ?? event?.imageUrl, VISUAL_FALLBACKS.clinical);
-  const title = company?.name ?? product?.name ?? event?.title ?? 'Oportunidade Tessy';
-  const type = company ? 'Empresa' : product ? 'Produto' : 'Evento';
-  const reason = company
-    ? `Compatível com ${doctorProfileLabel(user).toLowerCase()} e com oportunidades comerciais ativas.`
-    : product
-      ? product.availableFor || 'Produto recomendado para avaliação médica.'
-      : event
-        ? `Evento com data próxima em ${locationText(event.location)}.`
-        : 'Recomendação baseada no seu perfil.';
-
-  return (
-    <section style={{ marginBottom: 14 }}>
-      <SectionHeader title="Recomendado para você" />
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '74px minmax(0, 1fr)',
-        gap: 11,
-        padding: 11,
-        borderRadius: 18,
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.96), rgba(246,249,255,0.90))',
-        border: '1px solid rgba(216,222,236,0.92)',
-        boxShadow: '0 10px 28px rgba(85,96,130,0.06)',
-      }}>
-        <div style={{
-          minHeight: 96,
-          borderRadius: 15,
-          background: `linear-gradient(180deg, rgba(15,22,38,0.06), rgba(15,22,38,0.42)), url(${visual}) center/cover`,
-          overflow: 'hidden',
-        }} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <Mono style={{ fontSize: 8.5, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{type}</Mono>
-            {company && <Chip color="#1EA97C">{score}% compatível</Chip>}
-          </div>
-          <h3 style={{ marginTop: 6, fontSize: 16, lineHeight: 1.14, fontWeight: 650, color: 'var(--ink)' }}>{title}</h3>
-          <p style={{ marginTop: 5, fontSize: 11.8, lineHeight: 1.36, color: 'var(--ink-2)' }}>{reason}</p>
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 8 }}>
-            {company?.events[0]?.category && <Chip color="var(--accent)">{company.events[0].category}</Chip>}
-            {company?.whatsapp && <Chip color="#25D366">representante</Chip>}
-            {product?.category && <Chip color="var(--accent)">{product.category}</Chip>}
-            {event && <Chip color="var(--accent)">{eventCountdown(event) || 'Evento'}</Chip>}
-          </div>
-          <button type="button" onClick={company ? onOpenCompany : product ? onOpenProducts : onOpenEvents} style={{
-            marginTop: 10,
-            minHeight: 38,
-            padding: '8px 12px',
-            borderRadius: 12,
-            border: 'none',
-            background: 'var(--accent-ink)',
-            color: '#fff',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}>
-            {company ? 'Conhecer empresa' : product ? 'Ver produto' : 'Ver evento'}
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProfileNudgeCard({ user, onUpdate }: { user: User | null | undefined; onUpdate: () => void }) {
-  const hasWhats = Boolean(user?.whatsapp);
-  const hasSpecialty = Boolean(user?.specialty?.trim());
-  if (hasWhats && hasSpecialty) {
-    return (
-      <section style={{ marginBottom: 16 }}>
-        <div style={{
-          padding: 12,
-          borderRadius: 16,
-          background: 'rgba(30,169,124,0.08)',
-          border: '1px solid rgba(30,169,124,0.18)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: 10,
-          alignItems: 'center',
-        }}>
-          <div>
-            <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--ink)' }}>Canal profissional ativo</div>
-            <div style={{ marginTop: 2, fontSize: 11.2, color: 'var(--ink-2)' }}>{user?.whatsapp ? fmtPhone(user.whatsapp) : 'WhatsApp cadastrado'}</div>
-          </div>
-          <Chip color="#1EA97C">empresas aprovadas</Chip>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section style={{ marginBottom: 16 }}>
-      <div style={{
-        padding: 12,
-        borderRadius: 16,
-        background: 'linear-gradient(135deg, rgba(74,168,255,0.10), rgba(255,255,255,0.92))',
-        border: '1px solid rgba(74,168,255,0.18)',
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--ink)' }}>Melhore suas recomendações</div>
-        <p style={{ marginTop: 4, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-          {hasWhats ? 'Complete sua especialidade para receber matches melhores.' : 'Cadastre seu WhatsApp profissional para aprovar contatos comerciais.'}
-        </p>
-        <button type="button" onClick={onUpdate} style={{
-          marginTop: 10,
-          minHeight: 38,
-          padding: '8px 12px',
-          borderRadius: 12,
-          border: 'none',
-          background: 'var(--accent)',
-          color: '#fff',
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: 'pointer',
-        }}>
-          Completar dados
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function DoctorActionSheet({
-  open,
-  onClose,
-  onSelect,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSelect: (action: 'companies' | 'representative' | 'interest' | 'events' | 'profile') => void;
-}) {
-  if (!open) return null;
-  const actions: Array<{ key: 'companies' | 'representative' | 'interest' | 'events' | 'profile'; label: string }> = [
-    { key: 'companies', label: 'Buscar empresas' },
-    { key: 'representative', label: 'Encontrar representante' },
-    { key: 'interest', label: 'Publicar interesse' },
-    { key: 'events', label: 'Ver eventos próximos' },
-    { key: 'profile', label: 'Atualizar meu perfil' },
-  ];
-
-  return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      zIndex: 60,
-      background: 'rgba(15,22,38,0.22)',
-      display: 'flex',
-      alignItems: 'flex-end',
-      justifyContent: 'center',
-      padding: '0 12px max(12px, env(safe-area-inset-bottom))',
-    }}>
-      <button
-        type="button"
-        aria-label="Fechar ações"
-        onClick={onClose}
-        style={{ position: 'absolute', inset: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
-      />
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        maxWidth: 456,
-        padding: 14,
-        borderRadius: 22,
-        background: 'rgba(255,255,255,0.96)',
-        border: '1px solid var(--line)',
-        boxShadow: '0 18px 50px rgba(52,57,73,0.20)',
-      }}>
-        <div style={{ width: 44, height: 4, borderRadius: 999, background: 'rgba(52,57,73,0.16)', margin: '2px auto 12px' }} />
-        <div style={{ fontSize: 17, fontWeight: 560, color: 'var(--ink)', marginBottom: 10 }}>
-          O que você deseja fazer?
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {actions.map(action => (
-            <button
-              key={action.key}
-              type="button"
-              onClick={() => onSelect(action.key)}
-              style={{
-                padding: '13px 14px',
-                borderRadius: 14,
-                border: '1px solid var(--line)',
-                background: 'var(--card)',
-                color: 'var(--ink)',
-                fontSize: 14,
-                fontWeight: 560,
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ─── Connect view ─── */
 function ConnectView({
@@ -1594,22 +881,17 @@ function ConnectView({
 
   return (
     <div>
-      <Breadcrumb items={['início', 'representantes']} />
+      <MarketHead title="Empresas" subtitle="Fale direto com representantes." count={companies.length} countWord="empresa" />
       <div style={{
-        padding: '18px 16px',
-        borderRadius: 18,
-        background: 'linear-gradient(135deg, rgba(245,130,32,0.12) 0%, rgba(30,169,124,0.10) 100%)',
+        padding: '14px 14px',
+        borderRadius: 16,
+        background: 'rgba(245,130,32,0.08)',
         border: '1px solid rgba(245,130,32,0.16)',
-        marginBottom: 18,
+        marginBottom: 16,
       }}>
-        <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-          Ponte médico-empresa
-        </Mono>
-        <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, lineHeight: 1.1, marginTop: 8 }}>
-          Comunidade prática<span style={{ color: 'var(--accent)' }}>.</span>
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 8, lineHeight: 1.5 }}>
-          Encontre empresas com produtos, eventos e treinamentos relevantes. Salve contato ou fale direto com o representante.
+        <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--ink)' }}>Contato em 1 toque</div>
+        <p style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>
+          Salve a empresa ou fale no WhatsApp sem formulários longos.
         </p>
       </div>
 
@@ -1975,13 +1257,10 @@ function ProductCard({ product }: { product: Product }) {
   const [tint1] = categoryTint(product.category);
   const code = product.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const repMessage = `Olá! Vi o produto "${product.name}" no Tessy e gostaria de falar com o representante sobre uma possível parceria.`;
-  const creatorMessage = `Olá! Sou médico cadastrado no Tessy. Tenho interesse em divulgar o produto "${product.name}" no Instagram e gostaria de entender a proposta, briefing, condições e materiais disponíveis.`;
   const waLink = buildWhatsappLink(product.companyWhatsapp, repMessage);
-  const creatorLink = buildWhatsappLink(product.companyWhatsapp, creatorMessage);
 
   // Prioriza conversa com representante. Se a empresa não cadastrou WhatsApp, cai para o site.
   const repTarget = waLink || product.website || '';
-  const creatorTarget = creatorLink || product.website || '';
   const canContactRep = !!repTarget;
   const interestSent = leadSent || hasLeadInterest(leads, 'product', product.id, 'sample_request');
 
@@ -2077,7 +1356,7 @@ function ProductCard({ product }: { product: Product }) {
 
         {product.website && <div style={{ marginTop: 8 }}><WebsiteLink url={product.website} /></div>}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 14 }}>
           <button
             type="button"
             disabled={!canContactRep}
@@ -2087,37 +1366,30 @@ function ProductCard({ product }: { product: Product }) {
               window.open(repTarget, '_blank', 'noopener,noreferrer');
             }}
             style={{
-              padding: '12px 10px', borderRadius: 12, border: 'none',
-              background: canContactRep ? 'var(--accent)' : 'var(--chip)',
+              padding: '13px 12px', borderRadius: 12, border: 'none',
+              background: canContactRep ? '#25D366' : 'var(--chip)',
               color: canContactRep ? '#fff' : 'var(--muted)',
-              fontSize: 13, fontWeight: 560,
+              fontSize: 14, fontWeight: 650,
               cursor: canContactRep ? 'pointer' : 'not-allowed',
               opacity: canContactRep ? 1 : 0.7,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
             }}>
-            {leadSent ? 'Interesse enviado' : 'Falar com representante'}
+            <WaIcon size={15} />
+            {leadSent ? 'Contato registrado' : 'WhatsApp do representante'}
           </button>
           <button
             type="button"
             onClick={() => { void sendProductLead('sample_request'); }}
             style={{
               padding: '12px 10px', borderRadius: 12,
-              background: 'rgba(74,168,255,0.08)', color: 'var(--accent)',
-              border: '1px solid rgba(74,168,255,0.22)',
-              fontSize: 13, fontWeight: 560, cursor: 'pointer',
+              background: interestSent ? 'var(--chip)' : 'rgba(245,130,32,0.10)',
+              color: interestSent ? 'var(--muted)' : 'var(--accent-ink)',
+              border: `1px solid ${interestSent ? 'var(--line)' : 'rgba(245,130,32,0.22)'}`,
+              fontSize: 13, fontWeight: 600,
+              cursor: interestSent ? 'default' : 'pointer',
             }}>
-            {interestSent ? 'Interesse enviado' : 'Tenho interesse'}
+            {interestSent ? 'Interesse enviado à empresa' : 'Tenho interesse (sem WhatsApp)'}
           </button>
-          {creatorTarget && (
-            <a href={creatorTarget} target="_blank" rel="noopener noreferrer" onClick={() => { void sendProductLead('instagram_partnership'); }} style={{
-              gridColumn: '1 / -1',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              padding: '12px 10px', borderRadius: 12, textDecoration: 'none',
-              background: 'rgba(37,211,102,0.1)', color: '#25D366',
-              border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 560,
-            }}>
-              <WaIcon size={14} /> Conversar sobre parceria
-            </a>
-          )}
         </div>
       </div>
     </div>
