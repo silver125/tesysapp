@@ -7,7 +7,7 @@ import {
   WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
-import { getLevelProgress, POINTS_PER_CONNECTION, countApprovedConnections } from '../../lib/gamification';
+import { getLevelProgress, POINTS_PER_CONNECTION, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
 import { CategoryRail, FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import type { CategoryItem } from '../../components/market';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
@@ -632,8 +632,10 @@ function DoctorPointsBar({
           {progress.isMax
             ? 'Nível máximo alcançado.'
             : `+${progress.pointsForNextLevel} pts para ${progress.next?.name}`}
+          {' · '}
+          Interesse <b style={{ color: 'var(--accent)' }}>+{POINTS_PER_INTEREST} pts</b>
           {pendingCount > 0 && (
-            <> · Aprove conexões e ganhe <b style={{ color: 'var(--accent)' }}>+{POINTS_PER_CONNECTION} pts</b></>
+            <> · Aprovar conexão <b style={{ color: 'var(--accent)' }}>+{POINTS_PER_CONNECTION} pts</b></>
           )}
         </div>
       </div>
@@ -1121,7 +1123,7 @@ function ConnectView({
                   border: `1px solid ${leadSent ? 'rgba(30,169,124,0.28)' : 'rgba(74,168,255,0.22)'}`,
                   fontWeight: 560, fontSize: 13, cursor: 'pointer',
                 }}>
-                  {leadSent ? 'Interesse enviado' : 'Tenho interesse'}
+                  {leadSent ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`}
                 </button>
                 <button onClick={() => onOpenProducts(co.name)} disabled={co.products.length === 0} style={{
                   padding: '11px 8px', borderRadius: 12,
@@ -1215,7 +1217,7 @@ function EventCard({ ev }: { ev: Event }) {
     }
   }
 
-  const btnLabel = busy ? '...' : registered ? 'Interesse enviado' : full ? 'Esgotado' : 'Tenho interesse';
+  const btnLabel = busy ? '...' : registered ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : full ? 'Esgotado' : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`;
   const btnBg = full && !registered ? 'var(--chip)' : registered ? 'rgba(30,169,124,0.10)' : 'var(--accent)';
   const btnColor = full && !registered ? 'var(--muted)' : registered ? '#1EA97C' : '#fff';
   const btnBorder = registered ? '1px solid rgba(30,169,124,0.28)' : 'none';
@@ -1457,7 +1459,7 @@ function ProductCard({ product }: { product: Product }) {
               fontSize: 13, fontWeight: 600,
               cursor: interestSent ? 'default' : 'pointer',
             }}>
-            {interestSent ? 'Interesse enviado à empresa' : 'Tenho interesse (sem WhatsApp)'}
+            {interestSent ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`}
           </button>
         </div>
       </div>
@@ -1560,7 +1562,7 @@ function CourseCard({ course }: { course: Course }) {
             fontSize: 13, fontWeight: 560,
             cursor: interestSent ? 'not-allowed' : 'pointer',
           }}>
-          {interestSent ? 'Interesse enviado' : 'Tenho interesse'}
+          {interestSent ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`}
         </button>
         {waLink && (
           <a href={waLink} target="_blank" rel="noopener noreferrer" style={{

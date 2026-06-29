@@ -4,7 +4,7 @@ import type { User, Event, Product, Course, Lead, LeadInput, Location } from '..
 import { assertSupabaseConfigured, isSupabaseConfigured, supabase, upsertProfileWithToken } from '../lib/supabase';
 import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
-import { POINTS_PER_CONNECTION } from '../lib/gamification';
+import { POINTS_PER_CONNECTION, POINTS_PER_INTEREST } from '../lib/gamification';
 import { normalizeUserRole } from '../lib/authRoutes';
 
 // Helper: timeout para evitar travas infinitas em chamadas Supabase
@@ -1223,6 +1223,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!isSupabaseConfigured) {
       writeLocalLead(lead);
+      if (user.role === 'medico') {
+        setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + POINTS_PER_INTEREST } : prev);
+      }
       return;
     }
 
@@ -1275,6 +1278,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       || (user.role === 'medico' && lead.doctorId === user.id)
     ) {
       setLeads(prev => prev.some(l => isSameLead(l, lead)) ? prev : [lead, ...prev]);
+    }
+
+    if (user.role === 'medico') {
+      setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + POINTS_PER_INTEREST } : prev);
+      const { error: pointsError } = await supabase.rpc('award_doctor_interest_points', { p_lead_id: lead.id });
+      if (pointsError && !isMissingRpcError(pointsError, 'award_doctor_interest_points')) {
+        setUser(prev => prev ? { ...prev, points: Math.max(0, (prev.points ?? 0) - POINTS_PER_INTEREST) } : prev);
+        console.warn('Não foi possível registrar pontos de interesse:', pointsError.message);
+      } else {
+        void refreshProfile();
+      }
     }
   };
 

@@ -4,6 +4,9 @@ import type { Lead } from '../types';
 // (quando o médico aprova e libera o WhatsApp para a empresa).
 export const POINTS_PER_CONNECTION = 50;
 
+// Pontos ao marcar interesse em produto, workshop, evento ou empresa.
+export const POINTS_PER_INTEREST = 10;
+
 export interface Level {
   index: number;
   name: string;
