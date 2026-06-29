@@ -1252,7 +1252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const { error } = await supabase.from('leads').insert({
+    const payload = {
       id: lead.id,
       company_id: lead.companyId,
       company_name: lead.companyName,
@@ -1266,7 +1266,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       intent: lead.intent,
       message: lead.message ?? null,
       created_at: lead.createdAt,
-    });
+    };
+
+    let { error } = await supabase.from('leads').insert(payload);
+
+    if (error && isMissingDbColumnError(error, ['company_name'])) {
+      console.warn('Coluna company_name ausente em leads. Inserindo sem nome da empresa.', error.message);
+      ({ error } = await supabase.from('leads').insert(omitDbColumns(payload, ['company_name'])));
+    }
+
+    if (error && isMissingDbColumnError(error, ['doctor_specialty'])) {
+      ({ error } = await supabase.from('leads').insert(omitDbColumns(payload, ['company_name', 'doctor_specialty'])));
+    }
 
     if (error) {
       throw new Error(error.message);

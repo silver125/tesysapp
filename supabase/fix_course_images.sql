@@ -76,7 +76,7 @@ VALUES (
   'opportunity-images',
   true,
   5242880,
-  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[]
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']::text[]
 )
 ON CONFLICT (id) DO UPDATE
 SET public = EXCLUDED.public,

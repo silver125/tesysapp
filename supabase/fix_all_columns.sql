@@ -71,5 +71,22 @@ ALTER TABLE courses ADD COLUMN IF NOT EXISTS company_whatsapp TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS website          TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS image_url        TEXT;
 
+-- ── LEADS ─────────────────────────────────────────────────────────────────
+-- App envia/lê: company_id, company_name, doctor_id, doctor_name,
+--               doctor_specialty, item_type, item_id, item_name, intent,
+--               message, connection_status, interest_points_awarded
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS company_name            TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS doctor_name             TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS doctor_specialty        TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS doctor_whatsapp         TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS connection_status       TEXT DEFAULT 'none';
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS connection_requested_at TIMESTAMPTZ;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS connection_approved_at  TIMESTAMPTZ;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS item_id                 UUID;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS item_name               TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS intent                  TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS message                 TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS interest_points_awarded BOOLEAN DEFAULT FALSE;
+
 -- ── Recarrega cache do PostgREST imediatamente ────────────────────────────
 NOTIFY pgrst, 'reload schema';

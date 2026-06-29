@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import { useAuth } from '../../context/useAuth';
@@ -110,8 +110,8 @@ async function uploadOpportunityImage(file: File, companyId: string, folder: 'ev
   if (!isSupabaseConfigured) {
     throw new Error('Supabase não configurado para upload de imagem.');
   }
-  if (!file.type.startsWith('image/')) {
-    throw new Error('Envie uma imagem em PNG, JPG ou WebP.');
+  if (!file.type.startsWith('image/') && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) {
+    throw new Error('Envie uma imagem em PNG, JPG, WebP ou HEIC.');
   }
   if (file.size > MAX_IMAGE_BYTES) {
     throw new Error('A imagem deve ter até 5MB.');
@@ -122,12 +122,13 @@ async function uploadOpportunityImage(file: File, companyId: string, folder: 'ev
   const ext = extFromName || extFromType || 'jpg';
   const uniqueId = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Date.now());
   const path = `${companyId}/${folder}/${uniqueId}.${ext}`;
+  const contentType = file.type || (ext === 'heic' || ext === 'heif' ? 'image/heic' : 'image/jpeg');
   const { error } = await supabase.storage
     .from(OPPORTUNITY_IMAGE_BUCKET)
     .upload(path, file, {
       cacheControl: '31536000',
-      contentType: file.type,
-      upsert: false,
+      contentType,
+      upsert: true,
     });
 
   if (error) {
@@ -144,16 +145,27 @@ function isMissingImageBucketError(error: unknown) {
     || message.toLowerCase().includes('bucket de imagens');
 }
 
-async function uploadOpportunityImageIfReady(file: File | null, companyId: string, folder: 'events' | 'products' | 'courses') {
-  if (!file) return undefined;
+async function uploadOpportunityImageRequired(
+  file: File | null,
+  companyId: string,
+  folder: 'events' | 'products' | 'courses',
+) {
+  if (!file) {
+    throw new Error('Adicione uma foto — anúncios com imagem recebem muito mais contatos.');
+  }
   try {
-    return await uploadOpportunityImage(file, companyId, folder);
+    const url = await uploadOpportunityImage(file, companyId, folder);
+    if (!url?.trim()) {
+      throw new Error('A foto não foi enviada. Tente novamente.');
+    }
+    return url;
   } catch (error) {
     if (isMissingImageBucketError(error)) {
-      console.warn('Bucket de imagens do Tessy ainda não existe. Publicando com imagem padrão.', error);
-      return undefined;
+      throw new Error(
+        'Upload de imagens indisponível. Rode supabase/fix_course_images.sql no Supabase e tente de novo.',
+      );
     }
-    throw error;
+    throw error instanceof Error ? error : new Error('Erro ao enviar imagem.');
   }
 }
 
@@ -331,19 +343,25 @@ export default function CompanyDashboard() {
   const myLeads = latestLeadByDoctor(activeLeads);
   const tint = companyTint(user?.company ?? user?.name ?? '');
   const code = (user?.company ?? user?.name ?? 'EM').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const [createSkipType, setCreateSkipType] = useState(false);
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
   const activeOpportunities = myEvents.length + myProducts.length + myCourses.length;
   const conversationsStarted = myLeads.filter(lead => lead.connectionStatus === 'requested' || lead.connectionStatus === 'approved').length;
   const suggestedDoctors = myLeads.slice(0, 4);
 
   function goTab(k: string) {
-    if (k === 'create') { setTab('create'); return; }
+    if (k === 'create') {
+      setCreateSkipType(false);
+      setTab('create');
+      return;
+    }
     setTab(k as Tab);
   }
 
   function openCreate(target: 'event' | 'product' | 'course' | 'location') {
     if (target === 'location') { setTab('locations'); return; }
     setCreateKind(target);
+    setCreateSkipType(true);
     setTab('create');
   }
 
@@ -742,7 +760,7 @@ export default function CompanyDashboard() {
         <Breadcrumb items={['início', 'eventos']} />
         <ListTab
           title="Meus eventos"
-          onAdd={() => { setCreateKind('event'); setTab('create'); }}
+          onAdd={() => openCreate('event')}
           empty={myEvents.length === 0}
           emptyText="Nenhum evento criado ainda."
           grid
@@ -765,7 +783,7 @@ export default function CompanyDashboard() {
         <Breadcrumb items={['início', 'produtos']} />
         <ListTab
           title="Meus produtos"
-          onAdd={() => { setCreateKind('product'); setTab('create'); }}
+          onAdd={() => openCreate('product')}
           empty={myProducts.length === 0}
           emptyText="Nenhum produto criado ainda."
           grid
@@ -781,7 +799,7 @@ export default function CompanyDashboard() {
         <Breadcrumb items={['início', 'workshops']} />
         <ListTab
           title="Minhas capacitações"
-          onAdd={() => { setCreateKind('course'); setTab('create'); }}
+          onAdd={() => openCreate('course')}
           empty={myCourses.length === 0}
           emptyText="Nenhuma capacitação criada ainda."
           grid
@@ -815,11 +833,12 @@ export default function CompanyDashboard() {
         <CreateWizard
           kind={createKind}
           setKind={setCreateKind}
+          skipTypeStep={createSkipType}
           company={companyInfo}
-          onSaveEvent={async data => { await addEvent(data); setTab('events'); }}
-          onSaveProduct={async data => { await addProduct(data); setTab('products'); }}
-          onSaveCourse={async data => { await addCourse(data); setTab('courses'); }}
-          onCancel={() => setTab('home')}
+          onSaveEvent={async data => { await addEvent(data); setCreateSkipType(false); setTab('events'); }}
+          onSaveProduct={async data => { await addProduct(data); setCreateSkipType(false); setTab('products'); }}
+          onSaveCourse={async data => { await addCourse(data); setCreateSkipType(false); setTab('courses'); }}
+          onCancel={() => { setCreateSkipType(false); setTab('home'); }}
         />
       )}
     </Layout>
@@ -912,19 +931,25 @@ export default function CompanyDashboard() {
 }
 
 /* ─── Create wizard ─── */
-function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSaveCourse, onCancel }: {
+function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSaveProduct, onSaveCourse, onCancel }: {
   kind: 'event' | 'product' | 'course';
   setKind: (k: 'event' | 'product' | 'course') => void;
+  skipTypeStep?: boolean;
   company: { id: string; name: string; whatsapp?: string };
   onSaveEvent: (e: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => Promise<void>;
   onSaveProduct: (p: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
   onSaveCourse: (c: Omit<Course, 'id' | 'createdAt'>) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(skipTypeStep ? 1 : 0);
   const [selectedChoice, setSelectedChoice] = useState<'event' | 'product' | 'course' | 'partnership'>(kind);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+
+  useEffect(() => {
+    setStep(skipTypeStep ? 1 : 0);
+    setSaveError('');
+  }, [kind, skipTypeStep]);
 
   // Event state
   const [ev, setEv] = useState({ title: '', description: '', date: dateInDays(30), time: '19:00', location: '', category: EVENT_CATS[1], maxParticipants: '100', website: '' });
@@ -960,33 +985,32 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
 
   const isPartnership = selectedChoice === 'partnership';
 
-  const totalSteps = kind === 'event' ? 3 : kind === 'course' ? 3 : 2;
+  const totalSteps = skipTypeStep ? 1 : 2;
 
   // Validate required fields before advancing / finishing
   function validate(): string {
-    if (step === 0) return ''; // kind selection, always valid
+    if (step === 0) return '';
     if (kind === 'event') {
-      if (step === 1 && !ev.title.trim()) return 'Informe o título do evento.';
-      if (step === 1 && !evImage.file) return 'Adicione uma foto de capa — anúncios com foto recebem muito mais contatos.';
-      if (step === 2 && !ev.date) return 'Selecione a data do evento.';
-      if (step === 2 && !isEventDateInAllowedRange(ev.date)) return 'Selecione uma data entre 2026 e 2030.';
-      if (step === 2 && !ev.location.trim()) return 'Informe o local do evento.';
+      if (!evImage.file) return 'Adicione uma foto de capa — anúncios com foto recebem muito mais contatos.';
+      if (!ev.title.trim()) return 'Informe o título do evento.';
+      if (!ev.date) return 'Selecione a data do evento.';
+      if (!isEventDateInAllowedRange(ev.date)) return 'Selecione uma data entre 2026 e 2030.';
+      if (!ev.location.trim()) return 'Informe o local do evento.';
     }
     if (kind === 'product') {
-      if (step === 1 && !pr.name.trim()) return 'Informe o nome do produto.';
-      if (step === 1 && !pr.description.trim()) return 'Informe a descrição do produto.';
-      if (step === 1 && !prImage.file) return 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
-      if (step === 1 && isPartnership && !partnershipConfirmed) return 'Confirme a autorização para divulgar esta parceria.';
-      if (step === 1 && !isPartnership && !anvisaConfirmed) return 'Confirme a regularização vigente na Anvisa.';
-      if (step === 1 && !isPartnership && !commercialConfirmed) return 'Confirme a disponibilidade comercial do produto.';
+      if (!prImage.file) return 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
+      if (!pr.name.trim()) return 'Informe o nome do produto.';
+      if (isPartnership && !partnershipConfirmed) return 'Confirme a autorização para divulgar esta parceria.';
+      if (!isPartnership && !anvisaConfirmed) return 'Confirme a regularização vigente na Anvisa.';
+      if (!isPartnership && !commercialConfirmed) return 'Confirme a disponibilidade comercial do produto.';
     }
     if (kind === 'course') {
-      if (step === 1 && !co.title.trim()) return 'Informe o título da capacitação.';
-      if (step === 1 && !co.instructor.trim()) return 'Informe o nome do instrutor.';
-      if (step === 1 && !coImage.file) return 'Adicione uma imagem — anúncios com foto recebem muito mais contatos.';
-      if (step === 2 && !co.date) return 'Selecione a data.';
-      if (step === 2 && !co.location.trim()) return 'Informe o local ou cidade.';
-      if (step === 2 && !co.duration.trim()) return 'Informe a duração da capacitação.';
+      if (!coImage.file) return 'Adicione uma imagem — anúncios com foto recebem muito mais contatos.';
+      if (!co.title.trim()) return 'Informe o título da capacitação.';
+      if (!co.instructor.trim()) return 'Informe o nome do instrutor.';
+      if (!co.date) return 'Selecione a data.';
+      if (!co.location.trim()) return 'Informe o local ou cidade.';
+      if (!co.duration.trim()) return 'Informe a duração da capacitação.';
     }
     return '';
   }
@@ -1026,7 +1050,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
     setSaving(true);
     try {
       if (kind === 'event') {
-        const imageUrl = await uploadOpportunityImageIfReady(evImage.file, company.id, 'events');
+        const imageUrl = await uploadOpportunityImageRequired(evImage.file, company.id, 'events');
         await onSaveEvent({
           ...ev,
           maxParticipants: Number(ev.maxParticipants) || 100,
@@ -1035,7 +1059,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else if (kind === 'product') {
-        const imageUrl = await uploadOpportunityImageIfReady(prImage.file, company.id, 'products');
+        const imageUrl = await uploadOpportunityImageRequired(prImage.file, company.id, 'products');
         await onSaveProduct({
           ...pr,
           website: normalizeUrl(pr.website),
@@ -1046,7 +1070,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else {
-        const imageUrl = await uploadOpportunityImageIfReady(coImage.file, company.id, 'courses');
+        const imageUrl = await uploadOpportunityImageRequired(coImage.file, company.id, 'courses');
         await onSaveCourse({
           ...co,
           website: normalizeUrl(co.website),
@@ -1070,7 +1094,9 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           background: 'var(--card)', cursor: 'pointer', color: 'var(--ink)', fontSize: 18,
         }}>×</button>
         <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-          novo {kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'} · etapa {step + 1} de {totalSteps}
+          {skipTypeStep
+            ? `publicar ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'}`
+            : `novo ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'} · etapa ${step + 1} de ${totalSteps}`}
         </Mono>
         <div style={{ width: 40 }} />
       </div>
@@ -1117,6 +1143,8 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
                   } else if (target === 'product') {
                     setPartnershipConfirmed(false);
                   }
+                  setSaveError('');
+                  setStep(1);
                 }} style={{
                   padding: '16px', borderRadius: 16, cursor: 'pointer', textAlign: 'left',
                   background: selected ? 'rgba(245,130,32,0.10)' : 'var(--card)',
@@ -1142,44 +1170,38 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
         </div>
       )}
 
-      {/* Event steps */}
+      {/* Event — single screen */}
       {kind === 'event' && step === 1 && (
         <div>
           <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
-            Sobre o evento<span style={{ color: 'var(--accent)' }}>.</span>
+            Publicar evento<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
+          <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
+            Foto + dados essenciais. Médicos veem na vitrine em segundos.
+          </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <WField label="TÍTULO" value={ev.title} onChange={v => setEv(p => ({ ...p, title: v }))} placeholder="Ex: Simpósio de Cardiologia 2025" />
-            <WField label="DESCRIÇÃO" value={ev.description} onChange={v => setEv(p => ({ ...p, description: v }))} placeholder="Descreva o evento..." as="textarea" />
             <ImageUploadField
-              label="IMAGEM DE CAPA (obrigatória)"
+              label="FOTO DE CAPA"
               preview={evImage.preview}
               onChange={file => setImageDraft(setEvImage, file)}
             />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <WField label="CATEGORIA" value={ev.category} onChange={v => setEv(p => ({ ...p, category: v }))} as="select" options={EVENT_CATS} />
-              <WField label="VAGAS" value={ev.maxParticipants} onChange={v => setEv(p => ({ ...p, maxParticipants: v }))} type="number" min="1" inputMode="numeric" />
-            </div>
-          </div>
-        </div>
-      )}
-      {kind === 'event' && step === 2 && (
-        <div>
-          <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
-            Data e local<span style={{ color: 'var(--accent)' }}>.</span>
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <WField label="TÍTULO" value={ev.title} onChange={v => setEv(p => ({ ...p, title: v }))} placeholder="Ex: Simpósio de Cardiologia 2026" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <WField label="DATA" value={ev.date} onChange={v => setEv(p => ({ ...p, date: v }))} type="date" min={EVENT_DATE_MIN} max={EVENT_DATE_MAX} />
               <WField label="HORA" value={ev.time} onChange={v => setEv(p => ({ ...p, time: v }))} type="time" />
             </div>
             <WField label="LOCAL" value={ev.location} onChange={v => setEv(p => ({ ...p, location: v }))} placeholder="São Paulo, SP" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <WField label="CATEGORIA" value={ev.category} onChange={v => setEv(p => ({ ...p, category: v }))} as="select" options={EVENT_CATS} />
+              <WField label="VAGAS" value={ev.maxParticipants} onChange={v => setEv(p => ({ ...p, maxParticipants: v }))} type="number" min="1" inputMode="numeric" />
+            </div>
+            <WField label="DESCRIÇÃO (opcional)" value={ev.description} onChange={v => setEv(p => ({ ...p, description: v }))} placeholder="Descreva o evento..." as="textarea" />
             <WField label="WEBSITE (opcional)" value={ev.website} onChange={v => setEv(p => ({ ...p, website: v }))} placeholder="www.seusite.com.br" type="url" />
           </div>
         </div>
       )}
 
-      {/* Product steps */}
+      {/* Product — single screen */}
       {kind === 'product' && step === 1 && (
         <div>
           <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
@@ -1187,21 +1209,21 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           </h2>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, marginBottom: 16 }}>
             {isPartnership
-              ? 'Publique uma proposta de parceria clara para médicos interessados.'
-              : 'Publique uma oportunidade clara para o médico chamar o representante.'}
+              ? 'Foto + proposta clara. Um toque para publicar.'
+              : 'Foto + resumo. Médicos entram em contato direto.'}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <WField label={isPartnership ? 'NOME DA PARCERIA' : 'NOME DO PRODUTO'} value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder={isPartnership ? 'Ex: Parceria de divulgação científica' : 'Ex: SkinBiome Serum'} />
-            <WField label="RESUMO CLÍNICO / COMERCIAL" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="O que é, para quem é e por que vale uma conversa." as="textarea" />
             <ImageUploadField
-              label={isPartnership ? 'FOTO DA PARCERIA (obrigatória)' : 'FOTO DO PRODUTO (obrigatória)'}
+              label={isPartnership ? 'FOTO DA PARCERIA' : 'FOTO DO PRODUTO'}
               preview={prImage.preview}
               onChange={file => setImageDraft(setPrImage, file)}
             />
+            <WField label={isPartnership ? 'NOME DA PARCERIA' : 'NOME DO PRODUTO'} value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder={isPartnership ? 'Ex: Parceria de divulgação científica' : 'Ex: SkinBiome Serum'} />
+            <WField label="RESUMO (opcional)" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="O que é, para quem é e por que vale uma conversa." as="textarea" />
             <WField label="CATEGORIA" value={pr.category} onChange={v => setPr(p => ({ ...p, category: v }))} as="select" options={PRODUCT_CATS} />
-            <WField label="PRÓXIMO PASSO PARA O MÉDICO" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Ex: Solicitar amostra, falar com representante, receber material científico." as="textarea" />
-            <WField label="CONDIÇÕES" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Ex: Amostra disponível, sob consulta, parceria regional..." />
-            <WField label="SITE OU MATERIAL (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.empresa.com.br/produto" type="url" />
+            <WField label="PRÓXIMO PASSO PARA O MÉDICO" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Ex: Solicitar amostra, falar com representante..." as="textarea" />
+            <WField label="CONDIÇÕES (opcional)" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Ex: Sob consulta, parceria regional..." />
+            <WField label="SITE (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.empresa.com.br/produto" type="url" />
 
             <div style={{
               padding: '12px 14px',
@@ -1258,31 +1280,23 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
         </div>
       )}
 
-      {/* Course steps */}
+      {/* Workshop — single screen */}
       {kind === 'course' && step === 1 && (
         <div>
           <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
-            Sobre a capacitação<span style={{ color: 'var(--accent)' }}>.</span>
+            Publicar workshop<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
+          <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
+            Foto + agenda. Tudo em uma tela.
+          </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <WField label="TÍTULO" value={co.title} onChange={v => setCo(p => ({ ...p, title: v }))} placeholder="Ex: Atualização em ECG" />
-            <WField label="INSTRUTOR / PROFESSOR" value={co.instructor} onChange={v => setCo(p => ({ ...p, instructor: v }))} placeholder="Dr. João Silva" />
-            <WField label="DESCRIÇÃO" value={co.description} onChange={v => setCo(p => ({ ...p, description: v }))} placeholder="Descreva o workshop ou capacitação..." as="textarea" />
             <ImageUploadField
-              label="IMAGEM DO WORKSHOP (obrigatória)"
+              label="FOTO DO WORKSHOP"
               preview={coImage.preview}
               onChange={file => setImageDraft(setCoImage, file)}
             />
-            <WField label="CATEGORIA" value={co.category} onChange={v => setCo(p => ({ ...p, category: v }))} as="select" options={COURSE_CATS} />
-          </div>
-        </div>
-      )}
-      {kind === 'course' && step === 2 && (
-        <div>
-          <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
-            Formato e preço<span style={{ color: 'var(--accent)' }}>.</span>
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <WField label="TÍTULO" value={co.title} onChange={v => setCo(p => ({ ...p, title: v }))} placeholder="Ex: Atualização em ECG" />
+            <WField label="INSTRUTOR" value={co.instructor} onChange={v => setCo(p => ({ ...p, instructor: v }))} placeholder="Dr. João Silva" />
             <div>
               <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 10 }}>MODALIDADE</Mono>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
@@ -1305,9 +1319,11 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
             </div>
             <WField label="LOCAL / CIDADE" value={co.location} onChange={v => setCo(p => ({ ...p, location: v }))} placeholder={co.modality === 'online' ? 'Online' : 'São Paulo, SP'} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <WField label="DURAÇÃO" value={co.duration} onChange={v => setCo(p => ({ ...p, duration: v }))} placeholder="Ex: 20 horas" />
-              <WField label="PREÇO" value={co.price} onChange={v => setCo(p => ({ ...p, price: v }))} placeholder="R$ 490" />
+              <WField label="DURAÇÃO" value={co.duration} onChange={v => setCo(p => ({ ...p, duration: v }))} placeholder="Ex: 4 horas" />
+              <WField label="PREÇO (opcional)" value={co.price} onChange={v => setCo(p => ({ ...p, price: v }))} placeholder="R$ 490" />
             </div>
+            <WField label="CATEGORIA" value={co.category} onChange={v => setCo(p => ({ ...p, category: v }))} as="select" options={COURSE_CATS} />
+            <WField label="DESCRIÇÃO (opcional)" value={co.description} onChange={v => setCo(p => ({ ...p, description: v }))} placeholder="Descreva o workshop..." as="textarea" />
             <WField label="WEBSITE (opcional)" value={co.website} onChange={v => setCo(p => ({ ...p, website: v }))} placeholder="www.seusite.com.br" type="url" />
           </div>
         </div>
@@ -1326,7 +1342,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
 
       {/* Nav buttons */}
       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-        {step > 0 && (
+        {step > 0 && !skipTypeStep && (
           <button onClick={() => { setSaveError(''); setStep(s => s - 1); }} disabled={saving} style={{
             width: 52, height: 52, borderRadius: 14, border: '1px solid var(--line)',
             background: 'var(--card)', cursor: saving ? 'not-allowed' : 'pointer',
@@ -2226,16 +2242,16 @@ function ImageUploadField({
         {label}
       </Mono>
       <div style={{ margin: '-3px 0 8px', fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-        📸 Anúncios com foto recebem muito mais contatos de médicos. Recomendado: 1200 x 675 px, horizontal. Máximo: 5MB.
+        Toque para tirar foto ou escolher da galeria. Máx. 5 MB.
       </div>
       <label style={{
         position: 'relative',
         display: 'block',
-        minHeight: 126,
+        minHeight: 148,
         borderRadius: 18,
         overflow: 'hidden',
         cursor: 'pointer',
-        border: '1px solid var(--line)',
+        border: preview ? '2px solid var(--accent)' : '1px dashed rgba(245,130,32,0.45)',
         background: preview
           ? `linear-gradient(135deg, rgba(18,24,40,0.34), rgba(245,130,32,0.20), rgba(255,111,77,0.18)), url(${preview}) center/cover`
           : 'linear-gradient(135deg, rgba(245,130,32,0.24), rgba(255,111,77,0.18))',
@@ -2243,7 +2259,8 @@ function ImageUploadField({
       }}>
         <input
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/*"
+          capture="environment"
           onChange={event => onChange(event.target.files?.[0] ?? null)}
           style={{ display: 'none' }}
         />
@@ -2263,23 +2280,23 @@ function ImageUploadField({
           gap: 10,
         }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 560, color: '#fff', lineHeight: 1.15 }}>
-              {preview ? 'Imagem selecionada' : 'Adicionar imagem'}
+            <div style={{ fontSize: 15, fontWeight: 560, color: '#fff', lineHeight: 1.15 }}>
+              {preview ? 'Foto pronta ✓' : 'Adicionar foto'}
             </div>
             <div style={{ marginTop: 3, fontSize: 11.5, color: 'rgba(255,255,255,0.76)', lineHeight: 1.3 }}>
-              PNG, JPG ou WebP. A Tessy aplica o gradiente no card.
+              {preview ? 'Toque para trocar' : 'Câmera ou galeria · JPG, PNG, HEIC'}
             </div>
           </div>
           <span style={{
             flexShrink: 0,
-            padding: '8px 10px',
+            padding: '9px 12px',
             borderRadius: 999,
             background: 'rgba(255,255,255,0.92)',
             color: 'var(--ink)',
-            fontSize: 11.5,
+            fontSize: 12,
             fontWeight: 560,
           }}>
-            {preview ? 'Trocar' : 'Upload'}
+            {preview ? 'Trocar' : '📷 Foto'}
           </span>
         </div>
       </label>
@@ -2376,7 +2393,7 @@ function EditEventModal({ event, onSave, onClose }: {
     setSaving(true);
     try {
       const nextImageUrl = imageFile
-        ? await uploadOpportunityImageIfReady(imageFile, event.companyId, 'events')
+        ? await uploadOpportunityImage(imageFile, event.companyId, 'events')
         : event.imageUrl;
       await onSave({
         title:           title.trim(),
