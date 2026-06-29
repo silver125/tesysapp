@@ -226,12 +226,22 @@ function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'par
     </svg>
   );
 }
+function IcoSearch(a: boolean) {
+  const c = a ? 'var(--accent)' : '#6F7A90';
+  return (
+    <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6">
+      <circle cx="8.5" cy="8.5" r="5.5" />
+      <path d="M13 13l3.5 3.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const NAV_ITEMS: NavItem[] = [
   { key: 'home',     label: 'Início',   icon: IcoHome },
   { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
   { key: 'create',   label: 'Comece por aqui', icon: () => null, big: true },
   { key: 'products', label: 'Produtos', icon: IcoBox },
-  { key: 'courses',  label: 'Workshops', icon: IcoBook },
+  { key: 'leads',    label: 'Buscar',   icon: IcoSearch },
 ];
 
 const EVENT_CATS   = ['Congresso', 'Workshop', 'Simpósio', 'Webinar', 'Treinamento'];
@@ -1772,6 +1782,30 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
 }) {
   const [requestingId, setRequestingId] = useState<string | null>(null);
   const [requestError, setRequestError] = useState('');
+  const [search, setSearch] = useState('');
+  const [intentFilter, setIntentFilter] = useState('all');
+  const [specialtyFilter, setSpecialtyFilter] = useState('all');
+
+  const q = search.trim().toLowerCase();
+  const specialties = [...new Set(leads.map(l => l.doctorSpecialty?.trim()).filter(Boolean))] as string[];
+  const specialtyChips: [string, string][] = [['all', 'Todas'], ...specialties.slice(0, 6).map(s => [s.toLowerCase(), s] as [string, string])];
+  const intentChips: [string, string][] = [
+    ['all', 'Todos'],
+    ['representative_contact', 'Representante'],
+    ['sample_request', 'Amostra'],
+    ['event_interest', 'Evento'],
+    ['course_interest', 'Workshop'],
+  ];
+
+  const filteredLeads = leads.filter(lead => {
+    const matchQ = !q
+      || safeDoctorName(lead.doctorName).toLowerCase().includes(q)
+      || (lead.doctorSpecialty ?? '').toLowerCase().includes(q)
+      || (lead.itemName ?? '').toLowerCase().includes(q);
+    const matchIntent = intentFilter === 'all' || lead.intent === intentFilter;
+    const matchSpec = specialtyFilter === 'all' || (lead.doctorSpecialty ?? '').toLowerCase() === specialtyFilter;
+    return matchQ && matchIntent && matchSpec;
+  });
 
   async function requestDoctorConnection(leadId: string) {
     setRequestingId(leadId);
@@ -1792,11 +1826,61 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
           Ponte comercial
         </Mono>
         <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
-          Médicos interessados<span style={{ color: 'var(--accent)' }}>.</span>
+          Buscar médicos<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
-          Perfis que levantaram a mão para amostras, eventos, produtos ou contato com representante.
+          Filtre por especialidade, intenção e nome. Perfis que demonstraram interesse comercial.
         </p>
+      </div>
+
+      <div style={{ position: 'relative', marginBottom: 12 }}>
+        <svg style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}
+          width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <circle cx="7" cy="7" r="5.5"/><path d="M11 11l3.5 3.5" strokeLinecap="round"/>
+        </svg>
+        <input
+          type="search"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar médico, especialidade ou oportunidade..."
+          style={{
+            width: '100%', paddingLeft: 40, paddingRight: 14, paddingTop: 13, paddingBottom: 13,
+            borderRadius: 999, background: '#fff', border: '1px solid rgba(216,222,236,0.92)',
+            color: 'var(--ink)', fontSize: 14, outline: 'none',
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 10, paddingBottom: 2 }}>
+        {intentChips.map(([key, label]) => (
+          <button key={key} type="button" onClick={() => setIntentFilter(key)} style={{
+            flexShrink: 0,
+            padding: '8px 12px',
+            borderRadius: 999,
+            border: `1px solid ${intentFilter === key ? 'var(--accent)' : 'var(--line)'}`,
+            background: intentFilter === key ? 'rgba(245,130,32,0.10)' : '#fff',
+            color: intentFilter === key ? 'var(--accent-ink)' : 'var(--ink-2)',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}>{label}</button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 14, paddingBottom: 2 }}>
+        {specialtyChips.map(([key, label]) => (
+          <button key={key} type="button" onClick={() => setSpecialtyFilter(key)} style={{
+            flexShrink: 0,
+            padding: '8px 12px',
+            borderRadius: 999,
+            border: `1px solid ${specialtyFilter === key ? '#4AA8FF' : 'var(--line)'}`,
+            background: specialtyFilter === key ? 'rgba(74,168,255,0.10)' : '#fff',
+            color: specialtyFilter === key ? '#4AA8FF' : 'var(--ink-2)',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}>{label}</button>
+        ))}
       </div>
 
       {leads.length === 0 ? (
@@ -1831,6 +1915,10 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
             </button>
           )}
         </div>
+      ) : filteredLeads.length === 0 ? (
+        <div style={{ padding: 20, borderRadius: 18, background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--muted)', fontSize: 13 }}>
+          Nenhum médico encontrado com esses filtros.
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {requestError && (
@@ -1846,7 +1934,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
               {requestError}
             </div>
           )}
-          {leads.map(lead => {
+          {filteredLeads.map(lead => {
             const intent = leadIntentMeta(lead.intent);
             const connectionStatus = lead.connectionStatus ?? 'none';
             const isApproved = connectionStatus === 'approved';
@@ -1866,13 +1954,33 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
                 boxShadow: '0 2px 10px rgba(90,80,130,0.05)',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <Chip color={intent.color}>{intent.label}</Chip>
-                    <div style={{ marginTop: 10, fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>
-                      {safeDoctorName(lead.doctorName)}
+                  <div style={{ display: 'flex', gap: 10, minWidth: 0 }}>
+                    <div style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 14,
+                      background: lead.doctorAvatarUrl
+                        ? `url(${lead.doctorAvatarUrl}) center/cover`
+                        : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 14,
+                      fontWeight: 620,
+                      flexShrink: 0,
+                      overflow: 'hidden',
+                    }}>
+                      {!lead.doctorAvatarUrl && safeDoctorName(lead.doctorName).slice(0, 1).toUpperCase()}
                     </div>
-                    <div style={{ marginTop: 3, color: 'var(--muted)', fontSize: 12 }}>
-                      {lead.doctorSpecialty || 'Especialidade não informada'}
+                    <div style={{ minWidth: 0 }}>
+                      <Chip color={intent.color}>{intent.label}</Chip>
+                      <div style={{ marginTop: 10, fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>
+                        {safeDoctorName(lead.doctorName)}
+                      </div>
+                      <div style={{ marginTop: 3, color: 'var(--muted)', fontSize: 12 }}>
+                        {lead.doctorSpecialty || 'Especialidade não informada'}
+                      </div>
                     </div>
                   </div>
                   <Mono style={{ fontSize: 9, color: 'var(--muted)', whiteSpace: 'nowrap' }}>

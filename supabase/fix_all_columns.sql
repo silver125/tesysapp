@@ -20,6 +20,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS company_name TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS whatsapp     TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS whatsapp_connection_only BOOLEAN DEFAULT TRUE;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bio          TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url   TEXT;
 
 -- ── EVENTS ────────────────────────────────────────────────────────────────
 -- App envia/lê: title, description, date, time, location, category,

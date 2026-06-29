@@ -19,9 +19,11 @@ interface LayoutProps {
   navItems: NavItem[];
   activeKey: string;
   onNavChange: (key: string) => void;
+  notificationCount?: number;
+  onNotificationClick?: () => void;
 }
 
-export default function Layout({ children, navItems, activeKey, onNavChange }: LayoutProps) {
+export default function Layout({ children, navItems, activeKey, onNavChange, notificationCount = 0, onNotificationClick }: LayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -67,6 +69,52 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
           </div>
 
           <div ref={profileMenuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {user?.role === 'medico' && onNotificationClick && (
+              <button
+                type="button"
+                aria-label="Notificações"
+                onClick={onNotificationClick}
+                style={{
+                  position: 'relative',
+                  width: 34,
+                  height: 34,
+                  borderRadius: 999,
+                  border: '1px solid rgba(216,222,236,0.92)',
+                  background: 'rgba(255,255,255,0.72)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#6F7A90" strokeWidth="1.6">
+                  <path d="M8.5 16.5a2 2 0 004 0" strokeLinecap="round" />
+                  <path d="M3.5 14.5h13l-1.6-1.6a1.5 1.5 0 01-.4-1V9a5.5 5.5 0 00-11 0v2.9a1.5 1.5 0 01-.4 1L3.5 14.5z" strokeLinejoin="round" />
+                </svg>
+                {notificationCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    minWidth: 16,
+                    height: 16,
+                    padding: '0 4px',
+                    borderRadius: 999,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 9.5,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #fff',
+                  }}>
+                    {notificationCount > 9 ? '9+' : notificationCount}
+                  </span>
+                )}
+              </button>
+            )}
             {user?.role === 'medico' && (
               <div
                 title="Sua pontuação Tessy"
@@ -103,16 +151,19 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
                 height: 34,
                 borderRadius: 999,
                 border: '1px solid rgba(216,222,236,0.92)',
-                background: 'rgba(255,255,255,0.72)',
+                background: user?.avatarUrl
+                  ? `url(${user.avatarUrl}) center/cover`
+                  : 'rgba(255,255,255,0.72)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: 0,
                 cursor: 'pointer',
                 boxShadow: '0 8px 22px rgba(88,98,130,0.08)',
+                overflow: 'hidden',
               }}
             >
-              <CompanyMark code={code} tint={tint} size={30} radius={999} />
+              {!user?.avatarUrl && <CompanyMark code={code} tint={tint} size={30} radius={999} />}
             </button>
             {profileOpen && (
               <div style={{

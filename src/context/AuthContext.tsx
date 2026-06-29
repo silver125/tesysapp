@@ -133,6 +133,7 @@ function dbToUser(profile: Record<string, unknown>, email: string): User {
     whatsapp:  profile.whatsapp  as string | undefined,
     whatsappConnectionOnly: profile.whatsapp_connection_only !== false,
     bio:       profile.bio       as string | undefined,
+    avatarUrl: profile.avatar_url as string | undefined,
     onboardingCompletedAt: profile.onboarding_completed_at as string | null | undefined,
     points:    typeof profile.points === 'number' ? profile.points : Number(profile.points ?? 0) || 0,
   };
@@ -219,6 +220,9 @@ function dbToCourse(row: Record<string, unknown>): Course {
 
 function dbToLead(row: Record<string, unknown>): Lead {
   const intent = String(row.intent ?? 'representative_contact') as Lead['intent'];
+  const doctorProfile = row.doctor as Record<string, unknown> | null | undefined;
+  const doctorAvatarUrl = (doctorProfile?.avatar_url as string | undefined)
+    ?? (row.doctor_avatar_url as string | undefined);
   return {
     id:              row.id               as string,
     companyId:       row.company_id       as string,
@@ -227,6 +231,7 @@ function dbToLead(row: Record<string, unknown>): Lead {
     doctorName:      (row.doctor_name as string | null) || 'Médico',
     doctorSpecialty: row.doctor_specialty as string | undefined,
     doctorWhatsapp:  row.doctor_whatsapp  as string | undefined,
+    doctorAvatarUrl: doctorAvatarUrl || undefined,
     itemType:        (row.item_type as Lead['itemType']) ?? 'company',
     itemId:          row.item_id          as string | undefined,
     itemName:        (row.item_name as string | null) || 'Interesse',
@@ -338,18 +343,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const query = supabase
+    const baseQuery = supabase
       .from('leads')
-      .select('*')
+      .select('*, doctor:profiles!doctor_id(avatar_url)')
       .order('created_at', { ascending: false });
 
-    const { data, error } = await (user.role === 'empresa'
-      ? query.eq('company_id', userId)
-      : query.eq('doctor_id', userId));
+    let { data, error } = await (user.role === 'empresa'
+      ? baseQuery.eq('company_id', userId)
+      : baseQuery.eq('doctor_id', userId));
 
     if (error) {
-      setLeads(local);
-      return;
+      const plainQuery = supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      ({ data, error } = await (user.role === 'empresa'
+        ? plainQuery.eq('company_id', userId)
+        : plainQuery.eq('doctor_id', userId)));
+      if (error) {
+        setLeads(local);
+        return;
+      }
     }
 
     const remote = (data ?? []).map(r => dbToLead(r as Record<string, unknown>));
@@ -731,10 +745,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     specialty?: string;
     crm?: string;
     crmState?: string;
+    avatarUrl?: string | null;
   }) => {
     if (!user) return;
     assertSupabaseConfigured();
-    const updates: Record<string, string | boolean | undefined> = {};
+    const updates: Record<string, string | boolean | null | undefined> = {};
     if (data.name) { updates.name = data.name; }
     if (data.company) {
       updates.company = data.company;
@@ -745,15 +760,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.specialty !== undefined) { updates.specialty = data.specialty; }
     if (data.crm !== undefined) { updates.crm = data.crm; }
     if (data.crmState !== undefined) { updates.crm_state = data.crmState; }
+    if (data.avatarUrl !== undefined) { updates.avatar_url = data.avatarUrl || null; }
 
     let { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+
+    if (error && isMissingDbColumnError(error, ['avatar_url'])) {
+      ({ error } = await supabase.from('profiles').update(omitDbColumns(updates, ['avatar_url'])).eq('id', user.id));
+      if (data.avatarUrl !== undefined && data.avatarUrl) {
+        console.warn('Coluna avatar_url ausente em profiles. Foto salva localmente até rodar a migração SQL.');
+      }
+    }
 
     if (error && isMissingDbColumnError(error, ['whatsapp_connection_only'])) {
       ({ error } = await supabase.from('profiles').update(omitDbColumns(updates, ['whatsapp_connection_only'])).eq('id', user.id));
     }
 
     if (error && isMissingDbColumnError(error, ['company', 'name'])) {
-      const legacy = { ...omitDbColumns(updates, ['company', 'name']) } as Record<string, string | boolean | undefined>;
+      const legacy = { ...omitDbColumns(updates, ['company', 'name', 'avatar_url']) } as Record<string, string | boolean | null | undefined>;
       if (data.company) legacy.company_name = data.company;
       if (data.name) {
         const parts = data.name.trim().split(/\s+/);
@@ -764,7 +787,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (error) throw new Error(error.message);
-    setUser(prev => prev ? { ...prev, ...data } : prev);
+    setUser(prev => prev ? {
+      ...prev,
+      ...data,
+      avatarUrl: data.avatarUrl === null ? undefined : (data.avatarUrl ?? prev.avatarUrl),
+    } : prev);
   };
 
   const deleteAccount = async () => {

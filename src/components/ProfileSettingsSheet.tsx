@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { Sheet } from './market';
 import { Mono, WaIcon } from './ui';
+import ProfilePhotoField from './ProfilePhotoField';
+import { uploadProfileAvatar } from '../lib/profileAvatar';
 import { OPEN_DELETE_ACCOUNT_EVENT, OPEN_PROFILE_SETTINGS_EVENT } from '../lib/profileSettingsEvents';
 
 const SPECIALTIES = [
@@ -52,6 +54,9 @@ export default function ProfileSettingsSheet() {
   const [crmState, setCrmState] = useState('');
   const [phone, setPhone] = useState('');
   const [privateOnly, setPrivateOnly] = useState(true);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -67,6 +72,9 @@ export default function ProfileSettingsSheet() {
       setCrmState(user.crmState ?? '');
       setPhone(displayPhone(user.whatsapp));
       setPrivateOnly(user.whatsappConnectionOnly !== false);
+      setPhotoPreview(user.avatarUrl ?? '');
+      setPhotoFile(null);
+      setRemovePhoto(false);
       setMode('edit');
     }
     function openDelete() {
@@ -87,6 +95,18 @@ export default function ProfileSettingsSheet() {
     setError('');
   }
 
+  function handlePhotoChange(file: File | null) {
+    if (!file) {
+      setPhotoFile(null);
+      setPhotoPreview('');
+      setRemovePhoto(true);
+      return;
+    }
+    setPhotoFile(file);
+    setRemovePhoto(false);
+    setPhotoPreview(URL.createObjectURL(file));
+  }
+
   async function handleSave() {
     if (!user) return;
     setSaving(true);
@@ -100,14 +120,21 @@ export default function ProfileSettingsSheet() {
       if (user.role === 'empresa') {
         const trimCompany = company.trim();
         if (trimCompany.length < 2) throw new Error('Informe o nome da empresa.');
+        let avatarUrl: string | null | undefined;
+        if (removePhoto) avatarUrl = null;
+        else if (photoFile) avatarUrl = await uploadProfileAvatar(photoFile, user.id);
         await updateProfile({
           name: trimCompany,
           company: trimCompany,
           whatsapp: normalized || undefined,
+          ...(avatarUrl !== undefined ? { avatarUrl } : {}),
         });
       } else {
         const trimName = name.trim();
         if (trimName.length < 2) throw new Error('Informe seu nome.');
+        let avatarUrl: string | null | undefined;
+        if (removePhoto) avatarUrl = null;
+        else if (photoFile) avatarUrl = await uploadProfileAvatar(photoFile, user.id);
         await updateProfile({
           name: trimName,
           specialty: specialty || undefined,
@@ -115,6 +142,7 @@ export default function ProfileSettingsSheet() {
           crmState: crmState || undefined,
           whatsapp: normalized || undefined,
           whatsappConnectionOnly: privateOnly,
+          ...(avatarUrl !== undefined ? { avatarUrl } : {}),
         });
       }
       close();
@@ -178,6 +206,12 @@ export default function ProfileSettingsSheet() {
             </p>
 
             <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <ProfilePhotoField
+                label={user.role === 'empresa' ? 'Logo ou foto da empresa' : 'Foto de perfil'}
+                preview={photoPreview}
+                onChange={handlePhotoChange}
+              />
+
               {user.role === 'empresa' ? (
                 <div>
                   <div style={fieldLabel}>Nome da empresa</div>

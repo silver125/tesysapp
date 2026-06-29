@@ -12,6 +12,7 @@ export interface User {
   whatsapp?: string;
   whatsappConnectionOnly?: boolean;
   bio?: string;
+  avatarUrl?: string;
   onboardingCompletedAt?: string | null;
   points?: number;
 }
@@ -93,6 +94,7 @@ export interface Lead {
   doctorName: string;
   doctorSpecialty?: string;
   doctorWhatsapp?: string;
+  doctorAvatarUrl?: string;
   itemType: LeadItemType;
   itemId?: string;
   itemName: string;

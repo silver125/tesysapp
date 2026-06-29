@@ -17,6 +17,7 @@ export interface AuthContextType {
     specialty?: string;
     crm?: string;
     crmState?: string;
+    avatarUrl?: string | null;
   }) => Promise<void>;
   deleteAccount: () => Promise<void>;
   events: Event[];

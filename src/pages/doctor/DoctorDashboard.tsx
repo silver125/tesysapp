@@ -7,12 +7,18 @@ import {
   WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
-import { getLevelProgress, POINTS_PER_CONNECTION, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
-import { CategoryRail, FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
-import type { CategoryItem } from '../../components/market';
+import {
+  buildRepresentativeProfiles,
+  matchesRepresentativeRegion,
+  representativeInitials,
+  representativeRegionFilters,
+  type RepresentativeProfile,
+} from '../../lib/representatives';
+import { getLevelProgress, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
+import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
-type Tab = 'home' | 'events' | 'products' | 'courses' | 'connect';
+type Tab = 'home' | 'products' | 'events' | 'representatives' | 'companies';
 type ScheduleLike = { date?: string | null; time?: string | null; start_date?: string | null; event_date?: string | null };
 type CompanyMatch = {
   id: string;
@@ -50,15 +56,25 @@ function IcoCompanies(a: boolean) {
   );
 }
 
+function IcoRepresentatives(a: boolean) {
+  const c = a ? 'var(--accent)' : '#6F7A90';
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
+      <circle cx="10" cy="7" r="3" />
+      <path d="M4 17c0-3.3 2.7-5 6-5s6 1.7 6 5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const NAV_ITEMS: NavItem[] = [
-  { key: 'home',     label: 'Para você', icon: IcoHome },
-  { key: 'products', label: 'Produtos',  icon: IcoBox },
-  { key: 'events',   label: 'Eventos',   icon: IcoCalendar },
-  { key: 'connect',  label: 'Empresas',  icon: IcoCompanies },
+  { key: 'home',             label: 'Início',          icon: IcoHome },
+  { key: 'products',         label: 'Produtos',        icon: IcoBox },
+  { key: 'events',           label: 'Eventos',         icon: IcoCalendar },
+  { key: 'representatives',  label: 'Representantes',  icon: IcoRepresentatives },
+  { key: 'companies',        label: 'Empresas',        icon: IcoCompanies },
 ];
 
 const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
-const WEEKDAYS_PT = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 
 function pickScheduleDate(item: ScheduleLike) {
   return item.start_date || item.event_date || item.date || '';
@@ -186,24 +202,6 @@ function eventFormat(ev: Pick<Event, 'category' | 'location'>) {
   return 'Presencial';
 }
 
-function locationTypeLabel(type: Location['type']) {
-  const labels: Record<Location['type'], string> = {
-    ponto_venda: 'Ponto de venda',
-    distribuidor: 'Distribuidor',
-    clinica: 'Clínica parceira',
-    farmacia: 'Farmácia',
-    loja: 'Loja',
-    outro: 'Local',
-  };
-  return labels[type] ?? 'Local';
-}
-
-function locationPlace(loc: Location) {
-  const parts = [loc.city?.trim(), loc.state?.trim()].filter(Boolean);
-  if (parts.length > 0) return parts.join(' · ');
-  return loc.address?.trim() || 'Local a confirmar';
-}
-
 function modalityText(modality: Course['modality']) {
   const labels: Record<Course['modality'], string> = {
     online: 'Online',
@@ -222,10 +220,6 @@ function doctorGreeting(user: User | null | undefined) {
   return firstName ? `Olá, ${firstName}` : 'Olá';
 }
 
-function todayLabel(now = new Date()) {
-  return `${WEEKDAYS_PT[now.getDay()]}, ${String(now.getDate()).padStart(2, '0')} ${MONTHS_PT[now.getMonth()]}`;
-}
-
 function doctorProfileLabel(user: User | null | undefined) {
   return user?.specialty?.trim() || 'Perfil médico';
 }
@@ -238,7 +232,7 @@ function doctorCityLabel(user: User | null | undefined) {
 function doctorMetaLine(user: User | null | undefined) {
   const specialty = doctorProfileLabel(user);
   const city = doctorCityLabel(user);
-  return city ? `${specialty} · ${city}` : specialty;
+  return city ? `${specialty} • ${city}` : specialty;
 }
 
 
@@ -247,7 +241,7 @@ export default function DoctorDashboard() {
   const [tab, setTab] = useState<Tab>('home');
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
-  const [courseFilter, setCourseFilter] = useState('all');
+  const [regionFilter, setRegionFilter] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
   const [openProduct, setOpenProduct] = useState<Product | null>(null);
   const [openEvent, setOpenEvent] = useState<Event | null>(null);
@@ -274,16 +268,20 @@ export default function DoctorDashboard() {
     const matchCat = productFilter === 'all' || includesQ(p.category, productFilter);
     return matchQ && matchCat;
   });
-  const homeProducts = (recommendedProducts.length > 0 ? recommendedProducts : products)
-    .filter(p => productFilter === 'all' || includesQ(p.category, productFilter))
-    .filter(p => !q || includesQ(p.name, q) || includesQ(p.companyName, q) || includesQ(p.category, q));
   const homeEvents = upcomingEvents
     .filter(e => !q || includesQ(e.title, q) || includesQ(e.companyName, q));
   const productChips = productCategoryChips(products);
-  const filtCourses  = courses.filter(c => {
-    const matchQ = !q || includesQ(c.title, q) || includesQ(c.companyName, q);
-    const matchCat = courseFilter === 'all' || includesQ(c.category, courseFilter);
-    return matchQ && matchCat;
+  const representatives = buildRepresentativeProfiles(events, products, courses, locations, user);
+  const regionChips = representativeRegionFilters(representatives);
+  const filtRepresentatives = representatives.filter(rep => {
+    const matchQ = !q || includesQ(rep.companyName, q) || includesQ(rep.repLabel, q) || includesQ(rep.specialty, q);
+    const matchRegion = matchesRepresentativeRegion(rep, regionFilter);
+    return matchQ && matchRegion;
+  });
+  const suggestedRep = representatives.find(r => matchesRepresentativeRegion(r, regionFilter !== 'all' ? regionFilter : 'all')) ?? representatives[0];
+  const suggestedProduct = (recommendedProducts.length > 0 ? recommendedProducts : products)[0];
+  const filtCompanies = buildCompanyMatches(events, products, courses, locations).filter(co => {
+    return !q || includesQ(co.name, q) || co.products.some(p => includesQ(p.name, q)) || co.events.some(e => includesQ(e.title, q));
   });
 
   const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
@@ -302,28 +300,28 @@ export default function DoctorDashboard() {
   }
 
   return (
-    <Layout navItems={NAV_ITEMS} activeKey={tab} onNavChange={goTab}>
+    <Layout
+      navItems={NAV_ITEMS}
+      activeKey={tab}
+      onNavChange={goTab}
+      notificationCount={pendingConnections.length}
+      onNotificationClick={scrollToPendingConnections}
+    >
 
       {/* ── HOME ── */}
       {tab === 'home' && (
         <div>
-          <QuickHomeHeader
-            user={user}
-            pendingCount={pendingConnections.length}
-            points={user?.points ?? 0}
-            onPendingClick={scrollToPendingConnections}
-          />
+          <HomeGreeting user={user} />
 
           <DoctorPointsBar
             points={user?.points ?? 0}
             connections={countApprovedConnections(leads)}
-            pendingCount={pendingConnections.length}
           />
 
           <SearchBar
             value={search}
             onChange={setSearch}
-            placeholder="Buscar produto, evento ou empresa..."
+            placeholder="Buscar produtos, eventos, empresas ou representantes"
           />
 
           {pendingConnections.length > 0 && (
@@ -338,38 +336,39 @@ export default function DoctorDashboard() {
             <SlimProfileBanner onFix={openProfileSettings} />
           )}
 
-          <BrowseRail active="products" onSelect={openTab} />
-
-          {homeProducts.length === 0 && homeEvents.length === 0
-            ? <Empty text="Nada encontrado agora." hint="Novidades das empresas aparecem aqui assim que publicadas." />
-            : (
-              <>
-                {homeProducts.length > 0 && (
-                  <>
-                    <SectionHeader title="Produtos para você" onSeeAll={() => openTab('products')} />
-                    <MarketGrid>
-                      {homeProducts.slice(0, 6).map(p => (
-                        <ProductMarketCard key={p.id} product={p} onOpen={() => setOpenProduct(p)} />
-                      ))}
-                    </MarketGrid>
-                  </>
+          {(suggestedRep || suggestedProduct) && (
+            <section style={{ marginBottom: 18 }}>
+              <SectionHeader title="Sugestões para você" onSeeAll={() => openTab('representatives')} />
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4, scrollSnapType: 'x mandatory' }}>
+                {suggestedRep && (
+                  <RepSuggestionCard
+                    rep={suggestedRep}
+                    onConnect={() => openTab('representatives', suggestedRep.companyName)}
+                  />
                 )}
-
-                {homeEvents.length > 0 && (
-                  <div style={{ marginTop: homeProducts.length > 0 ? 18 : 0 }}>
-                    <SectionHeader title="Eventos em breve" onSeeAll={() => openTab('events')} />
-                    <MarketGrid>
-                      {homeEvents.slice(0, 4).map(e => (
-                        <EventMarketCard key={e.id} ev={e} onOpen={() => setOpenEvent(e)} />
-                      ))}
-                    </MarketGrid>
-                  </div>
+                {suggestedProduct && (
+                  <ProductSuggestionCard
+                    product={suggestedProduct}
+                    onOpen={() => setOpenProduct(suggestedProduct)}
+                  />
                 )}
-              </>
-            )}
+              </div>
+            </section>
+          )}
 
-          {pendingConnections.length > 0 && (
-            <PendingConnections leads={pendingConnections} onViewCompany={company => openTab('connect', company)} />
+          {homeEvents.length > 0 && (
+            <section style={{ marginBottom: 8 }}>
+              <SectionHeader title="Eventos em breve" onSeeAll={() => openTab('events')} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {homeEvents.slice(0, 3).map(ev => (
+                  <HomeEventRow key={ev.id} ev={ev} onOpen={() => setOpenEvent(ev)} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {!suggestedRep && !suggestedProduct && homeEvents.length === 0 && (
+            <Empty text="Nada encontrado agora." hint="Novidades das empresas aparecem aqui assim que publicadas." />
           )}
         </div>
       )}
@@ -378,7 +377,6 @@ export default function DoctorDashboard() {
       {tab === 'events' && (
         <div>
           <MarketHead title="Eventos" count={events.length} countWord="evento" />
-          <BrowseRail active="events" onSelect={openTab} />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos..." />
           <FilterBar
             chips={[['all','Todos'],['congresso','Congresso'],['workshop','Workshop'],['online','Online']]}
@@ -395,7 +393,6 @@ export default function DoctorDashboard() {
       {tab === 'products' && (
         <div>
           <MarketHead title="Produtos" subtitle="Toque para ver detalhes e falar com o representante." count={products.length} countWord="produto" />
-          <BrowseRail active="products" onSelect={openTab} />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar produto, empresa ou representante..." />
           <FilterBar chips={productChips} active={productFilter} onChange={setProductFilter} />
           {filtProducts.length === 0
@@ -405,49 +402,23 @@ export default function DoctorDashboard() {
         </div>
       )}
 
-      {/* ── COURSES ── */}
-      {tab === 'courses' && (
-        <div>
-          <MarketHead title="Workshops" subtitle="Capacitações publicadas pelas empresas." count={courses.length} countWord="workshop" />
-          <BrowseRail active="courses" onSelect={openTab} />
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar workshops e capacitações..." />
-          <FilterBar
-            chips={[
-              ['all','Todos'],
-              ['Nutrologia','Nutrologia'],
-              ['Endocrinologia','Endocrinologia'],
-              ['Dermatologia','Dermatologia'],
-              ['Cirurgia Plástica','Cir. Plástica'],
-              ['Cardiologia','Cardiologia'],
-              ['Oncologia','Oncologia'],
-              ['Neurologia','Neurologia'],
-              ['Ortopedia','Ortopedia'],
-              ['Pediatria','Pediatria'],
-              ['Gastroenterologia','Gastro'],
-              ['Ginecologia','Ginecologia'],
-              ['Oftalmologia','Oftalmologia'],
-              ['Psiquiatria','Psiquiatria'],
-              ['Pneumologia','Pneumologia'],
-              ['Clínica Médica','Clínica Méd.'],
-              ['Outros','Outros'],
-            ]}
-            active={courseFilter}
-            onChange={setCourseFilter}
-          />
-          {filtCourses.length === 0
-            ? <Empty text="Nenhuma capacitação encontrada." hint="Quando empresas publicarem workshops e eventos médicos, eles aparecem aqui." />
-            : <MarketGrid>{filtCourses.map(c => <CourseMarketCard key={c.id} course={c} onOpen={() => setOpenCourse(c)} />)}</MarketGrid>
-          }
-        </div>
+      {tab === 'representatives' && (
+        <RepresentativesView
+          representatives={filtRepresentatives}
+          regionChips={regionChips}
+          regionFilter={regionFilter}
+          onRegionChange={setRegionFilter}
+          search={search}
+          onSearchChange={setSearch}
+          doctorRegion={doctorCityLabel(user) || user?.crmState || 'sua região'}
+        />
       )}
 
-      {/* ── CONNECT (WhatsApp matches) ── */}
-      {tab === 'connect' && (
-        <ConnectView
-          events={events}
-          products={products}
-          courses={courses}
-          locations={locations}
+      {tab === 'companies' && (
+        <CompaniesView
+          companies={filtCompanies}
+          search={search}
+          onSearchChange={setSearch}
           onOpenProducts={company => openTab('products', company)}
           onOpenEvents={company => openTab('events', company)}
         />
@@ -498,152 +469,321 @@ function productCategoryChips(products: Product[]): [string, string][] {
   return [['all', 'Todos'], ...cats.slice(0, 8).map(c => [c, c] as [string, string])];
 }
 
-/* ─── Rail de categorias do médico (troca de vitrine) ─── */
-function railIcon(kind: string, active: boolean) {
-  const c = active ? 'var(--accent)' : '#6F7A90';
-  if (kind === 'products') return <svg width="24" height="24" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
-  if (kind === 'events') return <svg width="23" height="23" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><rect x="1.5" y="3.5" width="16" height="14" rx="3"/><path d="M13.5 2v3M5.5 2v3M1.5 8.5h16" strokeLinecap="round"/></svg>;
-  if (kind === 'courses') return <svg width="22" height="22" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
-  if (kind === 'connect') return <svg width="23" height="23" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M4 17V4.5A1.5 1.5 0 015.5 3h9A1.5 1.5 0 0116 4.5V17"/><path d="M7 7h2M11 7h2M7 10h2M11 10h2M8 17v-4h4v4" strokeLinecap="round"/></svg>;
-  return null;
-}
-
-function BrowseRail({ active, onSelect }: { active: string; onSelect: (tab: Tab) => void }) {
-  const items: CategoryItem[] = [
-    { key: 'products', label: 'Produtos', icon: railIcon('products', active === 'products'), active: active === 'products' },
-    { key: 'events', label: 'Eventos', icon: railIcon('events', active === 'events'), active: active === 'events' },
-    { key: 'courses', label: 'Workshops', icon: railIcon('courses', active === 'courses'), active: active === 'courses' },
-    { key: 'connect', label: 'Empresas', icon: railIcon('connect', active === 'connect'), active: active === 'connect' },
-  ];
-  return <CategoryRail items={items} onSelect={key => onSelect(key as Tab)} />;
-}
-
-function PointsPill({ points, size = 'md' }: { points: number; size?: 'sm' | 'md' }) {
-  const compact = size === 'sm';
+function HomeGreeting({ user }: { user: User | null | undefined }) {
   return (
-    <div style={{
-      flexShrink: 0,
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: compact ? 4 : 5,
-      padding: compact ? '5px 8px' : '7px 10px',
-      borderRadius: compact ? 10 : 12,
-      background: 'rgba(245,130,32,0.10)',
-      border: '1px solid rgba(245,130,32,0.18)',
-      fontSize: compact ? 11 : 12,
-      fontWeight: 650,
-      color: 'var(--accent-ink)',
-      whiteSpace: 'nowrap',
-    }}>
-      <span style={{ fontSize: compact ? 11 : 12, lineHeight: 1 }}>⭐</span>
-      <span>{points} pts</span>
-    </div>
-  );
-}
-
-function QuickHomeHeader({
-  user,
-  pendingCount,
-  points,
-  onPendingClick,
-}: {
-  user: User | null | undefined;
-  pendingCount: number;
-  points: number;
-  onPendingClick: () => void;
-}) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-      <div style={{ minWidth: 0 }}>
-        <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-          {todayLabel()}
-        </Mono>
-        <h1 style={{ marginTop: 5, fontSize: 21, fontWeight: 620, lineHeight: 1.08, color: 'var(--ink)' }}>
-          {doctorGreeting(user)}<span style={{ color: 'var(--accent)' }}>.</span>
-        </h1>
-        <p style={{ marginTop: 3, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.25 }}>
-          {doctorMetaLine(user)}
-        </p>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-        <PointsPill points={points} />
-        {pendingCount > 0 && (
-          <button
-            type="button"
-            onClick={onPendingClick}
-            style={{
-              minWidth: 88,
-              padding: '8px 11px',
-              borderRadius: 12,
-              border: 'none',
-              background: 'var(--accent)',
-              color: '#fff',
-              fontSize: 11.5,
-              fontWeight: 650,
-              cursor: 'pointer',
-              boxShadow: '0 10px 24px rgba(245,130,32,0.24)',
-            }}
-          >
-            {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
-          </button>
-        )}
-      </div>
-    </div>
+    <section style={{ position: 'relative', marginBottom: 14, paddingTop: 2, overflow: 'hidden' }}>
+      <div aria-hidden style={{
+        position: 'absolute',
+        right: -20,
+        top: -8,
+        width: 180,
+        height: 88,
+        background: 'linear-gradient(135deg, rgba(185,193,234,0.35), rgba(74,168,255,0.12))',
+        borderRadius: '40% 60% 50% 50%',
+        filter: 'blur(0.5px)',
+      }} />
+      <div aria-hidden style={{
+        position: 'absolute',
+        right: 36,
+        top: 18,
+        fontSize: 18,
+        color: 'var(--accent)',
+        opacity: 0.85,
+      }}>✦</div>
+      <h1 style={{ position: 'relative', fontSize: 24, fontWeight: 620, lineHeight: 1.08, color: 'var(--ink)', letterSpacing: -0.2 }}>
+        {doctorGreeting(user)}
+      </h1>
+      <p style={{ position: 'relative', marginTop: 4, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.3 }}>
+        {doctorMetaLine(user)}
+      </p>
+    </section>
   );
 }
 
 function DoctorPointsBar({
   points,
   connections,
-  pendingCount,
 }: {
   points: number;
   connections: number;
-  pendingCount: number;
 }) {
   const progress = getLevelProgress(points);
 
   return (
-    <section style={{ marginBottom: 12 }}>
+    <section style={{ marginBottom: 14 }}>
       <div style={{
-        padding: '11px 12px',
-        borderRadius: 14,
-        background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF8F2 100%)',
-        border: '1px solid rgba(216,222,236,0.9)',
-        boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
+        padding: '14px 14px 12px',
+        borderRadius: 20,
+        background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFF 100%)',
+        border: '1px solid rgba(216,222,236,0.92)',
+        boxShadow: '0 10px 28px rgba(85,96,130,0.06)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--ink)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: 14,
+            background: 'linear-gradient(135deg, rgba(74,168,255,0.18), rgba(185,193,234,0.28))',
+            border: '1px solid rgba(74,168,255,0.18)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 16,
+            fontWeight: 700,
+            color: '#4AA8FF',
+            flexShrink: 0,
+          }}>
+            {progress.level.index + 1}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--ink)' }}>
               Nível {progress.level.index + 1} · <span style={{ color: progress.level.color }}>{progress.level.name}</span>
             </div>
-            <div style={{ marginTop: 2, fontSize: 11, color: 'var(--muted)' }}>
-              {connections} conexão{connections === 1 ? '' : 'ões'} · {progress.points} pontos
+            <div style={{ marginTop: 4, display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)' }}>
+              <span>{connections} conexão{connections === 1 ? '' : 'ões'}</span>
+              <span>{progress.points} pts</span>
             </div>
           </div>
-          <PointsPill points={points} size="sm" />
+          <span style={{ color: 'var(--muted)', fontSize: 18, lineHeight: 1 }}>›</span>
         </div>
-        <div style={{ marginTop: 9, height: 6, borderRadius: 999, background: 'rgba(15,22,38,0.07)', overflow: 'hidden' }}>
+        <div style={{ marginTop: 12, height: 6, borderRadius: 999, background: 'rgba(15,22,38,0.06)', overflow: 'hidden' }}>
           <div style={{
             height: '100%',
             borderRadius: 999,
             width: `${progress.percent}%`,
             background: 'linear-gradient(90deg, #F58220, #FFB066)',
-            transition: 'width 0.5s var(--ease)',
           }} />
         </div>
-        <div style={{ marginTop: 5, fontSize: 10.5, color: 'var(--muted)', lineHeight: 1.3 }}>
+        <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.35 }}>
           {progress.isMax
             ? 'Nível máximo alcançado.'
-            : `+${progress.pointsForNextLevel} pts para ${progress.next?.name}`}
-          {' · '}
-          Interesse <b style={{ color: 'var(--accent)' }}>+{POINTS_PER_INTEREST} pts</b>
-          {pendingCount > 0 && (
-            <> · Aprovar conexão <b style={{ color: 'var(--accent)' }}>+{POINTS_PER_CONNECTION} pts</b></>
-          )}
+            : <>Próximo nível: {progress.next?.name} · <span style={{ color: 'var(--accent)', fontWeight: 650 }}>faltam {progress.pointsForNextLevel} pts</span></>}
         </div>
       </div>
     </section>
+  );
+}
+
+function AvatarBubble({ photoUrl, initials, tint, size = 52 }: { photoUrl?: string; initials: string; tint: string; size?: number }) {
+  if (photoUrl) {
+    return (
+      <div style={{
+        width: size,
+        height: size,
+        borderRadius: 999,
+        background: `url(${photoUrl}) center/cover`,
+        border: '2px solid #fff',
+        boxShadow: '0 6px 16px rgba(80,90,120,0.12)',
+        flexShrink: 0,
+      }} />
+    );
+  }
+  return <CompanyMark code={initials} tint={tint} size={size} radius={999} />;
+}
+
+function RepSuggestionCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect: () => void }) {
+  const { addLead } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const waLink = buildWhatsappLink(rep.whatsapp, `Olá ${rep.companyName}, sou médico no Tessy e gostaria de falar com o representante.`);
+
+  async function handleConnect() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await addLead({
+        companyId: rep.companyId,
+        companyName: rep.companyName,
+        itemType: 'company',
+        itemName: rep.companyName,
+        intent: 'representative_contact',
+        message: 'Médico pediu contato do representante regional.',
+      });
+      if (waLink) window.open(waLink, '_blank', 'noopener,noreferrer');
+      else onConnect();
+    } catch {
+      onConnect();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <article style={{
+      minWidth: 196,
+      maxWidth: 196,
+      scrollSnapAlign: 'start',
+      padding: 14,
+      borderRadius: 20,
+      background: '#fff',
+      border: '1px solid rgba(216,222,236,0.92)',
+      boxShadow: '0 10px 26px rgba(85,96,130,0.06)',
+    }}>
+      <div style={{ position: 'relative', width: 52, height: 52 }}>
+        <AvatarBubble initials={representativeInitials(rep.repLabel)} tint={companyTint(rep.companyName)} size={52} />
+        {rep.companyLogoUrl && (
+          <div style={{
+            position: 'absolute',
+            right: -4,
+            bottom: -4,
+            width: 22,
+            height: 22,
+            borderRadius: 8,
+            border: '2px solid #fff',
+            background: `url(${rep.companyLogoUrl}) center/cover`,
+            boxShadow: '0 4px 10px rgba(80,90,120,0.12)',
+          }} />
+        )}
+      </div>
+      <Mono style={{ display: 'block', marginTop: 12, fontSize: 9, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        Representante
+      </Mono>
+      <div style={{ marginTop: 4, fontSize: 15, fontWeight: 620, color: 'var(--ink)', lineHeight: 1.2 }}>{rep.repLabel}</div>
+      <div style={{ marginTop: 2, fontSize: 12, color: 'var(--muted)' }}>{rep.companyName}</div>
+      <Chip color="#B9C1EA">{rep.specialty}</Chip>
+      <button type="button" onClick={() => { void handleConnect(); }} disabled={busy} style={{
+        marginTop: 12,
+        width: '100%',
+        padding: '9px 10px',
+        borderRadius: 12,
+        border: '1.5px solid var(--accent)',
+        background: '#fff',
+        color: 'var(--accent)',
+        fontSize: 12.5,
+        fontWeight: 650,
+        cursor: busy ? 'not-allowed' : 'pointer',
+      }}>
+        {busy ? '...' : 'Conectar'}
+      </button>
+    </article>
+  );
+}
+
+function ProductSuggestionCard({ product, onOpen }: { product: Product; onOpen: () => void }) {
+  return (
+    <article style={{
+      minWidth: 196,
+      maxWidth: 196,
+      scrollSnapAlign: 'start',
+      padding: 14,
+      borderRadius: 20,
+      background: '#fff',
+      border: '1px solid rgba(216,222,236,0.92)',
+      boxShadow: '0 10px 26px rgba(85,96,130,0.06)',
+    }}>
+      <div style={{
+        width: '100%',
+        height: 72,
+        borderRadius: 14,
+        background: visualUrl(product.imageUrl)
+          ? `url(${visualUrl(product.imageUrl)}) center/cover`
+          : 'linear-gradient(135deg, rgba(245,130,32,0.16), rgba(185,193,234,0.24))',
+        position: 'relative',
+      }}>
+        <div style={{
+          position: 'absolute',
+          left: 8,
+          bottom: 8,
+          width: 24,
+          height: 24,
+          borderRadius: 8,
+          background: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 10px rgba(80,90,120,0.12)',
+        }}>
+          <CompanyMark code={companyInitials(product.companyName)} tint={companyTint(product.companyName)} size={18} radius={6} />
+        </div>
+      </div>
+      <Mono style={{ display: 'block', marginTop: 12, fontSize: 9, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        Produto
+      </Mono>
+      <div style={{ marginTop: 4, fontSize: 15, fontWeight: 620, color: 'var(--ink)', lineHeight: 1.2 }}>{product.name}</div>
+      <div style={{ marginTop: 2, fontSize: 12, color: 'var(--muted)' }}>{product.companyName}</div>
+      <Chip color="#B9C1EA">{product.category}</Chip>
+      <button type="button" onClick={onOpen} style={{
+        marginTop: 12,
+        width: '100%',
+        padding: '9px 10px',
+        borderRadius: 12,
+        border: '1.5px solid var(--accent)',
+        background: '#fff',
+        color: 'var(--accent)',
+        fontSize: 12.5,
+        fontWeight: 650,
+        cursor: 'pointer',
+      }}>
+        Ver detalhes
+      </button>
+    </article>
+  );
+}
+
+function HomeEventRow({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
+  const countdown = eventCountdown(ev);
+  const dateBadge = `${dayNum(ev.date)} ${monthShort(ev.date)}`.trim();
+  return (
+    <button type="button" onClick={onOpen} style={{
+      width: '100%',
+      padding: 0,
+      border: '1px solid rgba(216,222,236,0.92)',
+      borderRadius: 20,
+      overflow: 'hidden',
+      background: '#fff',
+      textAlign: 'left',
+      cursor: 'pointer',
+      boxShadow: '0 10px 26px rgba(85,96,130,0.05)',
+      display: 'grid',
+      gridTemplateColumns: '112px 1fr',
+      minHeight: 118,
+    }}>
+      <div style={{
+        position: 'relative',
+        background: visualUrl(ev.imageUrl)
+          ? `linear-gradient(135deg, rgba(18,24,40,0.22), rgba(245,130,32,0.12)), url(${visualUrl(ev.imageUrl)}) center/cover`
+          : 'linear-gradient(135deg, rgba(245,130,32,0.18), rgba(185,193,234,0.28))',
+      }}>
+        <span style={{
+          position: 'absolute',
+          top: 8,
+          left: 8,
+          padding: '4px 7px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.88)',
+          fontSize: 9.5,
+          fontWeight: 650,
+          color: 'var(--ink)',
+        }}>{eventFormat(ev)}</span>
+        {dateBadge && (
+          <span style={{
+            position: 'absolute',
+            left: 8,
+            bottom: 8,
+            padding: '5px 8px',
+            borderRadius: 10,
+            background: 'var(--accent)',
+            color: '#fff',
+            fontSize: 11,
+            fontWeight: 700,
+            lineHeight: 1.1,
+          }}>{dateBadge}</span>
+        )}
+      </div>
+      <div style={{ padding: '12px 14px 12px 12px', minWidth: 0 }}>
+        <Mono style={{ fontSize: 9, color: '#4AA8FF', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          {ev.category || 'Evento'}
+        </Mono>
+        <div style={{ marginTop: 4, fontSize: 15, fontWeight: 620, color: 'var(--ink)', lineHeight: 1.25 }}>{ev.title}</div>
+        <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+          {locationText(ev.location)}
+        </div>
+        {countdown && (
+          <div style={{ marginTop: 8, display: 'inline-block', padding: '4px 8px', borderRadius: 8, background: 'rgba(245,130,32,0.10)', color: 'var(--accent)', fontSize: 11, fontWeight: 650 }}>
+            {countdown}
+          </div>
+        )}
+      </div>
+    </button>
   );
 }
 
@@ -677,7 +817,7 @@ function PendingInboxBanner({
   }
 
   return (
-    <section style={{ marginBottom: 14 }}>
+    <section id="pending-connections" style={{ marginBottom: 14, scrollMarginTop: 16 }}>
       <div style={{
         padding: 14,
         borderRadius: 18,
@@ -793,140 +933,122 @@ function EventMarketCard({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
   );
 }
 
-function CourseMarketCard({ course, onOpen }: { course: Course; onOpen: () => void }) {
-  const hasPrice = /^r\$/i.test(course.price?.trim() ?? '');
-  return (
-    <MarketCard
-      image={visualUrl(course.imageUrl)}
-      topLeft={<PhotoBadge color="#F58220">{modalityText(course.modality)}</PhotoBadge>}
-      highlight={hasPrice ? course.price : undefined}
-      title={course.title}
-      subtitle={`${course.companyName} • ${course.category}`}
-      tag={<Chip color="var(--accent-ink)">{course.instructor || 'Capacitação'}</Chip>}
-      onClick={onOpen}
-    />
-  );
-}
 
-
-function leadTypeLabel(lead: Lead) {
-  if (lead.itemType === 'event') return 'Evento';
-  if (lead.itemType === 'course') return 'Workshop';
-  if (lead.itemType === 'product') return lead.intent === 'sample_request' ? 'Amostra' : 'Produto';
-  return lead.intent === 'instagram_partnership' ? 'Parceria' : 'Empresa';
-}
-
-function leadAgeLabel(date?: string) {
-  if (!date) return 'Novo';
-  const created = new Date(date);
-  if (Number.isNaN(created.getTime())) return 'Novo';
-  const diffDays = Math.floor((startOfDay(new Date()).getTime() - startOfDay(created).getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays <= 0) return 'Hoje';
-  if (diffDays === 1) return 'Pendente há 1 dia';
-  return `Pendente há ${diffDays} dias`;
-}
-
-function PendingConnections({ leads, onViewCompany }: { leads: Lead[]; onViewCompany: (company: string) => void }) {
-  const { user, approveConnection } = useAuth();
+/* ─── Representatives view ─── */
+function RepresentativesView({
+  representatives,
+  regionChips,
+  regionFilter,
+  onRegionChange,
+  search,
+  onSearchChange,
+  doctorRegion,
+}: {
+  representatives: RepresentativeProfile[];
+  regionChips: [string, string][];
+  regionFilter: string;
+  onRegionChange: (value: string) => void;
+  search: string;
+  onSearchChange: (value: string) => void;
+  doctorRegion: string;
+}) {
+  const { addLead } = useAuth();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState('');
 
-  async function approve(leadId: string) {
-    if (!user?.whatsapp) {
-      setError('Cadastre seu WhatsApp profissional antes de aprovar conexões.');
-      return;
-    }
-    setBusyId(leadId);
-    setError('');
+  async function connectRep(rep: RepresentativeProfile) {
+    setBusyId(rep.companyId);
     try {
-      await approveConnection(leadId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao aprovar conexão.');
+      await addLead({
+        companyId: rep.companyId,
+        companyName: rep.companyName,
+        itemType: 'company',
+        itemName: rep.companyName,
+        intent: 'representative_contact',
+        message: 'Médico pediu contato do representante regional.',
+      });
+      const wa = buildWhatsappLink(rep.whatsapp, `Olá ${rep.companyName}, sou médico no Tessy e gostaria de falar com o representante.`);
+      if (wa) window.open(wa, '_blank', 'noopener,noreferrer');
     } finally {
       setBusyId(null);
     }
   }
 
   return (
-    <section id="pending-connections" style={{ marginBottom: 14, scrollMarginTop: 16 }}>
-      <SectionHeader title={`Mais solicitações (${leads.length})`} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {leads.slice(0, 3).map(lead => (
-          <div key={lead.id} style={{
-            padding: 12,
-            borderRadius: 18,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.96), rgba(242,247,255,0.90))',
-            border: '1px solid rgba(216,222,236,0.92)',
-            boxShadow: '0 10px 24px rgba(85,96,130,0.05)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 14.5, color: 'var(--ink)', fontWeight: 650 }}>{lead.companyName}</span>
-                  <Chip color="var(--accent)">{leadTypeLabel(lead)}</Chip>
+    <div>
+      <MarketHead title="Representantes" subtitle={`Encontre representantes por região · ${doctorRegion}`} count={representatives.length} countWord="representante" />
+      <SearchBar value={search} onChange={onSearchChange} placeholder="Buscar representante, empresa ou especialidade..." />
+      <FilterBar chips={regionChips} active={regionFilter} onChange={onRegionChange} />
+      {representatives.length === 0 ? (
+        <Empty text="Nenhum representante na sua região ainda." hint="Empresas com WhatsApp e locais cadastrados aparecem aqui." />
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {representatives.map(rep => (
+            <article key={rep.companyId} style={{
+              padding: 16,
+              borderRadius: 20,
+              background: '#fff',
+              border: '1px solid rgba(216,222,236,0.92)',
+              boxShadow: '0 10px 26px rgba(85,96,130,0.05)',
+            }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
+                  <AvatarBubble initials={representativeInitials(rep.repLabel)} tint={companyTint(rep.companyName)} size={56} />
+                  {rep.companyLogoUrl && (
+                    <div style={{
+                      position: 'absolute',
+                      right: -3,
+                      bottom: -3,
+                      width: 24,
+                      height: 24,
+                      borderRadius: 8,
+                      border: '2px solid #fff',
+                      background: `url(${rep.companyLogoUrl}) center/cover`,
+                    }} />
+                  )}
                 </div>
-                <p style={{ marginTop: 5, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-                  Quer falar sobre <b style={{ color: 'var(--ink)' }}>{lead.itemName || 'uma oportunidade'}</b>.
-                </p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Representante</Mono>
+                  <div style={{ marginTop: 4, fontSize: 16, fontWeight: 620, color: 'var(--ink)' }}>{rep.repLabel}</div>
+                  <div style={{ marginTop: 2, fontSize: 12.5, color: 'var(--muted)' }}>{rep.companyName}</div>
+                  <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <Chip color="#B9C1EA">{rep.specialty}</Chip>
+                    <Chip color="#F58220">{rep.regionLabel}</Chip>
+                  </div>
+                </div>
               </div>
-              <span style={{ flexShrink: 0, fontSize: 10.2, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>
-                {leadAgeLabel(lead.connectionRequestedAt || lead.createdAt)}
-              </span>
-            </div>
-            {!user?.whatsapp && <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--danger)' }}>WhatsApp ainda não informado.</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 10 }}>
-              <button type="button" disabled={!user?.whatsapp || busyId === lead.id} onClick={() => { void approve(lead.id); }} style={{
-                minHeight: 40,
-                padding: '8px 10px',
+              <button type="button" disabled={busyId === rep.companyId} onClick={() => { void connectRep(rep); }} style={{
+                marginTop: 14,
+                width: '100%',
+                padding: '11px 12px',
                 borderRadius: 12,
-                border: 'none',
-                background: user?.whatsapp ? 'var(--accent)' : 'var(--chip)',
-                color: user?.whatsapp ? '#fff' : 'var(--muted)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: user?.whatsapp && busyId !== lead.id ? 'pointer' : 'not-allowed',
+                border: '1.5px solid var(--accent)',
+                background: '#fff',
+                color: 'var(--accent)',
+                fontSize: 13,
+                fontWeight: 650,
+                cursor: busyId === rep.companyId ? 'not-allowed' : 'pointer',
               }}>
-                {busyId === lead.id ? 'Aprovando...' : 'Aprovar'}
+                {busyId === rep.companyId ? 'Conectando...' : 'Conectar'}
               </button>
-              <button type="button" onClick={() => onViewCompany(lead.companyName)} style={{
-                minHeight: 40,
-                padding: '8px 10px',
-                borderRadius: 12,
-                border: '1px solid var(--line)',
-                background: 'rgba(255,255,255,0.78)',
-                color: 'var(--ink-2)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}>
-                Ver perfil
-              </button>
-            </div>
-            <button type="button" style={{ marginTop: 8, border: 'none', background: 'transparent', color: 'var(--muted)', fontSize: 11.2, padding: 0, cursor: 'pointer' }}>
-              Deixar para depois
-            </button>
-          </div>
-        ))}
-      </div>
-      {error && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
-    </section>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
-
-/* ─── Connect view ─── */
-function ConnectView({
-  events,
-  products,
-  courses,
-  locations,
+/* ─── Companies view ─── */
+function CompaniesView({
+  companies,
+  search,
+  onSearchChange,
   onOpenProducts,
   onOpenEvents,
 }: {
-  events: Event[];
-  products: Product[];
-  courses: Course[];
-  locations: Location[];
+  companies: CompanyMatch[];
+  search: string;
+  onSearchChange: (value: string) => void;
   onOpenProducts: (company: string) => void;
   onOpenEvents: (company: string) => void;
 }) {
@@ -937,10 +1059,6 @@ function ConnectView({
       return new Set();
     }
   });
-  const [sentLeadIds, setSentLeadIds] = useState<Set<string>>(new Set());
-  const { addLead } = useAuth();
-
-  const companies = buildCompanyMatches(events, products, courses, locations);
 
   function toggleSaved(id: string) {
     setSaved(prev => {
@@ -954,218 +1072,64 @@ function ConnectView({
 
   return (
     <div>
-      <MarketHead title="Empresas" subtitle="Fale direto com representantes." count={companies.length} countWord="empresa" />
-      <div style={{
-        padding: '14px 14px',
-        borderRadius: 16,
-        background: 'rgba(245,130,32,0.08)',
-        border: '1px solid rgba(245,130,32,0.16)',
-        marginBottom: 16,
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--ink)' }}>Contato em 1 toque</div>
-        <p style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>
-          Salve a empresa ou fale no WhatsApp sem formulários longos.
-        </p>
-      </div>
-
-      {companies.length === 0 && (
-        <Empty
-          text="Nenhuma conexão sugerida por enquanto."
-          hint="Complete seu perfil para melhorar suas recomendações."
-        />
+      <MarketHead title="Empresas" subtitle="Perfis comerciais e vitrine completa." count={companies.length} countWord="empresa" />
+      <SearchBar value={search} onChange={onSearchChange} placeholder="Buscar empresa, produto ou evento..." />
+      {companies.length === 0 ? (
+        <Empty text="Nenhuma empresa encontrada." hint="Complete seu perfil para melhorar as sugestões." />
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {companies.map(co => {
+            const logo = co.products.find(p => p.imageUrl)?.imageUrl || co.events.find(e => e.imageUrl)?.imageUrl || '';
+            return (
+              <article key={co.id} style={{
+                padding: 16,
+                borderRadius: 20,
+                background: '#fff',
+                border: '1px solid rgba(216,222,236,0.92)',
+                boxShadow: '0 10px 26px rgba(85,96,130,0.05)',
+              }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  {logo ? (
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: `url(${logo}) center/cover`, flexShrink: 0 }} />
+                  ) : (
+                    <CompanyMark code={companyInitials(co.name)} tint={companyTint(co.name)} size={52} radius={14} />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 16, fontWeight: 620, color: 'var(--ink)' }}>{co.name}</div>
+                    <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {co.products.length > 0 && <Chip color="#1EA97C">{co.products.length} produto{co.products.length > 1 ? 's' : ''}</Chip>}
+                      {co.events.length > 0 && <Chip color="var(--accent)">{co.events.length} evento{co.events.length > 1 ? 's' : ''}</Chip>}
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => toggleSaved(co.id)} style={{
+                    border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 18,
+                    color: saved.has(co.id) ? 'var(--accent)' : 'var(--muted)',
+                  }}>{saved.has(co.id) ? '★' : '☆'}</button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
+                  <button type="button" onClick={() => onOpenProducts(co.name)} style={companyMiniBtn}>Produtos</button>
+                  <button type="button" onClick={() => onOpenEvents(co.name)} style={companyMiniBtn}>Eventos</button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {companies.map(co => {
-          const tint = companyTint(co.name);
-          const code = companyInitials(co.name);
-          const topProduct = co.products[0];
-          const topEvent = co.events[0];
-          const waLink = buildWhatsappLink(
-            co.whatsapp,
-            `Olá ${co.name}, sou médico no Tessy e gostaria de falar com um representante sobre produtos, eventos e possíveis parcerias.`,
-          );
-          const isSaved = saved.has(co.id);
-          const leadSent = sentLeadIds.has(co.id);
-
-          async function registerCompanyLead(intent: 'representative_contact' | 'sample_request') {
-            if (leadSent) return;
-            setSentLeadIds(prev => new Set(prev).add(co.id));
-            try {
-              await addLead({
-                companyId: co.id,
-                companyName: co.name,
-                itemType: 'company',
-                itemName: co.name,
-                intent,
-                message: intent === 'sample_request'
-                  ? 'Médico solicitou amostras e materiais para avaliação.'
-                  : 'Médico pediu contato do representante regional.',
-              });
-            } catch {
-              setSentLeadIds(prev => {
-                const next = new Set(prev);
-                next.delete(co.id);
-                return next;
-              });
-            }
-          }
-
-          return (
-            <div key={co.id} style={{
-              padding: 16,
-              background: 'var(--card)',
-              borderRadius: 18,
-              border: '1px solid var(--line)',
-              boxShadow: '0 2px 10px rgba(90,80,130,0.06)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <CompanyMark code={code} tint={tint} size={50} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 16, fontWeight: 560, color: 'var(--ink)' }}>{co.name}</span>
-                    <VerifiedDot />
-                    {co.whatsapp && <Chip color="#25D366">WhatsApp direto</Chip>}
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                    {co.products.length > 0 && <Chip color="#1EA97C">{co.products.length} produto{co.products.length > 1 ? 's' : ''}</Chip>}
-                    {co.events.length > 0 && <Chip color="var(--accent)">{co.events.length} evento{co.events.length > 1 ? 's' : ''}</Chip>}
-                    {co.courses.length > 0 && <Chip color="var(--accent-ink)">{co.courses.length} treinamento{co.courses.length > 1 ? 's' : ''}</Chip>}
-                    {co.locations.length > 0 && <Chip color="#F58220">{co.locations.length} local{co.locations.length > 1 ? 'is' : ''}</Chip>}
-                  </div>
-                </div>
-              </div>
-
-              {(topProduct || topEvent) && (
-                <div style={{
-                  marginTop: 14,
-                  padding: '12px 12px',
-                  borderRadius: 14,
-                  background: 'var(--bg)',
-                  border: '1px solid var(--line)',
-                }}>
-                  <Mono style={{ display: 'block', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>
-                    Melhor oportunidade agora
-                  </Mono>
-                  <div style={{ fontSize: 14, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.25 }}>
-                    {topProduct?.name ?? topEvent?.title}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.45 }}>
-                    {topProduct
-                      ? topProduct.availableFor || topProduct.description
-                      : `${topEvent?.category || 'Evento'} · ${locationText(topEvent?.location)} · ${topEvent ? eventDateLabel(topEvent) : 'Data a confirmar'}`}
-                  </div>
-                </div>
-              )}
-
-              {co.locations.length > 0 && (
-                <div style={{
-                  marginTop: 12,
-                  padding: '12px 12px',
-                  borderRadius: 14,
-                  background: 'rgba(245,130,32,0.06)',
-                  border: '1px solid rgba(245,130,32,0.18)',
-                }}>
-                  <Mono style={{ display: 'block', fontSize: 9, color: '#F58220', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>
-                    Onde encontrar
-                  </Mono>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {co.locations.slice(0, 3).map(loc => {
-                      const locWa = buildWhatsappLink(loc.whatsapp, `Olá ${loc.companyName}, sou médico no Tessy e gostaria de informações sobre o local "${loc.name}".`);
-                      return (
-                        <div key={loc.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.25 }}>{loc.name}</div>
-                            <div style={{ marginTop: 2, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-                              {locationTypeLabel(loc.type)} · {locationPlace(loc)}
-                            </div>
-                            {loc.address && (
-                              <div style={{ marginTop: 1, fontSize: 11, color: 'var(--muted)', lineHeight: 1.35 }}>{loc.address}</div>
-                            )}
-                          </div>
-                          {locWa && (
-                            <a href={locWa} target="_blank" rel="noopener noreferrer" style={{
-                              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
-                              padding: '6px 9px', borderRadius: 10, textDecoration: 'none',
-                              background: 'rgba(37,211,102,0.12)', color: '#25D366',
-                              border: '1px solid rgba(37,211,102,0.3)', fontSize: 11, fontWeight: 600,
-                            }}>
-                              <WaIcon size={12} /> Contato
-                            </a>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {co.locations.length > 3 && (
-                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>+{co.locations.length - 3} outros locais</div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 14 }}>
-                {waLink && (
-                  <a
-                    href={waLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => { void registerCompanyLead('representative_contact'); }}
-                    style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                    padding: '11px 8px', borderRadius: 12,
-                    background: 'rgba(37,211,102,0.12)', color: '#25D366',
-                    border: '1px solid rgba(37,211,102,0.32)',
-                    textDecoration: 'none', fontWeight: 560, fontSize: 13,
-                  }}>
-                    <WaIcon size={15} /> WhatsApp
-                  </a>
-                )}
-                <button onClick={() => toggleSaved(co.id)} style={{
-                  padding: '11px 8px', borderRadius: 12,
-                  background: isSaved ? 'rgba(74,168,255,0.10)' : 'var(--chip)',
-                  color: isSaved ? 'var(--accent)' : 'var(--ink-2)',
-                  border: `1px solid ${isSaved ? 'rgba(74,168,255,0.28)' : 'var(--line)'}`,
-                  fontWeight: 560, fontSize: 13, cursor: 'pointer',
-                }}>
-                  {isSaved ? 'Contato salvo' : 'Salvar contato'}
-                </button>
-                <button onClick={() => { void registerCompanyLead('sample_request'); }} style={{
-                  padding: '11px 8px', borderRadius: 12,
-                  background: leadSent ? 'rgba(30,169,124,0.10)' : 'rgba(74,168,255,0.08)',
-                  color: leadSent ? '#1EA97C' : 'var(--accent)',
-                  border: `1px solid ${leadSent ? 'rgba(30,169,124,0.28)' : 'rgba(74,168,255,0.22)'}`,
-                  fontWeight: 560, fontSize: 13, cursor: 'pointer',
-                }}>
-                  {leadSent ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`}
-                </button>
-                <button onClick={() => onOpenProducts(co.name)} disabled={co.products.length === 0} style={{
-                  padding: '11px 8px', borderRadius: 12,
-                  background: co.products.length > 0 ? 'var(--accent)' : 'var(--chip)',
-                  color: co.products.length > 0 ? '#fff' : 'var(--muted)',
-                  border: 'none',
-                  fontWeight: 560, fontSize: 13,
-                  cursor: co.products.length > 0 ? 'pointer' : 'not-allowed',
-                }}>
-                  Ver produtos
-                </button>
-                <button onClick={() => onOpenEvents(co.name)} disabled={co.events.length === 0} style={{
-                  padding: '11px 8px', borderRadius: 12,
-                  background: co.events.length > 0 ? 'var(--deep)' : 'var(--chip)',
-                  color: co.events.length > 0 ? '#fff' : 'var(--muted)',
-                  border: 'none',
-                  fontWeight: 560, fontSize: 13,
-                  cursor: co.events.length > 0 ? 'pointer' : 'not-allowed',
-                }}>
-                  Ver eventos
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
+
+const companyMiniBtn: React.CSSProperties = {
+  padding: '10px 8px',
+  borderRadius: 12,
+  border: '1px solid rgba(216,222,236,0.92)',
+  background: '#fff',
+  color: 'var(--accent)',
+  fontSize: 12.5,
+  fontWeight: 650,
+  cursor: 'pointer',
+};
+
 
 /* ─── WebsiteLink (link para site da empresa, exibido nos cards) ─── */
 function WebsiteLink({ url }: { url?: string }) {
@@ -1630,7 +1594,7 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => vo
           fontFamily: "var(--font-mono)", fontSize: 10,
           color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
         }}>
-          ver todos →
+          ver todas →
         </button>
       )}
     </div>
@@ -1639,20 +1603,21 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => vo
 
 function SearchBar({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div style={{ position: 'relative', marginBottom: 12 }}>
-      <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}
-        width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <div style={{ position: 'relative', marginBottom: 14 }}>
+      <svg style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}
+        width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
         <circle cx="7" cy="7" r="5.5"/><path d="M11 11l3.5 3.5" strokeLinecap="round"/>
       </svg>
       <input
         type="search" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
         style={{
-          width: '100%', paddingLeft: 36, paddingRight: 14, paddingTop: 11, paddingBottom: 11,
-          borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)',
+          width: '100%', paddingLeft: 40, paddingRight: 44, paddingTop: 13, paddingBottom: 13,
+          borderRadius: 999, background: '#fff', border: '1px solid rgba(216,222,236,0.92)',
           color: 'var(--ink)', fontSize: 14, outline: 'none',
+          boxShadow: '0 8px 22px rgba(85,96,130,0.04)',
         }}
         onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-        onBlur={e => e.target.style.borderColor = 'var(--line)'}
+        onBlur={e => e.target.style.borderColor = 'rgba(216,222,236,0.92)'}
       />
     </div>
   );
