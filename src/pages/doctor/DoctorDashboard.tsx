@@ -6,7 +6,7 @@ import {
   CompanyMark, VerifiedDot, Mono, BannerCard, Chip, ModalityBadge,
   WaIcon,
 } from '../../components/ui';
-import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
+import { buildWhatsappLink, categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
 import { getLevelProgress, POINTS_PER_CONNECTION, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
 import { CategoryRail, FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import type { CategoryItem } from '../../components/market';
@@ -23,6 +23,10 @@ type CompanyMatch = {
   courses: Course[];
   locations: Location[];
 };
+
+function includesQ(value: string | undefined | null, q: string) {
+  return (value ?? '').toLowerCase().includes(q);
+}
 
 function IcoHome(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
@@ -258,27 +262,27 @@ export default function DoctorDashboard() {
   const upcomingEvents = events.filter(isUpcomingEvent);
   const recommendedProducts = products.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
   const filtEvents = events.filter(e => {
-    const matchQ = !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q);
+    const matchQ = !q || includesQ(e.title, q) || includesQ(e.companyName, q);
     const filter = evFilter.toLowerCase();
     const matchFilter = evFilter === 'all'
-      || e.category.toLowerCase().includes(filter)
-      || eventFormat(e).toLowerCase().includes(filter);
+      || includesQ(e.category, filter)
+      || includesQ(eventFormat(e), filter);
     return matchQ && matchFilter;
   });
   const filtProducts = products.filter(p => {
-    const matchQ = !q || p.name.toLowerCase().includes(q) || p.companyName.toLowerCase().includes(q);
-    const matchCat = productFilter === 'all' || p.category?.toLowerCase() === productFilter.toLowerCase();
+    const matchQ = !q || includesQ(p.name, q) || includesQ(p.companyName, q);
+    const matchCat = productFilter === 'all' || includesQ(p.category, productFilter);
     return matchQ && matchCat;
   });
   const homeProducts = (recommendedProducts.length > 0 ? recommendedProducts : products)
-    .filter(p => productFilter === 'all' || p.category?.toLowerCase() === productFilter.toLowerCase())
-    .filter(p => !q || p.name.toLowerCase().includes(q) || p.companyName.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
+    .filter(p => productFilter === 'all' || includesQ(p.category, productFilter))
+    .filter(p => !q || includesQ(p.name, q) || includesQ(p.companyName, q) || includesQ(p.category, q));
   const homeEvents = upcomingEvents
-    .filter(e => !q || e.title.toLowerCase().includes(q) || e.companyName.toLowerCase().includes(q));
+    .filter(e => !q || includesQ(e.title, q) || includesQ(e.companyName, q));
   const productChips = productCategoryChips(products);
   const filtCourses  = courses.filter(c => {
-    const matchQ = !q || c.title.toLowerCase().includes(q) || c.companyName.toLowerCase().includes(q);
-    const matchCat = courseFilter === 'all' || c.category.toLowerCase() === courseFilter.toLowerCase();
+    const matchQ = !q || includesQ(c.title, q) || includesQ(c.companyName, q);
+    const matchCat = courseFilter === 'all' || includesQ(c.category, courseFilter);
     return matchQ && matchCat;
   });
 
@@ -974,7 +978,7 @@ function ConnectView({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {companies.map(co => {
           const tint = companyTint(co.name);
-          const code = co.name.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
+          const code = companyInitials(co.name);
           const topProduct = co.products[0];
           const topEvent = co.events[0];
           const waLink = buildWhatsappLink(
@@ -985,17 +989,26 @@ function ConnectView({
           const leadSent = sentLeadIds.has(co.id);
 
           async function registerCompanyLead(intent: 'representative_contact' | 'sample_request') {
+            if (leadSent) return;
             setSentLeadIds(prev => new Set(prev).add(co.id));
-            await addLead({
-              companyId: co.id,
-              companyName: co.name,
-              itemType: 'company',
-              itemName: co.name,
-              intent,
-              message: intent === 'sample_request'
-                ? 'Médico solicitou amostras e materiais para avaliação.'
-                : 'Médico pediu contato do representante regional.',
-            });
+            try {
+              await addLead({
+                companyId: co.id,
+                companyName: co.name,
+                itemType: 'company',
+                itemName: co.name,
+                intent,
+                message: intent === 'sample_request'
+                  ? 'Médico solicitou amostras e materiais para avaliação.'
+                  : 'Médico pediu contato do representante regional.',
+              });
+            } catch {
+              setSentLeadIds(prev => {
+                const next = new Set(prev);
+                next.delete(co.id);
+                return next;
+              });
+            }
           }
 
           return (
@@ -1192,7 +1205,7 @@ function EventCard({ ev }: { ev: Event }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const waLink = buildWhatsappLink(ev.companyWhatsapp, `Olá! Vi o evento "${ev.title}" no Tessy e tenho interesse.`);
-  const code = ev.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const code = companyInitials(ev.companyName);
 
   async function handleInterest() {
     if ((full && !registered) || busy) return;
@@ -1209,7 +1222,11 @@ function EventCard({ ev }: { ev: Event }) {
         intent: 'event_interest',
         message: `Médico demonstrou interesse no evento ${ev.title}.`,
       });
-      await registerInterest(ev.id);
+      try {
+        await registerInterest(ev.id);
+      } catch (countErr) {
+        console.warn('Interesse registrado, mas a contagem de vagas não foi atualizada.', countErr);
+      }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro ao atualizar participação.');
     } finally {
@@ -1324,7 +1341,7 @@ function ProductCard({ product }: { product: Product }) {
   const { addLead, leads } = useAuth();
   const [leadSent, setLeadSent] = useState(false);
   const [tint1] = categoryTint(product.category);
-  const code = product.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const code = companyInitials(product.companyName);
   const repMessage = `Olá! Vi o produto "${product.name}" no Tessy e gostaria de falar com o representante sobre uma possível parceria.`;
   const waLink = buildWhatsappLink(product.companyWhatsapp, repMessage);
 
@@ -1333,21 +1350,30 @@ function ProductCard({ product }: { product: Product }) {
   const canContactRep = !!repTarget;
   const interestSent = leadSent || hasLeadInterest(leads, 'product', product.id, 'sample_request');
 
+  const [leadError, setLeadError] = useState('');
+
   async function sendProductLead(intent: 'representative_contact' | 'sample_request' | 'instagram_partnership') {
+    if (interestSent) return;
+    setLeadError('');
     setLeadSent(true);
-    await addLead({
-      companyId: product.companyId,
-      companyName: product.companyName,
-      itemType: 'product',
-      itemId: product.id,
-      itemName: product.name,
-      intent,
-      message: intent === 'sample_request'
-        ? 'Médico pediu amostra, material científico e condições comerciais.'
-        : intent === 'instagram_partnership'
-          ? 'Médico quer avaliar parceria para divulgação no Instagram.'
-          : 'Médico pediu contato do representante do produto.',
-    });
+    try {
+      await addLead({
+        companyId: product.companyId,
+        companyName: product.companyName,
+        itemType: 'product',
+        itemId: product.id,
+        itemName: product.name,
+        intent,
+        message: intent === 'sample_request'
+          ? 'Médico pediu amostra, material científico e condições comerciais.'
+          : intent === 'instagram_partnership'
+            ? 'Médico quer avaliar parceria para divulgação no Instagram.'
+            : 'Médico pediu contato do representante do produto.',
+      });
+    } catch (e) {
+      setLeadSent(false);
+      setLeadError(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
+    }
   }
 
   return (
@@ -1462,6 +1488,9 @@ function ProductCard({ product }: { product: Product }) {
             {interestSent ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`}
           </button>
         </div>
+        {leadError && (
+          <div style={{ marginTop: 8, fontSize: 12, color: '#F25C54', lineHeight: 1.35 }}>{leadError}</div>
+        )}
       </div>
     </div>
   );
@@ -1472,7 +1501,7 @@ function CourseCard({ course }: { course: Course }) {
   const { addLead, leads } = useAuth();
   const [tint1, tint2] = categoryTint(course.category);
   const [sent, setSent] = useState(false);
-  const code = course.companyName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const code = companyInitials(course.companyName);
   const waLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Vi "${course.title}" no Tessy e gostaria de falar com o representante.`);
   const interestTarget = course.website || '';
   const displayDate = courseDisplayDate(course);
@@ -1484,19 +1513,27 @@ function CourseCard({ course }: { course: Course }) {
   const bannerLabel = course.category === 'Outros' ? 'CAPACITAÇÃO' : course.category;
   const interestSent = sent || hasLeadInterest(leads, 'course', course.id, 'course_interest');
 
+  const [leadError, setLeadError] = useState('');
+
   async function sendCourseInterest() {
     if (interestSent) return;
+    setLeadError('');
     setSent(true);
-    await addLead({
-      companyId: course.companyId,
-      companyName: course.companyName,
-      itemType: 'course',
-      itemId: course.id,
-      itemName: course.title,
-      intent: 'course_interest',
-      message: `Médico demonstrou interesse em ${course.title}.`,
-    });
-    if (interestTarget) window.open(interestTarget, '_blank', 'noopener,noreferrer');
+    try {
+      await addLead({
+        companyId: course.companyId,
+        companyName: course.companyName,
+        itemType: 'course',
+        itemId: course.id,
+        itemName: course.title,
+        intent: 'course_interest',
+        message: `Médico demonstrou interesse em ${course.title}.`,
+      });
+      if (interestTarget) window.open(interestTarget, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      setSent(false);
+      setLeadError(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
+    }
   }
 
   return (
@@ -1564,6 +1601,9 @@ function CourseCard({ course }: { course: Course }) {
           }}>
           {interestSent ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`}
         </button>
+        {leadError && (
+          <div style={{ marginTop: 8, fontSize: 12, color: '#F25C54', lineHeight: 1.35, textAlign: 'center' }}>{leadError}</div>
+        )}
         {waLink && (
           <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { CompanyMark, TessyMark } from './ui';
-import { companyTint } from '../lib/uiHelpers';
+import { companyInitials, companyTint, displayUserLabel } from '../lib/uiHelpers';
 import OnboardingModal from './OnboardingModal';
 import ProfileSettingsSheet from './ProfileSettingsSheet';
 import { openDeleteAccountDialog, openProfileSettings } from '../lib/profileSettingsEvents';
@@ -27,14 +27,9 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
   const [profileOpen, setProfileOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const code = user?.name
-    ?.split(' ')
-    .slice(0, 2)
-    .map(n => n[0])
-    .join('')
-    .toUpperCase() ?? '??';
-
-  const tint = companyTint(user?.name ?? 'T');
+  const displayName = displayUserLabel(user);
+  const code = companyInitials(displayName, '??');
+  const tint = companyTint(displayName);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -173,9 +168,11 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
                 <button
                   type="button"
                   onClick={() => {
-                    setProfileOpen(false);
-                    logout();
-                    navigate('/', { replace: true });
+                    void (async () => {
+                      setProfileOpen(false);
+                      await logout();
+                      navigate('/', { replace: true });
+                    })();
                   }}
                   style={{
                     ...menuButtonStyle,

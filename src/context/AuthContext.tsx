@@ -107,6 +107,13 @@ async function cleanupLeadsForDeletedItem(
 }
 
 // ── Helpers de conversão DB → App ────────────────────────────────────────────
+function dbText(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value.trim() || fallback;
+  if (value == null) return fallback;
+  const text = String(value).trim();
+  return text || fallback;
+}
+
 function dbToUser(profile: Record<string, unknown>, email: string): User {
   // Suporta tanto schema novo (name, company) quanto existente (first_name, company_name)
   const name = (profile.name ?? profile.first_name ?? '') as string;
@@ -135,8 +142,8 @@ function dbToLocation(row: Record<string, unknown>): Location {
   return {
     id:          row.id           as string,
     companyId:   row.company_id   as string,
-    companyName: row.company_name as string,
-    name:        row.name         as string,
+    companyName: dbText(row.company_name, 'Empresa'),
+    name:        dbText(row.name, 'Local'),
     type:        (row.type as Location['type']) ?? 'ponto_venda',
     address:     row.address      as string | undefined,
     city:        row.city         as string | undefined,
@@ -152,16 +159,16 @@ function dbToLocation(row: Record<string, unknown>): Location {
 function dbToEvent(row: Record<string, unknown>): Event {
   return {
     id:               row.id               as string,
-    title:            row.title            as string,
-    description:      row.description      as string,
-    date:             row.date             as string,
-    time:             row.time             as string,
-    location:         row.location         as string,
-    category:         row.category         as string,
-    maxParticipants:  row.max_participants  as number,
-    registeredCount:  row.registered_count as number,
+    title:            dbText(row.title, 'Evento'),
+    description:      dbText(row.description),
+    date:             dbText(row.date),
+    time:             dbText(row.time),
+    location:         dbText(row.location),
+    category:         dbText(row.category, 'Outros'),
+    maxParticipants:  Number(row.max_participants ?? 100) || 100,
+    registeredCount:  Number(row.registered_count ?? 0) || 0,
     companyId:        row.company_id       as string,
-    companyName:      row.company_name     as string,
+    companyName:      dbText(row.company_name, 'Empresa'),
     companyWhatsapp:  row.company_whatsapp as string | undefined,
     website:          row.website          as string | undefined,
     imageUrl:         row.image_url        as string | undefined,
@@ -172,12 +179,12 @@ function dbToEvent(row: Record<string, unknown>): Event {
 function dbToProduct(row: Record<string, unknown>): Product {
   return {
     id:              row.id              as string,
-    name:            row.name            as string,
-    description:     row.description     as string,
-    category:        row.category        as string,
+    name:            dbText(row.name, 'Produto'),
+    description:     dbText(row.description),
+    category:        dbText(row.category, 'Outros'),
     price:           row.price           as string | undefined,
     companyId:       row.company_id      as string,
-    companyName:     row.company_name    as string,
+    companyName:     dbText(row.company_name, 'Empresa'),
     companyWhatsapp: row.company_whatsapp as string | undefined,
     website:         row.website         as string | undefined,
     imageUrl:        row.image_url       as string | undefined,
@@ -191,19 +198,19 @@ function dbToProduct(row: Record<string, unknown>): Product {
 function dbToCourse(row: Record<string, unknown>): Course {
   return {
     id:              row.id               as string,
-    title:           row.title            as string,
-    description:     row.description      as string,
-    category:        row.category         as string,
+    title:           dbText(row.title, 'Workshop'),
+    description:     dbText(row.description),
+    category:        dbText(row.category, 'Outros'),
     imageUrl:        row.image_url        as string | undefined,
-    modality:        row.modality         as 'online' | 'presencial' | 'hibrido',
+    modality:        (row.modality as 'online' | 'presencial' | 'hibrido') ?? 'online',
     date:            row.date             as string | undefined,
     time:            row.time             as string | undefined,
     location:        row.location         as string | undefined,
-    duration:        row.duration         as string,
-    instructor:      row.instructor       as string,
+    duration:        dbText(row.duration, 'A confirmar'),
+    instructor:      dbText(row.instructor, 'Instrutor'),
     price:           row.price            as string | undefined,
     companyId:       row.company_id       as string,
-    companyName:     row.company_name     as string,
+    companyName:     dbText(row.company_name, 'Empresa'),
     companyWhatsapp: row.company_whatsapp as string | undefined,
     website:         row.website          as string | undefined,
     createdAt:       row.created_at       as string,
@@ -729,14 +736,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     assertSupabaseConfigured();
     const updates: Record<string, string | boolean | undefined> = {};
     if (data.name) { updates.name = data.name; }
-    if (data.company) { updates.company = data.company; updates.name = data.company; }
+    if (data.company) {
+      updates.company = data.company;
+      if (user.role === 'empresa') updates.name = data.company;
+    }
     if (data.whatsapp !== undefined) { updates.whatsapp = data.whatsapp; }
     if (data.whatsappConnectionOnly !== undefined) { updates.whatsapp_connection_only = data.whatsappConnectionOnly; }
     if (data.specialty !== undefined) { updates.specialty = data.specialty; }
     if (data.crm !== undefined) { updates.crm = data.crm; }
     if (data.crmState !== undefined) { updates.crm_state = data.crmState; }
 
-    const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+    let { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+
+    if (error && isMissingDbColumnError(error, ['whatsapp_connection_only'])) {
+      ({ error } = await supabase.from('profiles').update(omitDbColumns(updates, ['whatsapp_connection_only'])).eq('id', user.id));
+    }
+
+    if (error && isMissingDbColumnError(error, ['company', 'name'])) {
+      const legacy = { ...omitDbColumns(updates, ['company', 'name']) } as Record<string, string | boolean | undefined>;
+      if (data.company) legacy.company_name = data.company;
+      if (data.name) {
+        const parts = data.name.trim().split(/\s+/);
+        legacy.first_name = parts[0] ?? data.name;
+        if (parts.length > 1) legacy.last_name = parts.slice(1).join(' ');
+      }
+      ({ error } = await supabase.from('profiles').update(legacy).eq('id', user.id));
+    }
+
     if (error) throw new Error(error.message);
     setUser(prev => prev ? { ...prev, ...data } : prev);
   };
@@ -887,7 +913,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (fetchErr || !row) throw new Error('Evento não encontrado.');
     const current = (row.registered_count as number) ?? 0;
     const max = (row.max_participants as number) ?? 0;
-    if (current >= max) throw new Error('Evento esgotado.');
+    if (max > 0 && current >= max) throw new Error('Evento esgotado.');
 
     let newCount = await syncEventRegistrationCount(eventId);
 

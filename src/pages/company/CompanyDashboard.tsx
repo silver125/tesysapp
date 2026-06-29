@@ -1,11 +1,11 @@
-import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import { useAuth } from '../../context/useAuth';
 import {
   CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
 } from '../../components/ui';
-import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
+import { buildWhatsappLink, categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
 import { MarketGrid, MarketCard, PhotoBadge, Sheet, Breadcrumb } from '../../components/market';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import type { Event, Product, Course, CourseModality, Lead, Location, LocationType } from '../../types';
@@ -342,7 +342,7 @@ export default function CompanyDashboard() {
   });
   const myLeads = latestLeadByDoctor(activeLeads);
   const tint = companyTint(user?.company ?? user?.name ?? '');
-  const code = (user?.company ?? user?.name ?? 'EM').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const code = companyInitials(user?.company ?? user?.name ?? 'EM');
   const [createSkipType, setCreateSkipType] = useState(false);
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
   const activeOpportunities = myEvents.length + myProducts.length + myCourses.length;
@@ -831,6 +831,7 @@ export default function CompanyDashboard() {
       {/* ── CREATE WIZARD ── */}
       {tab === 'create' && (
         <CreateWizard
+          key={`${createKind}-${createSkipType ? 'direct' : 'menu'}`}
           kind={createKind}
           setKind={setCreateKind}
           skipTypeStep={createSkipType}
@@ -946,11 +947,6 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  useEffect(() => {
-    setStep(skipTypeStep ? 1 : 0);
-    setSaveError('');
-  }, [kind, skipTypeStep]);
-
   // Event state
   const [ev, setEv] = useState({ title: '', description: '', date: dateInDays(30), time: '19:00', location: '', category: EVENT_CATS[1], maxParticipants: '100', website: '' });
   const [evImage, setEvImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
@@ -991,6 +987,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
   function validate(): string {
     if (step === 0) return '';
     if (kind === 'event') {
+      if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
       if (!evImage.file) return 'Adicione uma foto de capa — anúncios com foto recebem muito mais contatos.';
       if (!ev.title.trim()) return 'Informe o título do evento.';
       if (!ev.date) return 'Selecione a data do evento.';
@@ -998,6 +995,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
       if (!ev.location.trim()) return 'Informe o local do evento.';
     }
     if (kind === 'product') {
+      if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
       if (!prImage.file) return 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
       if (!pr.name.trim()) return 'Informe o nome do produto.';
       if (isPartnership && !partnershipConfirmed) return 'Confirme a autorização para divulgar esta parceria.';
@@ -1005,6 +1003,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
       if (!isPartnership && !commercialConfirmed) return 'Confirme a disponibilidade comercial do produto.';
     }
     if (kind === 'course') {
+      if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
       if (!coImage.file) return 'Adicione uma imagem — anúncios com foto recebem muito mais contatos.';
       if (!co.title.trim()) return 'Informe o título da capacitação.';
       if (!co.instructor.trim()) return 'Informe o nome do instrutor.';
@@ -1081,6 +1080,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erro desconhecido';
       setSaveError(`Erro ao publicar: ${msg}`);
+    } finally {
       setSaving(false);
     }
   }
@@ -1655,6 +1655,7 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
   onRequestConnection: (leadId: string) => Promise<void>;
 }) {
   const [requesting, setRequesting] = useState(false);
+  const [requestError, setRequestError] = useState('');
   const connectionStatus = lead.connectionStatus ?? 'none';
   const isApproved = connectionStatus === 'approved';
   const isRequested = connectionStatus === 'requested';
@@ -1668,8 +1669,11 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
   async function handleConnect() {
     if (waLink) return;
     setRequesting(true);
+    setRequestError('');
     try {
       await onRequestConnection(lead.id);
+    } catch (err) {
+      setRequestError(err instanceof Error ? err.message : 'Erro ao solicitar conexão.');
     } finally {
       setRequesting(false);
     }
@@ -1745,6 +1749,9 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
       <p style={{ margin: '10px 0 0', color: 'var(--ink-2)', fontSize: 12, lineHeight: 1.38 }}>
         Interesse em {lead.itemName || 'sua solicitação'}.
       </p>
+      {requestError && (
+        <div style={{ marginTop: 8, fontSize: 11.5, color: '#F25C54', lineHeight: 1.35 }}>{requestError}</div>
+      )}
       {waLink ? (
         <a href={waLink} target="_blank" rel="noopener noreferrer" style={buttonStyle}>
           <WaIcon size={14} /> {buttonText}
@@ -1974,6 +1981,20 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDeleteLocation(id: string) {
+    setDeleteError('');
+    setDeletingId(id);
+    try {
+      await onDelete(id);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir local.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   function normalizeUrl(raw: string): string | undefined {
     const trimmed = raw.trim();
@@ -2075,6 +2096,11 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
       </div>
 
       {/* List */}
+      {deleteError && (
+        <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(242,92,84,0.1)', color: '#F25C54', fontSize: 12.5 }}>
+          {deleteError}
+        </div>
+      )}
       {locations.length === 0 ? (
         <div style={{ padding: '32px 20px', textAlign: 'center', background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', color: 'var(--muted)', fontSize: 14 }}>
           Nenhum local cadastrado ainda.
@@ -2100,10 +2126,11 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
                   <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>{loc.notes}</div>
                 )}
               </div>
-              <button onClick={() => { void onDelete(loc.id); }} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
+              <button onClick={() => { void handleDeleteLocation(loc.id); }} disabled={deletingId === loc.id} style={{
+                background: 'none', border: 'none', cursor: deletingId === loc.id ? 'not-allowed' : 'pointer',
                 color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
-              }}>Excluir</button>
+                opacity: deletingId === loc.id ? 0.6 : 1,
+              }}>{deletingId === loc.id ? '...' : 'Excluir'}</button>
             </div>
           ))}
         </div>

@@ -5,11 +5,24 @@ const TINTS = [
 
 export function companyTint(name: string): string {
   let h = 0;
-  for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
+  const source = name || 'T';
+  for (const c of source) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
   return TINTS[h % TINTS.length];
 }
 
+export function companyInitials(name?: string | null, fallback = 'EM'): string {
+  const source = (name ?? '').trim() || fallback;
+  return source.split(/\s+/).slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase() || fallback;
+}
+
+export function displayUserLabel(user: { role?: string; company?: string; name?: string } | null | undefined): string {
+  if (!user) return 'Perfil';
+  if (user.role === 'empresa') return (user.company ?? user.name ?? 'Empresa').trim() || 'Empresa';
+  return (user.name ?? 'Perfil').trim() || 'Perfil';
+}
+
 export function categoryTint(cat: string): [string, string] {
+  const key = (cat || 'Outros').trim() || 'Outros';
   const map: Record<string, [string, string]> = {
     Congresso: ['#7FA7B8', '#343949'],
     Workshop: ['#8FA6D8', '#343949'],
@@ -35,7 +48,7 @@ export function categoryTint(cat: string): [string, string] {
     'Clínica Médica': ['#8FA6D8', '#343949'],
     Outros: ['#777F95', '#343949'],
   };
-  return map[cat] ?? ['#4AA8FF', '#343949'];
+  return map[key] ?? ['#4AA8FF', '#343949'];
 }
 
 export function buildWhatsappLink(phone: string | undefined, message?: string) {
