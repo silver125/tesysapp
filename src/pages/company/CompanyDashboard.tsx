@@ -95,7 +95,15 @@ function eventStatusLabel(ev: Event) {
 }
 
 function visualImage(src?: string) {
-  return src?.trim() || '/hero-clinic-premium.png';
+  return src?.trim() || '';
+}
+
+function cardPhotoBackground(src?: string) {
+  const url = visualImage(src);
+  if (!url) {
+    return 'linear-gradient(135deg, rgba(245,130,32,0.16), rgba(185,193,234,0.24))';
+  }
+  return `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(245,130,32,0.20)), url(${url}) center/cover`;
 }
 
 async function uploadOpportunityImage(file: File, companyId: string, folder: 'events' | 'products' | 'courses') {
@@ -384,8 +392,8 @@ export default function CompanyDashboard() {
         <div>
           {/* Welcome hero */}
           <div style={{
-            marginBottom: 14,
-            padding: '16px 16px 14px',
+            marginBottom: 12,
+            padding: '14px 14px 12px',
             borderRadius: 22,
             background: 'linear-gradient(135deg, #F58220 0%, #FF9A4D 52%, #FFB366 100%)',
             boxShadow: '0 16px 40px rgba(245,130,32,0.28)',
@@ -423,8 +431,8 @@ export default function CompanyDashboard() {
 
           {/* Company header */}
           <div style={{
-            marginBottom: 14,
-            padding: 14,
+            marginBottom: 12,
+            padding: 12,
             borderRadius: 22,
             background: 'linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,247,240,0.88))',
             border: '1px solid rgba(245,130,32,0.12)',
@@ -473,16 +481,16 @@ export default function CompanyDashboard() {
           </div>
 
           {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
+          <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
             {[
               { v: activeOpportunities, l: 'oportunidades', go: 'events' as Tab, accent: true },
               { v: myLeads.length, l: 'interessados', go: 'leads' as Tab, accent: myLeads.length > 0 },
               { v: conversationsStarted, l: 'conversas', go: 'leads' as Tab, accent: conversationsStarted > 0 },
             ].map((s) => (
               <button key={s.l} onClick={() => setTab(s.go)} style={{
-                minHeight: 82,
+                minHeight: 74,
                 textAlign: 'left',
-                padding: '11px 10px',
+                padding: '10px 8px',
                 borderRadius: 16,
                 border: s.accent ? '1px solid rgba(245,130,32,0.22)' : '1px solid var(--line)',
                 background: s.accent
@@ -1068,7 +1076,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       </div>
 
       {/* Progress */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 28 }}>
+      <div className="tessy-wizard-progress">
         {Array.from({ length: totalSteps }, (_, i) => (
           <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= step ? 'var(--accent)' : 'var(--line)', transition: 'background 0.3s' }} />
         ))}
@@ -1077,7 +1085,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {/* Step 0: choose kind */}
       {step === 0 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+          <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
             O que você quer criar<span style={{ color: 'var(--accent)' }}>?</span>
           </h2>
           <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24 }}>
@@ -1137,7 +1145,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {/* Event steps */}
       {kind === 'event' && step === 1 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+          <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
             Sobre o evento<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1157,7 +1165,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       )}
       {kind === 'event' && step === 2 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+          <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
             Data e local<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1174,7 +1182,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {/* Product steps */}
       {kind === 'product' && step === 1 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+          <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
             {isPartnership ? 'Parceria comercial' : 'Produto e representante'}<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, marginBottom: 16 }}>
@@ -1253,7 +1261,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {/* Course steps */}
       {kind === 'course' && step === 1 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+          <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
             Sobre a capacitação<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1271,7 +1279,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       )}
       {kind === 'course' && step === 2 && (
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
+          <h2 className="tessy-page-title" style={{ marginBottom: 8 }}>
             Formato e preço<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1414,7 +1422,7 @@ function EventRowCompany({ ev, interestedCount, onViewInterested, onShare }: {
         flexShrink: 0,
         borderRadius: 15,
         overflow: 'hidden',
-        background: `linear-gradient(135deg, rgba(18,24,40,0.54), rgba(245,130,32,0.20)), url(${visualImage(ev.imageUrl)}) center/cover`,
+        background: cardPhotoBackground(ev.imageUrl),
       }}>
         <div style={{
           position: 'absolute',
@@ -1539,7 +1547,7 @@ function EventCardCompany({ ev, interestedCount, onDelete, onEdit, onViewInteres
       <div style={{
         height: 72,
         padding: 12,
-        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(245,130,32,0.20), rgba(255,111,77,0.18)), url(${visualImage(ev.imageUrl)}) center/cover`,
+        background: cardPhotoBackground(ev.imageUrl),
       }}>
         <span style={{
           padding: '5px 9px',
@@ -2099,7 +2107,7 @@ function ProductCardCompany({ product, onDelete, deleting = false }: {
       <div style={{
         height: 72,
         padding: 12,
-        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(245,130,32,0.20), rgba(255,111,77,0.18)), url(${visualImage(product.imageUrl)}) center/cover`,
+        background: cardPhotoBackground(product.imageUrl),
       }}>
         <span style={{
           padding: '5px 9px',
@@ -2162,7 +2170,7 @@ function CourseCardCompany({ course, onDelete, deleting = false }: {
       <div style={{
         height: 72,
         padding: 12,
-        background: `linear-gradient(135deg, rgba(18,24,40,0.42), rgba(245,130,32,0.20), rgba(255,111,77,0.18)), url(${visualImage(course.imageUrl)}) center/cover`,
+        background: cardPhotoBackground(course.imageUrl),
       }}>
         <span style={{
           padding: '5px 9px',

@@ -19,34 +19,15 @@ export function CategoryRail({ items, onSelect }: {
   onSelect: (key: string) => void;
 }) {
   return (
-    <div
-      className="no-scrollbar"
-      style={{ display: 'flex', gap: 14, overflowX: 'auto', padding: '2px 2px 10px', marginBottom: 4 }}
-    >
+    <div className="tessy-category-rail no-scrollbar">
       {items.map(item => (
         <button
           key={item.key}
           type="button"
           onClick={() => onSelect(item.key)}
-          style={{
-            flexShrink: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 6,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            width: 64,
-          }}
+          className="tessy-category-rail__item"
         >
-          <span style={{
-            width: 60,
-            height: 60,
-            borderRadius: 18,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+          <span className="tessy-category-rail__icon" style={{
             background: item.active
               ? 'linear-gradient(135deg, rgba(245,130,32,0.16), rgba(255,196,140,0.26))'
               : 'var(--card)',
@@ -58,7 +39,7 @@ export function CategoryRail({ items, onSelect }: {
             {item.icon}
           </span>
           <span style={{
-            fontSize: 11,
+            fontSize: 10.5,
             fontWeight: item.active ? 700 : 560,
             color: item.active ? 'var(--accent-ink)' : 'var(--ink-2)',
             lineHeight: 1.1,
@@ -140,7 +121,7 @@ export function Breadcrumb({ items }: { items: string[] }) {
 /* ── Grid de vitrine (2 colunas, photo-first) ── */
 export function MarketGrid({ children }: { children: ReactNode }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+    <div className="tessy-market-grid">
       {children}
     </div>
   );

@@ -57,19 +57,16 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
   } as const;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', color: 'var(--ink)' }}>
+    <div className="tessy-app-shell" style={{ color: 'var(--ink)' }}>
       <header style={{
         position: 'sticky', top: 0, zIndex: 20,
         background: 'rgba(247,248,255,0.9)', backdropFilter: 'blur(14px)',
         borderBottom: '1px solid var(--line)',
       }}>
-        <div style={{
-          maxWidth: 480, margin: '0 auto', padding: '6px 14px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="tessy-app-header-inner">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             <TessyMark size={30} />
-            <span style={{ fontWeight: 560, fontSize: 16, letterSpacing: 0, color: 'var(--accent-ink)' }}>
+            <span style={{ fontWeight: 560, fontSize: 15, letterSpacing: 0, color: 'var(--accent-ink)', whiteSpace: 'nowrap' }}>
               Tessy<span style={{ color: 'var(--lavender)' }}>.app</span>
             </span>
           </div>
@@ -196,7 +193,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
         </div>
       </header>
 
-      <main style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '16px 14px 96px' }}>
+      <main className="tessy-app-main">
         {children}
       </main>
 
@@ -206,11 +203,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
         borderTop: '1px solid var(--line)',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
-        <div style={{
-          maxWidth: 480, margin: '0 auto',
-          display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-          padding: '6px 8px 4px',
-        }}>
+        <div className="tessy-app-nav-inner">
           {navItems.map(item => {
             const active = item.key === activeKey;
             const accent = 'var(--accent)';
@@ -222,20 +215,21 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
                   <button
                     key={item.key}
                     onClick={() => onNavChange(item.key)}
+                    className="tessy-create-cta"
                     style={{
-                      minWidth: 118,
-                      height: 42,
+                      minWidth: 108,
+                      height: 40,
                       borderRadius: 999,
                       background: 'var(--accent-ink)',
                       border: '1px solid rgba(255,255,255,0.72)',
                       color: '#fff',
                       cursor: 'pointer',
-                      marginTop: -12,
+                      marginTop: -10,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      padding: '0 14px',
-                      fontSize: 12,
+                      padding: '0 12px',
+                      fontSize: 11.5,
                       fontWeight: 560,
                       lineHeight: 1.05,
                       textAlign: 'center',
@@ -267,10 +261,11 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
               <button
                 key={item.key}
                 onClick={() => onNavChange(item.key)}
+                className="tessy-nav-btn"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                  color: active ? accent : muted, padding: '4px 8px',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  color: active ? accent : muted, padding: '4px 6px',
                   position: 'relative',
                 }}
               >
@@ -281,7 +276,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
                   }} />
                 )}
                 {item.icon(active)}
-                <span style={{
+                <span className="tessy-nav-label" style={{
                   fontSize: 10, fontWeight: 500,
                   fontFamily: 'var(--font-sans)',
                 }}>

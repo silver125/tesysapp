@@ -69,6 +69,7 @@ ALTER TABLE courses ADD COLUMN IF NOT EXISTS company_id       UUID;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS company_name     TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS company_whatsapp TEXT;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS website          TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS image_url        TEXT;
 
 -- ── Recarrega cache do PostgREST imediatamente ────────────────────────────
 NOTIFY pgrst, 'reload schema';

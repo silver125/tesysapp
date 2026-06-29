@@ -209,13 +209,8 @@ function modalityText(modality: Course['modality']) {
   return labels[modality] ?? modality;
 }
 
-const VISUAL_FALLBACKS = {
-  clinical: '/hero-clinic-premium.png',
-  community: '/hero-bg.jpg',
-};
-
-function visualUrl(src?: string | null, fallback = VISUAL_FALLBACKS.community) {
-  return src?.trim() || fallback;
+function visualUrl(src?: string | null) {
+  return src?.trim() || '';
 }
 
 function doctorGreeting(user: User | null | undefined) {
@@ -478,8 +473,8 @@ function MarketHead({ title, subtitle, count, countWord }: {
   title: string; subtitle?: string; count: number; countWord: string;
 }) {
   return (
-    <div style={{ marginBottom: 12 }}>
-      <h1 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 4 }}>
+      <div style={{ marginBottom: 10 }}>
+      <h1 className="tessy-page-title" style={{ marginBottom: 4 }}>
         {title}<span style={{ color: 'var(--accent)' }}>.</span>
       </h1>
       <p style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.4 }}>
@@ -781,7 +776,7 @@ function EventMarketCard({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
   const dateBadge = `${dayNum(ev.date)} ${monthShort(ev.date)}`.trim();
   return (
     <MarketCard
-      image={visualUrl(ev.imageUrl, VISUAL_FALLBACKS.clinical)}
+      image={visualUrl(ev.imageUrl)}
       topLeft={dateBadge ? <PhotoBadge color="var(--accent)">{dateBadge}</PhotoBadge> : undefined}
       topRight={<PhotoBadge solid={false}>{eventFormat(ev)}</PhotoBadge>}
       title={ev.title}
@@ -796,7 +791,7 @@ function CourseMarketCard({ course, onOpen }: { course: Course; onOpen: () => vo
   const hasPrice = /^r\$/i.test(course.price?.trim() ?? '');
   return (
     <MarketCard
-      image={visualUrl(course.imageUrl, VISUAL_FALLBACKS.clinical)}
+      image={visualUrl(course.imageUrl)}
       topLeft={<PhotoBadge color="#F58220">{modalityText(course.modality)}</PhotoBadge>}
       highlight={hasPrice ? course.price : undefined}
       title={course.title}
@@ -1237,7 +1232,7 @@ function EventCard({ ev }: { ev: Event }) {
       month={monthShort(ev.date)}
       day={dayNum(ev.date)}
       format={ev.category || 'Evento'}
-      imageUrl={visualUrl(ev.imageUrl, VISUAL_FALLBACKS.clinical)}
+      imageUrl={visualUrl(ev.imageUrl)}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <CompanyMark code={code} tint={companyTint(ev.companyName)} size={22} radius={6} />
@@ -1367,7 +1362,9 @@ function ProductCard({ product }: { product: Product }) {
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'space-between',
-        background: `linear-gradient(135deg, rgba(18,24,40,0.38), rgba(74,168,255,0.18)), url(${visualUrl(product.imageUrl)}) center/cover`,
+        background: visualUrl(product.imageUrl)
+          ? `linear-gradient(135deg, rgba(18,24,40,0.38), rgba(74,168,255,0.18)), url(${visualUrl(product.imageUrl)}) center/cover`
+          : 'linear-gradient(135deg, rgba(245,130,32,0.16), rgba(185,193,234,0.24))',
       }}>
         <span style={{
           padding: '5px 9px',
@@ -1507,7 +1504,7 @@ function CourseCard({ course }: { course: Course }) {
       month={displayDate ? monthShort(displayDate) : undefined}
       day={displayDate ? dayNum(displayDate) : undefined}
       format={bannerLabel}
-      imageUrl={visualUrl(course.imageUrl, VISUAL_FALLBACKS.clinical)}
+      imageUrl={visualUrl(course.imageUrl)}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
         <CompanyMark code={code} tint={companyTint(course.companyName)} size={22} radius={6} />

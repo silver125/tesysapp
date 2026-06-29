@@ -37,6 +37,13 @@
   --shadow-lg: 0 24px 64px rgba(52,57,73,0.12);
 
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --app-gutter: clamp(10px, 3.2vw, 14px);
+  --app-header-pad-y: clamp(5px, 1.6vw, 8px);
+  --app-main-pad-top: clamp(10px, 2.8vw, 16px);
+  --app-main-pad-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  --app-title-size: clamp(20px, 5.4vw, 26px);
+  --app-section-gap: clamp(10px, 2.8vw, 14px);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -82,6 +89,119 @@ select option { background: var(--card); color: var(--ink); }
 }
 
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+.tessy-app-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.tessy-app-header-inner,
+.tessy-app-main,
+.tessy-app-nav-inner {
+  width: 100%;
+  max-width: min(480px, 100%);
+  margin: 0 auto;
+}
+
+.tessy-app-header-inner {
+  padding: var(--app-header-pad-y) var(--app-gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(8px, 2.5vw, 12px);
+}
+
+.tessy-app-main {
+  flex: 1;
+  padding: var(--app-main-pad-top) var(--app-gutter) var(--app-main-pad-bottom);
+}
+
+.tessy-app-nav-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: clamp(4px, 1.4vw, 6px) clamp(4px, 1.8vw, 8px) clamp(2px, 1vw, 4px);
+}
+
+.tessy-page-title {
+  font-size: var(--app-title-size);
+  font-weight: 560;
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.tessy-section-title {
+  font-size: clamp(18px, 4.8vw, 22px);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+.tessy-market-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 2.5vw, 12px);
+}
+
+.tessy-category-rail {
+  display: flex;
+  gap: clamp(10px, 3vw, 14px);
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  margin-bottom: 2px;
+}
+
+.tessy-category-rail__item {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: clamp(54px, 15vw, 64px);
+}
+
+.tessy-category-rail__icon {
+  width: clamp(52px, 14.5vw, 60px);
+  height: clamp(52px, 14.5vw, 60px);
+  border-radius: clamp(14px, 4vw, 18px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tessy-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(6px, 2vw, 8px);
+}
+
+.tessy-wizard-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: clamp(16px, 4.5vw, 24px);
+}
+
+@media (max-width: 390px) {
+  .tessy-nav-label {
+    font-size: 9px !important;
+  }
+
+  .tessy-nav-btn {
+    padding: 3px 5px !important;
+  }
+
+  .tessy-create-cta {
+    min-width: 96px !important;
+    height: 38px !important;
+    font-size: 11px !important;
+    padding: 0 10px !important;
+  }
+}
 
 /* Scrollbar hidden */
 .no-scrollbar::-webkit-scrollbar { display: none; }

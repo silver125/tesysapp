@@ -1071,7 +1071,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Cursos ──
   const addCourse = async (data: Omit<Course, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
-    const basePayload = {
+    const rpcPayload = {
+      title: data.title,
+      description: data.description ?? '',
+      category: data.category ?? '',
+      modality: data.modality ?? 'online',
+      duration: data.duration ?? '',
+      instructor: data.instructor ?? '',
+      price: data.price ?? '',
+      company_name: data.companyName,
+      company_whatsapp: data.companyWhatsapp ?? '',
+      website: data.website ?? '',
+      date: data.date ?? '',
+      time: data.time ?? '',
+      location: data.location ?? '',
+      image_url: data.imageUrl ?? '',
+    };
+
+    const rpcResult = await withTimeout(
+      supabase.rpc('publish_company_course', { payload: rpcPayload }),
+      12000,
+      'Publicar workshop',
+    );
+    if (!rpcResult.error) {
+      refreshData();
+      return;
+    }
+    if (!isMissingRpcError(rpcResult.error, 'publish_company_course')) {
+      throw new Error(rpcResult.error.message);
+    }
+
+    const basePayload: Record<string, unknown> = {
       title:            data.title,
       description:      data.description,
       category:         data.category,
@@ -1083,31 +1113,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       company_name:     data.companyName,
       company_whatsapp: data.companyWhatsapp ?? null,
       website:          data.website ?? null,
-    };
-    const schedulePayload = {
-      ...basePayload,
-      date:             data.date ?? null,
-      time:             data.time ?? null,
-      location:         data.location ?? null,
       image_url:        data.imageUrl ?? null,
     };
+    const schedulePayload: Record<string, unknown> = {
+      ...basePayload,
+      date:     data.date ?? null,
+      time:     data.time ?? null,
+      location: data.location ?? null,
+    };
 
-    const result = await withTimeout(
+    let result = await withTimeout(
       supabase.from('courses').insert(schedulePayload),
       12000,
-      'Publicar curso',
+      'Publicar workshop',
     );
-    let error = result.error;
-    if (error && isMissingDbColumnError(error, ['date', 'time', 'location', 'image_url'])) {
-      const fallback = await withTimeout(
+    if (result.error && isMissingDbColumnError(result.error, ['date', 'time', 'location'])) {
+      result = await withTimeout(
         supabase.from('courses').insert(basePayload),
         12000,
-        'Publicar curso',
+        'Publicar workshop',
       );
-      error = fallback.error;
     }
+    if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
+      const withoutImage = omitDbColumns(schedulePayload, ['image_url']);
+      result = await withTimeout(
+        supabase.from('courses').insert(withoutImage),
+        12000,
+        'Publicar workshop',
+      );
+      if (result.error && isMissingDbColumnError(result.error, ['date', 'time', 'location'])) {
+        result = await withTimeout(
+          supabase.from('courses').insert(omitDbColumns(basePayload, ['image_url'])),
+          12000,
+          'Publicar workshop',
+        );
+      }
+    }
+    const { error } = result;
     if (error) throw new Error(error.message);
-    refreshData(); // background, não bloqueia
+    refreshData();
   };
 
   const deleteCourse = async (id: string) => {
