@@ -72,6 +72,7 @@ export interface Product {
   availableFor: string;
   anvisaRegularized?: boolean;
   commerciallyAvailable?: boolean;
+  listingType?: 'product' | 'partnership';
   createdAt: string;
 }
 

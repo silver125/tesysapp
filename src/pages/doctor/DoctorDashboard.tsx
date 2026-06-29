@@ -7,6 +7,7 @@ import {
   WaIcon,
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyTint } from '../../lib/uiHelpers';
+import { getLevelProgress, POINTS_PER_CONNECTION, countApprovedConnections } from '../../lib/gamification';
 import { CategoryRail, FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import type { CategoryItem } from '../../components/market';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
@@ -314,6 +315,12 @@ export default function DoctorDashboard() {
             onPendingClick={scrollToPendingConnections}
           />
 
+          <DoctorPointsBar
+            points={user?.points ?? 0}
+            connections={countApprovedConnections(leads)}
+            pendingCount={pendingConnections.length}
+          />
+
           <SearchBar
             value={search}
             onChange={setSearch}
@@ -512,6 +519,29 @@ function BrowseRail({ active, onSelect }: { active: string; onSelect: (tab: Tab)
   return <CategoryRail items={items} onSelect={key => onSelect(key as Tab)} />;
 }
 
+function PointsPill({ points, size = 'md' }: { points: number; size?: 'sm' | 'md' }) {
+  const compact = size === 'sm';
+  return (
+    <div style={{
+      flexShrink: 0,
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: compact ? 4 : 5,
+      padding: compact ? '5px 8px' : '7px 10px',
+      borderRadius: compact ? 10 : 12,
+      background: 'rgba(245,130,32,0.10)',
+      border: '1px solid rgba(245,130,32,0.18)',
+      fontSize: compact ? 11 : 12,
+      fontWeight: 650,
+      color: 'var(--accent-ink)',
+      whiteSpace: 'nowrap',
+    }}>
+      <span style={{ fontSize: compact ? 11 : 12, lineHeight: 1 }}>⭐</span>
+      <span>{points} pts</span>
+    </div>
+  );
+}
+
 function QuickHomeHeader({
   user,
   pendingCount,
@@ -536,41 +566,83 @@ function QuickHomeHeader({
           {doctorMetaLine(user)}
         </p>
       </div>
-      {pendingCount > 0 ? (
-        <button
-          type="button"
-          onClick={onPendingClick}
-          style={{
-            flexShrink: 0,
-            minWidth: 88,
-            padding: '10px 12px',
-            borderRadius: 14,
-            border: 'none',
-            background: 'var(--accent)',
-            color: '#fff',
-            fontSize: 12,
-            fontWeight: 650,
-            cursor: 'pointer',
-            boxShadow: '0 10px 24px rgba(245,130,32,0.24)',
-          }}
-        >
-          {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
-        </button>
-      ) : (
-        <div style={{
-          flexShrink: 0,
-          padding: '8px 11px',
-          borderRadius: 12,
-          background: 'rgba(245,130,32,0.10)',
-          border: '1px solid rgba(245,130,32,0.18)',
-          fontSize: 11.5,
-          fontWeight: 620,
-          color: 'var(--accent-ink)',
-        }}>
-          {points} pts
-        </div>
-      )}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+        <PointsPill points={points} />
+        {pendingCount > 0 && (
+          <button
+            type="button"
+            onClick={onPendingClick}
+            style={{
+              minWidth: 88,
+              padding: '8px 11px',
+              borderRadius: 12,
+              border: 'none',
+              background: 'var(--accent)',
+              color: '#fff',
+              fontSize: 11.5,
+              fontWeight: 650,
+              cursor: 'pointer',
+              boxShadow: '0 10px 24px rgba(245,130,32,0.24)',
+            }}
+          >
+            {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
+          </button>
+        )}
+      </div>
     </div>
+  );
+}
+
+function DoctorPointsBar({
+  points,
+  connections,
+  pendingCount,
+}: {
+  points: number;
+  connections: number;
+  pendingCount: number;
+}) {
+  const progress = getLevelProgress(points);
+
+  return (
+    <section style={{ marginBottom: 12 }}>
+      <div style={{
+        padding: '11px 12px',
+        borderRadius: 14,
+        background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF8F2 100%)',
+        border: '1px solid rgba(216,222,236,0.9)',
+        boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--ink)' }}>
+              Nível {progress.level.index + 1} · <span style={{ color: progress.level.color }}>{progress.level.name}</span>
+            </div>
+            <div style={{ marginTop: 2, fontSize: 11, color: 'var(--muted)' }}>
+              {connections} conexão{connections === 1 ? '' : 'ões'} · {progress.points} pontos
+            </div>
+          </div>
+          <PointsPill points={points} size="sm" />
+        </div>
+        <div style={{ marginTop: 9, height: 6, borderRadius: 999, background: 'rgba(15,22,38,0.07)', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%',
+            borderRadius: 999,
+            width: `${progress.percent}%`,
+            background: 'linear-gradient(90deg, #F58220, #FFB066)',
+            transition: 'width 0.5s var(--ease)',
+          }} />
+        </div>
+        <div style={{ marginTop: 5, fontSize: 10.5, color: 'var(--muted)', lineHeight: 1.3 }}>
+          {progress.isMax
+            ? 'Nível máximo alcançado.'
+            : `+${progress.pointsForNextLevel} pts para ${progress.next?.name}`}
+          {pendingCount > 0 && (
+            <> · Aprove conexões e ganhe <b style={{ color: 'var(--accent)' }}>+{POINTS_PER_CONNECTION} pts</b></>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -948,6 +948,9 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
   const [coImage, setCoImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
   const [anvisaConfirmed, setAnvisaConfirmed] = useState(false);
   const [commercialConfirmed, setCommercialConfirmed] = useState(false);
+  const [partnershipConfirmed, setPartnershipConfirmed] = useState(false);
+
+  const isPartnership = selectedChoice === 'partnership';
 
   const totalSteps = kind === 'event' ? 3 : kind === 'course' ? 3 : 2;
 
@@ -965,8 +968,9 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       if (step === 1 && !pr.name.trim()) return 'Informe o nome do produto.';
       if (step === 1 && !pr.description.trim()) return 'Informe a descrição do produto.';
       if (step === 1 && !prImage.file) return 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
-      if (step === 1 && !anvisaConfirmed) return 'Confirme a regularização vigente na Anvisa.';
-      if (step === 1 && !commercialConfirmed) return 'Confirme a disponibilidade comercial do produto.';
+      if (step === 1 && isPartnership && !partnershipConfirmed) return 'Confirme a autorização para divulgar esta parceria.';
+      if (step === 1 && !isPartnership && !anvisaConfirmed) return 'Confirme a regularização vigente na Anvisa.';
+      if (step === 1 && !isPartnership && !commercialConfirmed) return 'Confirme a disponibilidade comercial do produto.';
     }
     if (kind === 'course') {
       if (step === 1 && !co.title.trim()) return 'Informe o título da capacitação.';
@@ -1028,8 +1032,9 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           ...pr,
           website: normalizeUrl(pr.website),
           imageUrl,
-          anvisaRegularized: anvisaConfirmed,
-          commerciallyAvailable: commercialConfirmed,
+          listingType: isPartnership ? 'partnership' : 'product',
+          anvisaRegularized: isPartnership ? true : anvisaConfirmed,
+          commerciallyAvailable: isPartnership ? true : commercialConfirmed,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else {
@@ -1098,6 +1103,11 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
                       availableFor: 'Representante apresenta briefing, condições e proposta de parceria.',
                       price: 'Parceria sob consulta',
                     }));
+                    setAnvisaConfirmed(false);
+                    setCommercialConfirmed(false);
+                    setPartnershipConfirmed(false);
+                  } else if (target === 'product') {
+                    setPartnershipConfirmed(false);
                   }
                 }} style={{
                   padding: '16px', borderRadius: 16, cursor: 'pointer', textAlign: 'left',
@@ -1165,16 +1175,18 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
       {kind === 'product' && step === 1 && (
         <div>
           <h2 style={{ fontSize: 26, fontWeight: 560, letterSpacing: 0, marginBottom: 8 }}>
-            Produto e representante<span style={{ color: 'var(--accent)' }}>.</span>
+            {isPartnership ? 'Parceria comercial' : 'Produto e representante'}<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, marginBottom: 16 }}>
-            Publique uma oportunidade clara para o médico chamar o representante.
+            {isPartnership
+              ? 'Publique uma proposta de parceria clara para médicos interessados.'
+              : 'Publique uma oportunidade clara para o médico chamar o representante.'}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <WField label="NOME DO PRODUTO" value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder="Ex: SkinBiome Serum" />
+            <WField label={isPartnership ? 'NOME DA PARCERIA' : 'NOME DO PRODUTO'} value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder={isPartnership ? 'Ex: Parceria de divulgação científica' : 'Ex: SkinBiome Serum'} />
             <WField label="RESUMO CLÍNICO / COMERCIAL" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="O que é, para quem é e por que vale uma conversa." as="textarea" />
             <ImageUploadField
-              label="FOTO DO PRODUTO (obrigatória)"
+              label={isPartnership ? 'FOTO DA PARCERIA (obrigatória)' : 'FOTO DO PRODUTO (obrigatória)'}
               preview={prImage.preview}
               onChange={file => setImageDraft(setPrImage, file)}
             />
@@ -1193,30 +1205,46 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
               gap: 10,
             }}>
               <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>
-                Declaração regulatória (obrigatória)
+                {isPartnership ? 'Declaração comercial (obrigatória)' : 'Declaração regulatória (obrigatória)'}
               </div>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={anvisaConfirmed}
-                  onChange={e => setAnvisaConfirmed(e.target.checked)}
-                  style={{ marginTop: 3, accentColor: 'var(--accent)' }}
-                />
-                <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-                  Confirmo que o produto possui <b>regularização vigente na Anvisa</b> (ou categoria isenta aplicável).
-                </span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={commercialConfirmed}
-                  onChange={e => setCommercialConfirmed(e.target.checked)}
-                  style={{ marginTop: 3, accentColor: 'var(--accent)' }}
-                />
-                <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-                  Confirmo a <b>disponibilidade comercial</b> do produto para divulgação a médicos.
-                </span>
-              </label>
+              {isPartnership ? (
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={partnershipConfirmed}
+                    onChange={e => setPartnershipConfirmed(e.target.checked)}
+                    style={{ marginTop: 3, accentColor: 'var(--accent)' }}
+                  />
+                  <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+                    Confirmo autorização para <b>divulgar esta parceria comercial</b> a médicos no Tessy.
+                  </span>
+                </label>
+              ) : (
+                <>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={anvisaConfirmed}
+                      onChange={e => setAnvisaConfirmed(e.target.checked)}
+                      style={{ marginTop: 3, accentColor: 'var(--accent)' }}
+                    />
+                    <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+                      Confirmo que o produto possui <b>regularização vigente na Anvisa</b> (ou categoria isenta aplicável).
+                    </span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={commercialConfirmed}
+                      onChange={e => setCommercialConfirmed(e.target.checked)}
+                      style={{ marginTop: 3, accentColor: 'var(--accent)' }}
+                    />
+                    <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+                      Confirmo a <b>disponibilidade comercial</b> do produto para divulgação a médicos.
+                    </span>
+                  </label>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1316,7 +1344,7 @@ function CreateWizard({ kind, setKind, company, onSaveEvent, onSaveProduct, onSa
           }}>
             {saving
               ? 'Publicando...'
-              : `Publicar ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'capacitação'} ✓`}
+              : `Publicar ${isPartnership ? 'parceria' : kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'capacitação'} ✓`}
           </button>
         )}
       </div>

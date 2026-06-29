@@ -42,6 +42,30 @@ function omitDbColumns<T extends Record<string, unknown>>(payload: T, columns: s
   return next;
 }
 
+function isMissingRpcError(error: unknown, rpcName: string) {
+  const message = error instanceof Error
+    ? error.message
+    : typeof error === 'object' && error && 'message' in error
+      ? String((error as { message?: unknown }).message)
+      : String(error ?? '');
+  const code = typeof error === 'object' && error && 'code' in error
+    ? String((error as { code?: unknown }).code)
+    : '';
+  return code === 'PGRST202'
+    || /could not find the function/i.test(message)
+    || new RegExp(rpcName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(message);
+}
+
+function formatProductComplianceError(message: string) {
+  if (/anvisa|regularizacao|disponibilidade comercial/i.test(message)) {
+    return (
+      'Marque as confirmações de regularização Anvisa e disponibilidade comercial antes de publicar. '
+      + 'Se o erro continuar, rode supabase/fix_product_anvisa_compliance.sql no Supabase.'
+    );
+  }
+  return message;
+}
+
 type CompanyOwnedTable = 'events' | 'products' | 'courses' | 'locations';
 
 async function deleteCompanyOwnedRow(
@@ -742,6 +766,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Eventos ──
   const addEvent = async (data: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
     assertSupabaseConfigured();
+    const rpcPayload = {
+      title: data.title,
+      description: data.description ?? '',
+      date: data.date,
+      time: data.time ?? '',
+      location: data.location ?? '',
+      category: data.category ?? '',
+      max_participants: String(data.maxParticipants ?? 100),
+      company_name: data.companyName,
+      company_whatsapp: data.companyWhatsapp ?? '',
+      website: data.website ?? '',
+      image_url: data.imageUrl ?? '',
+    };
+
+    const rpcResult = await withTimeout(
+      supabase.rpc('publish_company_event', { payload: rpcPayload }),
+      12000,
+      'Publicar evento',
+    );
+    if (!rpcResult.error) {
+      refreshData();
+      return;
+    }
+    if (!isMissingRpcError(rpcResult.error, 'publish_company_event')) {
+      throw new Error(rpcResult.error.message);
+    }
+
     const payload = {
       title:            data.title,
       description:      data.description,
@@ -939,6 +990,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Produtos ──
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
+    const listingType = data.listingType ?? 'product';
+    const anvisaOk = listingType === 'partnership' ? true : data.anvisaRegularized === true;
+    const commercialOk = listingType === 'partnership' ? true : data.commerciallyAvailable === true;
+
+    const rpcPayload = {
+      name: data.name,
+      description: data.description,
+      category: data.category,
+      price: data.price ?? '',
+      company_name: data.companyName,
+      company_whatsapp: data.companyWhatsapp ?? '',
+      available_for: data.availableFor,
+      website: data.website ?? '',
+      image_url: data.imageUrl ?? '',
+      listing_type: listingType,
+      anvisa_regularized: anvisaOk,
+      commercially_available: commercialOk,
+    };
+
+    const rpcResult = await withTimeout(
+      supabase.rpc('publish_company_product', { payload: rpcPayload }),
+      12000,
+      'Publicar produto',
+    );
+    if (!rpcResult.error) {
+      refreshData();
+      return;
+    }
+    if (!isMissingRpcError(rpcResult.error, 'publish_company_product')) {
+      throw new Error(formatProductComplianceError(rpcResult.error.message));
+    }
+
     const payload: Record<string, unknown> = {
       name:             data.name,
       description:      data.description,
@@ -950,41 +1033,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       available_for:    data.availableFor,
       website:          data.website ?? null,
       image_url:        data.imageUrl ?? null,
+      listing_type:     listingType,
+      anvisa_regularized: anvisaOk,
+      commercially_available: commercialOk,
     };
-
-    if (data.anvisaRegularized) payload.anvisa_regularized = true;
-    if (data.commerciallyAvailable) payload.commercially_available = true;
 
     let result = await withTimeout(
       supabase.from('products').insert(payload),
       12000,
       'Publicar produto',
     );
-    if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
-      console.warn('Coluna image_url ausente em products. Publicando produto sem imagem.', result.error.message);
+    if (result.error && isMissingDbColumnError(result.error, ['image_url', 'listing_type'])) {
+      console.warn('Colunas opcionais ausentes em products. Tentando publicar sem elas.', result.error.message);
       result = await withTimeout(
-        supabase.from('products').insert(omitDbColumns(payload, ['image_url'])),
-        12000,
-        'Publicar produto',
-      );
-    }
-    if (result.error && isMissingDbColumnError(result.error, ['anvisa_regularized', 'commercially_available'])) {
-      console.warn('Colunas de compliance Anvisa ausentes. Tentando publicar sem elas.', result.error.message);
-      result = await withTimeout(
-        supabase.from('products').insert(omitDbColumns(payload, ['anvisa_regularized', 'commercially_available'])),
+        supabase.from('products').insert(omitDbColumns(payload, ['image_url', 'listing_type'])),
         12000,
         'Publicar produto',
       );
     }
     const { error } = result;
     if (error) {
-      if (/anvisa|regularizacao|disponibilidade comercial/i.test(error.message)) {
-        throw new Error(
-          'Marque as confirmações de regularização Anvisa e disponibilidade comercial antes de publicar. '
-          + 'Se o erro continuar, rode supabase/fix_product_anvisa_compliance.sql no Supabase.',
-        );
-      }
-      throw new Error(error.message);
+      throw new Error(formatProductComplianceError(error.message));
     }
     refreshData(); // background, não bloqueia
   };

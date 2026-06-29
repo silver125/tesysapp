@@ -75,6 +75,27 @@ export default function Layout({ children, navItems, activeKey, onNavChange }: L
           </div>
 
           <div ref={profileMenuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {user?.role === 'medico' && (
+              <div
+                title="Sua pontuação Tessy"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '5px 9px',
+                  borderRadius: 999,
+                  background: 'rgba(245,130,32,0.10)',
+                  border: '1px solid rgba(245,130,32,0.18)',
+                  fontSize: 11.5,
+                  fontWeight: 650,
+                  color: 'var(--accent-ink)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span style={{ fontSize: 11, lineHeight: 1 }}>⭐</span>
+                <span>{user.points ?? 0}</span>
+              </div>
+            )}
             <div style={{ display: 'none' }} className="sm:flex items-center gap-2">
               <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
                 {user?.role === 'medico' ? 'médico' : 'empresa'}
