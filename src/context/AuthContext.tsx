@@ -6,6 +6,8 @@ import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
 import { POINTS_PER_CONNECTION, POINTS_PER_INTEREST } from '../lib/gamification';
 import { normalizeUserRole } from '../lib/authRoutes';
+import { isMissingDbColumnError, isMissingRpcError, omitDbColumns } from '../lib/dbSchema';
+import { insertLeadResilient } from '../lib/leadInsert';
 
 // Helper: timeout para evitar travas infinitas em chamadas Supabase
 // Aceita PromiseLike para suportar o query builder do supabase-js (thenable)
@@ -19,41 +21,6 @@ function withTimeout<T>(p: PromiseLike<T>, ms: number, label = 'Servidor'): Prom
       ),
     ),
   ]);
-}
-
-function isMissingDbColumnError(error: unknown, columns: string[]) {
-  const message = error instanceof Error
-    ? error.message
-    : typeof error === 'object' && error && 'message' in error
-      ? String((error as { message?: unknown }).message)
-      : String(error ?? '');
-
-  return columns.some(column => {
-    const escaped = column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`(?:'${escaped}' column|column .*${escaped}|${escaped}.* column|${escaped}.*schema cache)`, 'i').test(message);
-  });
-}
-
-function omitDbColumns<T extends Record<string, unknown>>(payload: T, columns: string[]) {
-  const next: Record<string, unknown> = { ...payload };
-  columns.forEach(column => {
-    delete next[column];
-  });
-  return next;
-}
-
-function isMissingRpcError(error: unknown, rpcName: string) {
-  const message = error instanceof Error
-    ? error.message
-    : typeof error === 'object' && error && 'message' in error
-      ? String((error as { message?: unknown }).message)
-      : String(error ?? '');
-  const code = typeof error === 'object' && error && 'code' in error
-    ? String((error as { code?: unknown }).code)
-    : '';
-  return code === 'PGRST202'
-    || /could not find the function/i.test(message)
-    || new RegExp(rpcName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(message);
 }
 
 function formatProductComplianceError(message: string) {
@@ -228,7 +195,10 @@ function dbToLead(row: Record<string, unknown>): Lead {
     companyId:       row.company_id       as string,
     companyName:     (row.company_name as string | null) || 'Empresa',
     doctorId:        row.doctor_id        as string,
-    doctorName:      (row.doctor_name as string | null) || 'Médico',
+    doctorName:      (row.doctor_name as string | null)
+      || (doctorProfile?.name as string | undefined)
+      || [doctorProfile?.first_name, doctorProfile?.last_name].filter(Boolean).join(' ').trim()
+      || 'Médico',
     doctorSpecialty: row.doctor_specialty as string | undefined,
     doctorWhatsapp:  row.doctor_whatsapp  as string | undefined,
     doctorAvatarUrl: doctorAvatarUrl || undefined,
@@ -345,7 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const baseQuery = supabase
       .from('leads')
-      .select('*, doctor:profiles!doctor_id(avatar_url)')
+      .select('*, doctor:profiles!doctor_id(name, first_name, last_name, avatar_url)')
       .order('created_at', { ascending: false });
 
     let { data, error } = await (user.role === 'empresa'
@@ -1278,11 +1248,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const existingResult = (leadId: string): AddLeadResult => ({
-      created: false,
-      leadId,
-      pointsAwarded: 0,
-    });
+    const existingResult = async (leadId: string): Promise<AddLeadResult> => {
+      let pointsAwarded = 0;
+      if (user.role === 'medico') {
+        pointsAwarded = await awardInterestPoints(leadId);
+        void refreshLeads();
+      }
+      return { created: false, leadId, pointsAwarded };
+    };
+
+    const awardInterestPoints = async (leadId: string): Promise<number> => {
+      const { data: awarded, error: pointsError } = await supabase.rpc(
+        'award_doctor_interest_points',
+        { p_lead_id: leadId },
+      );
+      if (!pointsError) {
+        const points = typeof awarded === 'number' && awarded > 0 ? awarded : 0;
+        if (points > 0) {
+          setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + points } : prev);
+          void refreshProfile();
+        }
+        return points;
+      }
+      if (isMissingRpcError(pointsError, 'award_doctor_interest_points')) {
+        setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + POINTS_PER_INTEREST } : prev);
+        return POINTS_PER_INTEREST;
+      }
+      console.warn('Não foi possível registrar pontos de interesse:', pointsError.message);
+      return 0;
+    };
 
     const local = readLocalLeads(lead.companyId);
     const localMatch = local.find(existing => isSameLead(existing, lead));
@@ -1318,7 +1312,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const persisted = { ...lead, id: leadId };
       writeLocalLead(persisted);
       mergeLeadInState(persisted);
-      if (user.role === 'medico') void refreshLeads();
       return existingResult(leadId);
     }
 
@@ -1338,54 +1331,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       created_at: lead.createdAt,
     };
 
-    let { error } = await supabase.from('leads').insert(payload);
+    const { error: insertError } = await insertLeadResilient(supabase, payload);
 
-    if (error && isMissingDbColumnError(error, ['company_name'])) {
-      console.warn('Coluna company_name ausente em leads. Inserindo sem nome da empresa.', error.message);
-      ({ error } = await supabase.from('leads').insert(omitDbColumns(payload, ['company_name'])));
-    }
-
-    if (error && isMissingDbColumnError(error, ['doctor_specialty'])) {
-      ({ error } = await supabase.from('leads').insert(omitDbColumns(payload, ['company_name', 'doctor_specialty'])));
-    }
-
-    if (error) {
-      const duplicate = error.code === '23505' || /duplicate key|unique constraint/i.test(error.message);
+    if (insertError) {
+      const duplicate = insertError.code === '23505'
+        || /duplicate key|unique constraint/i.test(insertError.message);
       if (duplicate) {
         const { data: dup } = await existingQuery;
         const leadId = (dup?.[0]?.id as string | undefined) ?? lead.id;
         const persisted = { ...lead, id: leadId };
         writeLocalLead(persisted);
         mergeLeadInState(persisted);
-        if (user.role === 'medico') void refreshLeads();
         return existingResult(leadId);
       }
-      throw new Error(error.message);
+      throw new Error(insertError.message);
     }
 
     writeLocalLead(lead);
     mergeLeadInState(lead);
 
-    let pointsAwarded = 0;
-    if (user.role === 'medico') {
-      const { data: awarded, error: pointsError } = await supabase.rpc(
-        'award_doctor_interest_points',
-        { p_lead_id: lead.id },
-      );
-      if (!pointsError) {
-        pointsAwarded = typeof awarded === 'number' && awarded > 0 ? awarded : 0;
-        if (pointsAwarded > 0) {
-          setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + pointsAwarded } : prev);
-        }
-        void refreshProfile();
-      } else if (isMissingRpcError(pointsError, 'award_doctor_interest_points')) {
-        pointsAwarded = POINTS_PER_INTEREST;
-        setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + pointsAwarded } : prev);
-      } else {
-        console.warn('Não foi possível registrar pontos de interesse:', pointsError.message);
-      }
-      void refreshLeads();
-    }
+    const pointsAwarded = user.role === 'medico'
+      ? await awardInterestPoints(lead.id)
+      : 0;
+    if (user.role === 'medico') void refreshLeads();
 
     return { created: true, leadId: lead.id, pointsAwarded };
   };

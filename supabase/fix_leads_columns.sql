@@ -2,6 +2,7 @@
 -- TESSY — Colunas faltantes na tabela leads
 --
 -- Corrige: "Could not find the 'company_name' column of 'leads'"
+--          "Could not find the 'doctor_name' column of 'leads'"
 -- ao marcar interesse / pontuação do médico.
 --
 -- Seguro para rodar mais de uma vez no Supabase SQL Editor.
