@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { User, Event, Product, Course, Lead, LeadInput, Location } from '../types';
+import type { User, Event, Product, Course, Lead, LeadInput, Location, AddLeadResult } from '../types';
 import { assertSupabaseConfigured, isSupabaseConfigured, supabase, upsertProfileWithToken } from '../lib/supabase';
 import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
@@ -1256,7 +1256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refreshData();
   };
 
-  const addLead = async (input: LeadInput) => {
+  const addLead = async (input: LeadInput): Promise<AddLeadResult> => {
     if (!user) throw new Error('Você precisa estar logado.');
     const lead: Lead = {
       id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}`,
@@ -1269,17 +1269,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
     };
 
+    const mergeLeadInState = (nextLead: Lead) => {
+      if (
+        (user.role === 'empresa' && nextLead.companyId === user.id)
+        || (user.role === 'medico' && nextLead.doctorId === user.id)
+      ) {
+        setLeads(prev => prev.some(l => isSameLead(l, nextLead)) ? prev : [nextLead, ...prev]);
+      }
+    };
+
+    const existingResult = (leadId: string): AddLeadResult => ({
+      created: false,
+      leadId,
+      pointsAwarded: 0,
+    });
+
     const local = readLocalLeads(lead.companyId);
-    if (local.some(existing => isSameLead(existing, lead))) {
-      return;
+    const localMatch = local.find(existing => isSameLead(existing, lead));
+    if (localMatch) {
+      mergeLeadInState(localMatch);
+      return existingResult(localMatch.id);
     }
 
     if (!isSupabaseConfigured) {
       writeLocalLead(lead);
-      if (user.role === 'medico') {
-        setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + POINTS_PER_INTEREST } : prev);
+      mergeLeadInState(lead);
+      const pointsAwarded = user.role === 'medico' ? POINTS_PER_INTEREST : 0;
+      if (pointsAwarded > 0) {
+        setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + pointsAwarded } : prev);
       }
-      return;
+      return { created: true, leadId: lead.id, pointsAwarded };
     }
 
     let existingQuery = supabase
@@ -1295,14 +1314,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: existing } = await existingQuery;
     if (existing && existing.length > 0) {
-      writeLocalLead(lead);
-      if (
-        (user.role === 'empresa' && lead.companyId === user.id)
-        || (user.role === 'medico' && lead.doctorId === user.id)
-      ) {
-        setLeads(prev => prev.some(l => isSameLead(l, lead)) ? prev : [lead, ...prev]);
-      }
-      return;
+      const leadId = existing[0].id as string;
+      const persisted = { ...lead, id: leadId };
+      writeLocalLead(persisted);
+      mergeLeadInState(persisted);
+      if (user.role === 'medico') void refreshLeads();
+      return existingResult(leadId);
     }
 
     const payload = {
@@ -1333,27 +1350,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (error) {
+      const duplicate = error.code === '23505' || /duplicate key|unique constraint/i.test(error.message);
+      if (duplicate) {
+        const { data: dup } = await existingQuery;
+        const leadId = (dup?.[0]?.id as string | undefined) ?? lead.id;
+        const persisted = { ...lead, id: leadId };
+        writeLocalLead(persisted);
+        mergeLeadInState(persisted);
+        if (user.role === 'medico') void refreshLeads();
+        return existingResult(leadId);
+      }
       throw new Error(error.message);
     }
 
     writeLocalLead(lead);
-    if (
-      (user.role === 'empresa' && lead.companyId === user.id)
-      || (user.role === 'medico' && lead.doctorId === user.id)
-    ) {
-      setLeads(prev => prev.some(l => isSameLead(l, lead)) ? prev : [lead, ...prev]);
+    mergeLeadInState(lead);
+
+    let pointsAwarded = 0;
+    if (user.role === 'medico') {
+      const { data: awarded, error: pointsError } = await supabase.rpc(
+        'award_doctor_interest_points',
+        { p_lead_id: lead.id },
+      );
+      if (!pointsError) {
+        pointsAwarded = typeof awarded === 'number' && awarded > 0 ? awarded : 0;
+        if (pointsAwarded > 0) {
+          setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + pointsAwarded } : prev);
+        }
+        void refreshProfile();
+      } else if (isMissingRpcError(pointsError, 'award_doctor_interest_points')) {
+        pointsAwarded = POINTS_PER_INTEREST;
+        setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + pointsAwarded } : prev);
+      } else {
+        console.warn('Não foi possível registrar pontos de interesse:', pointsError.message);
+      }
+      void refreshLeads();
     }
 
-    if (user.role === 'medico') {
-      setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + POINTS_PER_INTEREST } : prev);
-      const { error: pointsError } = await supabase.rpc('award_doctor_interest_points', { p_lead_id: lead.id });
-      if (pointsError && !isMissingRpcError(pointsError, 'award_doctor_interest_points')) {
-        setUser(prev => prev ? { ...prev, points: Math.max(0, (prev.points ?? 0) - POINTS_PER_INTEREST) } : prev);
-        console.warn('Não foi possível registrar pontos de interesse:', pointsError.message);
-      } else {
-        void refreshProfile();
-      }
-    }
+    return { created: true, leadId: lead.id, pointsAwarded };
   };
 
   const requestConnection = async (leadId: string) => {

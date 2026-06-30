@@ -116,6 +116,13 @@ export interface LeadInput {
   message?: string;
 }
 
+/** Resultado idempotente ao registrar interesse comercial. */
+export interface AddLeadResult {
+  created: boolean;
+  leadId: string;
+  pointsAwarded: number;
+}
+
 export type CourseModality = 'online' | 'presencial' | 'hibrido';
 
 export interface Course {

@@ -54,7 +54,24 @@ export function categoryTint(cat: string): [string, string] {
 export function buildWhatsappLink(phone: string | undefined, message?: string) {
   if (!phone) return '';
   const clean = phone.replace(/\D/g, '');
+  if (clean.length < 10) return '';
   const num = clean.startsWith('55') ? clean : `55${clean}`;
   const msg = message ? `?text=${encodeURIComponent(message)}` : '';
   return `https://wa.me/${num}${msg}`;
+}
+
+/** Abre WhatsApp no gesto do clique; evita bloqueio de popup após awaits. */
+export function openWhatsappLink(phone: string | undefined, message?: string) {
+  const url = buildWhatsappLink(phone, message);
+  if (!url) return false;
+  const popup = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!popup) window.location.assign(url);
+  return true;
+}
+
+export function openExternalLink(url: string) {
+  if (!url) return false;
+  const popup = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!popup) window.location.assign(url);
+  return true;
 }

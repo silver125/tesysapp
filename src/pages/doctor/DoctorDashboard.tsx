@@ -6,7 +6,7 @@ import {
   CompanyMark, VerifiedDot, Mono, BannerCard, Chip, ModalityBadge,
   WaIcon,
 } from '../../components/ui';
-import { buildWhatsappLink, categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
+import { buildWhatsappLink, categoryTint, companyInitials, companyTint, openExternalLink } from '../../lib/uiHelpers';
 import {
   buildRepresentativeProfiles,
   matchesRepresentativeRegion,
@@ -14,6 +14,7 @@ import {
   representativeRegionFilters,
   type RepresentativeProfile,
 } from '../../lib/representatives';
+import { connectWithRepresentative } from '../../lib/commercialConnect';
 import { getLevelProgress, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
@@ -584,23 +585,20 @@ function AvatarBubble({ photoUrl, initials, tint, size = 52 }: { photoUrl?: stri
 function RepSuggestionCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect: () => void }) {
   const { addLead } = useAuth();
   const [busy, setBusy] = useState(false);
-  const waLink = buildWhatsappLink(rep.whatsapp, `Olá ${rep.companyName}, sou médico no Tessy e gostaria de falar com o representante.`);
+  const [feedback, setFeedback] = useState('');
+  const [error, setError] = useState('');
 
   async function handleConnect() {
     if (busy) return;
     setBusy(true);
+    setError('');
+    setFeedback('');
     try {
-      await addLead({
-        companyId: rep.companyId,
-        companyName: rep.companyName,
-        itemType: 'company',
-        itemName: rep.companyName,
-        intent: 'representative_contact',
-        message: 'Médico pediu contato do representante regional.',
-      });
-      if (waLink) window.open(waLink, '_blank', 'noopener,noreferrer');
-      else onConnect();
-    } catch {
+      const result = await connectWithRepresentative(rep.companyId, rep.companyName, rep.whatsapp, addLead);
+      setFeedback(result.message);
+      if (!result.whatsappOpened) onConnect();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível registrar o contato.');
       onConnect();
     } finally {
       setBusy(false);
@@ -652,8 +650,14 @@ function RepSuggestionCard({ rep, onConnect }: { rep: RepresentativeProfile; onC
         fontWeight: 650,
         cursor: busy ? 'not-allowed' : 'pointer',
       }}>
-        {busy ? '...' : 'Conectar'}
+        {busy ? '...' : feedback ? 'Conectado ✓' : 'Conectar'}
       </button>
+      {feedback && !error && (
+        <div style={{ marginTop: 8, fontSize: 11, color: '#1EA97C', lineHeight: 1.35 }}>{feedback}</div>
+      )}
+      {error && (
+        <div style={{ marginTop: 8, fontSize: 11, color: '#F25C54', lineHeight: 1.35 }}>{error}</div>
+      )}
     </article>
   );
 }
@@ -954,20 +958,22 @@ function RepresentativesView({
 }) {
   const { addLead } = useAuth();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [successId, setSuccessId] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState('');
 
   async function connectRep(rep: RepresentativeProfile) {
+    if (busyId) return;
     setBusyId(rep.companyId);
+    setError('');
+    setSuccessId(null);
+    setSuccessMsg('');
     try {
-      await addLead({
-        companyId: rep.companyId,
-        companyName: rep.companyName,
-        itemType: 'company',
-        itemName: rep.companyName,
-        intent: 'representative_contact',
-        message: 'Médico pediu contato do representante regional.',
-      });
-      const wa = buildWhatsappLink(rep.whatsapp, `Olá ${rep.companyName}, sou médico no Tessy e gostaria de falar com o representante.`);
-      if (wa) window.open(wa, '_blank', 'noopener,noreferrer');
+      const result = await connectWithRepresentative(rep.companyId, rep.companyName, rep.whatsapp, addLead);
+      setSuccessId(rep.companyId);
+      setSuccessMsg(result.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível registrar o contato.');
     } finally {
       setBusyId(null);
     }
@@ -978,6 +984,20 @@ function RepresentativesView({
       <MarketHead title="Representantes" subtitle={`Encontre representantes por região · ${doctorRegion}`} count={representatives.length} countWord="representante" />
       <SearchBar value={search} onChange={onSearchChange} placeholder="Buscar representante, empresa ou especialidade..." />
       <FilterBar chips={regionChips} active={regionFilter} onChange={onRegionChange} />
+      {error && (
+        <div style={{
+          marginBottom: 12,
+          padding: '10px 12px',
+          borderRadius: 12,
+          background: 'rgba(242,92,84,0.08)',
+          border: '1px solid rgba(242,92,84,0.18)',
+          color: '#F25C54',
+          fontSize: 12,
+          lineHeight: 1.4,
+        }}>
+          {error}
+        </div>
+      )}
       {representatives.length === 0 ? (
         <Empty text="Nenhum representante na sua região ainda." hint="Empresas com WhatsApp e locais cadastrados aparecem aqui." />
       ) : (
@@ -1028,8 +1048,11 @@ function RepresentativesView({
                 fontWeight: 650,
                 cursor: busyId === rep.companyId ? 'not-allowed' : 'pointer',
               }}>
-                {busyId === rep.companyId ? 'Conectando...' : 'Conectar'}
+                {busyId === rep.companyId ? 'Conectando...' : successId === rep.companyId ? 'Conectado ✓' : 'Conectar'}
               </button>
+              {successId === rep.companyId && successMsg && (
+                <div style={{ marginTop: 8, fontSize: 11.5, color: '#1EA97C', lineHeight: 1.35 }}>{successMsg}</div>
+              )}
             </article>
           ))}
         </div>
@@ -1317,11 +1340,11 @@ function ProductCard({ product }: { product: Product }) {
   const [leadError, setLeadError] = useState('');
 
   async function sendProductLead(intent: 'representative_contact' | 'sample_request' | 'instagram_partnership') {
-    if (interestSent) return;
+    if (interestSent && intent === 'sample_request') return;
     setLeadError('');
-    setLeadSent(true);
+    if (intent === 'sample_request') setLeadSent(true);
     try {
-      await addLead({
+      const result = await addLead({
         companyId: product.companyId,
         companyName: product.companyName,
         itemType: 'product',
@@ -1334,8 +1357,11 @@ function ProductCard({ product }: { product: Product }) {
             ? 'Médico quer avaliar parceria para divulgação no Instagram.'
             : 'Médico pediu contato do representante do produto.',
       });
+      if (result.pointsAwarded > 0) {
+        setLeadError('');
+      }
     } catch (e) {
-      setLeadSent(false);
+      if (intent === 'sample_request') setLeadSent(false);
       setLeadError(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
     }
   }
@@ -1423,8 +1449,8 @@ function ProductCard({ product }: { product: Product }) {
             disabled={!canContactRep}
             onClick={() => {
               if (!canContactRep) return;
+              openExternalLink(repTarget);
               void sendProductLead('representative_contact');
-              window.open(repTarget, '_blank', 'noopener,noreferrer');
             }}
             style={{
               padding: '13px 12px', borderRadius: 12, border: 'none',
@@ -1493,7 +1519,7 @@ function CourseCard({ course }: { course: Course }) {
         intent: 'course_interest',
         message: `Médico demonstrou interesse em ${course.title}.`,
       });
-      if (interestTarget) window.open(interestTarget, '_blank', 'noopener,noreferrer');
+      if (interestTarget) openExternalLink(interestTarget);
     } catch (e) {
       setSent(false);
       setLeadError(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
