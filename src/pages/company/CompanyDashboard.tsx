@@ -1735,7 +1735,7 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
       ? 'Aguardando aprovação'
       : requesting
         ? 'Solicitando...'
-        : 'Conectar no WhatsApp';
+        : 'Solicitar conexão';
 
   const buttonStyle = {
     marginTop: 12,
