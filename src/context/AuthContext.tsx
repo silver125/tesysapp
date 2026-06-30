@@ -34,15 +34,12 @@ function formatProductComplianceError(
   if (/schema cache|could not find.*column/i.test(message)) {
     return (
       'Banco desatualizado para publicar produtos. '
-      + 'Rode supabase/fix_product_anvisa_compliance.sql no Supabase SQL Editor e tente de novo.'
+      + 'Rode supabase/fix_product_publish.sql no Supabase SQL Editor e tente de novo.'
     );
   }
   if (isProductComplianceError(message)) {
     if (opts?.anvisaOk && opts?.commercialOk) {
-      return (
-        'Confirmações marcadas, mas o servidor recusou a publicação. '
-        + 'Rode supabase/fix_product_anvisa_compliance.sql no Supabase SQL Editor e tente novamente.'
-      );
+      return `Não foi possível publicar o produto: ${message}`;
     }
     return 'Marque as confirmações de regularização Anvisa e disponibilidade comercial antes de publicar.';
   }
@@ -52,8 +49,8 @@ function formatProductComplianceError(
 async function insertProductResilient(payload: Record<string, unknown>) {
   const optionalGroups = [
     [] as string[],
-    ['image_url', 'listing_type'],
-    ['anvisa_regularized', 'commercially_available', 'listing_type', 'image_url'],
+    ['image_url', 'listing_type', 'anvisa_regularized', 'commercially_available'],
+    ['image_url', 'listing_type', 'anvisa_regularized', 'commercially_available', 'website', 'available_for'],
   ];
 
   let lastError: { message: string } | null = null;
@@ -74,9 +71,9 @@ async function insertProductResilient(payload: Record<string, unknown>) {
     lastError = result.error;
 
     const missingColumn = isMissingDbColumnError(result.error, [
-      'anvisa_regularized', 'commercially_available', 'listing_type', 'image_url',
+      'anvisa_regularized', 'commercially_available', 'listing_type', 'image_url', 'website', 'available_for',
     ]);
-    if (!missingColumn && !isProductComplianceError(result.error.message)) break;
+    if (!missingColumn) break;
   }
 
   return { error: lastError };
@@ -1129,14 +1126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       commercially_available: true,
     };
 
-    // 1) Insert direto — mais confiável quando o usuário confirmou na UI
-    const directResult = await insertProductResilient(payload);
-    if (!directResult.error) {
-      refreshData();
-      return;
-    }
-
-    // 2) RPC com bypass compliance_confirmed (schema antigo ou trigger)
+    // 1) RPC no servidor — evita schema cache do PostgREST e grava compliance TRUE
     const rpcResult = await withTimeout(
       supabase.rpc('publish_company_product', { payload: rpcPayload }),
       12000,
@@ -1147,12 +1137,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const rpcMessage = rpcResult.error.message;
-    if (!isMissingRpcError(rpcResult.error, 'publish_company_product')) {
-      throw new Error(formatProductComplianceError(rpcMessage, complianceOpts));
+    // 2) Insert direto (fallback se RPC ausente ou desatualizada)
+    const directResult = await insertProductResilient(payload);
+    if (!directResult.error) {
+      refreshData();
+      return;
     }
 
-    throw new Error(formatProductComplianceError(directResult.error?.message ?? rpcMessage, complianceOpts));
+    const rpcMessage = rpcResult.error.message;
+    const directMessage = directResult.error?.message ?? '';
+    const detail = directMessage || rpcMessage;
+
+    if (isMissingRpcError(rpcResult.error, 'publish_company_product')) {
+      throw new Error(formatProductComplianceError(detail, complianceOpts));
+    }
+
+    throw new Error(formatProductComplianceError(detail, complianceOpts));
   };
 
   const deleteProduct = async (id: string) => {
