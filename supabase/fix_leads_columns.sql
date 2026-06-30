@@ -33,13 +33,13 @@ ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS interest_points_awarded BOOLEA
 
 -- Preenche nomes em registros antigos
 UPDATE public.leads l
-SET company_name = COALESCE(p.company, p.company_name, p.name, 'Empresa')
+SET company_name = COALESCE(NULLIF(TRIM(p.company), ''), NULLIF(TRIM(p.name), ''), 'Empresa')
 FROM public.profiles p
 WHERE l.company_id = p.id
   AND (l.company_name IS NULL OR TRIM(l.company_name) = '');
 
 UPDATE public.leads l
-SET doctor_name = COALESCE(p.name, TRIM(CONCAT(p.first_name, ' ', p.last_name)), 'Médico')
+SET doctor_name = COALESCE(NULLIF(TRIM(p.name), ''), 'Médico')
 FROM public.profiles p
 WHERE l.doctor_id = p.id
   AND (l.doctor_name IS NULL OR TRIM(l.doctor_name) = '');

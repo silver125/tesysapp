@@ -270,6 +270,13 @@ export default function DoctorDashboard() {
     const matchCat = productFilter === 'all' || includesQ(p.category, productFilter);
     return matchQ && matchCat;
   });
+  const filtCourses = courses.filter(c => {
+    const matchQ = !q || includesQ(c.title, q) || includesQ(c.companyName, q);
+    const matchFilter = evFilter === 'all'
+      || evFilter === 'workshop'
+      || (evFilter === 'online' && c.modality === 'online');
+    return matchQ && matchFilter;
+  });
   const homeEvents = upcomingEvents
     .filter(e => !q || includesQ(e.title, q) || includesQ(e.companyName, q));
   const productChips = productCategoryChips(products);
@@ -378,15 +385,20 @@ export default function DoctorDashboard() {
       {/* ── EVENTS ── */}
       {tab === 'events' && (
         <div>
-          <MarketHead title="Eventos" count={events.length} countWord="evento" />
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos..." />
+          <MarketHead title="Eventos & workshops" count={events.length + courses.length} countWord="atividade" />
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos ou workshops..." />
           <FilterBar
             chips={[['all','Todos'],['congresso','Congresso'],['workshop','Workshop'],['online','Online']]}
             active={evFilter} onChange={setEvFilter}
           />
-          {filtEvents.length === 0
-            ? <Empty text="Nenhum evento disponível no momento." hint="Novas oportunidades aparecerão aqui quando forem publicadas." />
-            : <MarketGrid>{filtEvents.map(e => <EventMarketCard key={e.id} ev={e} onOpen={() => setOpenEvent(e)} />)}</MarketGrid>
+          {filtEvents.length === 0 && filtCourses.length === 0
+            ? <Empty text="Nenhuma atividade disponível no momento." hint="Novas oportunidades aparecerão aqui quando forem publicadas." />
+            : (
+              <MarketGrid>
+                {filtEvents.map(e => <EventMarketCard key={e.id} ev={e} onOpen={() => setOpenEvent(e)} />)}
+                {filtCourses.map(c => <CourseMarketCard key={c.id} course={c} onOpen={() => setOpenCourse(c)} />)}
+              </MarketGrid>
+            )
           }
         </div>
       )}
@@ -933,6 +945,23 @@ function EventMarketCard({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
       title={ev.title}
       subtitle={`${ev.companyName} • ${locationText(ev.location)}`}
       tag={countdown ? <Chip color="var(--accent)">{countdown}</Chip> : undefined}
+      onClick={onOpen}
+    />
+  );
+}
+
+function CourseMarketCard({ course, onOpen }: { course: Course; onOpen: () => void }) {
+  const displayDate = courseDisplayDate(course);
+  const dateBadge = displayDate ? `${dayNum(displayDate)} ${monthShort(displayDate)}`.trim() : '';
+  const countdown = displayDate ? eventCountdown({ date: displayDate, time: course.time }) : '';
+  return (
+    <MarketCard
+      image={visualUrl(course.imageUrl)}
+      topLeft={dateBadge ? <PhotoBadge color="#F58220">{dateBadge}</PhotoBadge> : <PhotoBadge color="#F58220">Workshop</PhotoBadge>}
+      topRight={<PhotoBadge solid={false}>{modalityText(course.modality)}</PhotoBadge>}
+      title={course.title}
+      subtitle={`${course.companyName} • ${course.category}`}
+      tag={countdown ? <Chip color="#F58220">{countdown}</Chip> : <Chip color="#F58220">Workshop</Chip>}
       onClick={onOpen}
     />
   );

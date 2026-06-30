@@ -296,16 +296,37 @@ function fmtPhone(raw: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
+const CONNECTION_RANK: Record<NonNullable<Lead['connectionStatus']>, number> = {
+  none: 0,
+  requested: 1,
+  approved: 2,
+};
+
 function latestLeadByDoctor(leads: Lead[]) {
   const ordered = [...leads].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const seen = new Set<string>();
+  const byDoctor = new Map<string, Lead>();
 
-  return ordered.filter(lead => {
+  // Mantém o lead mais recente por médico, mas preserva o status de conexão
+  // mais forte (e o WhatsApp liberado) que ele já tenha em qualquer interesse.
+  for (const lead of ordered) {
     const doctorKey = leadDoctorKey(lead);
-    if (seen.has(doctorKey)) return false;
-    seen.add(doctorKey);
-    return true;
-  });
+    const current = byDoctor.get(doctorKey);
+    if (!current) {
+      byDoctor.set(doctorKey, lead);
+      continue;
+    }
+    const bestStatus = CONNECTION_RANK[lead.connectionStatus ?? 'none'] > CONNECTION_RANK[current.connectionStatus ?? 'none']
+      ? lead.connectionStatus
+      : current.connectionStatus;
+    byDoctor.set(doctorKey, {
+      ...current,
+      connectionStatus: bestStatus,
+      doctorWhatsapp: current.doctorWhatsapp || lead.doctorWhatsapp,
+      doctorAvatarUrl: current.doctorAvatarUrl || lead.doctorAvatarUrl,
+    });
+  }
+
+  return [...byDoctor.values()];
 }
 
 function eventLeadDoctorCount(event: Event, leads: Lead[]) {
@@ -759,6 +780,25 @@ export default function CompanyDashboard() {
                   />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Workshops list access */}
+          {myCourses.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 16, fontWeight: 560 }}>Meus workshops</span>
+                <button onClick={() => setTab('courses')} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontFamily: "var(--font-mono)", fontSize: 10,
+                  color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
+                }}>ver todos →</button>
+              </div>
+              <MarketGrid>
+                {myCourses.slice(0, 4).map(c => (
+                  <CourseCompactCard key={c.id} course={c} onOpen={() => setOpenCourseId(c.id)} />
+                ))}
+              </MarketGrid>
             </div>
           )}
         </div>
