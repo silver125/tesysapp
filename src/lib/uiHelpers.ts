@@ -60,18 +60,26 @@ export function buildWhatsappLink(phone: string | undefined, message?: string) {
   return `https://wa.me/${num}${msg}`;
 }
 
+function openUrlInNewContext(url: string) {
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener noreferrer';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
 /** Abre WhatsApp no gesto do clique; evita bloqueio de popup após awaits. */
 export function openWhatsappLink(phone: string | undefined, message?: string) {
   const url = buildWhatsappLink(phone, message);
   if (!url) return false;
-  const popup = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!popup) window.location.assign(url);
+  openUrlInNewContext(url);
   return true;
 }
 
 export function openExternalLink(url: string) {
   if (!url) return false;
-  const popup = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!popup) window.location.assign(url);
+  openUrlInNewContext(url);
   return true;
 }
