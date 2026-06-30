@@ -239,7 +239,7 @@ function doctorMetaLine(user: User | null | undefined) {
 
 
 export default function DoctorDashboard() {
-  const { user, events, products, courses, leads, locations, refreshData } = useAuth();
+  const { user, events, products, courses, leads, locations, representatives: registeredReps, refreshData } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
@@ -280,7 +280,7 @@ export default function DoctorDashboard() {
   const homeEvents = upcomingEvents
     .filter(e => !q || includesQ(e.title, q) || includesQ(e.companyName, q));
   const productChips = productCategoryChips(products);
-  const representatives = buildRepresentativeProfiles(events, products, courses, locations, user);
+  const representatives = buildRepresentativeProfiles(events, products, courses, locations, user, registeredReps);
   const regionChips = representativeRegionFilters(representatives);
   const filtRepresentatives = representatives.filter(rep => {
     const matchQ = !q || includesQ(rep.companyName, q) || includesQ(rep.repLabel, q) || includesQ(rep.specialty, q);
@@ -994,13 +994,13 @@ function RepresentativesView({
 
   async function connectRep(rep: RepresentativeProfile) {
     if (busyId) return;
-    setBusyId(rep.companyId);
+    setBusyId(rep.id);
     setError('');
     setSuccessId(null);
     setSuccessMsg('');
     try {
       const result = await connectWithRepresentative(rep.companyId, rep.companyName, rep.whatsapp, addLead);
-      setSuccessId(rep.companyId);
+      setSuccessId(rep.id);
       setSuccessMsg(result.message);
     } catch (err) {
       setError(formatLeadError(err instanceof Error ? err.message : ''));
@@ -1033,7 +1033,7 @@ function RepresentativesView({
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {representatives.map(rep => (
-            <article key={rep.companyId} style={{
+            <article key={rep.id} style={{
               padding: 16,
               borderRadius: 20,
               background: '#fff',
@@ -1042,7 +1042,15 @@ function RepresentativesView({
             }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-                  <AvatarBubble initials={representativeInitials(rep.repLabel)} tint={companyTint(rep.companyName)} size={56} />
+                  {rep.photoUrl ? (
+                    <div style={{
+                      width: 56, height: 56, borderRadius: 18,
+                      background: `url(${rep.photoUrl}) center/cover`,
+                      border: '1px solid rgba(216,222,236,0.92)',
+                    }} />
+                  ) : (
+                    <AvatarBubble initials={representativeInitials(rep.repLabel)} tint={companyTint(rep.companyName)} size={56} />
+                  )}
                   {rep.companyLogoUrl && (
                     <div style={{
                       position: 'absolute',
@@ -1062,11 +1070,11 @@ function RepresentativesView({
                   <div style={{ marginTop: 2, fontSize: 12.5, color: 'var(--muted)' }}>{rep.companyName}</div>
                   <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <Chip color="#B9C1EA">{rep.specialty}</Chip>
-                    <Chip color="#F58220">{rep.regionLabel}</Chip>
+                    {rep.regionLabel && <Chip color="#F58220">{rep.regionLabel}</Chip>}
                   </div>
                 </div>
               </div>
-              <button type="button" disabled={busyId === rep.companyId} onClick={() => { void connectRep(rep); }} style={{
+              <button type="button" disabled={busyId === rep.id} onClick={() => { void connectRep(rep); }} style={{
                 marginTop: 14,
                 width: '100%',
                 padding: '11px 12px',
@@ -1076,11 +1084,11 @@ function RepresentativesView({
                 color: 'var(--accent)',
                 fontSize: 13,
                 fontWeight: 650,
-                cursor: busyId === rep.companyId ? 'not-allowed' : 'pointer',
+                cursor: busyId === rep.id ? 'not-allowed' : 'pointer',
               }}>
-                {busyId === rep.companyId ? 'Conectando...' : successId === rep.companyId ? 'Conectado ✓' : 'Conectar'}
+                {busyId === rep.id ? 'Conectando...' : successId === rep.id ? 'Conectado ✓' : 'Conectar'}
               </button>
-              {successId === rep.companyId && successMsg && (
+              {successId === rep.id && successMsg && (
                 <div style={{ marginTop: 8, fontSize: 11.5, color: '#1EA97C', lineHeight: 1.35 }}>{successMsg}</div>
               )}
             </article>

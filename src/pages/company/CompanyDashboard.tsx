@@ -7,10 +7,12 @@ import {
 } from '../../components/ui';
 import { buildWhatsappLink, categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
 import { MarketGrid, MarketCard, PhotoBadge, Sheet, Breadcrumb } from '../../components/market';
+import ProfilePhotoField from '../../components/ProfilePhotoField';
+import { uploadProfileAvatar } from '../../lib/profileAvatar';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
-import type { Event, Product, Course, CourseModality, Lead, Location, LocationType } from '../../types';
+import type { Event, Product, Course, CourseModality, Lead, Location, LocationType, Representative } from '../../types';
 
-type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads' | 'locations';
+type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads' | 'locations' | 'representatives';
 
 const LOCATION_TYPES: { value: LocationType; label: string }[] = [
   { value: 'ponto_venda',  label: 'Ponto de venda' },
@@ -205,11 +207,19 @@ function IcoBook(a: boolean) {
   return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M3.5 16A2 2 0 015.5 14H17"/><path d="M5.5 1H17v17H5.5A2 2 0 013.5 16V3a2 2 0 012-2z"/></svg>;
 }
 
-function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'partnership' | 'location' }) {
+function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'partnership' | 'location' | 'representative' }) {
   const c = 'var(--accent)';
   if (type === 'event') return IcoCalendar(true);
   if (type === 'product') return IcoBox(true);
   if (type === 'course') return IcoBook(true);
+  if (type === 'representative') {
+    return (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
+        <circle cx="10" cy="7" r="3" />
+        <path d="M4 17c0-3.3 2.7-5 6-5s6 1.7 6 5" strokeLinecap="round" />
+      </svg>
+    );
+  }
   if (type === 'location') {
     return (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
@@ -343,7 +353,7 @@ function eventLeadDoctorCount(event: Event, leads: Lead[]) {
 }
 
 export default function CompanyDashboard() {
-  const { user, events, products, courses, leads, locations, addEvent, addProduct, addCourse, addLocation, deleteLocation, deleteEvent, deleteProduct, deleteCourse, updateEvent, requestConnection } = useAuth();
+  const { user, events, products, courses, leads, locations, representatives, addEvent, addProduct, addCourse, addLocation, deleteLocation, addRepresentative, deleteRepresentative, deleteEvent, deleteProduct, deleteCourse, updateEvent, requestConnection } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
@@ -364,6 +374,7 @@ export default function CompanyDashboard() {
   const myProducts = (products ?? []).filter(p => p.companyId === user?.id);
   const myCourses  = (courses ?? []).filter(c => c.companyId === user?.id);
   const myLocations = (locations ?? []).filter(l => l.companyId === user?.id);
+  const myReps = (representatives ?? []).filter(r => r.companyId === user?.id);
   const eventById = new Map(myEvents.map(event => [event.id, event]));
   const eventByName = new Map(myEvents.map(event => [event.title, event]));
   const activeLeads = companyLeads.filter(lead => {
@@ -389,8 +400,9 @@ export default function CompanyDashboard() {
     setTab(k as Tab);
   }
 
-  function openCreate(target: 'event' | 'product' | 'course' | 'location') {
+  function openCreate(target: 'event' | 'product' | 'course' | 'location' | 'representative') {
     if (target === 'location') { setTab('locations'); return; }
+    if (target === 'representative') { setTab('representatives'); return; }
     setCreateKind(target);
     setCreateSkipType(true);
     setTab('create');
@@ -571,11 +583,12 @@ export default function CompanyDashboard() {
                 { key: 'event', target: 'event', label: 'Evento', desc: 'Congressos e encontros' },
                 { key: 'product', target: 'product', label: 'Produto', desc: 'Tecnologia e materiais' },
                 { key: 'course', target: 'course', label: 'Workshop', desc: 'Capacitações médicas' },
+                { key: 'representative', target: 'representative', label: 'Representante', desc: 'Quem fala com os médicos' },
                 { key: 'partnership', target: 'product', label: 'Parceria', desc: 'Relacionamento comercial' },
                 { key: 'location', target: 'location', label: 'Local', desc: 'Pontos de atendimento' },
               ].map(item => {
-                const key = item.key as 'event' | 'product' | 'course' | 'partnership' | 'location';
-                const target = item.target as 'event' | 'product' | 'course' | 'location';
+                const key = item.key as 'event' | 'product' | 'course' | 'partnership' | 'location' | 'representative';
+                const target = item.target as 'event' | 'product' | 'course' | 'location' | 'representative';
                 return (
                   <button key={key} onClick={() => openCreate(target)} style={{
                     padding: '12px 10px', borderRadius: 16,
@@ -801,6 +814,37 @@ export default function CompanyDashboard() {
               </MarketGrid>
             </div>
           )}
+
+          {/* Representatives access */}
+          <div style={{ marginTop: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 16, fontWeight: 560 }}>Meus representantes</span>
+              <button onClick={() => setTab('representatives')} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: "var(--font-mono)", fontSize: 10,
+                color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
+              }}>{myReps.length > 0 ? 'gerenciar →' : 'cadastrar →'}</button>
+            </div>
+            {myReps.length === 0 ? (
+              <button onClick={() => setTab('representatives')} style={{
+                width: '100%', textAlign: 'left', cursor: 'pointer',
+                padding: 16, borderRadius: 18,
+                background: 'linear-gradient(135deg, rgba(74,168,255,0.10), rgba(255,255,255,0.92))',
+                border: '1px solid rgba(74,168,255,0.22)',
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 620, color: 'var(--ink)' }}>Cadastre seu representante</div>
+                <p style={{ margin: '5px 0 0', fontSize: 12.5, lineHeight: 1.4, color: 'var(--ink-2)' }}>
+                  Com foto, região e especialidade, os médicos encontram quem fala pela sua empresa.
+                </p>
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 }}>
+                {myReps.slice(0, 6).map(rep => (
+                  <RepMiniCard key={rep.id} rep={rep} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -875,6 +919,16 @@ export default function CompanyDashboard() {
           company={companyInfo}
           onAdd={addLocation}
           onDelete={deleteLocation}
+        />
+      )}
+
+      {/* ── REPRESENTATIVES ── */}
+      {tab === 'representatives' && (
+        <RepresentativesManager
+          representatives={myReps}
+          company={companyInfo}
+          onAdd={addRepresentative}
+          onDelete={deleteRepresentative}
         />
       )}
 
@@ -1114,8 +1168,8 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
           website: normalizeUrl(pr.website),
           imageUrl,
           listingType: isPartnership ? 'partnership' : 'product',
-          anvisaRegularized: isPartnership ? true : anvisaConfirmed,
-          commerciallyAvailable: isPartnership ? true : commercialConfirmed,
+          anvisaRegularized: isPartnership || anvisaConfirmed,
+          commerciallyAvailable: isPartnership || commercialConfirmed,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else {
@@ -2279,6 +2333,222 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
                 color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
                 opacity: deletingId === loc.id ? 0.6 : 1,
               }}>{deletingId === loc.id ? '...' : 'Excluir'}</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Representatives ─── */
+function RepMiniCard({ rep }: { rep: Representative }) {
+  return (
+    <div style={{
+      minWidth: 150, maxWidth: 168, padding: 12, borderRadius: 16,
+      background: 'var(--card)', border: '1px solid var(--line)',
+      boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
+    }}>
+      <div style={{
+        width: 44, height: 44, borderRadius: 14, marginBottom: 8,
+        background: rep.photoUrl
+          ? `url(${rep.photoUrl}) center/cover`
+          : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 15, fontWeight: 620, overflow: 'hidden',
+      }}>
+        {!rep.photoUrl && (rep.name?.trim()?.[0] ?? 'R').toUpperCase()}
+      </div>
+      <div style={{ fontSize: 13.5, fontWeight: 620, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {rep.name}
+      </div>
+      <div style={{ marginTop: 2, fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {rep.specialty || 'Representante'}
+      </div>
+      {(rep.city || rep.state || rep.region) && (
+        <div style={{ marginTop: 6 }}>
+          <Chip color="#F58220">{[rep.city, rep.state].filter(Boolean).join(' · ') || rep.region}</Chip>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RepresentativesManager({ representatives, company, onAdd, onDelete }: {
+  representatives: Representative[];
+  company: { id: string; name: string; whatsapp?: string };
+  onAdd: (rep: Omit<Representative, 'id' | 'createdAt'>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [name, setName] = useState('');
+  const [specialty, setSpecialty] = useState('');
+  const [city, setCity] = useState('');
+  const [stateUf, setStateUf] = useState('');
+  const [region, setRegion] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
+  const [photo, setPhoto] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  function setPhotoDraft(file: File | null) {
+    setPhoto(prev => {
+      if (prev.preview.startsWith('blob:')) URL.revokeObjectURL(prev.preview);
+      return { file, preview: file ? URL.createObjectURL(file) : '' };
+    });
+  }
+
+  function reset() {
+    setName(''); setSpecialty(''); setCity(''); setStateUf('');
+    setRegion(''); setWhatsapp(''); setEmail(''); setBio('');
+    setPhotoDraft(null);
+  }
+
+  async function handleDelete(id: string) {
+    setDeleteError('');
+    setDeletingId(id);
+    try {
+      await onDelete(id);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir representante.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleSave() {
+    if (!name.trim()) { setError('Informe o nome do representante.'); return; }
+    setError('');
+    setSaving(true);
+    try {
+      let photoUrl: string | undefined;
+      if (photo.file) photoUrl = await uploadProfileAvatar(photo.file, company.id);
+      const rawWa = whatsapp.replace(/\D/g, '');
+      await onAdd({
+        companyId: company.id,
+        companyName: company.name,
+        name: name.trim(),
+        specialty: specialty.trim() || undefined,
+        region: region.trim() || undefined,
+        city: city.trim() || undefined,
+        state: stateUf.trim() || undefined,
+        whatsapp: rawWa ? (rawWa.startsWith('55') ? rawWa : `55${rawWa}`) : (company.whatsapp || undefined),
+        email: email.trim() || undefined,
+        bio: bio.trim() || undefined,
+        photoUrl,
+      });
+      reset();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao salvar representante.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <Breadcrumb items={['início', 'representantes']} />
+      <div style={{ marginBottom: 18 }}>
+        <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+          Quem fala pela empresa
+        </Mono>
+        <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
+          Representantes<span style={{ color: 'var(--accent)' }}>.</span>
+        </h1>
+        <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
+          Cadastre quem atende os médicos. Com foto, especialidade e região, eles aparecem na vitrine para os médicos conectarem.
+        </p>
+      </div>
+
+      {/* Form */}
+      <div style={{
+        padding: 16, borderRadius: 18, background: 'var(--card)',
+        border: '1px solid var(--line)', marginBottom: 18,
+        display: 'flex', flexDirection: 'column', gap: 16,
+      }}>
+        <ProfilePhotoField label="FOTO DO REPRESENTANTE (opcional)" preview={photo.preview} onChange={setPhotoDraft} />
+        <WField label="NOME DO REPRESENTANTE" value={name} onChange={setName} placeholder="Ex: Ana Souza" />
+        <WField label="ESPECIALIDADE / ÁREA (opcional)" value={specialty} onChange={setSpecialty} placeholder="Dermatologia, Cardiologia..." />
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+          <WField label="CIDADE (opcional)" value={city} onChange={setCity} placeholder="São Paulo" />
+          <WField label="UF" value={stateUf} onChange={v => setStateUf(v.toUpperCase().slice(0, 2))} placeholder="SP" />
+        </div>
+        <WField label="REGIÃO DE ATUAÇÃO (opcional)" value={region} onChange={setRegion} placeholder="Ex: Grande SP, Sul de MG" />
+        <WField label="WHATSAPP (opcional)" value={whatsapp} onChange={v => setWhatsapp(fmtPhone(v))} placeholder="(11) 99999-9999" type="tel" />
+        <WField label="E-MAIL (opcional)" value={email} onChange={setEmail} placeholder="representante@empresa.com" type="email" />
+        <WField label="BIO (opcional)" value={bio} onChange={setBio} placeholder="Breve apresentação do representante." as="textarea" />
+
+        {error && (
+          <div style={{
+            padding: '10px 12px', borderRadius: 10,
+            background: 'rgba(242,92,84,0.1)', border: '1px solid rgba(242,92,84,0.3)',
+            color: '#F25C54', fontSize: 13,
+          }}>
+            {error}
+          </div>
+        )}
+
+        <button onClick={handleSave} disabled={saving} style={{
+          width: '100%', padding: '13px', borderRadius: 12, border: 'none',
+          background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
+          fontSize: 14, fontWeight: 560, cursor: saving ? 'not-allowed' : 'pointer',
+          boxShadow: '0 6px 20px rgba(245,130,32,0.32)',
+        }}>
+          {saving ? 'Salvando...' : '+ Cadastrar representante'}
+        </button>
+      </div>
+
+      {/* List */}
+      {deleteError && (
+        <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(242,92,84,0.1)', color: '#F25C54', fontSize: 12.5 }}>
+          {deleteError}
+        </div>
+      )}
+      {representatives.length === 0 ? (
+        <div style={{ padding: '32px 20px', textAlign: 'center', background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', color: 'var(--muted)', fontSize: 14 }}>
+          Nenhum representante cadastrado ainda.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {representatives.map(rep => (
+            <div key={rep.id} style={{
+              padding: 14, borderRadius: 16, background: 'var(--card)',
+              border: '1px solid var(--line)',
+              display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start',
+            }}>
+              <div style={{ display: 'flex', gap: 12, minWidth: 0 }}>
+                <div style={{
+                  width: 46, height: 46, borderRadius: 14, flexShrink: 0,
+                  background: rep.photoUrl
+                    ? `url(${rep.photoUrl}) center/cover`
+                    : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+                  color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 16, fontWeight: 620, overflow: 'hidden',
+                }}>
+                  {!rep.photoUrl && (rep.name?.trim()?.[0] ?? 'R').toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {rep.specialty && <Chip color="#B9C1EA">{rep.specialty}</Chip>}
+                    {rep.whatsapp && <Chip color="#25D366">WhatsApp</Chip>}
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{rep.name}</div>
+                  <div style={{ marginTop: 3, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
+                    {[rep.city, rep.state].filter(Boolean).join(' · ') || rep.region || 'Região não informada'}
+                  </div>
+                  {rep.bio && (
+                    <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>{rep.bio}</div>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => { void handleDelete(rep.id); }} disabled={deletingId === rep.id} style={{
+                background: 'none', border: 'none', cursor: deletingId === rep.id ? 'not-allowed' : 'pointer',
+                color: '#F25C54', fontSize: 12, fontWeight: 600, padding: '0 0 0 10px', flexShrink: 0,
+                opacity: deletingId === rep.id ? 0.6 : 1,
+              }}>{deletingId === rep.id ? '...' : 'Excluir'}</button>
             </div>
           ))}
         </div>

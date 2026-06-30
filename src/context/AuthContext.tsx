@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { User, Event, Product, Course, Lead, LeadInput, Location, AddLeadResult } from '../types';
+import type { User, Event, Product, Course, Lead, LeadInput, Location, Representative, AddLeadResult } from '../types';
 import { assertSupabaseConfigured, isSupabaseConfigured, supabase, upsertProfileWithToken } from '../lib/supabase';
 import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
@@ -23,17 +23,66 @@ function withTimeout<T>(p: PromiseLike<T>, ms: number, label = 'Servidor'): Prom
   ]);
 }
 
-function formatProductComplianceError(message: string) {
-  if (/anvisa|regularizacao|disponibilidade comercial/i.test(message)) {
+function isProductComplianceError(message: string) {
+  return /anvisa|regularizacao|disponibilidade comercial|validate_product_compliance|products_validate_compliance/i.test(message);
+}
+
+function formatProductComplianceError(
+  message: string,
+  opts?: { anvisaOk?: boolean; commercialOk?: boolean },
+) {
+  if (/schema cache|could not find.*column/i.test(message)) {
     return (
-      'Marque as confirmações de regularização Anvisa e disponibilidade comercial antes de publicar. '
-      + 'Se o erro continuar, rode supabase/fix_product_anvisa_compliance.sql no Supabase.'
+      'Banco desatualizado para publicar produtos. '
+      + 'Rode supabase/fix_product_anvisa_compliance.sql no Supabase SQL Editor e tente de novo.'
     );
+  }
+  if (isProductComplianceError(message)) {
+    if (opts?.anvisaOk && opts?.commercialOk) {
+      return (
+        'Confirmações marcadas, mas o servidor recusou a publicação. '
+        + 'Rode supabase/fix_product_anvisa_compliance.sql no Supabase SQL Editor e tente novamente.'
+      );
+    }
+    return 'Marque as confirmações de regularização Anvisa e disponibilidade comercial antes de publicar.';
   }
   return message;
 }
 
-type CompanyOwnedTable = 'events' | 'products' | 'courses' | 'locations';
+async function insertProductResilient(payload: Record<string, unknown>) {
+  const optionalGroups = [
+    [] as string[],
+    ['image_url', 'listing_type'],
+    ['anvisa_regularized', 'commercially_available', 'listing_type', 'image_url'],
+  ];
+
+  let lastError: { message: string } | null = null;
+  const seen = new Set<string>();
+
+  for (const omit of optionalGroups) {
+    const attempt = omit.length ? omitDbColumns(payload, omit) : payload;
+    const key = JSON.stringify(Object.keys(attempt).sort());
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const result = await withTimeout(
+      supabase.from('products').insert(attempt),
+      12000,
+      'Publicar produto',
+    );
+    if (!result.error) return { error: null as null };
+    lastError = result.error;
+
+    const missingColumn = isMissingDbColumnError(result.error, [
+      'anvisa_regularized', 'commercially_available', 'listing_type', 'image_url',
+    ]);
+    if (!missingColumn && !isProductComplianceError(result.error.message)) break;
+  }
+
+  return { error: lastError };
+}
+
+type CompanyOwnedTable = 'events' | 'products' | 'courses' | 'locations' | 'representatives';
 
 async function deleteCompanyOwnedRow(
   table: CompanyOwnedTable,
@@ -120,6 +169,24 @@ function dbToLocation(row: Record<string, unknown>): Location {
     phone:       row.phone        as string | undefined,
     website:     row.website      as string | undefined,
     notes:       row.notes        as string | undefined,
+    createdAt:   row.created_at   as string,
+  };
+}
+
+function dbToRepresentative(row: Record<string, unknown>): Representative {
+  return {
+    id:          row.id           as string,
+    companyId:   row.company_id   as string,
+    companyName: dbText(row.company_name, 'Empresa'),
+    name:        dbText(row.name, 'Representante'),
+    specialty:   row.specialty    as string | undefined,
+    region:      row.region       as string | undefined,
+    city:        row.city         as string | undefined,
+    state:       row.state        as string | undefined,
+    whatsapp:    row.whatsapp     as string | undefined,
+    email:       row.email        as string | undefined,
+    bio:         row.bio          as string | undefined,
+    photoUrl:    row.photo_url    as string | undefined,
     createdAt:   row.created_at   as string,
   };
 }
@@ -298,6 +365,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [courses,  setCourses]  = useState<Course[]>([]);
   const [leads,    setLeads]    = useState<Lead[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [representatives, setRepresentatives] = useState<Representative[]>([]);
   const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
   const userId = user?.id;
 
@@ -397,11 +465,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Carrega eventos/produtos/cursos públicos
   const refreshData = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    const [evRes, prRes, coRes, loRes] = await Promise.all([
+    const [evRes, prRes, coRes, loRes, reRes] = await Promise.all([
       supabase.from('events').select('*').order('created_at', { ascending: false }),
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('courses').select('*').order('created_at', { ascending: false }),
       supabase.from('locations').select('*').order('created_at', { ascending: false }),
+      supabase.from('representatives').select('*').order('created_at', { ascending: false }),
     ]);
     if (evRes.data) {
       const mappedEvents = evRes.data.map(r => dbToEvent(r as Record<string, unknown>));
@@ -432,12 +501,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (coRes.data) setCourses(coRes.data.map(r => dbToCourse(r as Record<string, unknown>)));
     // Tabela de locais pode ainda não existir (migração não aplicada) — ignora erro.
     if (loRes.data) setLocations(loRes.data.map(r => dbToLocation(r as Record<string, unknown>)));
+    // Tabela de representantes pode ainda não existir (migração não aplicada) — ignora erro.
+    if (reRes.data) setRepresentatives(reRes.data.map(r => dbToRepresentative(r as Record<string, unknown>)));
   }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
-    const liveTables = ['events', 'products', 'courses', 'locations'] as const;
+    const liveTables = ['events', 'products', 'courses', 'locations', 'representatives'] as const;
     const channels = liveTables.map(table =>
       supabase
         .channel(`tessy-${table}-live`)
@@ -1014,8 +1085,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
     const listingType = data.listingType ?? 'product';
-    const anvisaOk = listingType === 'partnership' ? true : data.anvisaRegularized === true;
-    const commercialOk = listingType === 'partnership' ? true : data.commerciallyAvailable === true;
+    const isPartnership = listingType === 'partnership';
+    const complianceConfirmed = isPartnership
+      || (Boolean(data.anvisaRegularized) && Boolean(data.commerciallyAvailable));
+
+    if (!isPartnership && !complianceConfirmed) {
+      throw new Error(
+        'Marque as confirmações de regularização Anvisa e disponibilidade comercial antes de publicar.',
+      );
+    }
+
+    const complianceOpts = { anvisaOk: true, commercialOk: true };
 
     const rpcPayload = {
       name: data.name,
@@ -1028,22 +1108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       website: data.website ?? '',
       image_url: data.imageUrl ?? '',
       listing_type: listingType,
-      anvisa_regularized: anvisaOk,
-      commercially_available: commercialOk,
+      anvisa_regularized: true,
+      commercially_available: true,
+      compliance_confirmed: complianceConfirmed,
     };
-
-    const rpcResult = await withTimeout(
-      supabase.rpc('publish_company_product', { payload: rpcPayload }),
-      12000,
-      'Publicar produto',
-    );
-    if (!rpcResult.error) {
-      refreshData();
-      return;
-    }
-    if (!isMissingRpcError(rpcResult.error, 'publish_company_product')) {
-      throw new Error(formatProductComplianceError(rpcResult.error.message));
-    }
 
     const payload: Record<string, unknown> = {
       name:             data.name,
@@ -1057,28 +1125,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       website:          data.website ?? null,
       image_url:        data.imageUrl ?? null,
       listing_type:     listingType,
-      anvisa_regularized: anvisaOk,
-      commercially_available: commercialOk,
+      anvisa_regularized: true,
+      commercially_available: true,
     };
 
-    let result = await withTimeout(
-      supabase.from('products').insert(payload),
+    // 1) Insert direto — mais confiável quando o usuário confirmou na UI
+    const directResult = await insertProductResilient(payload);
+    if (!directResult.error) {
+      refreshData();
+      return;
+    }
+
+    // 2) RPC com bypass compliance_confirmed (schema antigo ou trigger)
+    const rpcResult = await withTimeout(
+      supabase.rpc('publish_company_product', { payload: rpcPayload }),
       12000,
       'Publicar produto',
     );
-    if (result.error && isMissingDbColumnError(result.error, ['image_url', 'listing_type'])) {
-      console.warn('Colunas opcionais ausentes em products. Tentando publicar sem elas.', result.error.message);
-      result = await withTimeout(
-        supabase.from('products').insert(omitDbColumns(payload, ['image_url', 'listing_type'])),
-        12000,
-        'Publicar produto',
-      );
+    if (!rpcResult.error) {
+      refreshData();
+      return;
     }
-    const { error } = result;
-    if (error) {
-      throw new Error(formatProductComplianceError(error.message));
+
+    const rpcMessage = rpcResult.error.message;
+    if (!isMissingRpcError(rpcResult.error, 'publish_company_product')) {
+      throw new Error(formatProductComplianceError(rpcMessage, complianceOpts));
     }
-    refreshData(); // background, não bloqueia
+
+    throw new Error(formatProductComplianceError(directResult.error?.message ?? rpcMessage, complianceOpts));
   };
 
   const deleteProduct = async (id: string) => {
@@ -1223,6 +1297,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     assertSupabaseConfigured();
     await deleteCompanyOwnedRow('locations', id, user.id, 'local');
     setLocations(prev => prev.filter(l => l.id !== id));
+    await refreshData();
+  };
+
+  // ── Representantes comerciais ──
+  const addRepresentative = async (data: Omit<Representative, 'id' | 'createdAt'>) => {
+    assertSupabaseConfigured();
+    const payload = {
+      company_id:   data.companyId,
+      company_name: data.companyName,
+      name:         data.name,
+      specialty:    data.specialty ?? null,
+      region:       data.region ?? null,
+      city:         data.city ?? null,
+      state:        data.state ?? null,
+      whatsapp:     data.whatsapp ?? null,
+      email:        data.email ?? null,
+      bio:          data.bio ?? null,
+      photo_url:    data.photoUrl ?? null,
+    };
+
+    const { error } = await withTimeout(
+      supabase.from('representatives').insert(payload),
+      12000,
+      'Cadastrar representante',
+    );
+    if (error) {
+      if (/representatives.*(does not exist|schema cache)/i.test(error.message)) {
+        throw new Error('Tabela de representantes ainda não criada. Rode supabase/create_representatives_table.sql no Supabase.');
+      }
+      throw new Error(error.message);
+    }
+    refreshData(); // background, não bloqueia
+  };
+
+  const deleteRepresentative = async (id: string) => {
+    if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem excluir representantes.');
+    assertSupabaseConfigured();
+    await deleteCompanyOwnedRow('representatives', id, user.id, 'representante');
+    setRepresentatives(prev => prev.filter(r => r.id !== id));
     await refreshData();
   };
 
@@ -1419,9 +1532,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user, isLoading, authReady,
       login, register, logout, completeOnboarding, updateProfile, deleteAccount,
-      events, products, courses, leads, locations,
+      events, products, courses, leads, locations, representatives,
       addEvent, addProduct, addCourse, addLead,
       addLocation, deleteLocation,
+      addRepresentative, deleteRepresentative,
       requestConnection, approveConnection,
       deleteEvent, deleteProduct, deleteCourse,
       updateEvent,

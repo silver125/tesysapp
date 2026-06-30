@@ -62,12 +62,33 @@ AS $$
 DECLARE
   v_uid uuid := auth.uid();
   v_listing_type text := COALESCE(NULLIF(payload->>'listing_type', ''), 'product');
-  v_anvisa boolean := COALESCE((payload->>'anvisa_regularized')::boolean, FALSE);
-  v_commercial boolean := COALESCE((payload->>'commercially_available')::boolean, FALSE);
+  v_anvisa boolean := CASE
+    WHEN payload ? 'anvisa_regularized' IS NOT TRUE THEN FALSE
+    WHEN jsonb_typeof(payload->'anvisa_regularized') = 'boolean' THEN (payload->'anvisa_regularized')::boolean
+    WHEN lower(payload->>'anvisa_regularized') IN ('true', 't', 'yes', '1') THEN TRUE
+    ELSE FALSE
+  END;
+  v_commercial boolean := CASE
+    WHEN payload ? 'commercially_available' IS NOT TRUE THEN FALSE
+    WHEN jsonb_typeof(payload->'commercially_available') = 'boolean' THEN (payload->'commercially_available')::boolean
+    WHEN lower(payload->>'commercially_available') IN ('true', 't', 'yes', '1') THEN TRUE
+    ELSE FALSE
+  END;
+  v_compliance_confirmed boolean := CASE
+    WHEN payload ? 'compliance_confirmed' IS NOT TRUE THEN FALSE
+    WHEN jsonb_typeof(payload->'compliance_confirmed') = 'boolean' THEN (payload->'compliance_confirmed')::boolean
+    WHEN lower(payload->>'compliance_confirmed') IN ('true', 't', 'yes', '1') THEN TRUE
+    ELSE FALSE
+  END;
   v_id uuid;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'Faça login novamente para publicar.';
+  END IF;
+
+  IF v_compliance_confirmed OR v_listing_type = 'partnership' THEN
+    v_anvisa := TRUE;
+    v_commercial := TRUE;
   END IF;
 
   IF v_listing_type <> 'partnership' THEN

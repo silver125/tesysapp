@@ -41,6 +41,22 @@ export interface Location {
   createdAt: string;
 }
 
+export interface Representative {
+  id: string;
+  companyId: string;
+  companyName: string;
+  name: string;
+  specialty?: string;
+  region?: string;
+  city?: string;
+  state?: string;
+  whatsapp?: string;
+  email?: string;
+  bio?: string;
+  photoUrl?: string;
+  createdAt: string;
+}
+
 export interface Event {
   id: string;
   title: string;

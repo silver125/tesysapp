@@ -1,7 +1,8 @@
-import type { Event, Product, Course, Location, User } from '../types';
+import type { Event, Product, Course, Location, Representative, User } from '../types';
 import { companyInitials } from './uiHelpers';
 
 export type RepresentativeProfile = {
+  id: string;
   companyId: string;
   companyName: string;
   repLabel: string;
@@ -10,6 +11,8 @@ export type RepresentativeProfile = {
   regionLabel: string;
   regionKeys: string[];
   companyLogoUrl: string;
+  photoUrl?: string;
+  registered: boolean;
   products: Product[];
   events: Event[];
   locations: Location[];
@@ -84,12 +87,21 @@ function regionScore(regionKeys: string[], doctorKeys: string[]): number {
   return score;
 }
 
+function repRegionLabel(rep: Representative, fallback: string): string {
+  const city = rep.city?.trim();
+  const state = rep.state?.trim();
+  if (city && state) return `${city} · ${state}`;
+  if (rep.region?.trim()) return rep.region.trim();
+  return city || state || fallback;
+}
+
 export function buildRepresentativeProfiles(
   events: Event[],
   products: Product[],
   courses: Course[],
   locations: Location[],
   user?: User | null,
+  representatives: Representative[] = [],
 ): RepresentativeProfile[] {
   const map = new Map<string, CompanyBucket>();
 
@@ -108,40 +120,81 @@ export function buildRepresentativeProfiles(
 
   const doctorKeys = doctorRegionKeys(user);
   const specialty = normalizeRegion(user?.specialty);
+  const companiesWithRegistered = new Set(representatives.map(r => r.companyId));
 
-  const profiles = [...map.values()]
-    .filter(co => Boolean(co.whatsapp?.trim()))
-    .map(co => {
-      const regionKeys = [...new Set(co.locations.flatMap(locationRegionKeys))];
-      return {
-        companyId: co.id,
-        companyName: co.name,
-        repLabel: repLabel(co.name),
-        whatsapp: co.whatsapp,
-        specialty: topSpecialty(co.products, co.events, co.courses),
-        regionLabel: regionLabelFromLocations(co.locations),
-        regionKeys,
-        companyLogoUrl: companyLogo(co.products, co.events, co.courses),
-        products: co.products,
-        events: co.events,
-        locations: co.locations,
-        _regionScore: regionScore(regionKeys, doctorKeys),
-        _specialtyScore: specialty && topSpecialty(co.products, co.events, co.courses).toLowerCase().includes(specialty) ? 1 : 0,
-      };
-    })
+  type Scored = RepresentativeProfile & { _regionScore: number; _specialtyScore: number };
+  const scored: Scored[] = [];
+
+  // 1) Representantes cadastrados pela empresa (com foto, região e especialidade próprias).
+  for (const rep of representatives) {
+    const bucket = map.get(rep.companyId);
+    const products = bucket?.products ?? [];
+    const events = bucket?.events ?? [];
+    const courses = bucket?.courses ?? [];
+    const bucketLocations = bucket?.locations ?? [];
+    const regionKeys = [...new Set([
+      ...[rep.city, rep.state, rep.region].map(normalizeRegion).filter(Boolean),
+      ...bucketLocations.flatMap(locationRegionKeys),
+    ])];
+    const repSpecialty = rep.specialty?.trim() || topSpecialty(products, events, courses);
+    scored.push({
+      id: rep.id,
+      companyId: rep.companyId,
+      companyName: rep.companyName,
+      repLabel: rep.name?.trim() || repLabel(rep.companyName),
+      whatsapp: rep.whatsapp?.trim() || bucket?.whatsapp,
+      specialty: repSpecialty,
+      regionLabel: repRegionLabel(rep, regionLabelFromLocations(bucketLocations)),
+      regionKeys,
+      companyLogoUrl: companyLogo(products, events, courses),
+      photoUrl: rep.photoUrl?.trim() || undefined,
+      registered: true,
+      products,
+      events,
+      locations: bucketLocations,
+      _regionScore: regionScore(regionKeys, doctorKeys),
+      _specialtyScore: specialty && repSpecialty.toLowerCase().includes(specialty) ? 1 : 0,
+    });
+  }
+
+  // 2) Empresas sem representante cadastrado caem no perfil derivado (precisa de WhatsApp).
+  for (const co of map.values()) {
+    if (companiesWithRegistered.has(co.id)) continue;
+    if (!co.whatsapp?.trim()) continue;
+    const regionKeys = [...new Set(co.locations.flatMap(locationRegionKeys))];
+    const repSpecialty = topSpecialty(co.products, co.events, co.courses);
+    scored.push({
+      id: co.id,
+      companyId: co.id,
+      companyName: co.name,
+      repLabel: repLabel(co.name),
+      whatsapp: co.whatsapp,
+      specialty: repSpecialty,
+      regionLabel: regionLabelFromLocations(co.locations),
+      regionKeys,
+      companyLogoUrl: companyLogo(co.products, co.events, co.courses),
+      photoUrl: undefined,
+      registered: false,
+      products: co.products,
+      events: co.events,
+      locations: co.locations,
+      _regionScore: regionScore(regionKeys, doctorKeys),
+      _specialtyScore: specialty && repSpecialty.toLowerCase().includes(specialty) ? 1 : 0,
+    });
+  }
+
+  return scored
     .sort((a, b) => (
-      b._specialtyScore - a._specialtyScore
+      Number(b.registered) - Number(a.registered)
+      || b._specialtyScore - a._specialtyScore
       || b._regionScore - a._regionScore
       || b.products.length - a.products.length
     ))
-    .map((profile) => {
-      const { _regionScore, _specialtyScore, ...rest } = profile;
+    .map(({ _regionScore, _specialtyScore, ...rest }) => {
       void _regionScore;
       void _specialtyScore;
       return rest;
     });
-
-  return profiles;
 }
 
 export function representativeRegionFilters(profiles: RepresentativeProfile[]): [string, string][] {
