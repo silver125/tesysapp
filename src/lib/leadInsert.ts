@@ -1,18 +1,36 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Lead } from '../types';
 import { isMissingDbColumnError, omitDbColumns } from './dbSchema';
 
-/** Colunas opcionais em `leads` — removidas uma a uma se o schema legado não tiver. */
+/**
+ * Payload mínimo — compatível com schema legado de `leads`.
+ * Nomes do médico/empresa vêm de `profiles` no SELECT (join), não duplicamos aqui.
+ */
+export function buildMinimalLeadPayload(lead: Pick<Lead, 'id' | 'companyId' | 'doctorId' | 'itemType' | 'itemName' | 'intent' | 'itemId' | 'message' | 'createdAt' | 'companyName'>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    id: lead.id,
+    company_id: lead.companyId,
+    doctor_id: lead.doctorId,
+    item_type: lead.itemType,
+    item_name: lead.itemName,
+    intent: lead.intent,
+  };
+  if (lead.itemId) payload.item_id = lead.itemId;
+  if (lead.message) payload.message = lead.message;
+  if (lead.createdAt) payload.created_at = lead.createdAt;
+  if (lead.companyName) payload.company_name = lead.companyName;
+  return payload;
+}
+
 const LEAD_OPTIONAL_COLUMNS = [
-  'doctor_whatsapp',
-  'doctor_specialty',
-  'doctor_name',
   'company_name',
   'message',
   'item_id',
   'created_at',
+  'id',
 ] as const;
 
-export async function insertLeadResilient(
+async function tryInsert(
   client: SupabaseClient,
   payload: Record<string, unknown>,
 ): Promise<{ error: { message: string; code?: string } | null; omittedColumns: string[] }> {
@@ -20,7 +38,7 @@ export async function insertLeadResilient(
   const omitted = new Set<string>();
   let lastError: { message: string; code?: string } | null = null;
 
-  for (let attempt = 0; attempt < LEAD_OPTIONAL_COLUMNS.length + 2; attempt++) {
+  for (let attempt = 0; attempt < LEAD_OPTIONAL_COLUMNS.length + 3; attempt++) {
     const { error } = await client.from('leads').insert(current);
     if (!error) {
       return { error: null, omittedColumns: [...omitted] };
@@ -41,8 +59,50 @@ export async function insertLeadResilient(
       continue;
     }
 
+    const anyMissing = extractMissingColumnFromError(error.message);
+    if (anyMissing && anyMissing in current && !omitted.has(anyMissing)) {
+      omitted.add(anyMissing);
+      current = omitDbColumns(current, [anyMissing]);
+      console.warn(`Coluna ${anyMissing} ausente em leads. Inserindo sem ela.`);
+      continue;
+    }
+
     break;
   }
 
   return { error: lastError, omittedColumns: [...omitted] };
+}
+
+function extractMissingColumnFromError(message: string): string | null {
+  const match = message.match(/'([a-z_]+)' column of 'leads'/i);
+  return match?.[1] ?? null;
+}
+
+export async function insertLeadResilient(
+  client: SupabaseClient,
+  lead: Pick<Lead, 'id' | 'companyId' | 'doctorId' | 'itemType' | 'itemName' | 'intent' | 'itemId' | 'message' | 'createdAt' | 'companyName'>,
+): Promise<{ error: { message: string; code?: string } | null; omittedColumns: string[] }> {
+  const full = buildMinimalLeadPayload(lead);
+  const coreOnly: Record<string, unknown> = {
+    company_id: lead.companyId,
+    doctor_id: lead.doctorId,
+    item_type: lead.itemType,
+    item_name: lead.itemName,
+    intent: lead.intent,
+  };
+  if (lead.id) coreOnly.id = lead.id;
+  if (lead.itemId) coreOnly.item_id = lead.itemId;
+
+  const attempts = [full, coreOnly];
+  let lastResult: { error: { message: string; code?: string } | null; omittedColumns: string[] } = {
+    error: { message: 'Não foi possível registrar interesse.' },
+    omittedColumns: [],
+  };
+
+  for (const payload of attempts) {
+    lastResult = await tryInsert(client, payload);
+    if (!lastResult.error) return lastResult;
+  }
+
+  return lastResult;
 }

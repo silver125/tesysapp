@@ -5,10 +5,14 @@ export function isMissingDbColumnError(error: unknown, columns: string[]) {
       ? String((error as { message?: unknown }).message)
       : String(error ?? '');
 
-  return columns.some(column => {
-    const escaped = column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`(?:'${escaped}' column|column .*${escaped}|${escaped}.* column|${escaped}.*schema cache)`, 'i').test(message);
-  });
+  if (!/schema cache|could not find/i.test(message)) {
+    return columns.some(column => {
+      const escaped = column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(?:'${escaped}' column|column .*${escaped}|${escaped}.* column)`, 'i').test(message);
+    });
+  }
+
+  return columns.some(column => message.includes(column));
 }
 
 export function omitDbColumns<T extends Record<string, unknown>>(payload: T, columns: string[]) {

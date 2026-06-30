@@ -1295,50 +1295,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { created: true, leadId: lead.id, pointsAwarded };
     }
 
-    let existingQuery = supabase
-      .from('leads')
-      .select('id')
-      .eq('company_id', lead.companyId)
-      .eq('doctor_id', lead.doctorId)
-      .eq('item_type', lead.itemType)
-      .eq('intent', lead.intent)
-      .limit(1);
+    const findExistingLeadId = async (): Promise<string | null> => {
+      const base = () => supabase
+        .from('leads')
+        .select('id')
+        .eq('company_id', lead.companyId)
+        .eq('doctor_id', lead.doctorId)
+        .eq('item_type', lead.itemType)
+        .eq('intent', lead.intent)
+        .limit(1);
 
-    existingQuery = lead.itemId ? existingQuery.eq('item_id', lead.itemId) : existingQuery.is('item_id', null);
+      if (lead.itemId) {
+        const withItemId = await base().eq('item_id', lead.itemId);
+        if (!withItemId.error && withItemId.data?.length) {
+          return withItemId.data[0].id as string;
+        }
+        if (withItemId.error && isMissingDbColumnError(withItemId.error, ['item_id'])) {
+          const byName = await base().eq('item_name', lead.itemName);
+          if (!byName.error && byName.data?.length) {
+            return byName.data[0].id as string;
+          }
+        }
+        return null;
+      }
 
-    const { data: existing } = await existingQuery;
-    if (existing && existing.length > 0) {
-      const leadId = existing[0].id as string;
-      const persisted = { ...lead, id: leadId };
-      writeLocalLead(persisted);
-      mergeLeadInState(persisted);
-      return existingResult(leadId);
-    }
-
-    const payload = {
-      id: lead.id,
-      company_id: lead.companyId,
-      company_name: lead.companyName,
-      doctor_id: lead.doctorId,
-      doctor_name: lead.doctorName,
-      doctor_specialty: lead.doctorSpecialty ?? null,
-      doctor_whatsapp: null,
-      item_type: lead.itemType,
-      item_id: lead.itemId ?? null,
-      item_name: lead.itemName,
-      intent: lead.intent,
-      message: lead.message ?? null,
-      created_at: lead.createdAt,
+      const withoutItemId = await base().is('item_id', null);
+      if (!withoutItemId.error && withoutItemId.data?.length) {
+        return withoutItemId.data[0].id as string;
+      }
+      if (withoutItemId.error && isMissingDbColumnError(withoutItemId.error, ['item_id'])) {
+        const plain = await base();
+        if (!plain.error && plain.data?.length) {
+          return plain.data[0].id as string;
+        }
+      }
+      return null;
     };
 
-    const { error: insertError } = await insertLeadResilient(supabase, payload);
+    const existingLeadId = await findExistingLeadId();
+    if (existingLeadId) {
+      const persisted = { ...lead, id: existingLeadId };
+      writeLocalLead(persisted);
+      mergeLeadInState(persisted);
+      return existingResult(existingLeadId);
+    }
+
+    const { error: insertError } = await insertLeadResilient(supabase, lead);
 
     if (insertError) {
       const duplicate = insertError.code === '23505'
         || /duplicate key|unique constraint/i.test(insertError.message);
       if (duplicate) {
-        const { data: dup } = await existingQuery;
-        const leadId = (dup?.[0]?.id as string | undefined) ?? lead.id;
+        const dupId = await findExistingLeadId();
+        const leadId = dupId ?? lead.id;
         const persisted = { ...lead, id: leadId };
         writeLocalLead(persisted);
         mergeLeadInState(persisted);

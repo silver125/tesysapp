@@ -15,6 +15,7 @@ import {
   type RepresentativeProfile,
 } from '../../lib/representatives';
 import { connectWithRepresentative } from '../../lib/commercialConnect';
+import { formatLeadError } from '../../lib/leadErrors';
 import { getLevelProgress, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
@@ -598,7 +599,7 @@ function RepSuggestionCard({ rep, onConnect }: { rep: RepresentativeProfile; onC
       setFeedback(result.message);
       if (!result.whatsappOpened) onConnect();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível registrar o contato.');
+      setError(formatLeadError(err instanceof Error ? err.message : ''));
       onConnect();
     } finally {
       setBusy(false);
@@ -973,7 +974,7 @@ function RepresentativesView({
       setSuccessId(rep.companyId);
       setSuccessMsg(result.message);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível registrar o contato.');
+      setError(formatLeadError(err instanceof Error ? err.message : ''));
     } finally {
       setBusyId(null);
     }
@@ -1200,7 +1201,7 @@ function EventCard({ ev }: { ev: Event }) {
     setErr('');
     try {
       if (registered) return;
-      await addLead({
+      const result = await addLead({
         companyId: ev.companyId,
         companyName: ev.companyName,
         itemType: 'event',
@@ -1214,8 +1215,11 @@ function EventCard({ ev }: { ev: Event }) {
       } catch (countErr) {
         console.warn('Interesse registrado, mas a contagem de vagas não foi atualizada.', countErr);
       }
+      if (result.pointsAwarded > 0) {
+        setErr('');
+      }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Erro ao atualizar participação.');
+      setErr(formatLeadError(e instanceof Error ? e.message : ''));
     } finally {
       setBusy(false);
     }
