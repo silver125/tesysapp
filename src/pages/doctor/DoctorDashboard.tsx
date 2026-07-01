@@ -11,6 +11,9 @@ import {
   buildRepresentativeProfiles,
   matchesRepresentativeRegion,
   representativeInitials,
+  representativeDisplayName,
+  representativeAvatarUrl,
+  representativeCompanyBadgeUrl,
   representativeRegionFilters,
   type RepresentativeProfile,
 } from '../../lib/representatives';
@@ -346,17 +349,17 @@ export default function DoctorDashboard() {
           )}
 
           {(suggestedRep || suggestedProduct) && (
-            <section style={{ marginBottom: 18 }}>
+            <section style={{ marginBottom: 22 }}>
               <SectionHeader title="Sugestões para você" onSeeAll={() => openTab('representatives')} />
-              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4, scrollSnapType: 'x mandatory' }}>
+              <div className="tessy-home-rail">
                 {suggestedRep && (
-                  <RepSuggestionCard
+                  <HomeRepCard
                     rep={suggestedRep}
                     onConnect={() => openTab('representatives', suggestedRep.companyName)}
                   />
                 )}
                 {suggestedProduct && (
-                  <ProductSuggestionCard
+                  <HomeProductCard
                     product={suggestedProduct}
                     onOpen={() => setOpenProduct(suggestedProduct)}
                   />
@@ -366,17 +369,32 @@ export default function DoctorDashboard() {
           )}
 
           {homeEvents.length > 0 && (
-            <section style={{ marginBottom: 8 }}>
+            <section style={{ marginBottom: 22 }}>
               <SectionHeader title="Eventos em breve" onSeeAll={() => openTab('events')} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {homeEvents.slice(0, 3).map(ev => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {homeEvents.slice(0, 2).map(ev => (
                   <HomeEventRow key={ev.id} ev={ev} onOpen={() => setOpenEvent(ev)} />
                 ))}
               </div>
             </section>
           )}
 
-          {!suggestedRep && !suggestedProduct && homeEvents.length === 0 && (
+          {representatives.length > 0 && (
+            <section style={{ marginBottom: 8 }}>
+              <SectionHeader title="Representantes em destaque" onSeeAll={() => openTab('representatives')} />
+              <div className="tessy-home-rail">
+                {representatives.slice(0, 4).map(rep => (
+                  <HomeRepCard
+                    key={rep.id}
+                    rep={rep}
+                    onConnect={() => openTab('representatives', rep.companyName)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {!suggestedRep && !suggestedProduct && homeEvents.length === 0 && representatives.length === 0 && (
             <Empty text="Nada encontrado agora." hint="Novidades das empresas aparecem aqui assim que publicadas." />
           )}
         </div>
@@ -485,29 +503,11 @@ function productCategoryChips(products: Product[]): [string, string][] {
 
 function HomeGreeting({ user }: { user: User | null | undefined }) {
   return (
-    <section style={{ position: 'relative', marginBottom: 14, paddingTop: 2, overflow: 'hidden' }}>
-      <div aria-hidden style={{
-        position: 'absolute',
-        right: -20,
-        top: -8,
-        width: 180,
-        height: 88,
-        background: 'linear-gradient(135deg, rgba(185,193,234,0.35), rgba(74,168,255,0.12))',
-        borderRadius: '40% 60% 50% 50%',
-        filter: 'blur(0.5px)',
-      }} />
-      <div aria-hidden style={{
-        position: 'absolute',
-        right: 36,
-        top: 18,
-        fontSize: 18,
-        color: 'var(--accent)',
-        opacity: 0.85,
-      }}>✦</div>
-      <h1 style={{ position: 'relative', fontSize: 24, fontWeight: 620, lineHeight: 1.08, color: 'var(--ink)', letterSpacing: -0.2 }}>
+    <section style={{ marginBottom: 16, paddingTop: 2 }}>
+      <h1 style={{ fontSize: 22, fontWeight: 650, lineHeight: 1.15, color: 'var(--accent-ink)', letterSpacing: -0.2 }}>
         {doctorGreeting(user)}
       </h1>
-      <p style={{ position: 'relative', marginTop: 4, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.3 }}>
+      <p style={{ marginTop: 4, fontSize: 13, color: 'var(--muted)', lineHeight: 1.35 }}>
         {doctorMetaLine(user)}
       </p>
     </section>
@@ -524,78 +524,101 @@ function DoctorPointsBar({
   const progress = getLevelProgress(points);
 
   return (
-    <section style={{ marginBottom: 14 }}>
+    <section style={{ marginBottom: 16 }}>
       <div style={{
-        padding: '14px 14px 12px',
-        borderRadius: 20,
-        background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFF 100%)',
-        border: '1px solid rgba(216,222,236,0.92)',
-        boxShadow: '0 10px 28px rgba(85,96,130,0.06)',
+        padding: '12px 14px',
+        borderRadius: 'var(--r-md)',
+        background: '#fff',
+        border: '1px solid var(--line)',
+        boxShadow: 'var(--shadow-sm)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            background: 'linear-gradient(135deg, rgba(74,168,255,0.18), rgba(185,193,234,0.28))',
-            border: '1px solid rgba(74,168,255,0.18)',
+            width: 40,
+            height: 40,
+            borderRadius: 8,
+            background: 'var(--accent-soft)',
+            border: '1px solid rgba(245,130,32,0.16)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: 700,
-            color: '#4AA8FF',
+            color: 'var(--accent)',
             flexShrink: 0,
           }}>
             {progress.level.index + 1}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--ink)' }}>
-              Nível {progress.level.index + 1} · <span style={{ color: progress.level.color }}>{progress.level.name}</span>
+            <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--accent-ink)' }}>
+              Nível {progress.level.index + 1} · {progress.level.name}
             </div>
-            <div style={{ marginTop: 4, display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)' }}>
+            <div style={{ marginTop: 3, display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)' }}>
               <span>{connections} conexão{connections === 1 ? '' : 'ões'}</span>
               <span>{progress.points} pts</span>
             </div>
           </div>
-          <span style={{ color: 'var(--muted)', fontSize: 18, lineHeight: 1 }}>›</span>
         </div>
-        <div style={{ marginTop: 12, height: 6, borderRadius: 999, background: 'rgba(15,22,38,0.06)', overflow: 'hidden' }}>
+        <div style={{ marginTop: 10, height: 4, borderRadius: 999, background: 'var(--chip)', overflow: 'hidden' }}>
           <div style={{
             height: '100%',
             borderRadius: 999,
             width: `${progress.percent}%`,
-            background: 'linear-gradient(90deg, #F58220, #FFB066)',
+            background: 'var(--accent)',
           }} />
-        </div>
-        <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.35 }}>
-          {progress.isMax
-            ? 'Nível máximo alcançado.'
-            : <>Próximo nível: {progress.next?.name} · <span style={{ color: 'var(--accent)', fontWeight: 650 }}>faltam {progress.pointsForNextLevel} pts</span></>}
         </div>
       </div>
     </section>
   );
 }
 
-function AvatarBubble({ photoUrl, initials, tint, size = 52 }: { photoUrl?: string; initials: string; tint: string; size?: number }) {
-  if (photoUrl) {
-    return (
-      <div style={{
-        width: size,
-        height: size,
-        borderRadius: 999,
-        background: `url(${photoUrl}) center/cover`,
-        border: '2px solid #fff',
-        boxShadow: '0 6px 16px rgba(80,90,120,0.12)',
-        flexShrink: 0,
-      }} />
-    );
-  }
-  return <CompanyMark code={initials} tint={tint} size={size} radius={999} />;
+function RepAvatarCluster({ rep, photoSize = 48 }: { rep: RepresentativeProfile; photoSize?: number }) {
+  const personPhoto = rep.photoUrl?.trim();
+  const logo = rep.companyLogoUrl?.trim();
+  const mainPhoto = personPhoto || undefined;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+      {mainPhoto ? (
+        <div style={{
+          width: photoSize,
+          height: photoSize,
+          borderRadius: 999,
+          background: `url(${mainPhoto}) center/cover`,
+          border: '1px solid var(--line)',
+        }} />
+      ) : (
+        <AvatarBubble
+          initials={representativeInitials(representativeDisplayName(rep))}
+          tint={companyTint(rep.companyName)}
+          size={photoSize}
+        />
+      )}
+      {logo && personPhoto && logo !== personPhoto && (
+        <div style={{
+          width: 36,
+          height: 36,
+          borderRadius: 8,
+          background: `url(${logo}) center/cover`,
+          border: '1px solid var(--line)',
+          flexShrink: 0,
+        }} />
+      )}
+      {logo && !personPhoto && (
+        <div style={{
+          width: 36,
+          height: 36,
+          borderRadius: 8,
+          background: `url(${logo}) center/cover`,
+          border: '1px solid var(--line)',
+          flexShrink: 0,
+        }} />
+      )}
+    </div>
+  );
 }
 
-function RepSuggestionCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect: () => void }) {
+function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect: () => void }) {
   const { addLead } = useAuth();
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -619,120 +642,115 @@ function RepSuggestionCard({ rep, onConnect }: { rep: RepresentativeProfile; onC
   }
 
   return (
-    <article style={{
-      minWidth: 196,
-      maxWidth: 196,
-      scrollSnapAlign: 'start',
-      padding: 14,
-      borderRadius: 20,
-      background: '#fff',
-      border: '1px solid rgba(216,222,236,0.92)',
-      boxShadow: '0 10px 26px rgba(85,96,130,0.06)',
-    }}>
-      <div style={{ position: 'relative', width: 52, height: 52 }}>
-        <AvatarBubble initials={representativeInitials(rep.repLabel)} tint={companyTint(rep.companyName)} size={52} />
-        {rep.companyLogoUrl && (
-          <div style={{
-            position: 'absolute',
-            right: -4,
-            bottom: -4,
-            width: 22,
-            height: 22,
-            borderRadius: 8,
-            border: '2px solid #fff',
-            background: `url(${rep.companyLogoUrl}) center/cover`,
-            boxShadow: '0 4px 10px rgba(80,90,120,0.12)',
-          }} />
-        )}
+    <article className="tessy-home-card">
+      <div className="tessy-home-card__row">
+        <RepAvatarCluster rep={rep} photoSize={52} />
+        <div className="tessy-home-card__body">
+          <div className="tessy-home-card__title">{representativeDisplayName(rep)}</div>
+          <div className="tessy-home-card__meta">{rep.companyName}</div>
+          {rep.specialty && <span className="tessy-home-tag">{rep.specialty}</span>}
+        </div>
       </div>
-      <Mono style={{ display: 'block', marginTop: 12, fontSize: 9, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-        Representante
-      </Mono>
-      <div style={{ marginTop: 4, fontSize: 15, fontWeight: 620, color: 'var(--ink)', lineHeight: 1.2 }}>{rep.repLabel}</div>
-      <div style={{ marginTop: 2, fontSize: 12, color: 'var(--muted)' }}>{rep.companyName}</div>
-      <Chip color="#B9C1EA">{rep.specialty}</Chip>
-      <button type="button" onClick={() => { void handleConnect(); }} disabled={busy} style={{
-        marginTop: 12,
-        width: '100%',
-        padding: '9px 10px',
-        borderRadius: 12,
-        border: '1.5px solid var(--accent)',
-        background: '#fff',
-        color: 'var(--accent)',
-        fontSize: 12.5,
-        fontWeight: 650,
-        cursor: busy ? 'not-allowed' : 'pointer',
-      }}>
-        {busy ? '...' : feedback ? 'Conectado ✓' : 'Conectar'}
+      <button type="button" className="tessy-home-btn-outline" onClick={() => { void handleConnect(); }} disabled={busy}>
+        {busy ? 'Conectando…' : feedback ? 'Conectado ✓' : 'Conectar'}
       </button>
       {feedback && !error && (
-        <div style={{ marginTop: 8, fontSize: 11, color: '#1EA97C', lineHeight: 1.35 }}>{feedback}</div>
+        <div style={{ marginTop: 8, fontSize: 11, color: 'var(--success)', lineHeight: 1.35 }}>{feedback}</div>
       )}
       {error && (
-        <div style={{ marginTop: 8, fontSize: 11, color: '#F25C54', lineHeight: 1.35 }}>{error}</div>
+        <div style={{ marginTop: 8, fontSize: 11, color: 'var(--danger)', lineHeight: 1.35 }}>{error}</div>
       )}
     </article>
   );
 }
 
-function ProductSuggestionCard({ product, onOpen }: { product: Product; onOpen: () => void }) {
+function HomeProductCard({ product, onOpen }: { product: Product; onOpen: () => void }) {
+  const image = visualUrl(product.imageUrl);
+
   return (
-    <article style={{
-      minWidth: 196,
-      maxWidth: 196,
-      scrollSnapAlign: 'start',
-      padding: 14,
-      borderRadius: 20,
-      background: '#fff',
-      border: '1px solid rgba(216,222,236,0.92)',
-      boxShadow: '0 10px 26px rgba(85,96,130,0.06)',
-    }}>
-      <div style={{
-        width: '100%',
-        height: 72,
-        borderRadius: 14,
-        background: visualUrl(product.imageUrl)
-          ? `url(${visualUrl(product.imageUrl)}) center/cover`
-          : 'linear-gradient(135deg, rgba(245,130,32,0.16), rgba(185,193,234,0.24))',
-        position: 'relative',
-      }}>
-        <div style={{
-          position: 'absolute',
-          left: 8,
-          bottom: 8,
-          width: 24,
-          height: 24,
-          borderRadius: 8,
-          background: '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 10px rgba(80,90,120,0.12)',
-        }}>
-          <CompanyMark code={companyInitials(product.companyName)} tint={companyTint(product.companyName)} size={18} radius={6} />
+    <article className="tessy-home-card">
+      <div className="tessy-home-card__row">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {image ? (
+            <div style={{
+              width: 52,
+              height: 52,
+              borderRadius: 8,
+              background: `url(${image}) center/cover`,
+              border: '1px solid var(--line)',
+            }} />
+          ) : (
+            <CompanyMark code={companyInitials(product.companyName)} tint={companyTint(product.companyName)} size={52} radius={8} />
+          )}
+          <CompanyMark code={companyInitials(product.companyName)} tint={companyTint(product.companyName)} size={36} radius={8} />
+        </div>
+        <div className="tessy-home-card__body">
+          <div className="tessy-home-card__title">{product.name}</div>
+          <div className="tessy-home-card__meta">{product.companyName}</div>
+          {product.category && <span className="tessy-home-tag">{product.category}</span>}
         </div>
       </div>
-      <Mono style={{ display: 'block', marginTop: 12, fontSize: 9, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-        Produto
-      </Mono>
-      <div style={{ marginTop: 4, fontSize: 15, fontWeight: 620, color: 'var(--ink)', lineHeight: 1.2 }}>{product.name}</div>
-      <div style={{ marginTop: 2, fontSize: 12, color: 'var(--muted)' }}>{product.companyName}</div>
-      <Chip color="#B9C1EA">{product.category}</Chip>
-      <button type="button" onClick={onOpen} style={{
-        marginTop: 12,
-        width: '100%',
-        padding: '9px 10px',
-        borderRadius: 12,
-        border: '1.5px solid var(--accent)',
-        background: '#fff',
-        color: 'var(--accent)',
-        fontSize: 12.5,
-        fontWeight: 650,
-        cursor: 'pointer',
-      }}>
+      <button type="button" className="tessy-home-btn-outline" onClick={onOpen}>
         Ver detalhes
       </button>
     </article>
+  );
+}
+
+function AvatarBubble({ photoUrl, initials, tint, size = 52 }: { photoUrl?: string; initials: string; tint: string; size?: number }) {
+  if (photoUrl) {
+    return (
+      <div style={{
+        width: size,
+        height: size,
+        borderRadius: 999,
+        background: `url(${photoUrl}) center/cover`,
+        border: '2px solid #fff',
+        boxShadow: '0 6px 16px rgba(80,90,120,0.12)',
+        flexShrink: 0,
+      }} />
+    );
+  }
+  return <CompanyMark code={initials} tint={tint} size={size} radius={999} />;
+}
+
+function RepAvatar({ rep, size = 52 }: { rep: RepresentativeProfile; size?: number }) {
+  const photo = representativeAvatarUrl(rep);
+  const badge = representativeCompanyBadgeUrl(rep);
+  const radius = size >= 56 ? 18 : 999;
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      {photo ? (
+        <div style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          background: `url(${photo}) center/cover`,
+          border: '1px solid rgba(216,222,236,0.92)',
+          boxShadow: '0 6px 16px rgba(80,90,120,0.1)',
+        }} />
+      ) : (
+        <AvatarBubble
+          initials={representativeInitials(representativeDisplayName(rep))}
+          tint={companyTint(rep.companyName)}
+          size={size}
+        />
+      )}
+      {badge && (
+        <div style={{
+          position: 'absolute',
+          right: -4,
+          bottom: -4,
+          width: Math.round(size * 0.42),
+          height: Math.round(size * 0.42),
+          borderRadius: 8,
+          border: '2px solid #fff',
+          background: `url(${badge}) center/cover`,
+          boxShadow: '0 4px 10px rgba(80,90,120,0.12)',
+        }} />
+      )}
+    </div>
   );
 }
 
@@ -743,62 +761,82 @@ function HomeEventRow({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
     <button type="button" onClick={onOpen} style={{
       width: '100%',
       padding: 0,
-      border: '1px solid rgba(216,222,236,0.92)',
-      borderRadius: 20,
+      border: '1px solid var(--line)',
+      borderRadius: 'var(--r-md)',
       overflow: 'hidden',
       background: '#fff',
       textAlign: 'left',
       cursor: 'pointer',
-      boxShadow: '0 10px 26px rgba(85,96,130,0.05)',
+      boxShadow: 'var(--shadow-sm)',
       display: 'grid',
-      gridTemplateColumns: '112px 1fr',
-      minHeight: 118,
+      gridTemplateColumns: '118px 1fr auto',
+      minHeight: 112,
+      alignItems: 'stretch',
     }}>
       <div style={{
         position: 'relative',
         background: visualUrl(ev.imageUrl)
-          ? `linear-gradient(135deg, rgba(18,24,40,0.22), rgba(245,130,32,0.12)), url(${visualUrl(ev.imageUrl)}) center/cover`
-          : 'linear-gradient(135deg, rgba(245,130,32,0.18), rgba(185,193,234,0.28))',
+          ? `linear-gradient(135deg, rgba(18,24,40,0.18), rgba(18,24,40,0.04)), url(${visualUrl(ev.imageUrl)}) center/cover`
+          : 'var(--chip)',
       }}>
         <span style={{
           position: 'absolute',
           top: 8,
           left: 8,
-          padding: '4px 7px',
-          borderRadius: 999,
-          background: 'rgba(255,255,255,0.88)',
-          fontSize: 9.5,
-          fontWeight: 650,
-          color: 'var(--ink)',
+          padding: '3px 8px',
+          borderRadius: 6,
+          background: 'rgba(255,255,255,0.92)',
+          fontSize: 10,
+          fontWeight: 600,
+          color: 'var(--accent-ink)',
         }}>{eventFormat(ev)}</span>
         {dateBadge && (
           <span style={{
             position: 'absolute',
             left: 8,
             bottom: 8,
-            padding: '5px 8px',
-            borderRadius: 10,
+            padding: '4px 7px',
+            borderRadius: 6,
             background: 'var(--accent)',
             color: '#fff',
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: 700,
-            lineHeight: 1.1,
+            lineHeight: 1.15,
+            letterSpacing: '0.02em',
           }}>{dateBadge}</span>
         )}
       </div>
-      <div style={{ padding: '12px 14px 12px 12px', minWidth: 0 }}>
-        <Mono style={{ fontSize: 9, color: '#4AA8FF', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+      <div style={{ padding: '12px 12px 12px 14px', minWidth: 0 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent-blue)' }}>
           {ev.category || 'Evento'}
-        </Mono>
-        <div style={{ marginTop: 4, fontSize: 15, fontWeight: 620, color: 'var(--ink)', lineHeight: 1.25 }}>{ev.title}</div>
-        <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+        </div>
+        <div style={{ marginTop: 5, fontSize: 15, fontWeight: 650, color: 'var(--accent-ink)', lineHeight: 1.28 }}>{ev.title}</div>
+        <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.35 }}>
           {locationText(ev.location)}
         </div>
+      </div>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        gap: 10,
+        padding: '12px 14px 12px 0',
+      }}>
         {countdown && (
-          <div style={{ marginTop: 8, display: 'inline-block', padding: '4px 8px', borderRadius: 8, background: 'rgba(245,130,32,0.10)', color: 'var(--accent)', fontSize: 11, fontWeight: 650 }}>
+          <span style={{
+            padding: '5px 8px',
+            borderRadius: 6,
+            background: 'var(--accent-soft)',
+            color: 'var(--accent)',
+            fontSize: 11,
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+          }}>
             {countdown}
-          </div>
+          </span>
         )}
+        <span style={{ color: 'var(--muted)', fontSize: 20, lineHeight: 1 }} aria-hidden>›</span>
       </div>
     </button>
   );
@@ -1041,32 +1079,10 @@ function RepresentativesView({
               boxShadow: '0 10px 26px rgba(85,96,130,0.05)',
             }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-                  {rep.photoUrl ? (
-                    <div style={{
-                      width: 56, height: 56, borderRadius: 18,
-                      background: `url(${rep.photoUrl}) center/cover`,
-                      border: '1px solid rgba(216,222,236,0.92)',
-                    }} />
-                  ) : (
-                    <AvatarBubble initials={representativeInitials(rep.repLabel)} tint={companyTint(rep.companyName)} size={56} />
-                  )}
-                  {rep.companyLogoUrl && (
-                    <div style={{
-                      position: 'absolute',
-                      right: -3,
-                      bottom: -3,
-                      width: 24,
-                      height: 24,
-                      borderRadius: 8,
-                      border: '2px solid #fff',
-                      background: `url(${rep.companyLogoUrl}) center/cover`,
-                    }} />
-                  )}
-                </div>
+                <RepAvatar rep={rep} size={56} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Representante</Mono>
-                  <div style={{ marginTop: 4, fontSize: 16, fontWeight: 620, color: 'var(--ink)' }}>{rep.repLabel}</div>
+                  <div style={{ marginTop: 4, fontSize: 16, fontWeight: 620, color: 'var(--ink)' }}>{representativeDisplayName(rep)}</div>
                   <div style={{ marginTop: 2, fontSize: 12.5, color: 'var(--muted)' }}>{rep.companyName}</div>
                   <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <Chip color="#B9C1EA">{rep.specialty}</Chip>
@@ -1653,15 +1669,11 @@ function CourseCard({ course }: { course: Course }) {
 /* ─── Shared ─── */
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-      <span style={{ fontSize: 16, fontWeight: 560, color: 'var(--ink)' }}>{title}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <span style={{ fontSize: 17, fontWeight: 650, color: 'var(--accent-ink)' }}>{title}</span>
       {onSeeAll && (
-        <button onClick={onSeeAll} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          fontFamily: "var(--font-mono)", fontSize: 10,
-          color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
-        }}>
-          ver todas →
+        <button type="button" className="tessy-section-link" onClick={onSeeAll}>
+          Ver todas
         </button>
       )}
     </div>
@@ -1670,7 +1682,7 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => vo
 
 function SearchBar({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div style={{ position: 'relative', marginBottom: 14 }}>
+    <div style={{ position: 'relative', marginBottom: 16 }}>
       <svg style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}
         width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
         <circle cx="7" cy="7" r="5.5"/><path d="M11 11l3.5 3.5" strokeLinecap="round"/>
@@ -1678,13 +1690,13 @@ function SearchBar({ value, onChange, placeholder }: { value: string; onChange: 
       <input
         type="search" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
         style={{
-          width: '100%', paddingLeft: 40, paddingRight: 44, paddingTop: 13, paddingBottom: 13,
-          borderRadius: 999, background: '#fff', border: '1px solid rgba(216,222,236,0.92)',
-          color: 'var(--ink)', fontSize: 14, outline: 'none',
-          boxShadow: '0 8px 22px rgba(85,96,130,0.04)',
+          width: '100%', paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12,
+          borderRadius: 'var(--r-md)', background: '#fff', border: '1px solid var(--line)',
+          color: 'var(--accent-ink)', fontSize: 14, outline: 'none',
+          boxShadow: 'var(--shadow-sm)',
         }}
-        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-        onBlur={e => e.target.style.borderColor = 'rgba(216,222,236,0.92)'}
+        onFocus={e => { e.target.style.borderColor = 'var(--accent)'; }}
+        onBlur={e => { e.target.style.borderColor = 'var(--line)'; }}
       />
     </div>
   );
