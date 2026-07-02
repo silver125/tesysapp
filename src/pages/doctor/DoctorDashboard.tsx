@@ -573,15 +573,15 @@ function DoctorPointsBar({
 }
 
 function RepAvatarCluster({ rep, photoSize = 52 }: { rep: RepresentativeProfile; photoSize?: number }) {
-  const photo = rep.photoUrl?.trim();
+  const image = visualUrl(representativeAvatarUrl(rep));
 
-  if (photo) {
+  if (image) {
     return (
       <div style={{
         width: photoSize,
         height: photoSize,
         borderRadius: 8,
-        background: `url(${photo}) center/cover`,
+        background: `url(${image}) center/cover`,
         border: '1px solid var(--line)',
         flexShrink: 0,
       }} />
