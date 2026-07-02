@@ -572,49 +572,29 @@ function DoctorPointsBar({
   );
 }
 
-function RepAvatarCluster({ rep, photoSize = 48 }: { rep: RepresentativeProfile; photoSize?: number }) {
-  const personPhoto = rep.photoUrl?.trim();
-  const logo = rep.companyLogoUrl?.trim();
-  const mainPhoto = personPhoto || undefined;
+function RepAvatarCluster({ rep, photoSize = 52 }: { rep: RepresentativeProfile; photoSize?: number }) {
+  const photo = rep.photoUrl?.trim();
+
+  if (photo) {
+    return (
+      <div style={{
+        width: photoSize,
+        height: photoSize,
+        borderRadius: 8,
+        background: `url(${photo}) center/cover`,
+        border: '1px solid var(--line)',
+        flexShrink: 0,
+      }} />
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-      {mainPhoto ? (
-        <div style={{
-          width: photoSize,
-          height: photoSize,
-          borderRadius: 999,
-          background: `url(${mainPhoto}) center/cover`,
-          border: '1px solid var(--line)',
-        }} />
-      ) : (
-        <AvatarBubble
-          initials={representativeInitials(representativeDisplayName(rep))}
-          tint={companyTint(rep.companyName)}
-          size={photoSize}
-        />
-      )}
-      {logo && personPhoto && logo !== personPhoto && (
-        <div style={{
-          width: 36,
-          height: 36,
-          borderRadius: 8,
-          background: `url(${logo}) center/cover`,
-          border: '1px solid var(--line)',
-          flexShrink: 0,
-        }} />
-      )}
-      {logo && !personPhoto && (
-        <div style={{
-          width: 36,
-          height: 36,
-          borderRadius: 8,
-          background: `url(${logo}) center/cover`,
-          border: '1px solid var(--line)',
-          flexShrink: 0,
-        }} />
-      )}
-    </div>
+    <CompanyMark
+      code={representativeInitials(representativeDisplayName(rep))}
+      tint={companyTint(rep.companyName)}
+      size={photoSize}
+      radius={8}
+    />
   );
 }
 
