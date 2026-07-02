@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import { useAuth } from '../../context/useAuth';
@@ -351,7 +351,7 @@ export default function DoctorDashboard() {
           {(suggestedRep || suggestedProduct) && (
             <section style={{ marginBottom: 22 }}>
               <SectionHeader title="Sugestões para você" onSeeAll={() => openTab('representatives')} />
-              <div className="tessy-home-rail">
+              <HomeCarousel>
                 {suggestedRep && (
                   <HomeRepCard
                     rep={suggestedRep}
@@ -364,33 +364,33 @@ export default function DoctorDashboard() {
                     onOpen={() => setOpenProduct(suggestedProduct)}
                   />
                 )}
-              </div>
+              </HomeCarousel>
             </section>
           )}
 
           {homeEvents.length > 0 && (
             <section style={{ marginBottom: 22 }}>
               <SectionHeader title="Eventos em breve" onSeeAll={() => openTab('events')} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {homeEvents.slice(0, 2).map(ev => (
+              <HomeCarousel>
+                {homeEvents.map(ev => (
                   <HomeEventRow key={ev.id} ev={ev} onOpen={() => setOpenEvent(ev)} />
                 ))}
-              </div>
+              </HomeCarousel>
             </section>
           )}
 
           {representatives.length > 0 && (
             <section style={{ marginBottom: 8 }}>
               <SectionHeader title="Representantes em destaque" onSeeAll={() => openTab('representatives')} />
-              <div className="tessy-home-rail">
-                {representatives.slice(0, 4).map(rep => (
+              <HomeCarousel>
+                {representatives.slice(0, 8).map(rep => (
                   <HomeRepCard
                     key={rep.id}
                     rep={rep}
                     onConnect={() => openTab('representatives', rep.companyName)}
                   />
                 ))}
-              </div>
+              </HomeCarousel>
             </section>
           )}
 
@@ -572,29 +572,100 @@ function DoctorPointsBar({
   );
 }
 
-function RepAvatarCluster({ rep, photoSize = 52 }: { rep: RepresentativeProfile; photoSize?: number }) {
-  const image = visualUrl(representativeAvatarUrl(rep));
+function HomeCarousel({ children }: { children: ReactNode }) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
-  if (image) {
-    return (
-      <div style={{
-        width: photoSize,
-        height: photoSize,
-        borderRadius: 8,
-        background: `url(${image}) center/cover`,
-        border: '1px solid var(--line)',
-        flexShrink: 0,
-      }} />
-    );
+  const updateScroll = useCallback(() => {
+    const el = railRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    updateScroll();
+    const el = railRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateScroll, { passive: true });
+    window.addEventListener('resize', updateScroll);
+    const observer = new ResizeObserver(updateScroll);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateScroll);
+      window.removeEventListener('resize', updateScroll);
+      observer.disconnect();
+    };
+  }, [updateScroll, children]);
+
+  function scrollByDir(dir: -1 | 1) {
+    const el = railRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(280, el.clientWidth * 0.82), behavior: 'smooth' });
   }
 
+  const showControls = canScrollLeft || canScrollRight;
+
   return (
-    <CompanyMark
-      code={representativeInitials(representativeDisplayName(rep))}
-      tint={companyTint(rep.companyName)}
-      size={photoSize}
-      radius={8}
-    />
+    <div className="tessy-home-carousel">
+      {showControls && (
+        <button
+          type="button"
+          className="tessy-home-carousel__btn tessy-home-carousel__btn--prev"
+          aria-label="Anterior"
+          disabled={!canScrollLeft}
+          onClick={() => scrollByDir(-1)}
+        >
+          ‹
+        </button>
+      )}
+      <div ref={railRef} className="tessy-home-rail">
+        {children}
+      </div>
+      {showControls && (
+        <button
+          type="button"
+          className="tessy-home-carousel__btn tessy-home-carousel__btn--next"
+          aria-label="Próximo"
+          disabled={!canScrollRight}
+          onClick={() => scrollByDir(1)}
+        >
+          ›
+        </button>
+      )}
+    </div>
+  );
+}
+
+function HomeMediaColumn({
+  imageUrl,
+  fallbackCode,
+  fallbackTint,
+  topBadge,
+  bottomBadge,
+}: {
+  imageUrl?: string;
+  fallbackCode: string;
+  fallbackTint: string;
+  topBadge?: ReactNode;
+  bottomBadge?: ReactNode;
+}) {
+  return (
+    <div className="tessy-home-wide-card__media">
+      {imageUrl ? (
+        <div
+          className="tessy-home-wide-card__media-fill"
+          style={{ backgroundImage: `url(${imageUrl})` }}
+        />
+      ) : (
+        <div className="tessy-home-wide-card__media-fallback">
+          <CompanyMark code={fallbackCode} tint={fallbackTint} size={56} radius={8} />
+        </div>
+      )}
+      {topBadge}
+      {bottomBadge}
+    </div>
   );
 }
 
@@ -603,6 +674,7 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
+  const image = visualUrl(representativeAvatarUrl(rep));
 
   async function handleConnect() {
     if (busy) return;
@@ -622,23 +694,30 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
   }
 
   return (
-    <article className="tessy-home-card">
-      <div className="tessy-home-card__row">
-        <RepAvatarCluster rep={rep} photoSize={52} />
-        <div className="tessy-home-card__body">
-          <div className="tessy-home-card__title">{representativeDisplayName(rep)}</div>
-          <div className="tessy-home-card__meta">{rep.companyName}</div>
-          {rep.specialty && <span className="tessy-home-tag">{rep.specialty}</span>}
-        </div>
+    <article className="tessy-home-wide-card">
+      <HomeMediaColumn
+        imageUrl={image}
+        fallbackCode={representativeInitials(representativeDisplayName(rep))}
+        fallbackTint={companyTint(rep.companyName)}
+        topBadge={rep.specialty ? (
+          <span className="tessy-home-wide-card__badge tessy-home-wide-card__badge--top">{rep.specialty}</span>
+        ) : undefined}
+      />
+      <div className="tessy-home-wide-card__body">
+        <div className="tessy-home-card__title">{representativeDisplayName(rep)}</div>
+        <div className="tessy-home-card__meta">{rep.companyName}</div>
+        {rep.regionLabel && <span className="tessy-home-tag">{rep.regionLabel}</span>}
       </div>
-      <button type="button" className="tessy-home-btn-outline" onClick={() => { void handleConnect(); }} disabled={busy}>
-        {busy ? 'Conectando…' : feedback ? 'Conectado ✓' : 'Conectar'}
-      </button>
+      <div className="tessy-home-wide-card__aside">
+        <button type="button" className="tessy-home-btn-outline" style={{ marginTop: 0 }} onClick={() => { void handleConnect(); }} disabled={busy}>
+          {busy ? 'Conectando…' : feedback ? 'Conectado ✓' : 'Conectar'}
+        </button>
+      </div>
       {feedback && !error && (
-        <div style={{ marginTop: 8, fontSize: 11, color: 'var(--success)', lineHeight: 1.35 }}>{feedback}</div>
+        <div style={{ gridColumn: '1 / -1', padding: '0 12px 10px', fontSize: 11, color: 'var(--success)' }}>{feedback}</div>
       )}
       {error && (
-        <div style={{ marginTop: 8, fontSize: 11, color: 'var(--danger)', lineHeight: 1.35 }}>{error}</div>
+        <div style={{ gridColumn: '1 / -1', padding: '0 12px 10px', fontSize: 11, color: 'var(--danger)' }}>{error}</div>
       )}
     </article>
   );
@@ -648,31 +727,24 @@ function HomeProductCard({ product, onOpen }: { product: Product; onOpen: () => 
   const image = visualUrl(product.imageUrl);
 
   return (
-    <article className="tessy-home-card">
-      <div className="tessy-home-card__row">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {image ? (
-            <div style={{
-              width: 52,
-              height: 52,
-              borderRadius: 8,
-              background: `url(${image}) center/cover`,
-              border: '1px solid var(--line)',
-            }} />
-          ) : (
-            <CompanyMark code={companyInitials(product.companyName)} tint={companyTint(product.companyName)} size={52} radius={8} />
-          )}
-          <CompanyMark code={companyInitials(product.companyName)} tint={companyTint(product.companyName)} size={36} radius={8} />
-        </div>
-        <div className="tessy-home-card__body">
-          <div className="tessy-home-card__title">{product.name}</div>
-          <div className="tessy-home-card__meta">{product.companyName}</div>
-          {product.category && <span className="tessy-home-tag">{product.category}</span>}
-        </div>
+    <article className="tessy-home-wide-card">
+      <HomeMediaColumn
+        imageUrl={image}
+        fallbackCode={companyInitials(product.companyName)}
+        fallbackTint={companyTint(product.companyName)}
+        topBadge={product.category ? (
+          <span className="tessy-home-wide-card__badge tessy-home-wide-card__badge--top">{product.category}</span>
+        ) : undefined}
+      />
+      <div className="tessy-home-wide-card__body">
+        <div className="tessy-home-card__title">{product.name}</div>
+        <div className="tessy-home-card__meta">{product.companyName}</div>
       </div>
-      <button type="button" className="tessy-home-btn-outline" onClick={onOpen}>
-        Ver detalhes
-      </button>
+      <div className="tessy-home-wide-card__aside">
+        <button type="button" className="tessy-home-btn-outline" style={{ marginTop: 0 }} onClick={onOpen}>
+          Ver detalhes
+        </button>
+      </div>
     </article>
   );
 }
@@ -737,72 +809,27 @@ function RepAvatar({ rep, size = 52 }: { rep: RepresentativeProfile; size?: numb
 function HomeEventRow({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
   const countdown = eventCountdown(ev);
   const dateBadge = `${dayNum(ev.date)} ${monthShort(ev.date)}`.trim();
+  const image = visualUrl(ev.imageUrl);
+
   return (
-    <button type="button" onClick={onOpen} style={{
-      width: '100%',
-      padding: 0,
-      border: '1px solid var(--line)',
-      borderRadius: 'var(--r-md)',
-      overflow: 'hidden',
-      background: '#fff',
-      textAlign: 'left',
-      cursor: 'pointer',
-      boxShadow: 'var(--shadow-sm)',
-      display: 'grid',
-      gridTemplateColumns: '118px 1fr auto',
-      minHeight: 112,
-      alignItems: 'stretch',
-    }}>
-      <div style={{
-        position: 'relative',
-        background: visualUrl(ev.imageUrl)
-          ? `linear-gradient(135deg, rgba(18,24,40,0.18), rgba(18,24,40,0.04)), url(${visualUrl(ev.imageUrl)}) center/cover`
-          : 'var(--chip)',
-      }}>
-        <span style={{
-          position: 'absolute',
-          top: 8,
-          left: 8,
-          padding: '3px 8px',
-          borderRadius: 6,
-          background: 'rgba(255,255,255,0.92)',
-          fontSize: 10,
-          fontWeight: 600,
-          color: 'var(--accent-ink)',
-        }}>{eventFormat(ev)}</span>
-        {dateBadge && (
-          <span style={{
-            position: 'absolute',
-            left: 8,
-            bottom: 8,
-            padding: '4px 7px',
-            borderRadius: 6,
-            background: 'var(--accent)',
-            color: '#fff',
-            fontSize: 10,
-            fontWeight: 700,
-            lineHeight: 1.15,
-            letterSpacing: '0.02em',
-          }}>{dateBadge}</span>
-        )}
-      </div>
-      <div style={{ padding: '12px 12px 12px 14px', minWidth: 0 }}>
+    <button type="button" onClick={onOpen} className="tessy-home-wide-card" style={{ cursor: 'pointer', padding: 0 }}>
+      <HomeMediaColumn
+        imageUrl={image}
+        fallbackCode={companyInitials(ev.companyName)}
+        fallbackTint={companyTint(ev.companyName)}
+        topBadge={<span className="tessy-home-wide-card__badge tessy-home-wide-card__badge--top">{eventFormat(ev)}</span>}
+        bottomBadge={dateBadge ? (
+          <span className="tessy-home-wide-card__badge tessy-home-wide-card__badge--bottom">{dateBadge}</span>
+        ) : undefined}
+      />
+      <div className="tessy-home-wide-card__body">
         <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent-blue)' }}>
           {ev.category || 'Evento'}
         </div>
-        <div style={{ marginTop: 5, fontSize: 15, fontWeight: 650, color: 'var(--accent-ink)', lineHeight: 1.28 }}>{ev.title}</div>
-        <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.35 }}>
-          {locationText(ev.location)}
-        </div>
+        <div className="tessy-home-card__title" style={{ marginTop: 5 }}>{ev.title}</div>
+        <div className="tessy-home-card__meta" style={{ marginTop: 6 }}>{locationText(ev.location)}</div>
       </div>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        gap: 10,
-        padding: '12px 14px 12px 0',
-      }}>
+      <div className="tessy-home-wide-card__aside">
         {countdown && (
           <span style={{
             padding: '5px 8px',
