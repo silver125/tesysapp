@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import { useAuth } from '../../context/useAuth';
@@ -15,9 +15,13 @@ import type { Event, Product, Course, CourseModality, Lead, Location, LocationTy
 type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads' | 'locations' | 'representatives';
 
 const LOCATION_TYPES: { value: LocationType; label: string }[] = [
+  { value: 'coworking',    label: 'Coworking' },
+  { value: 'sala_reuniao', label: 'Sala de reunião' },
+  { value: 'consultorio',  label: 'Consultório médico' },
+  { value: 'clinica',      label: 'Clínica parceira' },
+  { value: 'hospital',     label: 'Hospital' },
   { value: 'ponto_venda',  label: 'Ponto de venda' },
   { value: 'distribuidor', label: 'Distribuidor' },
-  { value: 'clinica',      label: 'Clínica parceira' },
   { value: 'farmacia',     label: 'Farmácia' },
   { value: 'loja',         label: 'Loja' },
   { value: 'outro',        label: 'Outro' },
@@ -353,7 +357,7 @@ function eventLeadDoctorCount(event: Event, leads: Lead[]) {
 }
 
 export default function CompanyDashboard() {
-  const { user, events, products, courses, leads, locations, representatives, addEvent, addProduct, addCourse, addLocation, deleteLocation, addRepresentative, deleteRepresentative, deleteEvent, deleteProduct, deleteCourse, updateEvent, requestConnection } = useAuth();
+  const { user, events, products, courses, leads, locations, representatives, addEvent, addProduct, addCourse, addLocation, deleteLocation, addRepresentative, updateRepresentative, deleteRepresentative, deleteEvent, deleteProduct, deleteCourse, updateEvent, requestConnection } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
@@ -928,6 +932,7 @@ export default function CompanyDashboard() {
           representatives={myReps}
           company={companyInfo}
           onAdd={addRepresentative}
+          onUpdate={updateRepresentative}
           onDelete={deleteRepresentative}
         />
       )}
@@ -1079,8 +1084,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
     website: '',
   });
   const [coImage, setCoImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
-  const [anvisaConfirmed, setAnvisaConfirmed] = useState(false);
-  const [commercialConfirmed, setCommercialConfirmed] = useState(false);
+  const [productDeclared, setProductDeclared] = useState(false);
   const [partnershipConfirmed, setPartnershipConfirmed] = useState(false);
 
   const isPartnership = selectedChoice === 'partnership';
@@ -1103,8 +1107,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
       if (!prImage.file) return 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
       if (!pr.name.trim()) return 'Informe o nome do produto.';
       if (isPartnership && !partnershipConfirmed) return 'Confirme a autorização para divulgar esta parceria.';
-      if (!isPartnership && !anvisaConfirmed) return 'Confirme a regularização vigente na Anvisa.';
-      if (!isPartnership && !commercialConfirmed) return 'Confirme a disponibilidade comercial do produto.';
+      if (!isPartnership && !productDeclared) return 'Marque a declaração regulatória para publicar.';
     }
     if (kind === 'course') {
       if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
@@ -1168,8 +1171,8 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
           website: normalizeUrl(pr.website),
           imageUrl,
           listingType: isPartnership ? 'partnership' : 'product',
-          anvisaRegularized: isPartnership || anvisaConfirmed,
-          commerciallyAvailable: isPartnership || commercialConfirmed,
+          anvisaRegularized: isPartnership || productDeclared,
+          commerciallyAvailable: isPartnership || productDeclared,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else {
@@ -1241,10 +1244,10 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
                       availableFor: 'Representante apresenta briefing, condições e proposta de parceria.',
                       price: 'Parceria sob consulta',
                     }));
-                    setAnvisaConfirmed(false);
-                    setCommercialConfirmed(false);
+                    setProductDeclared(false);
                     setPartnershipConfirmed(false);
                   } else if (target === 'product') {
+                    setProductDeclared(false);
                     setPartnershipConfirmed(false);
                   }
                   setSaveError('');
@@ -1354,30 +1357,18 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
                   </span>
                 </label>
               ) : (
-                <>
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={anvisaConfirmed}
-                      onChange={e => setAnvisaConfirmed(e.target.checked)}
-                      style={{ marginTop: 3, accentColor: 'var(--accent)' }}
-                    />
-                    <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-                      Confirmo que o produto possui <b>regularização vigente na Anvisa</b> (ou categoria isenta aplicável).
-                    </span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={commercialConfirmed}
-                      onChange={e => setCommercialConfirmed(e.target.checked)}
-                      style={{ marginTop: 3, accentColor: 'var(--accent)' }}
-                    />
-                    <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-                      Confirmo a <b>disponibilidade comercial</b> do produto para divulgação a médicos.
-                    </span>
-                  </label>
-                </>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={productDeclared}
+                    onChange={e => setProductDeclared(e.target.checked)}
+                    style={{ marginTop: 3, accentColor: 'var(--accent)' }}
+                  />
+                  <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+                    Declaro que o produto possui <b>regularização vigente na Anvisa</b> (ou categoria isenta)
+                    e está <b>disponível comercialmente</b> para divulgação a médicos.
+                  </span>
+                </label>
               )}
             </div>
           </div>
@@ -2174,7 +2165,7 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
   onDelete: (id: string) => Promise<void>;
 }) {
   const [name, setName] = useState('');
-  const [type, setType] = useState<LocationType>('ponto_venda');
+  const [type, setType] = useState<LocationType>('coworking');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [stateUf, setStateUf] = useState('');
@@ -2206,7 +2197,7 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
   }
 
   function reset() {
-    setName(''); setType('ponto_venda'); setAddress('');
+    setName(''); setType('coworking'); setAddress('');
     setCity(''); setStateUf(''); setWhatsapp(''); setWebsite(''); setNotes('');
   }
 
@@ -2247,7 +2238,7 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
           Locais de atendimento<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
-          Pontos de venda, distribuidores e clínicas onde seus produtos podem ser encontrados. Médicos veem esses locais ao conhecer sua empresa.
+          Onde médicos podem te encontrar: coworking, salas de reunião, consultórios, clínicas e pontos de venda.
         </p>
       </div>
 
@@ -2257,7 +2248,7 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
         border: '1px solid var(--line)', marginBottom: 18,
         display: 'flex', flexDirection: 'column', gap: 16,
       }}>
-        <WField label="NOME DO LOCAL" value={name} onChange={setName} placeholder="Ex: Farmácia Central / Distribuidora Sul" />
+        <WField label="NOME DO LOCAL" value={name} onChange={setName} placeholder="Ex: Coworking Pinheiros / Clínica Central" />
         <WField
           label="TIPO"
           value={locationTypeLabel(type)}
@@ -2374,10 +2365,101 @@ function RepMiniCard({ rep }: { rep: Representative }) {
   );
 }
 
-function RepresentativesManager({ representatives, company, onAdd, onDelete }: {
+function RepresentativeAvatarEditor({
+  rep,
+  companyId,
+  onPhotoUpdated,
+}: {
+  rep: Representative;
+  companyId: string;
+  onPhotoUpdated: (id: string, photoUrl: string) => Promise<void>;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleFile(file: File | null) {
+    if (!file || uploading) return;
+    setError('');
+    setUploading(true);
+    try {
+      const photoUrl = await uploadProfileAvatar(file, companyId);
+      await onPhotoUpdated(rep.id, photoUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao enviar foto.');
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  }
+
+  return (
+    <div style={{ flexShrink: 0 }}>
+      <label style={{
+        position: 'relative',
+        display: 'block',
+        width: 46,
+        height: 46,
+        borderRadius: 14,
+        overflow: 'hidden',
+        cursor: uploading ? 'not-allowed' : 'pointer',
+        background: rep.photoUrl
+          ? `url(${rep.photoUrl}) center/cover`
+          : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+        color: '#fff',
+        boxShadow: '0 6px 16px rgba(80,90,120,0.1)',
+      }}>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          capture="user"
+          disabled={uploading}
+          onChange={event => { void handleFile(event.target.files?.[0] ?? null); }}
+          style={{ display: 'none' }}
+        />
+        {!rep.photoUrl && (
+          <span style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 16,
+            fontWeight: 620,
+          }}>
+            {(rep.name?.trim()?.[0] ?? 'R').toUpperCase()}
+          </span>
+        )}
+        <span style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          paddingBottom: 3,
+          background: 'linear-gradient(180deg, transparent 35%, rgba(15,22,38,0.72))',
+          fontSize: 8,
+          fontWeight: 650,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          color: '#fff',
+        }}>
+          {uploading ? '...' : rep.photoUrl ? 'Trocar' : 'Foto'}
+        </span>
+      </label>
+      {error && (
+        <div style={{ marginTop: 4, maxWidth: 92, fontSize: 9.5, color: '#F25C54', lineHeight: 1.3 }}>{error}</div>
+      )}
+    </div>
+  );
+}
+
+function RepresentativesManager({ representatives, company, onAdd, onUpdate, onDelete }: {
   representatives: Representative[];
   company: { id: string; name: string; whatsapp?: string };
   onAdd: (rep: Omit<Representative, 'id' | 'createdAt'>) => Promise<void>;
+  onUpdate: (id: string, patch: Partial<Pick<Representative, 'name' | 'specialty' | 'region' | 'city' | 'state' | 'whatsapp' | 'email' | 'bio' | 'photoUrl'>>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const [name, setName] = useState('');
@@ -2469,7 +2551,7 @@ function RepresentativesManager({ representatives, company, onAdd, onDelete }: {
         border: '1px solid var(--line)', marginBottom: 18,
         display: 'flex', flexDirection: 'column', gap: 16,
       }}>
-        <ProfilePhotoField label="FOTO DO REPRESENTANTE (opcional)" preview={photo.preview} onChange={setPhotoDraft} />
+        <ProfilePhotoField label="FOTO DO REPRESENTANTE" preview={photo.preview} onChange={setPhotoDraft} />
         <WField label="NOME DO REPRESENTANTE" value={name} onChange={setName} placeholder="Ex: Ana Souza" />
         <WField label="ESPECIALIDADE / ÁREA (opcional)" value={specialty} onChange={setSpecialty} placeholder="Dermatologia, Cardiologia..." />
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
@@ -2520,16 +2602,11 @@ function RepresentativesManager({ representatives, company, onAdd, onDelete }: {
               display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start',
             }}>
               <div style={{ display: 'flex', gap: 12, minWidth: 0 }}>
-                <div style={{
-                  width: 46, height: 46, borderRadius: 14, flexShrink: 0,
-                  background: rep.photoUrl
-                    ? `url(${rep.photoUrl}) center/cover`
-                    : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
-                  color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 16, fontWeight: 620, overflow: 'hidden',
-                }}>
-                  {!rep.photoUrl && (rep.name?.trim()?.[0] ?? 'R').toUpperCase()}
-                </div>
+                <RepresentativeAvatarEditor
+                  rep={rep}
+                  companyId={company.id}
+                  onPhotoUpdated={async (id, photoUrl) => { await onUpdate(id, { photoUrl }); }}
+                />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                     {rep.specialty && <Chip color="#B9C1EA">{rep.specialty}</Chip>}

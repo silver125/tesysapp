@@ -8,6 +8,7 @@ import { POINTS_PER_CONNECTION, POINTS_PER_INTEREST } from '../lib/gamification'
 import { normalizeUserRole } from '../lib/authRoutes';
 import { isMissingDbColumnError, isMissingRpcError, omitDbColumns } from '../lib/dbSchema';
 import { insertLeadResilient } from '../lib/leadInsert';
+import { publishProduct } from '../lib/publishProduct';
 
 // Helper: timeout para evitar travas infinitas em chamadas Supabase
 // Aceita PromiseLike para suportar o query builder do supabase-js (thenable)
@@ -21,62 +22,6 @@ function withTimeout<T>(p: PromiseLike<T>, ms: number, label = 'Servidor'): Prom
       ),
     ),
   ]);
-}
-
-function isProductComplianceError(message: string) {
-  return /anvisa|regularizacao|disponibilidade comercial|validate_product_compliance|products_validate_compliance/i.test(message);
-}
-
-function formatProductComplianceError(
-  message: string,
-  opts?: { anvisaOk?: boolean; commercialOk?: boolean },
-) {
-  if (/schema cache|could not find.*column/i.test(message)) {
-    return (
-      'Banco desatualizado para publicar produtos. '
-      + 'Rode supabase/fix_product_publish.sql no Supabase SQL Editor e tente de novo.'
-    );
-  }
-  if (isProductComplianceError(message)) {
-    if (opts?.anvisaOk && opts?.commercialOk) {
-      return `Não foi possível publicar o produto: ${message}`;
-    }
-    return 'Marque as confirmações de regularização Anvisa e disponibilidade comercial antes de publicar.';
-  }
-  return message;
-}
-
-async function insertProductResilient(payload: Record<string, unknown>) {
-  const optionalGroups = [
-    [] as string[],
-    ['image_url', 'listing_type', 'anvisa_regularized', 'commercially_available'],
-    ['image_url', 'listing_type', 'anvisa_regularized', 'commercially_available', 'website', 'available_for'],
-  ];
-
-  let lastError: { message: string } | null = null;
-  const seen = new Set<string>();
-
-  for (const omit of optionalGroups) {
-    const attempt = omit.length ? omitDbColumns(payload, omit) : payload;
-    const key = JSON.stringify(Object.keys(attempt).sort());
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    const result = await withTimeout(
-      supabase.from('products').insert(attempt),
-      12000,
-      'Publicar produto',
-    );
-    if (!result.error) return { error: null as null };
-    lastError = result.error;
-
-    const missingColumn = isMissingDbColumnError(result.error, [
-      'anvisa_regularized', 'commercially_available', 'listing_type', 'image_url', 'website', 'available_for',
-    ]);
-    if (!missingColumn) break;
-  }
-
-  return { error: lastError };
 }
 
 type CompanyOwnedTable = 'events' | 'products' | 'courses' | 'locations' | 'representatives';
@@ -380,7 +325,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const baseQuery = supabase
       .from('leads')
-      .select('*, doctor:profiles!doctor_id(name, first_name, last_name, avatar_url)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     let { data, error } = await (user.role === 'empresa'
@@ -1083,76 +1028,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     assertSupabaseConfigured();
     const listingType = data.listingType ?? 'product';
     const isPartnership = listingType === 'partnership';
-    const complianceConfirmed = isPartnership
+    const declaredOk = isPartnership
       || (Boolean(data.anvisaRegularized) && Boolean(data.commerciallyAvailable));
 
-    if (!isPartnership && !complianceConfirmed) {
-      throw new Error(
-        'Marque as confirmações de regularização Anvisa e disponibilidade comercial antes de publicar.',
-      );
+    if (!isPartnership && !declaredOk) {
+      throw new Error('Marque a declaração regulatória antes de publicar.');
     }
 
-    const complianceOpts = { anvisaOk: true, commercialOk: true };
-
-    const rpcPayload = {
+    await publishProduct({
       name: data.name,
       description: data.description,
       category: data.category,
-      price: data.price ?? '',
-      company_name: data.companyName,
-      company_whatsapp: data.companyWhatsapp ?? '',
-      available_for: data.availableFor,
-      website: data.website ?? '',
-      image_url: data.imageUrl ?? '',
-      listing_type: listingType,
-      anvisa_regularized: true,
-      commercially_available: true,
-      compliance_confirmed: complianceConfirmed,
-    };
+      price: data.price,
+      companyId: data.companyId,
+      companyName: data.companyName,
+      companyWhatsapp: data.companyWhatsapp,
+      availableFor: data.availableFor,
+      website: data.website,
+      imageUrl: data.imageUrl,
+      listingType,
+    });
 
-    const payload: Record<string, unknown> = {
-      name:             data.name,
-      description:      data.description,
-      category:         data.category,
-      price:            data.price ?? null,
-      company_id:       data.companyId,
-      company_name:     data.companyName,
-      company_whatsapp: data.companyWhatsapp ?? null,
-      available_for:    data.availableFor,
-      website:          data.website ?? null,
-      image_url:        data.imageUrl ?? null,
-      listing_type:     listingType,
-      anvisa_regularized: true,
-      commercially_available: true,
-    };
-
-    // 1) RPC no servidor — evita schema cache do PostgREST e grava compliance TRUE
-    const rpcResult = await withTimeout(
-      supabase.rpc('publish_company_product', { payload: rpcPayload }),
-      12000,
-      'Publicar produto',
-    );
-    if (!rpcResult.error) {
-      refreshData();
-      return;
-    }
-
-    // 2) Insert direto (fallback se RPC ausente ou desatualizada)
-    const directResult = await insertProductResilient(payload);
-    if (!directResult.error) {
-      refreshData();
-      return;
-    }
-
-    const rpcMessage = rpcResult.error.message;
-    const directMessage = directResult.error?.message ?? '';
-    const detail = directMessage || rpcMessage;
-
-    if (isMissingRpcError(rpcResult.error, 'publish_company_product')) {
-      throw new Error(formatProductComplianceError(detail, complianceOpts));
-    }
-
-    throw new Error(formatProductComplianceError(detail, complianceOpts));
+    refreshData();
   };
 
   const deleteProduct = async (id: string) => {
@@ -1331,6 +1228,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshData(); // background, não bloqueia
   };
 
+  const updateRepresentative = async (
+    id: string,
+    patch: Partial<Pick<Representative, 'name' | 'specialty' | 'region' | 'city' | 'state' | 'whatsapp' | 'email' | 'bio' | 'photoUrl'>>,
+  ) => {
+    if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem editar representantes.');
+    assertSupabaseConfigured();
+
+    const payload: Record<string, string | null> = {};
+    if (patch.name !== undefined) payload.name = patch.name;
+    if (patch.specialty !== undefined) payload.specialty = patch.specialty ?? null;
+    if (patch.region !== undefined) payload.region = patch.region ?? null;
+    if (patch.city !== undefined) payload.city = patch.city ?? null;
+    if (patch.state !== undefined) payload.state = patch.state ?? null;
+    if (patch.whatsapp !== undefined) payload.whatsapp = patch.whatsapp ?? null;
+    if (patch.email !== undefined) payload.email = patch.email ?? null;
+    if (patch.bio !== undefined) payload.bio = patch.bio ?? null;
+    if (patch.photoUrl !== undefined) payload.photo_url = patch.photoUrl ?? null;
+
+    if (Object.keys(payload).length === 0) return;
+
+    const { error } = await withTimeout(
+      supabase.from('representatives').update(payload).eq('id', id).eq('company_id', user.id),
+      12000,
+      'Atualizar representante',
+    );
+    if (error) throw new Error(error.message);
+
+    setRepresentatives(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
+    await refreshData();
+  };
+
   const deleteRepresentative = async (id: string) => {
     if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem excluir representantes.');
     assertSupabaseConfigured();
@@ -1384,8 +1312,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return points;
       }
       if (isMissingRpcError(pointsError, 'award_doctor_interest_points')) {
-        setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + POINTS_PER_INTEREST } : prev);
-        return POINTS_PER_INTEREST;
+        console.warn('RPC award_doctor_interest_points ausente — pontos não alterados no cliente.');
+        return 0;
       }
       console.warn('Não foi possível registrar pontos de interesse:', pointsError.message);
       return 0;
@@ -1535,7 +1463,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       events, products, courses, leads, locations, representatives,
       addEvent, addProduct, addCourse, addLead,
       addLocation, deleteLocation,
-      addRepresentative, deleteRepresentative,
+      addRepresentative, updateRepresentative, deleteRepresentative,
       requestConnection, approveConnection,
       deleteEvent, deleteProduct, deleteCourse,
       updateEvent,
