@@ -694,7 +694,7 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
   }
 
   return (
-    <article className="tessy-home-wide-card">
+    <article className="tessy-home-wide-card tessy-home-wide-card--action">
       <HomeMediaColumn
         imageUrl={image}
         fallbackCode={representativeInitials(representativeDisplayName(rep))}
@@ -703,22 +703,24 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
           <span className="tessy-home-wide-card__badge tessy-home-wide-card__badge--top">{rep.specialty}</span>
         ) : undefined}
       />
-      <div className="tessy-home-wide-card__body">
-        <div className="tessy-home-card__title">{representativeDisplayName(rep)}</div>
-        <div className="tessy-home-card__meta">{rep.companyName}</div>
-        {rep.regionLabel && <span className="tessy-home-tag">{rep.regionLabel}</span>}
+      <div className="tessy-home-wide-card__body tessy-home-wide-card__body--stacked">
+        <div className="tessy-home-wide-card__copy">
+          <div className="tessy-home-card__title">{representativeDisplayName(rep)}</div>
+          <div className="tessy-home-card__meta">{rep.companyName}</div>
+          {rep.regionLabel && <span className="tessy-home-tag">{rep.regionLabel}</span>}
+        </div>
+        <div className="tessy-home-wide-card__footer">
+          <button type="button" className="tessy-home-btn-inline" onClick={() => { void handleConnect(); }} disabled={busy}>
+            {busy ? 'Conectando…' : feedback ? 'Conectado ✓' : 'Conectar'}
+          </button>
+        </div>
+        {feedback && !error && (
+          <div style={{ marginTop: 6, fontSize: 11, color: 'var(--success)', lineHeight: 1.35 }}>{feedback}</div>
+        )}
+        {error && (
+          <div style={{ marginTop: 6, fontSize: 11, color: 'var(--danger)', lineHeight: 1.35 }}>{error}</div>
+        )}
       </div>
-      <div className="tessy-home-wide-card__aside">
-        <button type="button" className="tessy-home-btn-outline" style={{ marginTop: 0 }} onClick={() => { void handleConnect(); }} disabled={busy}>
-          {busy ? 'Conectando…' : feedback ? 'Conectado ✓' : 'Conectar'}
-        </button>
-      </div>
-      {feedback && !error && (
-        <div style={{ gridColumn: '1 / -1', padding: '0 12px 10px', fontSize: 11, color: 'var(--success)' }}>{feedback}</div>
-      )}
-      {error && (
-        <div style={{ gridColumn: '1 / -1', padding: '0 12px 10px', fontSize: 11, color: 'var(--danger)' }}>{error}</div>
-      )}
     </article>
   );
 }
@@ -727,7 +729,7 @@ function HomeProductCard({ product, onOpen }: { product: Product; onOpen: () => 
   const image = visualUrl(product.imageUrl);
 
   return (
-    <article className="tessy-home-wide-card">
+    <article className="tessy-home-wide-card tessy-home-wide-card--action">
       <HomeMediaColumn
         imageUrl={image}
         fallbackCode={companyInitials(product.companyName)}
@@ -736,14 +738,16 @@ function HomeProductCard({ product, onOpen }: { product: Product; onOpen: () => 
           <span className="tessy-home-wide-card__badge tessy-home-wide-card__badge--top">{product.category}</span>
         ) : undefined}
       />
-      <div className="tessy-home-wide-card__body">
-        <div className="tessy-home-card__title">{product.name}</div>
-        <div className="tessy-home-card__meta">{product.companyName}</div>
-      </div>
-      <div className="tessy-home-wide-card__aside">
-        <button type="button" className="tessy-home-btn-outline" style={{ marginTop: 0 }} onClick={onOpen}>
-          Ver detalhes
-        </button>
+      <div className="tessy-home-wide-card__body tessy-home-wide-card__body--stacked">
+        <div className="tessy-home-wide-card__copy">
+          <div className="tessy-home-card__title">{product.name}</div>
+          <div className="tessy-home-card__meta">{product.companyName}</div>
+        </div>
+        <div className="tessy-home-wide-card__footer">
+          <button type="button" className="tessy-home-btn-inline" onClick={onOpen}>
+            Ver detalhes
+          </button>
+        </div>
       </div>
     </article>
   );
