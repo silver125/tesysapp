@@ -12,6 +12,7 @@ export type RepresentativeProfile = {
   regionKeys: string[];
   companyLogoUrl: string;
   photoUrl?: string;
+  bio?: string;
   registered: boolean;
   products: Product[];
   events: Event[];
@@ -148,6 +149,7 @@ export function buildRepresentativeProfiles(
       regionKeys,
       companyLogoUrl: companyLogo(products, events, courses),
       photoUrl: rep.photoUrl?.trim() || undefined,
+      bio: rep.bio?.trim() || undefined,
       registered: true,
       products,
       events,
@@ -218,4 +220,38 @@ export function matchesRepresentativeRegion(profile: RepresentativeProfile, filt
 
 export function representativeInitials(name: string) {
   return companyInitials(name, 'RC');
+}
+
+/** Resumo do que a empresa/representante oferece na plataforma. */
+export function representativeOfferSummary(profile: RepresentativeProfile): string {
+  const bits: string[] = [];
+  const nProducts = profile.products.length;
+  const nEvents = profile.events.length;
+  if (nProducts > 0) bits.push(`${nProducts} produto${nProducts === 1 ? '' : 's'}`);
+  if (nEvents > 0) bits.push(`${nEvents} evento${nEvents === 1 ? '' : 's'}`);
+  if (bits.length === 0 && profile.products[0]?.category?.trim()) {
+    bits.push(profile.products[0].category.trim());
+  }
+  return bits.join(' · ');
+}
+
+/** Nome exibido no card — cadastrado usa o nome; derivado usa a empresa (sem "Representante X"). */
+export function representativeDisplayName(profile: RepresentativeProfile): string {
+  if (profile.registered) {
+    return profile.repLabel.trim() || profile.companyName.trim() || 'Representante';
+  }
+  return profile.companyName.trim() || profile.repLabel.replace(/^Representante\s+/i, '').trim() || 'Representante';
+}
+
+/** Foto principal do avatar (rep ou logo da empresa — nunca no cantinho). */
+export function representativeAvatarUrl(profile: RepresentativeProfile): string | undefined {
+  return profile.photoUrl?.trim() || profile.companyLogoUrl?.trim() || undefined;
+}
+
+/** Selo da empresa só quando há foto real do representante. */
+export function representativeCompanyBadgeUrl(profile: RepresentativeProfile): string | undefined {
+  if (profile.photoUrl?.trim() && profile.companyLogoUrl?.trim()) {
+    return profile.companyLogoUrl.trim();
+  }
+  return undefined;
 }
