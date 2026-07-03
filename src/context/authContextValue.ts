@@ -32,6 +32,7 @@ export interface AuthContextType {
   addLocation: (location: Omit<Location, 'id' | 'createdAt'>) => Promise<void>;
   deleteLocation: (id: string) => Promise<void>;
   addRepresentative: (representative: Omit<Representative, 'id' | 'createdAt'>) => Promise<void>;
+  updateRepresentative: (id: string, patch: Partial<Pick<Representative, 'name' | 'specialty' | 'region' | 'city' | 'state' | 'whatsapp' | 'email' | 'bio' | 'photoUrl'>>) => Promise<void>;
   deleteRepresentative: (id: string) => Promise<void>;
   addLead: (lead: LeadInput) => Promise<AddLeadResult>;
   requestConnection: (leadId: string) => Promise<void>;

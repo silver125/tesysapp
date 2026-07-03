@@ -18,9 +18,13 @@ export interface User {
 }
 
 export type LocationType =
+  | 'coworking'
+  | 'sala_reuniao'
+  | 'consultorio'
+  | 'clinica'
+  | 'hospital'
   | 'ponto_venda'
   | 'distribuidor'
-  | 'clinica'
   | 'farmacia'
   | 'loja'
   | 'outro';
