@@ -17,7 +17,7 @@ export default function ProfilePhotoField({
         {label}
       </Mono>
       <div style={{ margin: '-3px 0 8px', fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-        Toque para tirar foto ou escolher da galeria. Máx. 5 MB.
+        Toque para escolher uma imagem da fototeca ou galeria. Máx. 5 MB.
       </div>
       <label style={{
         position: 'relative',
@@ -35,7 +35,6 @@ export default function ProfilePhotoField({
         <input
           type="file"
           accept="image/*"
-          capture="user"
           onChange={event => onChange(event.target.files?.[0] ?? null)}
           style={{ display: 'none' }}
         />
@@ -59,7 +58,7 @@ export default function ProfilePhotoField({
               {preview ? 'Foto pronta ✓' : 'Adicionar foto'}
             </div>
             <div style={{ marginTop: 3, fontSize: 11.5, color: preview ? 'rgba(255,255,255,0.76)' : 'var(--ink-2)', lineHeight: 1.3 }}>
-              {preview ? 'Toque para trocar' : 'Câmera ou galeria · JPG, PNG, HEIC'}
+              {preview ? 'Toque para trocar' : 'Fototeca ou galeria · JPG, PNG, HEIC'}
             </div>
           </div>
           <span style={{

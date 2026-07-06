@@ -2413,7 +2413,6 @@ function RepresentativeAvatarEditor({
           ref={inputRef}
           type="file"
           accept="image/*"
-          capture="user"
           disabled={uploading}
           onChange={event => { void handleFile(event.target.files?.[0] ?? null); }}
           style={{ display: 'none' }}
@@ -2764,7 +2763,7 @@ function ImageUploadField({
         {label}
       </Mono>
       <div style={{ margin: '-3px 0 8px', fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-        Toque para tirar foto ou escolher da galeria. Máx. 5 MB.
+        Toque para escolher uma imagem da fototeca ou galeria. Máx. 5 MB.
       </div>
       <label style={{
         position: 'relative',
@@ -2782,7 +2781,6 @@ function ImageUploadField({
         <input
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={event => onChange(event.target.files?.[0] ?? null)}
           style={{ display: 'none' }}
         />
@@ -2806,7 +2804,7 @@ function ImageUploadField({
               {preview ? 'Foto pronta ✓' : 'Adicionar foto'}
             </div>
             <div style={{ marginTop: 3, fontSize: 11.5, color: 'rgba(255,255,255,0.76)', lineHeight: 1.3 }}>
-              {preview ? 'Toque para trocar' : 'Câmera ou galeria · JPG, PNG, HEIC'}
+              {preview ? 'Toque para trocar' : 'Fototeca ou galeria · JPG, PNG, HEIC'}
             </div>
           </div>
           <span style={{

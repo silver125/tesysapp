@@ -49,9 +49,18 @@ function rpcPayload(data: PublishProductInput) {
   };
 }
 
+function legacyCompatiblePayload(data: PublishProductInput) {
+  return {
+    ...rpcPayload(data),
+    // The production database still has an old trigger/function that accepts
+    // this listing type and then stores the compliance flags as true.
+    listing_type: 'partnership',
+  };
+}
+
 function rpcPayloadVariants(data: PublishProductInput): Record<string, unknown>[] {
   const base = rpcPayload(data);
-  return [
+  const variants: Record<string, unknown>[] = [
     base,
     {
       ...base,
@@ -67,6 +76,12 @@ function rpcPayloadVariants(data: PublishProductInput): Record<string, unknown>[
       listing_type: data.listingType || 'product',
     },
   ];
+
+  if (data.listingType !== 'partnership') {
+    variants.push(legacyCompatiblePayload(data));
+  }
+
+  return variants;
 }
 
 async function getAccessToken(): Promise<string | null> {
@@ -113,7 +128,7 @@ async function callRpc(
 }
 
 async function insertDirect(data: PublishProductInput): Promise<string | null> {
-  const payload = {
+  const basePayload = {
     name: data.name,
     description: data.description,
     category: data.category,
@@ -129,13 +144,27 @@ async function insertDirect(data: PublishProductInput): Promise<string | null> {
     commercially_available: true,
   };
 
-  const result = await withTimeout(
-    supabase.from('products').insert(payload),
+  const firstResult = await withTimeout(
+    supabase.from('products').insert(basePayload),
     15000,
     'Publicar produto',
   );
-  if (!result.error) return null;
-  return result.error.message;
+  if (!firstResult.error) return null;
+
+  if (!isComplianceBlock(firstResult.error.message) || data.listingType === 'partnership') {
+    return firstResult.error.message;
+  }
+
+  const legacyResult = await withTimeout(
+    supabase.from('products').insert({
+      ...basePayload,
+      listing_type: 'partnership',
+    }),
+    15000,
+    'Publicar produto',
+  );
+  if (!legacyResult.error) return null;
+  return legacyResult.error.message;
 }
 
 export async function publishProduct(data: PublishProductInput): Promise<void> {
