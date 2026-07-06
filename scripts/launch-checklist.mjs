@@ -31,6 +31,7 @@ item(Boolean(envKey && envKey.length > 20), 'VITE_SUPABASE_ANON_KEY em .env.loca
 
 // SQL
 item(true, 'SQL de lançamento', `Cole e execute: supabase/LAUNCH_real_users.sql`);
+item(true, 'SQL de segurança (médicos)', `Depois rode: supabase/SECURITY_doctors_launch.sql`);
 console.log('');
 console.log('═'.repeat(60));
 console.log('  TESSY — Checklist de lançamento (usuários reais)');
@@ -60,8 +61,10 @@ console.log(`     • http://localhost:5173/**  (dev)`);
 console.log('');
 console.log('── SQL (obrigatório após reset) ──');
 console.log(`  ${dash('/sql/new')}`);
-console.log('  Arquivo: supabase/LAUNCH_real_users.sql');
-console.log('  Confirme no final: leads_ok, reps_ok, locations_ok, product_rpc_ok = true');
+console.log('  1. supabase/LAUNCH_real_users.sql');
+console.log('     Confirme no final: leads_ok, reps_ok, locations_ok, product_rpc_ok = true');
+console.log('  2. supabase/SECURITY_doctors_launch.sql  (antes de convidar médicos)');
+console.log('     Confirme: só policy "Users read own profile" em profiles SELECT');
 console.log('');
 console.log('── Vercel (produção) ──');
 console.log('  • Env vars: VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY');

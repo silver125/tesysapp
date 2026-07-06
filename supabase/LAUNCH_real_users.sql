@@ -6,6 +6,9 @@
 --
 -- Idempotente: seguro rodar de novo após deploys parciais.
 -- NÃO apaga dados. Para reset total use RESET_platform.sql.
+--
+-- Depois deste arquivo, rode também (obrigatório antes de médicos reais):
+--   supabase/SECURITY_doctors_launch.sql
 -- ============================================================
 
 BEGIN;
