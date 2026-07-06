@@ -242,9 +242,30 @@ export function representativeDisplayName(profile: RepresentativeProfile): strin
   return profile.companyName.trim() || profile.repLabel.replace(/^Representante\s+/i, '').trim() || 'Representante';
 }
 
+function normalizeImageUrl(url?: string | null): string {
+  return (url ?? '').trim().toLowerCase();
+}
+
+/** URLs de imagem de produto da mesma empresa — nunca devem aparecer no card de representante. */
+function productImageUrls(products: Product[]): Set<string> {
+  const urls = new Set<string>();
+  for (const product of products) {
+    const image = normalizeImageUrl(product.imageUrl);
+    if (image) urls.add(image);
+  }
+  return urls;
+}
+
+function isProductImageUrl(url: string | undefined, products: Product[]): boolean {
+  const normalized = normalizeImageUrl(url);
+  return normalized.length > 0 && productImageUrls(products).has(normalized);
+}
+
 /** Foto pessoal do representante — nunca imagem de produto ou logo da empresa. */
 export function representativeAvatarUrl(profile: RepresentativeProfile): string | undefined {
-  return profile.photoUrl?.trim() || undefined;
+  const photo = profile.photoUrl?.trim();
+  if (!photo || isProductImageUrl(photo, profile.products)) return undefined;
+  return photo;
 }
 
 /**
@@ -252,13 +273,21 @@ export function representativeAvatarUrl(profile: RepresentativeProfile): string 
  * Sem foto nem logo → undefined (UI usa iniciais).
  */
 export function representativeDisplayImageUrl(profile: RepresentativeProfile): string | undefined {
-  return profile.photoUrl?.trim() || profile.companyLogoUrl?.trim() || undefined;
+  const photo = profile.photoUrl?.trim();
+  if (photo && !isProductImageUrl(photo, profile.products)) return photo;
+
+  const logo = profile.companyLogoUrl?.trim();
+  if (logo && !isProductImageUrl(logo, profile.products)) return logo;
+
+  return undefined;
 }
 
 /** Selo da empresa no canto — só quando há foto pessoal do representante. */
 export function representativeCompanyBadgeUrl(profile: RepresentativeProfile): string | undefined {
-  if (profile.photoUrl?.trim() && profile.companyLogoUrl?.trim()) {
-    return profile.companyLogoUrl.trim();
+  const photo = representativeAvatarUrl(profile);
+  const logo = profile.companyLogoUrl?.trim();
+  if (photo && logo && !isProductImageUrl(logo, profile.products)) {
+    return logo;
   }
   return undefined;
 }

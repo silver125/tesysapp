@@ -21,7 +21,8 @@ import { connectWithRepresentative } from '../../lib/commercialConnect';
 import { formatLeadError } from '../../lib/leadErrors';
 import { getLevelProgress, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
-import { isSupabaseConfigured, supabase } from '../../lib/supabase';
+import { fetchCompanyLogos } from '../../lib/companyBranding';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
 type Tab = 'home' | 'products' | 'events' | 'representatives' | 'companies';
@@ -273,19 +274,9 @@ export default function DoctorDashboard() {
       return;
     }
     let cancelled = false;
-    void supabase
-      .from('profiles')
-      .select('id, avatar_url')
-      .in('id', ids)
-      .then(({ data }) => {
-        if (cancelled || !data) return;
-        const logos: Record<string, string> = {};
-        for (const row of data) {
-          const avatar = (row as { id: string; avatar_url?: string | null }).avatar_url?.trim();
-          if (avatar) logos[(row as { id: string }).id] = avatar;
-        }
-        setCompanyLogos(logos);
-      });
+    void fetchCompanyLogos(ids).then(logos => {
+      if (!cancelled) setCompanyLogos(logos);
+    });
     return () => { cancelled = true; };
   }, [products, events, courses, locations, registeredReps]);
 
