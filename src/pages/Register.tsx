@@ -4,6 +4,7 @@ import { useAuth } from '../context/useAuth';
 import { TessyMark, WaIcon } from '../components/ui';
 import type { UserRole } from '../types';
 import { dashboardPathForRole, normalizeUserRole } from '../lib/authRoutes';
+import { EMAIL_CONFIRMATION_REQUIRED } from '../lib/pendingRegistration';
 
 type FormData = {
   role: UserRole | null;
@@ -45,6 +46,7 @@ export default function Register() {
   const [step, setStep] = useState(initialRole ? 1 : 0);
   const [data, setData] = useState<FormData>({ ...INITIAL, role: initialRole });
   const [error, setError] = useState('');
+  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
 
   const totalSteps = 3;
   const update = <K extends keyof FormData>(k: K, v: FormData[K]) =>
@@ -90,6 +92,11 @@ export default function Register() {
       const dest = dashboardPathForRole(normalizeUserRole(data.role));
       navigate(dest ?? '/entrar', { replace: true });
     } catch (err) {
+      if (err instanceof Error && err.message === EMAIL_CONFIRMATION_REQUIRED) {
+        setEmailConfirmationSent(true);
+        setError('');
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Erro ao criar conta.');
     }
   };
@@ -178,6 +185,22 @@ export default function Register() {
             {step === 2 && 'Use um e-mail profissional para acessar sua conta com segurança.'}
           </p>
         </div>
+
+        {/* Confirmação de e-mail pendente */}
+        {emailConfirmationSent && (
+          <div style={{
+            marginBottom: 20, padding: '16px 16px', borderRadius: 10,
+            background: 'rgba(74,168,255,0.08)', border: '1px solid rgba(74,168,255,0.28)',
+            color: 'var(--accent-ink)', fontSize: 14, lineHeight: 1.55,
+          }}>
+            <strong style={{ display: 'block', marginBottom: 6 }}>Quase lá — confirme seu e-mail</strong>
+            Enviamos um link para <strong>{data.email}</strong>. Abra o e-mail, clique em confirmar e depois{' '}
+            <Link to="/entrar" style={{ color: 'var(--accent-ink)', fontWeight: 560 }}>faça login</Link>.
+            <span style={{ display: 'block', marginTop: 8, fontSize: 13, color: 'var(--ink-2)' }}>
+              Não encontrou? Verifique spam ou aguarde alguns minutos.
+            </span>
+          </div>
+        )}
 
         {/* Error */}
         {error && (
@@ -464,7 +487,7 @@ export default function Register() {
       </main>
 
       {/* ── Sticky bottom CTA ── */}
-      {step > 0 && (
+      {step > 0 && !emailConfirmationSent && (
         <div style={{
           padding: '8px 24px 34px',
           background: 'transparent',

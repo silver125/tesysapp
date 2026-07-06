@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "fix:db:products": "node scripts/apply-product-publish-sql.mjs",
+    "launch:checklist": "node scripts/launch-checklist.mjs",
     "reset:platform": "node scripts/reset-platform.mjs"
   },
   "dependencies": {

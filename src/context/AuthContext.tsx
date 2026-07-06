@@ -10,6 +10,12 @@ import { isMissingDbColumnError, isMissingRpcError, omitDbColumns } from '../lib
 import { insertLeadResilient } from '../lib/leadInsert';
 import { publishProduct } from '../lib/publishProduct';
 import { clearLocalTessyData } from '../lib/clearLocalTessyData';
+import {
+  clearPendingRegistration,
+  EMAIL_CONFIRMATION_REQUIRED,
+  readPendingRegistration,
+  savePendingRegistration,
+} from '../lib/pendingRegistration';
 
 // Helper: timeout para evitar travas infinitas em chamadas Supabase
 // Aceita PromiseLike para suportar o query builder do supabase-js (thenable)
@@ -651,6 +657,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [refreshData]);
 
+  async function ensureUserProfile(userId: string, email: string, accessToken: string): Promise<User | null> {
+    let u = await fetchProfile(userId, email);
+    if (u) return u;
+
+    const pending = readPendingRegistration(userId, email);
+    if (!pending) return null;
+
+    try {
+      await withTimeout(
+        upsertProfileWithToken(accessToken, pending.profile),
+        12000,
+        'Salvar perfil',
+      );
+      clearPendingRegistration();
+      u = await fetchProfile(userId, email);
+      return u;
+    } catch {
+      return null;
+    }
+  }
+
   // ── Login ──
   const login = async (email: string, password: string): Promise<User> => {
     assertSupabaseConfigured();
@@ -662,9 +689,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         'Login',
       );
       if (error) throw new Error('E-mail ou senha incorretos.');
-      if (!data.user) throw new Error('Erro ao entrar. Tente novamente.');
-      // Busca perfil já dentro do login para poder navegar direto ao dashboard
-      const u = await fetchProfile(data.user.id, data.user.email ?? '');
+      if (!data.user || !data.session) throw new Error('Erro ao entrar. Tente novamente.');
+      const u = await ensureUserProfile(data.user.id, data.user.email ?? '', data.session.access_token);
       if (!u) throw new Error('Perfil não encontrado. Entre em contato com o suporte.');
       setUser(u);
       return u;
@@ -723,30 +749,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Erro ao criar conta. Tente novamente.');
       }
 
-      // Se email confirmation está ativo no Supabase, não há sessão imediata
-      if (!authData.session) {
-        throw new Error(
-          'Confirme seu e-mail antes de continuar — verifique sua caixa de entrada.'
-        );
-      }
-
       const uid = authData.user.id;
+      const profilePayload = {
+        id: uid,
+        name: input.name.trim(),
+        role: input.role,
+        specialty: input.specialty ?? null,
+        crm: input.crm ?? null,
+        crm_state: input.crmState ?? null,
+        company: input.company ?? null,
+        whatsapp: input.whatsapp ?? null,
+        whatsapp_connection_only: input.whatsappConnectionOnly ?? true,
+        bio: input.bio ?? null,
+      };
+
+      // Se confirmação de e-mail está ativa, guarda perfil localmente até o primeiro login.
+      if (!authData.session) {
+        savePendingRegistration({
+          userId: uid,
+          email: input.email,
+          profile: profilePayload,
+        });
+        const err = new Error(EMAIL_CONFIRMATION_REQUIRED);
+        throw err;
+      }
 
       // 2. Salva perfil via REST direto para evitar qualquer lock interno do Auth.
       try {
         await withTimeout(
-          upsertProfileWithToken(authData.session.access_token, {
-          id:           uid,
-          name:         input.name.trim(),
-          role:         input.role,
-          specialty:    input.specialty ?? null,
-          crm:          input.crm ?? null,
-          crm_state:    input.crmState ?? null,
-          company:      input.company ?? null,
-          whatsapp:     input.whatsapp ?? null,
-          whatsapp_connection_only: input.whatsappConnectionOnly ?? true,
-          bio:          input.bio ?? null,
-          }),
+          upsertProfileWithToken(authData.session.access_token, profilePayload),
           12000,
           'Salvar perfil',
         );
