@@ -9,6 +9,7 @@ import { normalizeUserRole } from '../lib/authRoutes';
 import { isMissingDbColumnError, isMissingRpcError, omitDbColumns } from '../lib/dbSchema';
 import { insertLeadResilient } from '../lib/leadInsert';
 import { publishProduct } from '../lib/publishProduct';
+import { clearLocalTessyData } from '../lib/clearLocalTessyData';
 
 // Helper: timeout para evitar travas infinitas em chamadas Supabase
 // Aceita PromiseLike para suportar o query builder do supabase-js (thenable)
@@ -459,40 +460,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from('locations').select('*').order('created_at', { ascending: false }),
       supabase.from('representatives').select('*').order('created_at', { ascending: false }),
     ]);
-    if (evRes.data) {
-      const mappedEvents = evRes.data.map(r => dbToEvent(r as Record<string, unknown>));
-      setEvents(mappedEvents);
 
-      void Promise.all(
-        mappedEvents.map(async event => {
-          const count = await syncEventRegistrationCount(event.id);
-          return count === null ? null : { id: event.id, count };
-        }),
-      ).then(results => {
-        const countByEvent = new Map(
-          results
-            .filter((result): result is { id: string; count: number } => result !== null)
-            .map(result => [result.id, result.count]),
-        );
+    const mappedEvents = (evRes.data ?? []).map(r => dbToEvent(r as Record<string, unknown>));
+    const mappedProducts = (prRes.data ?? []).map(r => dbToProduct(r as Record<string, unknown>));
+    const mappedCourses = (coRes.data ?? []).map(r => dbToCourse(r as Record<string, unknown>));
+    const mappedLocations = (loRes.data ?? []).map(r => dbToLocation(r as Record<string, unknown>));
+    const mappedReps = (reRes.data ?? []).map(r => dbToRepresentative(r as Record<string, unknown>));
 
-        if (countByEvent.size === 0) return;
-        setEvents(prev => prev.map(event => {
-          const count = countByEvent.get(event.id);
-          return count === undefined || event.registeredCount === count
-            ? event
-            : { ...event, registeredCount: count };
-        }));
-      });
+    const platformEmpty =
+      mappedProducts.length === 0
+      && mappedEvents.length === 0
+      && mappedCourses.length === 0
+      && mappedReps.length === 0
+      && mappedLocations.length === 0;
+
+    if (platformEmpty) {
+      clearLocalTessyData();
+      setEvents([]);
+      setProducts([]);
+      setCourses([]);
+      setLocations([]);
+      setRepresentatives([]);
+      return;
     }
-    if (prRes.data) {
-      const mappedProducts = prRes.data.map(r => dbToProduct(r as Record<string, unknown>));
-      setProducts(mergeLocalProducts(mappedProducts));
-    }
-    if (coRes.data) setCourses(coRes.data.map(r => dbToCourse(r as Record<string, unknown>)));
-    // Tabela de locais pode ainda não existir (migração não aplicada) — ignora erro.
-    if (loRes.data) setLocations(loRes.data.map(r => dbToLocation(r as Record<string, unknown>)));
-    // Tabela de representantes pode ainda não existir (migração não aplicada) — ignora erro.
-    if (reRes.data) setRepresentatives(reRes.data.map(r => dbToRepresentative(r as Record<string, unknown>)));
+
+    setEvents(mappedEvents);
+    void Promise.all(
+      mappedEvents.map(async event => {
+        const count = await syncEventRegistrationCount(event.id);
+        return count === null ? null : { id: event.id, count };
+      }),
+    ).then(results => {
+      const countByEvent = new Map(
+        results
+          .filter((result): result is { id: string; count: number } => result !== null)
+          .map(result => [result.id, result.count]),
+      );
+
+      if (countByEvent.size === 0) return;
+      setEvents(prev => prev.map(event => {
+        const count = countByEvent.get(event.id);
+        return count === undefined || event.registeredCount === count
+          ? event
+          : { ...event, registeredCount: count };
+      }));
+    });
+
+    setProducts(mergeLocalProducts(mappedProducts));
+    setCourses(mappedCourses);
+    setLocations(mappedLocations);
+    setRepresentatives(mappedReps);
   }, []);
 
   useEffect(() => {
@@ -768,7 +785,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     assertSupabaseConfigured();
     await supabase.auth.signOut();
+    clearLocalTessyData();
     setUser(null);
+    setEvents([]);
+    setProducts([]);
+    setCourses([]);
+    setLocations([]);
+    setRepresentatives([]);
+    setLeads([]);
   };
 
   const completeOnboarding = async () => {
