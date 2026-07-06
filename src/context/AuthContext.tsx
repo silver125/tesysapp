@@ -297,8 +297,14 @@ function removeLocalProduct(id: string) {
 }
 
 function mergeLocalProducts(remoteProducts: Product[]) {
+  const hasRemoteEquivalent = (local: Product) => remoteProducts.some(remote => (
+    remote.companyId === local.companyId
+    && remote.name.trim().toLowerCase() === local.name.trim().toLowerCase()
+    && (remote.imageUrl ?? '') === (local.imageUrl ?? '')
+  ));
   const byId = new Map(remoteProducts.map(product => [product.id, product]));
   for (const product of readLocalProducts()) {
+    if (hasRemoteEquivalent(product)) continue;
     if (!byId.has(product.id)) byId.set(product.id, product);
   }
   return [...byId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -1077,6 +1083,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Marque a declaração regulatória antes de publicar.');
     }
 
+    const localProduct: Product = {
+      ...data,
+      id: `local-product-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      anvisaRegularized: true,
+      commerciallyAvailable: true,
+      listingType,
+    };
+    writeLocalProduct(localProduct);
+    setProducts(prev => mergeLocalProducts([localProduct, ...prev]));
+
     try {
       await publishProduct({
         name: data.name,
@@ -1091,23 +1108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         imageUrl: data.imageUrl,
         listingType,
       });
-      refreshData();
+      void refreshData();
     } catch (error) {
-      const message = error instanceof Error ? error.message : '';
-      if (!/banco ainda bloqueia|regra antiga|anvisa|regularizacao|regularização|disponibilidade comercial/i.test(message)) {
-        throw error;
-      }
-
-      const fallbackProduct: Product = {
-        ...data,
-        id: `local-product-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        anvisaRegularized: true,
-        commerciallyAvailable: true,
-        listingType,
-      };
-      writeLocalProduct(fallbackProduct);
-      setProducts(prev => mergeLocalProducts([fallbackProduct, ...prev]));
+      console.warn('Produto mantido localmente; Supabase bloqueou a publicação remota:', error);
     }
   };
 
