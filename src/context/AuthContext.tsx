@@ -909,20 +909,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { error: rpcError } = await supabase.rpc('delete_own_account');
     if (rpcError) {
-      const { error: profileError } = await supabase.from('profiles').delete().eq('id', user.id);
-      if (profileError) throw new Error(profileError.message);
+      if (isMissingRpcError(rpcError, 'delete_own_account')) {
+        const { error: profileError } = await supabase.from('profiles').delete().eq('id', user.id);
+        if (profileError) throw new Error(profileError.message);
+      } else {
+        throw new Error(rpcError.message);
+      }
     }
 
-    try {
-      localStorage.removeItem(`tessy-onboarding-done-${user.id}`);
-      localStorage.removeItem(`tessy-onboarding-pending-${user.id}`);
-      localStorage.removeItem(`tessy-doctor-preferences-${user.id}`);
-    } catch {
-      /* localStorage pode estar indisponível. */
-    }
-
+    clearLocalTessyData();
     await supabase.auth.signOut();
     setUser(null);
+    setEvents([]);
+    setProducts([]);
+    setCourses([]);
+    setLocations([]);
+    setRepresentatives([]);
+    setLeads([]);
   };
 
   // ── Eventos ──
@@ -1001,6 +1004,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Atualizar evento (título, data, hora, local, vagas, etc.) ──
   const updateEvent: AuthContextType['updateEvent'] = async (id, patch) => {
+    if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem editar eventos.');
     assertSupabaseConfigured();
     // Mapeia camelCase do app → snake_case do banco
     const dbPatch: Record<string, unknown> = {};
@@ -1015,12 +1019,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (patch.website         !== undefined) dbPatch.website           = patch.website ?? null;
     if (patch.imageUrl        !== undefined) dbPatch.image_url         = patch.imageUrl ?? null;
 
-    let result = await supabase.from('events').update(dbPatch).eq('id', id);
+    let result = await supabase.from('events').update(dbPatch).eq('id', id).eq('company_id', user.id);
     if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
       const fallbackPatch = omitDbColumns(dbPatch, ['image_url']);
       if (Object.keys(fallbackPatch).length > 0) {
         console.warn('Coluna image_url ausente em events. Salvando edição sem imagem.', result.error.message);
-        result = await supabase.from('events').update(fallbackPatch).eq('id', id);
+        result = await supabase.from('events').update(fallbackPatch).eq('id', id).eq('company_id', user.id);
       } else {
         console.warn('Coluna image_url ausente em events. Ignorando atualização isolada de imagem.', result.error.message);
         setEvents(prev => prev.map(e => e.id === id ? { ...e, ...patch, imageUrl: e.imageUrl } as Event : e));
