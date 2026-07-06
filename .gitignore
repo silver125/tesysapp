@@ -36,3 +36,4 @@ tesysapp/
 *.sln
 *.sw?
 .vercel
+.env*

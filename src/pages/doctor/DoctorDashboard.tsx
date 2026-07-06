@@ -12,7 +12,7 @@ import {
   matchesRepresentativeRegion,
   representativeInitials,
   representativeDisplayName,
-  representativeAvatarUrl,
+  representativeDisplayImageUrl,
   representativeCompanyBadgeUrl,
   representativeRegionFilters,
   type RepresentativeProfile,
@@ -21,6 +21,7 @@ import { connectWithRepresentative } from '../../lib/commercialConnect';
 import { formatLeadError } from '../../lib/leadErrors';
 import { getLevelProgress, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
 type Tab = 'home' | 'products' | 'events' | 'representatives' | 'companies';
@@ -251,11 +252,42 @@ export default function DoctorDashboard() {
   const [openProduct, setOpenProduct] = useState<Product | null>(null);
   const [openEvent, setOpenEvent] = useState<Event | null>(null);
   const [openCourse, setOpenCourse] = useState<Course | null>(null);
+  const [companyLogos, setCompanyLogos] = useState<Record<string, string>>({});
 
   // Refresh data every time the doctor switches tabs so new items from companies appear
   useEffect(() => {
     refreshData();
   }, [tab, refreshData]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    const ids = [...new Set([
+      ...products.map(p => p.companyId),
+      ...events.map(e => e.companyId),
+      ...courses.map(c => c.companyId),
+      ...locations.map(l => l.companyId),
+      ...registeredReps.map(r => r.companyId),
+    ].filter(Boolean))];
+    if (ids.length === 0) {
+      setCompanyLogos({});
+      return;
+    }
+    let cancelled = false;
+    void supabase
+      .from('profiles')
+      .select('id, avatar_url')
+      .in('id', ids)
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const logos: Record<string, string> = {};
+        for (const row of data) {
+          const avatar = (row as { id: string; avatar_url?: string | null }).avatar_url?.trim();
+          if (avatar) logos[(row as { id: string }).id] = avatar;
+        }
+        setCompanyLogos(logos);
+      });
+    return () => { cancelled = true; };
+  }, [products, events, courses, locations, registeredReps]);
 
   const q = search.toLowerCase();
   const upcomingEvents = events.filter(isUpcomingEvent);
@@ -283,7 +315,7 @@ export default function DoctorDashboard() {
   const homeEvents = upcomingEvents
     .filter(e => !q || includesQ(e.title, q) || includesQ(e.companyName, q));
   const productChips = productCategoryChips(products);
-  const representatives = buildRepresentativeProfiles(events, products, courses, locations, user, registeredReps);
+  const representatives = buildRepresentativeProfiles(events, products, courses, locations, user, registeredReps, companyLogos);
   const regionChips = representativeRegionFilters(representatives);
   const filtRepresentatives = representatives.filter(rep => {
     const matchQ = !q || includesQ(rep.companyName, q) || includesQ(rep.repLabel, q) || includesQ(rep.specialty, q);
@@ -674,7 +706,10 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
-  const image = visualUrl(representativeAvatarUrl(rep));
+  const image = visualUrl(representativeDisplayImageUrl(rep));
+  const displayName = representativeDisplayName(rep);
+  const showCompany = rep.companyName.trim()
+    && rep.companyName.trim().toLowerCase() !== displayName.trim().toLowerCase();
 
   async function handleConnect() {
     if (busy) return;
@@ -697,7 +732,7 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
     <article className="tessy-home-wide-card tessy-home-wide-card--action">
       <HomeMediaColumn
         imageUrl={image}
-        fallbackCode={representativeInitials(representativeDisplayName(rep))}
+        fallbackCode={representativeInitials(displayName)}
         fallbackTint={companyTint(rep.companyName)}
         topBadge={rep.specialty ? (
           <span className="tessy-home-wide-card__badge tessy-home-wide-card__badge--top">{rep.specialty}</span>
@@ -705,9 +740,11 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
       />
       <div className="tessy-home-wide-card__body tessy-home-wide-card__body--stacked">
         <div className="tessy-home-wide-card__copy">
-          <div className="tessy-home-card__title">{representativeDisplayName(rep)}</div>
-          <div className="tessy-home-card__meta">{rep.companyName}</div>
-          {rep.regionLabel && <span className="tessy-home-tag">{rep.regionLabel}</span>}
+          <div className="tessy-home-card__label">Representante Comercial</div>
+          <div className="tessy-home-card__title">{displayName}</div>
+          {showCompany && <div className="tessy-home-card__meta">{rep.companyName}</div>}
+          {rep.regionLabel && <div className="tessy-home-card__info">{rep.regionLabel}</div>}
+          {rep.specialty && <div className="tessy-home-card__info">{rep.specialty}</div>}
         </div>
         <div className="tessy-home-wide-card__footer">
           <button type="button" className="tessy-home-btn-inline" onClick={() => { void handleConnect(); }} disabled={busy}>
@@ -771,9 +808,10 @@ function AvatarBubble({ photoUrl, initials, tint, size = 52 }: { photoUrl?: stri
 }
 
 function RepAvatar({ rep, size = 52 }: { rep: RepresentativeProfile; size?: number }) {
-  const photo = representativeAvatarUrl(rep);
+  const photo = representativeDisplayImageUrl(rep);
   const badge = representativeCompanyBadgeUrl(rep);
   const radius = size >= 56 ? 18 : 999;
+  const displayName = representativeDisplayName(rep);
 
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
@@ -788,7 +826,7 @@ function RepAvatar({ rep, size = 52 }: { rep: RepresentativeProfile; size?: numb
         }} />
       ) : (
         <AvatarBubble
-          initials={representativeInitials(representativeDisplayName(rep))}
+          initials={representativeInitials(displayName)}
           tint={companyTint(rep.companyName)}
           size={size}
         />
@@ -1092,7 +1130,7 @@ function RepresentativesView({
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <RepAvatar rep={rep} size={56} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Representante</Mono>
+                  <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Representante Comercial</Mono>
                   <div style={{ marginTop: 4, fontSize: 16, fontWeight: 620, color: 'var(--ink)' }}>{representativeDisplayName(rep)}</div>
                   <div style={{ marginTop: 2, fontSize: 12.5, color: 'var(--muted)' }}>{rep.companyName}</div>
                   <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>

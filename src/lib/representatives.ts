@@ -58,11 +58,9 @@ export function regionLabelFromLocations(locations: Location[]): string {
   return city || state || 'Brasil';
 }
 
-function companyLogo(products: Product[], events: Event[], courses: Course[]): string {
-  return products.find(p => p.imageUrl?.trim())?.imageUrl?.trim()
-    || events.find(e => e.imageUrl?.trim())?.imageUrl?.trim()
-    || courses.find(c => c.imageUrl?.trim())?.imageUrl?.trim()
-    || '';
+/** Logo da empresa (perfil) — nunca imagem de produto, evento ou curso. */
+function resolveCompanyLogo(companyId: string, companyLogos: Record<string, string>): string {
+  return companyLogos[companyId]?.trim() || '';
 }
 
 function topSpecialty(products: Product[], events: Event[], courses: Course[]): string {
@@ -103,6 +101,7 @@ export function buildRepresentativeProfiles(
   locations: Location[],
   user?: User | null,
   representatives: Representative[] = [],
+  companyLogos: Record<string, string> = {},
 ): RepresentativeProfile[] {
   const map = new Map<string, CompanyBucket>();
 
@@ -147,7 +146,7 @@ export function buildRepresentativeProfiles(
       specialty: repSpecialty,
       regionLabel: repRegionLabel(rep, regionLabelFromLocations(bucketLocations)),
       regionKeys,
-      companyLogoUrl: companyLogo(products, events, courses),
+      companyLogoUrl: resolveCompanyLogo(rep.companyId, companyLogos),
       photoUrl: rep.photoUrl?.trim() || undefined,
       bio: rep.bio?.trim() || undefined,
       registered: true,
@@ -174,7 +173,7 @@ export function buildRepresentativeProfiles(
       specialty: repSpecialty,
       regionLabel: regionLabelFromLocations(co.locations),
       regionKeys,
-      companyLogoUrl: companyLogo(co.products, co.events, co.courses),
+      companyLogoUrl: resolveCompanyLogo(co.id, companyLogos),
       photoUrl: undefined,
       registered: false,
       products: co.products,
@@ -243,12 +242,20 @@ export function representativeDisplayName(profile: RepresentativeProfile): strin
   return profile.companyName.trim() || profile.repLabel.replace(/^Representante\s+/i, '').trim() || 'Representante';
 }
 
-/** Foto principal do avatar (rep ou logo da empresa — nunca no cantinho). */
+/** Foto pessoal do representante — nunca imagem de produto ou logo da empresa. */
 export function representativeAvatarUrl(profile: RepresentativeProfile): string | undefined {
+  return profile.photoUrl?.trim() || undefined;
+}
+
+/**
+ * Imagem principal do card de representante: foto do rep ou logo da empresa.
+ * Sem foto nem logo → undefined (UI usa iniciais).
+ */
+export function representativeDisplayImageUrl(profile: RepresentativeProfile): string | undefined {
   return profile.photoUrl?.trim() || profile.companyLogoUrl?.trim() || undefined;
 }
 
-/** Selo da empresa só quando há foto real do representante. */
+/** Selo da empresa no canto — só quando há foto pessoal do representante. */
 export function representativeCompanyBadgeUrl(profile: RepresentativeProfile): string | undefined {
   if (profile.photoUrl?.trim() && profile.companyLogoUrl?.trim()) {
     return profile.companyLogoUrl.trim();

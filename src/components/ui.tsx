@@ -75,6 +75,28 @@ export function VerifiedDot({ size = 13 }: { size?: number }) {
   );
 }
 
+/* ── Notification bell (filled — legível em tamanho pequeno) ── */
+export function BellIcon({
+  size = 20,
+  color = 'var(--accent-ink)',
+}: {
+  size?: number;
+  color?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill={color}
+      aria-hidden="true"
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <path d="M224 192a8 8 0 0 1-8 8H40a8 8 0 0 1 0-16h16v-72a72 72 0 0 1 144 0v72h16a8 8 0 0 1 8 8ZM128 56a56 56 0 0 0-56 56v72h112v-72a56 56 0 0 0-56-56Zm37.66 130.34a8 8 0 1 1-11.32 11.32A16 16 0 0 1 128 192a16 16 0 0 1-11.34 5.66 8 8 0 0 1-11.32-11.32 32 32 0 0 0 64 0Z" />
+    </svg>
+  );
+}
+
 /* ── WhatsApp icon ── */
 export function WaIcon({ size = 16 }: { size?: number }) {
   return (

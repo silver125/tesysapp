@@ -12,7 +12,7 @@ import { uploadProfileAvatar } from '../../lib/profileAvatar';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import type { Event, Product, Course, CourseModality, Lead, Location, LocationType, Representative } from '../../types';
 
-type Tab = 'home' | 'events' | 'create' | 'products' | 'courses' | 'leads' | 'locations' | 'representatives';
+type Tab = 'home' | 'listings' | 'events' | 'create' | 'products' | 'courses' | 'leads' | 'locations' | 'representatives';
 
 const LOCATION_TYPES: { value: LocationType; label: string }[] = [
   { value: 'coworking',    label: 'Coworking' },
@@ -253,7 +253,7 @@ function IcoSearch(a: boolean) {
 const NAV_ITEMS: NavItem[] = [
   { key: 'home',     label: 'Início',   icon: IcoHome },
   { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
-  { key: 'create',   label: 'Comece por aqui', icon: () => null, big: true },
+  { key: 'listings', label: 'Meus anúncios', icon: () => null, big: true },
   { key: 'products', label: 'Produtos', icon: IcoBox },
   { key: 'leads',    label: 'Buscar',   icon: IcoSearch },
 ];
@@ -392,6 +392,7 @@ export default function CompanyDashboard() {
   const [createSkipType, setCreateSkipType] = useState(false);
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
   const activeOpportunities = myEvents.length + myProducts.length + myCourses.length;
+  const publishedItems = activeOpportunities + myLocations.length + myReps.length;
   const conversationsStarted = myLeads.filter(lead => lead.connectionStatus === 'requested' || lead.connectionStatus === 'approved').length;
   const suggestedDoctors = myLeads.slice(0, 4);
 
@@ -548,7 +549,7 @@ export default function CompanyDashboard() {
           {/* Stats */}
           <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
             {[
-              { v: activeOpportunities, l: 'oportunidades', go: 'events' as Tab, accent: true },
+              { v: publishedItems, l: 'anúncios', go: 'listings' as Tab, accent: true },
               { v: myLeads.length, l: 'interessados', go: 'leads' as Tab, accent: myLeads.length > 0 },
               { v: conversationsStarted, l: 'conversas', go: 'leads' as Tab, accent: conversationsStarted > 0 },
             ].map((s) => (
@@ -575,7 +576,7 @@ export default function CompanyDashboard() {
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
               <div>
                 <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-                  Comece por aqui
+                  Publicar anúncio
                 </Mono>
                 <div style={{ fontSize: 18, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.15 }}>
                   O que sua empresa quer divulgar hoje?
@@ -852,6 +853,47 @@ export default function CompanyDashboard() {
         </div>
       )}
 
+      {/* ── LISTINGS ── */}
+      {tab === 'listings' && (
+        <MyListings
+          events={myEvents}
+          products={myProducts}
+          courses={myCourses}
+          locations={myLocations}
+          representatives={myReps}
+          leads={companyLeads}
+          deletingId={deletingId}
+          onCreate={openCreate}
+          onOpenEvent={setOpenEventId}
+          onOpenProduct={setOpenProductId}
+          onOpenCourse={setOpenCourseId}
+          onManageLocations={() => setTab('locations')}
+          onManageRepresentatives={() => setTab('representatives')}
+          onDeleteLocation={async id => {
+            setDeleteError('');
+            setDeletingId(id);
+            try {
+              await deleteLocation(id);
+            } catch (err) {
+              setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir local.');
+            } finally {
+              setDeletingId(null);
+            }
+          }}
+          onDeleteRepresentative={async id => {
+            setDeleteError('');
+            setDeletingId(id);
+            try {
+              await deleteRepresentative(id);
+            } catch (err) {
+              setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir representante.');
+            } finally {
+              setDeletingId(null);
+            }
+          }}
+        />
+      )}
+
       {/* ── EVENTS ── */}
       {tab === 'events' && (
         <>
@@ -945,9 +987,9 @@ export default function CompanyDashboard() {
           setKind={setCreateKind}
           skipTypeStep={createSkipType}
           company={companyInfo}
-          onSaveEvent={async data => { await addEvent(data); setCreateSkipType(false); setTab('events'); }}
-          onSaveProduct={async data => { await addProduct(data); setCreateSkipType(false); setTab('products'); }}
-          onSaveCourse={async data => { await addCourse(data); setCreateSkipType(false); setTab('courses'); }}
+          onSaveEvent={async data => { await addEvent(data); setCreateSkipType(false); setTab('listings'); }}
+          onSaveProduct={async data => { await addProduct(data); setCreateSkipType(false); setTab('listings'); }}
+          onSaveCourse={async data => { await addCourse(data); setCreateSkipType(false); setTab('listings'); }}
           onCancel={() => { setCreateSkipType(false); setTab('home'); }}
         />
       )}
@@ -1492,6 +1534,392 @@ function ListTab({ title, onAdd, empty, emptyText, grid = false, children }: {
           ? <MarketGrid>{children}</MarketGrid>
           : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
       }
+    </div>
+  );
+}
+
+function MyListings({
+  events,
+  products,
+  courses,
+  locations,
+  representatives,
+  leads,
+  deletingId,
+  onCreate,
+  onOpenEvent,
+  onOpenProduct,
+  onOpenCourse,
+  onManageLocations,
+  onManageRepresentatives,
+  onDeleteLocation,
+  onDeleteRepresentative,
+}: {
+  events: Event[];
+  products: Product[];
+  courses: Course[];
+  locations: Location[];
+  representatives: Representative[];
+  leads: Lead[];
+  deletingId: string | null;
+  onCreate: (target: 'event' | 'product' | 'course' | 'location' | 'representative') => void;
+  onOpenEvent: (id: string) => void;
+  onOpenProduct: (id: string) => void;
+  onOpenCourse: (id: string) => void;
+  onManageLocations: () => void;
+  onManageRepresentatives: () => void;
+  onDeleteLocation: (id: string) => Promise<void>;
+  onDeleteRepresentative: (id: string) => Promise<void>;
+}) {
+  const total = events.length + products.length + courses.length + locations.length + representatives.length;
+  const quickCreates: { target: 'event' | 'product' | 'course' | 'location' | 'representative'; label: string }[] = [
+    { target: 'event', label: 'Evento' },
+    { target: 'product', label: 'Produto' },
+    { target: 'course', label: 'Workshop' },
+    { target: 'location', label: 'Local' },
+    { target: 'representative', label: 'Representante' },
+  ];
+
+  return (
+    <div>
+      <Breadcrumb items={['início', 'meus anúncios']} />
+      <div style={{ marginBottom: 18 }}>
+        <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+          Vitrine da empresa
+        </Mono>
+        <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
+          Meus anúncios<span style={{ color: 'var(--accent)' }}>.</span>
+        </h1>
+        <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
+          Veja tudo que sua empresa publicou e acesse as ações de gerenciamento.
+        </p>
+      </div>
+
+      <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
+        {[
+          { v: events.length, l: 'eventos' },
+          { v: products.length, l: 'produtos' },
+          { v: courses.length, l: 'workshops' },
+        ].map(item => (
+          <div key={item.l} style={{
+            minHeight: 68,
+            padding: '10px 8px',
+            borderRadius: 16,
+            border: '1px solid rgba(245,130,32,0.16)',
+            background: 'rgba(255,255,255,0.84)',
+            boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
+          }}>
+            <div style={{ fontSize: 22, fontWeight: 620, color: 'var(--accent-ink)', lineHeight: 1 }}>{item.v}</div>
+            <Mono style={{ display: 'block', marginTop: 6, fontSize: 8, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.2 }}>{item.l}</Mono>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 3, marginBottom: 18 }}>
+        {quickCreates.map(item => (
+          <button key={item.target} onClick={() => onCreate(item.target)} style={{
+            flexShrink: 0,
+            padding: '9px 12px',
+            borderRadius: 999,
+            border: '1px solid rgba(245,130,32,0.22)',
+            background: item.target === 'event' ? 'var(--accent)' : 'rgba(255,255,255,0.92)',
+            color: item.target === 'event' ? '#fff' : 'var(--accent-ink)',
+            fontSize: 12,
+            fontWeight: 620,
+            cursor: 'pointer',
+          }}>
+            + {item.label}
+          </button>
+        ))}
+      </div>
+
+      {total === 0 ? (
+        <div style={{
+          padding: 24,
+          borderRadius: 18,
+          background: 'linear-gradient(135deg, rgba(245,130,32,0.08), rgba(255,255,255,0.96))',
+          border: '1px solid rgba(245,130,32,0.16)',
+        }}>
+          <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>Nenhum anúncio publicado ainda.</div>
+          <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+            Comece por um evento, produto ou workshop para aparecer na vitrine médica.
+          </p>
+          <button onClick={() => onCreate('event')} style={{
+            marginTop: 14,
+            padding: '10px 16px',
+            borderRadius: 12,
+            border: 'none',
+            background: 'var(--accent)',
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 620,
+            cursor: 'pointer',
+            boxShadow: '0 8px 22px rgba(245,130,32,0.24)',
+          }}>
+            Publicar primeiro anúncio →
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <ListingsSection
+            title="Eventos"
+            emptyText="Nenhum evento publicado."
+            actionLabel="+ Evento"
+            onAction={() => onCreate('event')}
+            isEmpty={events.length === 0}
+          >
+            <MarketGrid>
+              {events.map(event => (
+                <EventCompactCard
+                  key={event.id}
+                  ev={event}
+                  interestedCount={eventLeadDoctorCount(event, leads)}
+                  onOpen={() => onOpenEvent(event.id)}
+                />
+              ))}
+            </MarketGrid>
+          </ListingsSection>
+
+          <ListingsSection
+            title="Produtos e parcerias"
+            emptyText="Nenhum produto ou parceria publicado."
+            actionLabel="+ Produto"
+            onAction={() => onCreate('product')}
+            isEmpty={products.length === 0}
+          >
+            <MarketGrid>
+              {products.map(product => (
+                <ProductCompactCard key={product.id} product={product} onOpen={() => onOpenProduct(product.id)} />
+              ))}
+            </MarketGrid>
+          </ListingsSection>
+
+          <ListingsSection
+            title="Workshops e capacitações"
+            emptyText="Nenhum workshop publicado."
+            actionLabel="+ Workshop"
+            onAction={() => onCreate('course')}
+            isEmpty={courses.length === 0}
+          >
+            <MarketGrid>
+              {courses.map(course => (
+                <CourseCompactCard key={course.id} course={course} onOpen={() => onOpenCourse(course.id)} />
+              ))}
+            </MarketGrid>
+          </ListingsSection>
+
+          <ListingsSection
+            title="Locais"
+            emptyText="Nenhum local cadastrado."
+            actionLabel={locations.length > 0 ? 'Gerenciar' : '+ Local'}
+            onAction={onManageLocations}
+            isEmpty={locations.length === 0}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {locations.map(location => (
+                <LocationListingCard
+                  key={location.id}
+                  location={location}
+                  deleting={deletingId === location.id}
+                  onManage={onManageLocations}
+                  onDelete={() => { void onDeleteLocation(location.id); }}
+                />
+              ))}
+            </div>
+          </ListingsSection>
+
+          <ListingsSection
+            title="Representantes"
+            emptyText="Nenhum representante cadastrado."
+            actionLabel={representatives.length > 0 ? 'Gerenciar' : '+ Representante'}
+            onAction={onManageRepresentatives}
+            isEmpty={representatives.length === 0}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {representatives.map(rep => (
+                <RepresentativeListingCard
+                  key={rep.id}
+                  rep={rep}
+                  deleting={deletingId === rep.id}
+                  onManage={onManageRepresentatives}
+                  onDelete={() => { void onDeleteRepresentative(rep.id); }}
+                />
+              ))}
+            </div>
+          </ListingsSection>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ListingsSection({ title, emptyText, actionLabel, onAction, isEmpty, children }: {
+  title: string;
+  emptyText: string;
+  actionLabel: string;
+  onAction: () => void;
+  isEmpty: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>
+          {title}<span style={{ color: 'var(--accent)' }}>.</span>
+        </h2>
+        <button onClick={onAction} style={{
+          border: 'none',
+          background: 'transparent',
+          color: 'var(--accent)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10,
+          fontWeight: 620,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}>
+          {actionLabel}
+        </button>
+      </div>
+      {isEmpty ? (
+        <div style={{
+          padding: '18px 16px',
+          borderRadius: 16,
+          background: 'var(--card)',
+          border: '1px solid var(--line)',
+          color: 'var(--muted)',
+          fontSize: 13,
+        }}>
+          {emptyText}
+        </div>
+      ) : children}
+    </section>
+  );
+}
+
+function LocationListingCard({ location, deleting, onManage, onDelete }: {
+  location: Location;
+  deleting: boolean;
+  onManage: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div style={{
+      padding: 14,
+      borderRadius: 16,
+      background: 'var(--card)',
+      border: '1px solid var(--line)',
+      display: 'flex',
+      justifyContent: 'space-between',
+      gap: 12,
+      alignItems: 'flex-start',
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Chip color="#F58220">{locationTypeLabel(location.type)}</Chip>
+          {location.whatsapp && <Chip color="#25D366">WhatsApp</Chip>}
+        </div>
+        <div style={{ marginTop: 8, fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{location.name}</div>
+        <div style={{ marginTop: 3, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
+          {[location.address, location.city, location.state].filter(Boolean).join(' · ') || 'Sem endereço'}
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, alignItems: 'flex-end' }}>
+        <button onClick={onManage} style={{
+          background: 'transparent',
+          border: '1px solid var(--line)',
+          borderRadius: 10,
+          color: 'var(--ink-2)',
+          fontSize: 12,
+          fontWeight: 600,
+          padding: '6px 9px',
+          cursor: 'pointer',
+        }}>Gerenciar</button>
+        <button onClick={onDelete} disabled={deleting} style={{
+          background: 'none',
+          border: 'none',
+          cursor: deleting ? 'not-allowed' : 'pointer',
+          color: '#F25C54',
+          fontSize: 12,
+          fontWeight: 600,
+          padding: 0,
+          opacity: deleting ? 0.6 : 1,
+        }}>{deleting ? 'Excluindo...' : 'Excluir'}</button>
+      </div>
+    </div>
+  );
+}
+
+function RepresentativeListingCard({ rep, deleting, onManage, onDelete }: {
+  rep: Representative;
+  deleting: boolean;
+  onManage: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div style={{
+      padding: 14,
+      borderRadius: 16,
+      background: 'var(--card)',
+      border: '1px solid var(--line)',
+      display: 'flex',
+      justifyContent: 'space-between',
+      gap: 12,
+      alignItems: 'flex-start',
+    }}>
+      <div style={{ display: 'flex', gap: 12, minWidth: 0 }}>
+        <div style={{
+          width: 44,
+          height: 44,
+          borderRadius: 14,
+          background: rep.photoUrl
+            ? `url(${rep.photoUrl}) center/cover`
+            : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+          color: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 15,
+          fontWeight: 620,
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}>
+          {!rep.photoUrl && (rep.name?.trim()?.[0] ?? 'R').toUpperCase()}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            {rep.specialty && <Chip color="#B9C1EA">{rep.specialty}</Chip>}
+            {rep.whatsapp && <Chip color="#25D366">WhatsApp</Chip>}
+          </div>
+          <div style={{ marginTop: 8, fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{rep.name}</div>
+          <div style={{ marginTop: 3, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
+            {[rep.city, rep.state].filter(Boolean).join(' · ') || rep.region || 'Região não informada'}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, alignItems: 'flex-end' }}>
+        <button onClick={onManage} style={{
+          background: 'transparent',
+          border: '1px solid var(--line)',
+          borderRadius: 10,
+          color: 'var(--ink-2)',
+          fontSize: 12,
+          fontWeight: 600,
+          padding: '6px 9px',
+          cursor: 'pointer',
+        }}>Gerenciar</button>
+        <button onClick={onDelete} disabled={deleting} style={{
+          background: 'none',
+          border: 'none',
+          cursor: deleting ? 'not-allowed' : 'pointer',
+          color: '#F25C54',
+          fontSize: 12,
+          fontWeight: 600,
+          padding: 0,
+          opacity: deleting ? 0.6 : 1,
+        }}>{deleting ? 'Excluindo...' : 'Excluir'}</button>
+      </div>
     </div>
   );
 }

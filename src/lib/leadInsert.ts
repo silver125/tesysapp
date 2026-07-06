@@ -6,7 +6,7 @@ import { isMissingDbColumnError, omitDbColumns } from './dbSchema';
  * Payload mínimo — compatível com schema legado de `leads`.
  * Nomes do médico/empresa vêm de `profiles` no SELECT (join), não duplicamos aqui.
  */
-export function buildMinimalLeadPayload(lead: Pick<Lead, 'id' | 'companyId' | 'doctorId' | 'itemType' | 'itemName' | 'intent' | 'itemId' | 'message' | 'createdAt' | 'companyName'>): Record<string, unknown> {
+export function buildMinimalLeadPayload(lead: Pick<Lead, 'id' | 'companyId' | 'doctorId' | 'doctorName' | 'doctorSpecialty' | 'itemType' | 'itemName' | 'intent' | 'itemId' | 'message' | 'createdAt' | 'companyName'>): Record<string, unknown> {
   const payload: Record<string, unknown> = {
     id: lead.id,
     company_id: lead.companyId,
@@ -19,11 +19,15 @@ export function buildMinimalLeadPayload(lead: Pick<Lead, 'id' | 'companyId' | 'd
   if (lead.message) payload.message = lead.message;
   if (lead.createdAt) payload.created_at = lead.createdAt;
   if (lead.companyName) payload.company_name = lead.companyName;
+  if (lead.doctorName) payload.doctor_name = lead.doctorName;
+  if (lead.doctorSpecialty) payload.doctor_specialty = lead.doctorSpecialty;
   return payload;
 }
 
 const LEAD_OPTIONAL_COLUMNS = [
   'company_name',
+  'doctor_name',
+  'doctor_specialty',
   'message',
   'item_id',
   'created_at',
@@ -80,7 +84,7 @@ function extractMissingColumnFromError(message: string): string | null {
 
 export async function insertLeadResilient(
   client: SupabaseClient,
-  lead: Pick<Lead, 'id' | 'companyId' | 'doctorId' | 'itemType' | 'itemName' | 'intent' | 'itemId' | 'message' | 'createdAt' | 'companyName'>,
+  lead: Pick<Lead, 'id' | 'companyId' | 'doctorId' | 'doctorName' | 'doctorSpecialty' | 'itemType' | 'itemName' | 'intent' | 'itemId' | 'message' | 'createdAt' | 'companyName'>,
 ): Promise<{ error: { message: string; code?: string } | null; omittedColumns: string[] }> {
   const full = buildMinimalLeadPayload(lead);
   const coreOnly: Record<string, unknown> = {

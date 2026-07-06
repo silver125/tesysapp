@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
-import { CompanyMark, TessyMark } from './ui';
+import { CompanyMark, TessyMark, BellIcon } from './ui';
 import { companyInitials, companyTint, displayUserLabel } from '../lib/uiHelpers';
 import OnboardingModal from './OnboardingModal';
 import ProfileSettingsSheet from './ProfileSettingsSheet';
@@ -72,43 +72,47 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
             {user?.role === 'medico' && onNotificationClick && (
               <button
                 type="button"
-                aria-label="Notificações"
+                aria-label={notificationCount > 0 ? `${notificationCount} notificações` : 'Notificações'}
                 onClick={onNotificationClick}
                 style={{
                   position: 'relative',
-                  width: 34,
-                  height: 34,
-                  borderRadius: 999,
-                  border: '1px solid rgba(216,222,236,0.92)',
-                  background: 'rgba(255,255,255,0.72)',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  border: '1px solid rgba(245,130,32,0.16)',
+                  background: notificationCount > 0
+                    ? 'linear-gradient(180deg, rgba(255,243,233,0.98), rgba(245,130,32,0.12))'
+                    : 'rgba(245,130,32,0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: 0,
                   cursor: 'pointer',
+                  boxShadow: notificationCount > 0
+                    ? '0 8px 18px rgba(245,130,32,0.14)'
+                    : 'none',
                 }}
               >
-                <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#6F7A90" strokeWidth="1.6">
-                  <path d="M8.5 16.5a2 2 0 004 0" strokeLinecap="round" />
-                  <path d="M3.5 14.5h13l-1.6-1.6a1.5 1.5 0 01-.4-1V9a5.5 5.5 0 00-11 0v2.9a1.5 1.5 0 01-.4 1L3.5 14.5z" strokeLinejoin="round" />
-                </svg>
+                <BellIcon size={19} color={notificationCount > 0 ? 'var(--accent)' : 'var(--accent-ink)'} />
                 {notificationCount > 0 && (
                   <span style={{
                     position: 'absolute',
-                    top: 4,
-                    right: 4,
-                    minWidth: 16,
-                    height: 16,
-                    padding: '0 4px',
+                    top: -5,
+                    right: -5,
+                    minWidth: 18,
+                    height: 18,
+                    padding: '0 5px',
                     borderRadius: 999,
                     background: 'var(--accent)',
                     color: '#fff',
-                    fontSize: 9.5,
+                    fontSize: 10,
                     fontWeight: 700,
+                    lineHeight: 1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '2px solid #fff',
+                    border: '2px solid #F7F8FF',
+                    boxShadow: '0 4px 10px rgba(245,130,32,0.28)',
                   }}>
                     {notificationCount > 9 ? '9+' : notificationCount}
                   </span>

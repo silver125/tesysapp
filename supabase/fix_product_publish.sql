@@ -30,6 +30,8 @@ ALTER TABLE IF EXISTS public.products
 
 -- Trigger removido: bloqueava inserts legítimos via PostgREST
 DROP TRIGGER IF EXISTS products_validate_compliance ON public.products;
+DROP FUNCTION IF EXISTS public.validate_product_compliance() CASCADE;
+DROP FUNCTION IF EXISTS public.products_validate_compliance() CASCADE;
 
 CREATE OR REPLACE FUNCTION public.publish_company_product(payload jsonb)
 RETURNS uuid

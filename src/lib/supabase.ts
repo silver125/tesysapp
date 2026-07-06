@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { readSupabaseEnv } from './supabaseEnv';
 
-const url = import.meta.env.VITE_SUPABASE_URL ?? '';
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+const { url, key, configured: isSupabaseConfigured } = readSupabaseEnv(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+);
 
-export const isSupabaseConfigured =
-  /^https:\/\/.+\.supabase\.co$/i.test(url) &&
-  key.length > 40;
+export { isSupabaseConfigured };
 
 export function assertSupabaseConfigured() {
   if (!isSupabaseConfigured) {

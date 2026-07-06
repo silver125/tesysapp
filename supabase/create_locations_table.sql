@@ -16,8 +16,11 @@ CREATE TABLE IF NOT EXISTS public.locations (
   company_id    UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   company_name  TEXT NOT NULL,
   name          TEXT NOT NULL,
-  type          TEXT NOT NULL DEFAULT 'ponto_venda'
-                  CHECK (type IN ('ponto_venda','distribuidor','clinica','farmacia','loja','outro')),
+  type          TEXT NOT NULL DEFAULT 'coworking'
+                  CHECK (type IN (
+                    'coworking','sala_reuniao','consultorio','clinica','hospital',
+                    'ponto_venda','distribuidor','farmacia','loja','outro'
+                  )),
   address       TEXT,
   city          TEXT,
   state         TEXT,
