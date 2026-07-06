@@ -656,6 +656,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const requestPasswordReset = async (email: string) => {
+    assertSupabaseConfigured();
+    const redirectTo = typeof window !== 'undefined'
+      ? `${window.location.origin}/redefinir-senha`
+      : undefined;
+    const { error } = await withTimeout(
+      supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo }),
+      12000,
+      'Recuperação de senha',
+    );
+    if (error) throw new Error(error.message || 'Não foi possível enviar o e-mail de recuperação.');
+  };
+
+  const updatePassword = async (password: string) => {
+    assertSupabaseConfigured();
+    const { error } = await withTimeout(
+      supabase.auth.updateUser({ password }),
+      12000,
+      'Nova senha',
+    );
+    if (error) throw new Error(error.message || 'Não foi possível atualizar a senha.');
+  };
+
   // ── Cadastro ──
   const register = async (input: RegisterInput): Promise<User> => {
     assertSupabaseConfigured();
@@ -1526,7 +1549,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, isLoading, authReady,
-      login, register, logout, completeOnboarding, updateProfile, deleteAccount,
+      login, requestPasswordReset, updatePassword, register, logout, completeOnboarding, updateProfile, deleteAccount,
       events, products, courses, leads, locations, representatives,
       addEvent, addProduct, addCourse, addLead,
       addLocation, deleteLocation,

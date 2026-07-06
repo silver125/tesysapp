@@ -4,6 +4,8 @@ import { useAuth } from './context/useAuth';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import DoctorDashboard from './pages/doctor/DoctorDashboard';
 import CompanyDashboard from './pages/company/CompanyDashboard';
 import type { UserRole } from './types';
@@ -73,6 +75,8 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<RootRedirect />} />
         <Route path="/entrar"   element={<PublicOnly><Login /></PublicOnly>} />
+        <Route path="/esqueci-senha" element={<PublicOnly><ForgotPassword /></PublicOnly>} />
+        <Route path="/redefinir-senha" element={<ResetPassword />} />
         <Route path="/cadastro" element={<PublicOnly><Register /></PublicOnly>} />
         <Route path="/medico/*" element={<ProtectedRoute role="medico"><DoctorDashboard /></ProtectedRoute>} />
         <Route path="/empresa/*" element={<ProtectedRoute role="empresa"><CompanyDashboard /></ProtectedRoute>} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { TessyMark } from '../components/ui';
 import { dashboardPathForRole, normalizeUserRole } from '../lib/authRoutes';
@@ -9,6 +9,8 @@ const authImage = 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?
 export default function Login() {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const flash = (location.state as { message?: string } | null)?.message;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -93,6 +95,21 @@ export default function Login() {
               padding: 22,
               boxShadow: 'var(--shadow-md)',
             }}>
+              {flash && (
+                <div style={{
+                  marginBottom: 16,
+                  padding: '12px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(30,169,124,0.08)',
+                  border: '1px solid rgba(30,169,124,0.22)',
+                  color: '#1EA97C',
+                  fontSize: 13,
+                  lineHeight: 1.4,
+                }}>
+                  {flash}
+                </div>
+              )}
+
               {error && (
                 <div style={{
                   marginBottom: 16,
@@ -111,6 +128,12 @@ export default function Login() {
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <Field label="E-mail" type="email" value={email} onChange={setEmail} placeholder="voce@exemplo.com" autoComplete="email" />
                 <Field label="Senha" type="password" value={password} onChange={setPassword} placeholder="Sua senha" autoComplete="current-password" />
+
+                <div style={{ textAlign: 'right', marginTop: -4 }}>
+                  <Link to="/esqueci-senha" style={{ fontSize: 13, color: 'var(--accent-ink)', fontWeight: 560, textDecoration: 'none' }}>
+                    Esqueci minha senha
+                  </Link>
+                </div>
 
                 <button type="submit" disabled={isLoading} style={{
                   marginTop: 4,
