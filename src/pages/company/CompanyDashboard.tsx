@@ -477,7 +477,7 @@ export default function CompanyDashboard() {
                 : `${activeOpportunities} oportunidade${activeOpportunities === 1 ? '' : 's'} ativa${activeOpportunities === 1 ? '' : 's'} · ${myLeads.length} médico${myLeads.length === 1 ? '' : 's'} interessado${myLeads.length === 1 ? '' : 's'}`}
             </p>
             <button
-              onClick={() => openCreate('product')}
+              onClick={() => setTab('listings')}
               style={{
                 marginTop: 14,
                 padding: '10px 16px',
@@ -491,7 +491,7 @@ export default function CompanyDashboard() {
                 boxShadow: '0 8px 22px rgba(80,40,0,0.14)',
               }}
             >
-              {activeOpportunities === 0 ? 'Publicar primeira oportunidade →' : 'Publicar nova oportunidade →'}
+              {publishedItems === 0 ? 'Ir para Meus anúncios →' : 'Ver Meus anúncios →'}
             </button>
           </div>
 
@@ -571,76 +571,6 @@ export default function CompanyDashboard() {
             ))}
           </div>
 
-          {/* Quick create */}
-          <div style={{ marginBottom: 18 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-              <div>
-                <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-                  Publicar anúncio
-                </Mono>
-                <div style={{ fontSize: 18, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.15 }}>
-                  O que sua empresa quer divulgar hoje?
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {[
-                { key: 'event', target: 'event', label: 'Evento', desc: 'Congressos e encontros' },
-                { key: 'product', target: 'product', label: 'Produto', desc: 'Tecnologia e materiais' },
-                { key: 'course', target: 'course', label: 'Workshop', desc: 'Capacitações médicas' },
-                { key: 'representative', target: 'representative', label: 'Representante', desc: 'Quem fala com os médicos' },
-                { key: 'partnership', target: 'product', label: 'Parceria', desc: 'Relacionamento comercial' },
-                { key: 'location', target: 'location', label: 'Local', desc: 'Pontos de atendimento' },
-              ].map(item => {
-                const key = item.key as 'event' | 'product' | 'course' | 'partnership' | 'location' | 'representative';
-                const target = item.target as 'event' | 'product' | 'course' | 'location' | 'representative';
-                return (
-                  <button key={key} onClick={() => openCreate(target)} style={{
-                    padding: '12px 10px', borderRadius: 16,
-                    background: 'rgba(255,255,255,0.92)', border: '1px solid var(--line)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9,
-                    textAlign: 'left',
-                    boxShadow: '0 8px 20px rgba(85,96,130,0.04)',
-                    transition: 'border-color 0.15s, box-shadow 0.15s',
-                  }}>
-                    <span style={{
-                      width: 36, height: 36, borderRadius: 12,
-                      background: 'rgba(245,130,32,0.10)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <OpportunityIcon type={key} />
-                    </span>
-                    <span style={{ minWidth: 0 }}>
-                      <span style={{ display: 'block', fontSize: 12.5, fontWeight: 620, color: 'var(--ink)', lineHeight: 1.2 }}>{item.label}</span>
-                      <span style={{ display: 'block', marginTop: 2, fontSize: 10.5, color: 'var(--muted)', lineHeight: 1.2 }}>{item.desc}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Photo emphasis banner */}
-          <div style={{
-            marginBottom: 18,
-            padding: '12px 14px',
-            borderRadius: 16,
-            background: 'linear-gradient(135deg, rgba(245,130,32,0.10), rgba(255,255,255,0.92))',
-            border: '1px solid rgba(245,130,32,0.20)',
-            display: 'flex', alignItems: 'center', gap: 11,
-          }}>
-            <span style={{ fontSize: 22, lineHeight: 1 }}>📸</span>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>
-                Anúncios com foto recebem muito mais contatos
-              </div>
-              <div style={{ marginTop: 2, fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-                Toda publicação na vitrine pede uma imagem — capriche na primeira foto.
-              </div>
-            </div>
-          </div>
-
           {/* Leads access */}
           <button
             onClick={() => setTab('leads')}
@@ -715,7 +645,7 @@ export default function CompanyDashboard() {
                   Publique uma oportunidade para a Tessy aproximar médicos com interesse real.
                 </p>
                 <button
-                  onClick={() => openCreate('event')}
+                  onClick={() => setTab('listings')}
                   style={{
                     marginTop: 12,
                     padding: '9px 14px',
@@ -728,7 +658,7 @@ export default function CompanyDashboard() {
                     cursor: 'pointer',
                   }}
                 >
-                  Criar primeiro evento →
+                  Criar primeiro anúncio →
                 </button>
               </div>
             ) : (
@@ -745,9 +675,9 @@ export default function CompanyDashboard() {
             <SectionTitle title="Sugestões da Tessy" />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                { text: 'Publique um produto para aumentar sua visibilidade na vitrine.', cta: 'Criar produto', action: () => openCreate('product') },
+                { text: 'Publique um produto para aumentar sua visibilidade na vitrine.', cta: 'Meus anúncios', action: () => setTab('listings') },
                 { text: 'Complete seu perfil com WhatsApp para médicos iniciarem conversa.', cta: 'Editar perfil', action: () => openProfileSettings() },
-                { text: 'Convide médicos interessados para o seu próximo evento.', cta: 'Criar evento', action: () => openCreate('event') },
+                { text: 'Convide médicos interessados para o seu próximo evento.', cta: 'Meus anúncios', action: () => setTab('listings') },
               ].map(item => (
                 <button key={item.text} onClick={item.action} style={{
                   padding: '12px 14px',

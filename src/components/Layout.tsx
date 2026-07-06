@@ -269,10 +269,10 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                     onClick={() => onNavChange(item.key)}
                     className="tessy-create-cta"
                     style={{
-                      minWidth: 108,
+                      minWidth: 118,
                       height: 40,
                       borderRadius: 999,
-                      background: 'var(--accent-ink)',
+                      background: active ? 'var(--accent)' : 'var(--accent-ink)',
                       border: '1px solid rgba(255,255,255,0.72)',
                       color: '#fff',
                       cursor: 'pointer',
