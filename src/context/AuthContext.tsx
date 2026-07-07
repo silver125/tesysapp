@@ -1175,13 +1175,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
     const listingType = data.listingType ?? 'product';
-    const isPartnership = listingType === 'partnership';
-    const declaredOk = isPartnership
-      || (Boolean(data.anvisaRegularized) && Boolean(data.commerciallyAvailable));
-
-    if (!isPartnership && !declaredOk) {
-      throw new Error('Marque a declaração regulatória antes de publicar.');
-    }
 
     await publishProduct({
       name: data.name,

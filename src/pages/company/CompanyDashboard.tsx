@@ -1056,8 +1056,6 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
     website: '',
   });
   const [coImage, setCoImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
-  const [productDeclared, setProductDeclared] = useState(false);
-  const [partnershipConfirmed, setPartnershipConfirmed] = useState(false);
 
   const isPartnership = selectedChoice === 'partnership';
 
@@ -1078,8 +1076,6 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
       if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
       if (!prImage.file) return 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
       if (!pr.name.trim()) return 'Informe o nome do produto.';
-      if (isPartnership && !partnershipConfirmed) return 'Confirme a autorização para divulgar esta parceria.';
-      if (!isPartnership && !productDeclared) return 'Marque a declaração regulatória para publicar.';
     }
     if (kind === 'course') {
       if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
@@ -1143,8 +1139,8 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
           website: normalizeUrl(pr.website),
           imageUrl,
           listingType: isPartnership ? 'partnership' : 'product',
-          anvisaRegularized: isPartnership || productDeclared,
-          commerciallyAvailable: isPartnership || productDeclared,
+          anvisaRegularized: true,
+          commerciallyAvailable: true,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else {
@@ -1216,11 +1212,6 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
                       availableFor: 'Representante apresenta briefing, condições e proposta de parceria.',
                       price: 'Parceria sob consulta',
                     }));
-                    setProductDeclared(false);
-                    setPartnershipConfirmed(false);
-                  } else if (target === 'product') {
-                    setProductDeclared(false);
-                    setPartnershipConfirmed(false);
                   }
                   setSaveError('');
                   setStep(1);
@@ -1303,46 +1294,6 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
             <WField label="PRÓXIMO PASSO PARA O MÉDICO" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Ex: Solicitar amostra, falar com representante..." as="textarea" />
             <WField label="CONDIÇÕES (opcional)" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Ex: Sob consulta, parceria regional..." />
             <WField label="SITE (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.empresa.com.br/produto" type="url" />
-
-            <div style={{
-              padding: '12px 14px',
-              borderRadius: 14,
-              background: 'rgba(245,130,32,0.06)',
-              border: '1px solid rgba(245,130,32,0.18)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-            }}>
-              <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>
-                {isPartnership ? 'Declaração comercial (obrigatória)' : 'Declaração regulatória (obrigatória)'}
-              </div>
-              {isPartnership ? (
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={partnershipConfirmed}
-                    onChange={e => setPartnershipConfirmed(e.target.checked)}
-                    style={{ marginTop: 3, accentColor: 'var(--accent)' }}
-                  />
-                  <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-                    Confirmo autorização para <b>divulgar esta parceria comercial</b> a médicos no Tessy.
-                  </span>
-                </label>
-              ) : (
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={productDeclared}
-                    onChange={e => setProductDeclared(e.target.checked)}
-                    style={{ marginTop: 3, accentColor: 'var(--accent)' }}
-                  />
-                  <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-                    Declaro que o produto possui <b>regularização vigente na Anvisa</b> (ou categoria isenta)
-                    e está <b>disponível comercialmente</b> para divulgação a médicos.
-                  </span>
-                </label>
-              )}
-            </div>
           </div>
         </div>
       )}
