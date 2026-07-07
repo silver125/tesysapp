@@ -4,6 +4,12 @@ import { useAuth } from '../context/useAuth';
 import { TessyMark } from '../components/ui';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
+function hasRecoveryHash(): boolean {
+  const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+  const params = new URLSearchParams(hash);
+  return params.get('type') === 'recovery' || Boolean(params.get('access_token'));
+}
+
 export default function ResetPassword() {
   const { updatePassword } = useAuth();
   const navigate = useNavigate();
@@ -15,13 +21,46 @@ export default function ResetPassword() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true);
+
+    let cancelled = false;
+
+    async function bootstrapRecovery() {
+      if (hasRecoveryHash()) {
+        if (!cancelled) setReady(true);
+        return;
+      }
+
+      const searchParams = new URLSearchParams(window.location.search);
+      const tokenHash = searchParams.get('token_hash');
+      if (tokenHash && searchParams.get('type') === 'recovery') {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery',
+        });
+        if (verifyError) {
+          if (!cancelled) {
+            setError('Link inválido ou expirado. Solicite um novo e-mail de recuperação.');
+          }
+          return;
+        }
+        if (!cancelled) setReady(true);
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (data.session && !cancelled) setReady(true);
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || session) setReady(true);
     });
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
-    return () => subscription.unsubscribe();
+
+    void bootstrapRecovery();
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -60,10 +99,30 @@ export default function ResetPassword() {
           Nova senha<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
 
+        {error && !ready && (
+          <div style={{
+            marginTop: 16,
+            padding: '12px 14px',
+            borderRadius: 8,
+            background: 'rgba(232,69,69,0.07)',
+            border: '1px solid rgba(232,69,69,0.22)',
+            color: 'var(--danger)',
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}>
+            {error}
+          </div>
+        )}
+
         {!ready ? (
           <p style={{ marginTop: 12, fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.5 }}>
             Abra o link que enviamos por e-mail para redefinir sua senha aqui.
-            Se o link expirou, solicite outro em{' '}
+            Use sempre o site{' '}
+            <a href="https://www.tessybr.com/esqueci-senha" style={{ color: 'var(--accent-ink)', fontWeight: 560 }}>
+              tessybr.com/esqueci-senha
+            </a>{' '}
+            para solicitar o e-mail — links antigos com <b>localhost</b> não funcionam.
+            Se expirou, solicite outro em{' '}
             <Link to="/esqueci-senha" style={{ color: 'var(--accent-ink)', fontWeight: 560 }}>Recuperar acesso</Link>.
           </p>
         ) : (

@@ -19,6 +19,13 @@ export function assertSupabaseConfigured() {
 export const supabase = createClient(
   isSupabaseConfigured ? url : 'https://placeholder.supabase.co',
   isSupabaseConfigured ? key : 'placeholder-anon-key',
+  {
+    auth: {
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  },
 );
 
 export async function upsertProfileWithToken(accessToken: string, profile: Record<string, unknown>) {

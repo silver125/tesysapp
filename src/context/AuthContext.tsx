@@ -10,6 +10,7 @@ import { isMissingDbColumnError, isMissingRpcError, omitDbColumns } from '../lib
 import { insertLeadResilient } from '../lib/leadInsert';
 import { publishProduct } from '../lib/publishProduct';
 import { clearLocalTessyData } from '../lib/clearLocalTessyData';
+import { getPasswordResetUrl } from '../lib/appUrl';
 import {
   clearPendingRegistration,
   EMAIL_CONFIRMATION_REQUIRED,
@@ -702,9 +703,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const requestPasswordReset = async (email: string) => {
     assertSupabaseConfigured();
-    const redirectTo = typeof window !== 'undefined'
-      ? `${window.location.origin}/redefinir-senha`
-      : undefined;
+    const redirectTo = getPasswordResetUrl();
     const { error } = await withTimeout(
       supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo }),
       12000,
