@@ -373,7 +373,7 @@ export default function DoctorDashboard() {
 
           {(suggestedRep || suggestedProduct) && (
             <section style={{ marginBottom: 22 }}>
-              <SectionHeader title="Sugestões para você" onSeeAll={() => openTab('representatives')} />
+              <SectionHeader title="Sugestões para você" onSeeAll={() => openTab('products')} />
               <HomeCarousel>
                 {suggestedRep && (
                   <HomeRepCard
@@ -397,6 +397,21 @@ export default function DoctorDashboard() {
               <HomeCarousel>
                 {homeEvents.map(ev => (
                   <HomeEventRow key={ev.id} ev={ev} onOpen={() => setOpenEvent(ev)} />
+                ))}
+              </HomeCarousel>
+            </section>
+          )}
+
+          {products.length > 0 && (
+            <section style={{ marginBottom: 22 }}>
+              <SectionHeader title="Produtos em destaque" onSeeAll={() => openTab('products')} />
+              <HomeCarousel>
+                {products.slice(0, 8).map(product => (
+                  <HomeProductCard
+                    key={product.id}
+                    product={product}
+                    onOpen={() => setOpenProduct(product)}
+                  />
                 ))}
               </HomeCarousel>
             </section>

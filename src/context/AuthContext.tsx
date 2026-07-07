@@ -284,16 +284,6 @@ function readLocalProducts(): Product[] {
   }
 }
 
-function writeLocalProduct(product: Product) {
-  try {
-    const prev = readLocalProducts();
-    const next = [product, ...prev.filter(p => p.id !== product.id)];
-    localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(next));
-  } catch {
-    /* ignore */
-  }
-}
-
 function removeLocalProduct(id: string) {
   try {
     localStorage.setItem(
@@ -305,7 +295,15 @@ function removeLocalProduct(id: string) {
   }
 }
 
-function mergeLocalProducts(remoteProducts: Product[]) {
+function mergeLocalProducts(
+  remoteProducts: Product[],
+  viewer?: { role?: User['role']; companyId?: string },
+) {
+  // Só a própria empresa vê rascunhos locais; médicos e visitantes só veem o Supabase.
+  if (viewer?.role !== 'empresa' || !viewer.companyId) {
+    return [...remoteProducts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
   const hasRemoteEquivalent = (local: Product) => remoteProducts.some(remote => (
     remote.companyId === local.companyId
     && remote.name.trim().toLowerCase() === local.name.trim().toLowerCase()
@@ -313,6 +311,7 @@ function mergeLocalProducts(remoteProducts: Product[]) {
   ));
   const byId = new Map(remoteProducts.map(product => [product.id, product]));
   for (const product of readLocalProducts()) {
+    if (product.companyId !== viewer.companyId) continue;
     if (hasRemoteEquivalent(product)) continue;
     if (!byId.has(product.id)) byId.set(product.id, product);
   }
@@ -469,6 +468,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from('representatives').select('*').order('created_at', { ascending: false }),
     ]);
 
+    if (prRes.error) {
+      console.error('[Tessy] Erro ao carregar produtos:', prRes.error.message);
+    }
+
     const mappedEvents = (evRes.data ?? []).map(r => dbToEvent(r as Record<string, unknown>));
     const mappedProducts = (prRes.data ?? []).map(r => dbToProduct(r as Record<string, unknown>));
     const mappedCourses = (coRes.data ?? []).map(r => dbToCourse(r as Record<string, unknown>));
@@ -514,11 +517,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }));
     });
 
-    setProducts(mergeLocalProducts(mappedProducts));
+    setProducts(mergeLocalProducts(mappedProducts, user ? { role: user.role, companyId: user.id } : undefined));
     setCourses(mappedCourses);
     setLocations(mappedLocations);
     setRepresentatives(mappedReps);
-  }, []);
+  }, [user?.id, user?.role]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -1180,35 +1183,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Marque a declaração regulatória antes de publicar.');
     }
 
-    const localProduct: Product = {
-      ...data,
-      id: `local-product-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      anvisaRegularized: true,
-      commerciallyAvailable: true,
+    await publishProduct({
+      name: data.name,
+      description: data.description,
+      category: data.category,
+      price: data.price,
+      companyId: data.companyId,
+      companyName: data.companyName,
+      companyWhatsapp: data.companyWhatsapp,
+      availableFor: data.availableFor,
+      website: data.website,
+      imageUrl: data.imageUrl,
       listingType,
-    };
-    writeLocalProduct(localProduct);
-    setProducts(prev => mergeLocalProducts([localProduct, ...prev]));
-
-    try {
-      await publishProduct({
-        name: data.name,
-        description: data.description,
-        category: data.category,
-        price: data.price,
-        companyId: data.companyId,
-        companyName: data.companyName,
-        companyWhatsapp: data.companyWhatsapp,
-        availableFor: data.availableFor,
-        website: data.website,
-        imageUrl: data.imageUrl,
-        listingType,
-      });
-      void refreshData();
-    } catch (error) {
-      console.warn('Produto mantido localmente; Supabase bloqueou a publicação remota:', error);
-    }
+    });
+    await refreshData();
   };
 
   const deleteProduct = async (id: string) => {
