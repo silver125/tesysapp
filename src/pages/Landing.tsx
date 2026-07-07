@@ -344,8 +344,8 @@ export default function Landing() {
           <a href="#top">Instagram</a>
           <a href="#top">LinkedIn</a>
           <a href="mailto:contato@tessybr.com">Contato</a>
-          <a href="#top">Termos</a>
-          <a href="#top">Privacidade</a>
+          <a href="/termos">Termos</a>
+          <a href="/privacidade">Privacidade</a>
         </nav>
       </footer>
     </div>

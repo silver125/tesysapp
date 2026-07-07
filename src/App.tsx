@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';
 import DoctorDashboard from './pages/doctor/DoctorDashboard';
 import CompanyDashboard from './pages/company/CompanyDashboard';
 import type { UserRole } from './types';
@@ -78,6 +80,8 @@ function AppRoutes() {
         <Route path="/esqueci-senha" element={<PublicOnly><ForgotPassword /></PublicOnly>} />
         <Route path="/redefinir-senha" element={<ResetPassword />} />
         <Route path="/cadastro" element={<PublicOnly><Register /></PublicOnly>} />
+        <Route path="/privacidade" element={<PrivacyPolicy />} />
+        <Route path="/termos" element={<TermsOfUse />} />
         <Route path="/medico/*" element={<ProtectedRoute role="medico"><DoctorDashboard /></ProtectedRoute>} />
         <Route path="/empresa/*" element={<ProtectedRoute role="empresa"><CompanyDashboard /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />

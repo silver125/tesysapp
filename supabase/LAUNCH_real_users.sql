@@ -26,6 +26,12 @@ ALTER TABLE IF EXISTS public.profiles
 ALTER TABLE IF EXISTS public.profiles
   ADD COLUMN IF NOT EXISTS whatsapp_connection_only BOOLEAN NOT NULL DEFAULT TRUE;
 
+ALTER TABLE IF EXISTS public.profiles
+  ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMPTZ;
+
+ALTER TABLE IF EXISTS public.profiles
+  ADD COLUMN IF NOT EXISTS privacy_policy_version TEXT;
+
 -- Policies mínimas de perfil (cadastro e edição)
 ALTER TABLE IF EXISTS public.profiles ENABLE ROW LEVEL SECURITY;
 

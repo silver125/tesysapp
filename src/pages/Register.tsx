@@ -17,10 +17,11 @@ type FormData = {
   whatsappConnectionOnly: boolean;
   email: string;
   password: string;
+  privacyAccepted: boolean;
 };
 
 const INITIAL: FormData = {
-  role: null, name: '', crm: '', crmState: '', specialty: '', company: '', whatsapp: '', whatsappConnectionOnly: true, email: '', password: '',
+  role: null, name: '', crm: '', crmState: '', specialty: '', company: '', whatsapp: '', whatsappConnectionOnly: true, email: '', password: '', privacyAccepted: false,
 };
 
 const BR_STATES = [
@@ -61,7 +62,9 @@ export default function Register() {
       }
       return data.company.trim().length > 2 && normalizePhone(data.whatsapp).length >= 12;
     }
-    if (step === 2) return /^\S+@\S+\.\S+$/.test(data.email) && data.password.length >= 6;
+    if (step === 2) {
+      return /^\S+@\S+\.\S+$/.test(data.email) && data.password.length >= 6 && data.privacyAccepted;
+    }
     return false;
   };
 
@@ -88,6 +91,7 @@ export default function Register() {
         company: data.role === 'empresa' ? data.company : undefined,
         whatsapp: data.whatsapp.trim() ? normalizePhone(data.whatsapp) : undefined,
         whatsappConnectionOnly: data.role === 'medico' ? data.whatsappConnectionOnly : undefined,
+        privacyAccepted: data.privacyAccepted,
       });
       const dest = dashboardPathForRole(normalizeUserRole(data.role));
       navigate(dest ?? '/entrar', { replace: true });
@@ -479,9 +483,37 @@ export default function Register() {
               autoComplete="new-password"
               hint={data.password.length > 0 && data.password.length < 6 ? 'Mínimo 6 caracteres' : undefined}
             />
-            <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
-              Ao criar conta você concorda com os Termos de Uso e Política de Privacidade da Tessy.
-            </p>
+            <label style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
+              padding: '14px 14px',
+              borderRadius: 10,
+              border: `1.5px solid ${data.privacyAccepted ? 'var(--accent)' : 'var(--line)'}`,
+              background: data.privacyAccepted ? 'var(--accent-soft)' : '#fff',
+              cursor: 'pointer',
+              fontSize: 13,
+              lineHeight: 1.55,
+              color: 'var(--ink-2)',
+            }}>
+              <input
+                type="checkbox"
+                checked={data.privacyAccepted}
+                onChange={e => update('privacyAccepted', e.target.checked)}
+                style={{ marginTop: 3, accentColor: 'var(--accent)', flexShrink: 0 }}
+              />
+              <span>
+                Li e aceito a{' '}
+                <Link to="/privacidade" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-ink)', fontWeight: 560 }}>
+                  Política de Privacidade
+                </Link>{' '}
+                e os{' '}
+                <Link to="/termos" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-ink)', fontWeight: 560 }}>
+                  Termos de Uso
+                </Link>
+                . Autorizo o tratamento dos meus dados (nome, e-mail, CRM e WhatsApp) conforme descrito na política.
+              </span>
+            </label>
           </div>
         )}
       </main>

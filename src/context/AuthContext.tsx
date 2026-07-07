@@ -16,6 +16,7 @@ import {
   readPendingRegistration,
   savePendingRegistration,
 } from '../lib/pendingRegistration';
+import { PRIVACY_POLICY_VERSION } from '../lib/legalContent';
 
 // Helper: timeout para evitar travas infinitas em chamadas Supabase
 // Aceita PromiseLike para suportar o query builder do supabase-js (thenable)
@@ -725,6 +726,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Cadastro ──
   const register = async (input: RegisterInput): Promise<User> => {
     assertSupabaseConfigured();
+    if (!input.privacyAccepted) {
+      throw new Error('É necessário aceitar a Política de Privacidade e os Termos de Uso.');
+    }
     isRegistering.current = true;
     setIsLoading(true);
     try {
@@ -750,6 +754,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const uid = authData.user.id;
+      const acceptedAt = new Date().toISOString();
       const profilePayload = {
         id: uid,
         name: input.name.trim(),
@@ -761,6 +766,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         whatsapp: input.whatsapp ?? null,
         whatsapp_connection_only: input.whatsappConnectionOnly ?? true,
         bio: input.bio ?? null,
+        privacy_accepted_at: acceptedAt,
+        privacy_policy_version: PRIVACY_POLICY_VERSION,
       };
 
       // Se confirmação de e-mail está ativa, guarda perfil localmente até o primeiro login.
@@ -783,7 +790,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
       } catch (profileError) {
         const message = profileError instanceof Error ? profileError.message : 'Tente novamente.';
-        throw new Error('Erro ao salvar perfil: ' + message);
+        if (/privacy_accepted_at|privacy_policy_version/i.test(message)) {
+          const { privacy_accepted_at: _a, privacy_policy_version: _v, ...legacyPayload } = profilePayload;
+          await withTimeout(
+            upsertProfileWithToken(authData.session.access_token, legacyPayload),
+            12000,
+            'Salvar perfil',
+          );
+        } else {
+          throw new Error('Erro ao salvar perfil: ' + message);
+        }
       }
 
       const newUser: User = {

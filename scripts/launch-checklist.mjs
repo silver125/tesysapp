@@ -65,6 +65,7 @@ console.log('  1. supabase/LAUNCH_real_users.sql');
 console.log('     Confirme no final: leads_ok, reps_ok, locations_ok, product_rpc_ok = true');
 console.log('  2. supabase/SECURITY_doctors_launch.sql  (antes de convidar médicos)');
 console.log('     Confirme: só policy "Users read own profile" em profiles SELECT');
+console.log('  3. supabase/add_privacy_consent.sql  (aceite LGPD no cadastro)');
 console.log('');
 console.log('── Vercel (produção) ──');
 console.log('  • Env vars: VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY');

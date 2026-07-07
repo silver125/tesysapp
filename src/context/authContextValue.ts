@@ -61,6 +61,7 @@ export interface RegisterInput {
   whatsapp?: string;
   whatsappConnectionOnly?: boolean;
   bio?: string;
+  privacyAccepted: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
