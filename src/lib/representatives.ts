@@ -33,6 +33,12 @@ function normalizeRegion(value?: string | null) {
   return (value ?? '').trim().toLowerCase();
 }
 
+function eventRegionKeys(event: Event): string[] {
+  return [event.location]
+    .map(normalizeRegion)
+    .filter(Boolean);
+}
+
 export function doctorRegionKeys(user?: User | null): string[] {
   const profile = user as (User & { city?: string; cidade?: string }) | null | undefined;
   const keys = [
@@ -135,6 +141,7 @@ export function buildRepresentativeProfiles(
     const regionKeys = [...new Set([
       ...[rep.city, rep.state, rep.region].map(normalizeRegion).filter(Boolean),
       ...bucketLocations.flatMap(locationRegionKeys),
+      ...events.flatMap(eventRegionKeys),
     ])];
     const repSpecialty = rep.specialty?.trim() || topSpecialty(products, events, courses);
     scored.push({
@@ -158,11 +165,15 @@ export function buildRepresentativeProfiles(
     });
   }
 
-  // 2) Empresas sem representante cadastrado caem no perfil derivado (precisa de WhatsApp).
+  // 2) Empresas sem representante cadastrado — perfil derivado quando há ofertas publicadas.
   for (const co of map.values()) {
     if (companiesWithRegistered.has(co.id)) continue;
-    if (!co.whatsapp?.trim()) continue;
-    const regionKeys = [...new Set(co.locations.flatMap(locationRegionKeys))];
+    const hasOfferings = co.products.length > 0 || co.events.length > 0 || co.courses.length > 0;
+    if (!hasOfferings) continue;
+    const regionKeys = [...new Set([
+      ...co.locations.flatMap(locationRegionKeys),
+      ...co.events.flatMap(eventRegionKeys),
+    ])];
     const repSpecialty = topSpecialty(co.products, co.events, co.courses);
     scored.push({
       id: co.id,
@@ -189,6 +200,7 @@ export function buildRepresentativeProfiles(
       Number(b.registered) - Number(a.registered)
       || b._specialtyScore - a._specialtyScore
       || b._regionScore - a._regionScore
+      || b.events.length - a.events.length
       || b.products.length - a.products.length
     ))
     .map(({ _regionScore, _specialtyScore, ...rest }) => {
@@ -228,7 +240,9 @@ export function representativeOfferSummary(profile: RepresentativeProfile): stri
   const nEvents = profile.events.length;
   if (nProducts > 0) bits.push(`${nProducts} produto${nProducts === 1 ? '' : 's'}`);
   if (nEvents > 0) bits.push(`${nEvents} evento${nEvents === 1 ? '' : 's'}`);
-  if (bits.length === 0 && profile.products[0]?.category?.trim()) {
+  const nextEvent = profile.events[0]?.title?.trim();
+  if (nextEvent) bits.push(nextEvent);
+  else if (bits.length === 0 && profile.products[0]?.category?.trim()) {
     bits.push(profile.products[0].category.trim());
   }
   return bits.join(' · ');

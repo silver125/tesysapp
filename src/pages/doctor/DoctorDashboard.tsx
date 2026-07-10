@@ -16,6 +16,7 @@ import {
   representativeDisplayImageUrl,
   representativeCompanyBadgeUrl,
   representativeRegionFilters,
+  representativeOfferSummary,
   type RepresentativeProfile,
 } from '../../lib/representatives';
 import { connectWithRepresentative } from '../../lib/commercialConnect';
@@ -304,24 +305,26 @@ export default function DoctorDashboard() {
     const matchCat = productFilter === 'all' || includesQ(p.category, productFilter);
     return matchQ && matchCat;
   });
-  const filtCourses = courses.filter(c => {
-    const matchQ = !q || includesQ(c.title, q) || includesQ(c.companyName, q);
-    const matchFilter = evFilter === 'all'
-      || evFilter === 'workshop'
-      || (evFilter === 'online' && c.modality === 'online');
-    return matchQ && matchFilter;
-  });
   const homeEvents = upcomingEvents
     .filter(e => !q || includesQ(e.title, q) || includesQ(e.companyName, q));
+  const homeWorkshops = courses.filter(c => !q || includesQ(c.title, q) || includesQ(c.companyName, q));
   const productChips = productCategoryChips(products);
   const representatives = sortByDoctorInterests(
     buildRepresentativeProfiles(events, products, courses, locations, user, registeredReps, companyLogos),
     doctorInterests,
-    rep => [rep.companyName, rep.repLabel, rep.specialty, ...rep.products.map(p => p.name)],
+    rep => [
+      rep.companyName,
+      rep.repLabel,
+      rep.specialty,
+      ...rep.products.map(p => p.name),
+      ...rep.events.map(e => e.title),
+      ...rep.events.map(e => e.category),
+    ],
   );
   const regionChips = representativeRegionFilters(representatives);
   const filtRepresentatives = representatives.filter(rep => {
-    const matchQ = !q || includesQ(rep.companyName, q) || includesQ(rep.repLabel, q) || includesQ(rep.specialty, q);
+    const matchQ = !q || includesQ(rep.companyName, q) || includesQ(rep.repLabel, q) || includesQ(rep.specialty, q)
+      || rep.events.some(e => includesQ(e.title, q) || includesQ(e.category, q));
     const matchRegion = matchesRepresentativeRegion(rep, regionFilter);
     return matchQ && matchRegion;
   });
@@ -410,6 +413,17 @@ export default function DoctorDashboard() {
             </section>
           )}
 
+          {homeWorkshops.length > 0 && (
+            <section style={{ marginBottom: 22 }}>
+              <SectionHeader title="Workshops" />
+              <HomeCarousel>
+                {homeWorkshops.slice(0, 8).map(course => (
+                  <CourseMarketCard key={course.id} course={course} onOpen={() => setOpenCourse(course)} />
+                ))}
+              </HomeCarousel>
+            </section>
+          )}
+
           {products.length > 0 && (
             <section style={{ marginBottom: 22 }}>
               <SectionHeader title="Produtos em destaque" onSeeAll={() => openTab('products')} />
@@ -454,18 +468,17 @@ export default function DoctorDashboard() {
       {/* ── EVENTS ── */}
       {tab === 'events' && (
         <div>
-          <MarketHead title="Eventos & workshops" count={events.length + courses.length} countWord="atividade" />
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos ou workshops..." />
+          <MarketHead title="Eventos" count={events.length} countWord="evento" />
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos..." />
           <FilterBar
             chips={[['all','Todos'],['congresso','Congresso'],['workshop','Workshop'],['online','Online']]}
             active={evFilter} onChange={setEvFilter}
           />
-          {filtEvents.length === 0 && filtCourses.length === 0
-            ? <Empty text="Nenhuma atividade disponível no momento." hint="Novas oportunidades aparecerão aqui quando forem publicadas." />
+          {filtEvents.length === 0
+            ? <Empty text="Nenhum evento disponível no momento." hint="Novos eventos aparecerão aqui quando forem publicados." />
             : (
               <MarketGrid>
                 {filtEvents.map(e => <EventMarketCard key={e.id} ev={e} onOpen={() => setOpenEvent(e)} />)}
-                {filtCourses.map(c => <CourseMarketCard key={c.id} course={c} onOpen={() => setOpenCourse(c)} />)}
               </MarketGrid>
             )
           }
@@ -768,8 +781,10 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
           <div className="tessy-home-card__label">Representante Comercial</div>
           <div className="tessy-home-card__title">{displayName}</div>
           {showCompany && <div className="tessy-home-card__meta">{rep.companyName}</div>}
+          {representativeOfferSummary(rep) && (
+            <div className="tessy-home-card__info">{representativeOfferSummary(rep)}</div>
+          )}
           {rep.regionLabel && <div className="tessy-home-card__info">{rep.regionLabel}</div>}
-          {rep.specialty && <div className="tessy-home-card__info">{rep.specialty}</div>}
         </div>
         <div className="tessy-home-wide-card__footer">
           <button type="button" className="tessy-home-btn-inline" onClick={() => { void handleConnect(); }} disabled={busy}>
@@ -1156,7 +1171,7 @@ function RepresentativesView({
         </div>
       )}
       {representatives.length === 0 ? (
-        <Empty text="Nenhum representante na sua região ainda." hint="Empresas com WhatsApp e locais cadastrados aparecem aqui." />
+        <Empty text="Nenhum representante na sua região ainda." hint="Empresas com eventos, produtos ou representantes cadastrados aparecem aqui." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {representatives.map(rep => (
@@ -1173,6 +1188,11 @@ function RepresentativesView({
                   <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Representante Comercial</Mono>
                   <div style={{ marginTop: 4, fontSize: 16, fontWeight: 620, color: 'var(--ink)' }}>{representativeDisplayName(rep)}</div>
                   <div style={{ marginTop: 2, fontSize: 12.5, color: 'var(--muted)' }}>{rep.companyName}</div>
+                  {representativeOfferSummary(rep) && (
+                    <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
+                      {representativeOfferSummary(rep)}
+                    </div>
+                  )}
                   <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <Chip color="#B9C1EA">{rep.specialty}</Chip>
                     {rep.regionLabel && <Chip color="#F58220">{rep.regionLabel}</Chip>}
