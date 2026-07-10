@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TessyMark } from '../components/ui';
 
-const waitlistHref = 'mailto:contato@tessybr.com?subject=Acesso%20antecipado%20Tessy&body=Ol%C3%A1%2C%20quero%20acesso%20antecipado%20%C3%A0%20Tessy.';
-
 const findCards = [
   {
     title: 'Representantes',
@@ -38,7 +36,7 @@ const faqs = [
   ['Para quais áreas?', 'Estética, dermato, cirurgia, medicina premium e áreas estratégicas.'],
   ['Médico paga?', 'O acesso inicial poderá ser gratuito para perfis aprovados.'],
   ['Como empresas entram?', 'Onboarding comercial e validação de categoria.'],
-  ['Quando acesso?', 'Por fases, conforme perfil e ordem da waitlist.'],
+  ['Quando acesso?', 'Imediatamente após criar conta em tessybr.com/cadastro.'],
 ];
 
 export default function Landing() {
@@ -61,7 +59,7 @@ export default function Landing() {
 
           <div className="tl-actions">
             <Link to="/entrar" className="tl-login">ENTRAR</Link>
-            <a href={waitlistHref} className="tl-primary">Acesso antecipado</a>
+            <Link to="/cadastro?perfil=medico" className="tl-primary">Criar conta</Link>
           </div>
 
           <button
@@ -78,7 +76,7 @@ export default function Landing() {
 
           <nav className={`tl-mobile-nav ${isMobileMenuOpen ? 'is-open' : ''}`} aria-label="Menu mobile">
             <Link to="/entrar" onClick={() => setIsMobileMenuOpen(false)}>Entrar</Link>
-            <a href={waitlistHref} onClick={() => setIsMobileMenuOpen(false)}>Entrar na lista</a>
+            <Link to="/cadastro?perfil=medico" onClick={() => setIsMobileMenuOpen(false)}>Sou médico</Link>
             <Link to="/cadastro?perfil=empresa" onClick={() => setIsMobileMenuOpen(false)}>Sou empresa</Link>
           </nav>
         </header>
@@ -94,10 +92,10 @@ export default function Landing() {
           </p>
 
           <div className="tl-hero-actions">
-            <a href={waitlistHref} className="tl-hero-primary">
-              <span>Entrar na lista</span>
+            <Link to="/cadastro?perfil=medico" className="tl-hero-primary">
+              <span>Sou médico</span>
               <span className="tl-hero-arrow" aria-hidden="true">→</span>
-            </a>
+            </Link>
             <Link to="/cadastro?perfil=empresa" className="tl-hero-secondary">Sou empresa</Link>
           </div>
         </div>
@@ -211,23 +209,23 @@ export default function Landing() {
         </p>
 
         <div className="tl-mobile-hero-actions">
-          <a href={waitlistHref} className="tl-mobile-hero-primary">
-            <span>Entrar na lista</span>
+          <Link to="/cadastro?perfil=medico" className="tl-mobile-hero-primary">
+            <span>Sou médico</span>
             <span aria-hidden="true">→</span>
-          </a>
+          </Link>
           <Link to="/cadastro?perfil=empresa" className="tl-mobile-hero-secondary">Sou empresa</Link>
         </div>
       </section>
 
       <main>
         <section className="tl-proof">
-          <div className="tl-proof-social" aria-label="200 médicos já na waitlist">
+          <div className="tl-proof-social" aria-label="Plataforma ativa para médicos e empresas">
             <div className="tl-proof-avatars" aria-hidden="true">
               <span>A</span>
               <span>B</span>
               <span>C</span>
             </div>
-            <p><strong>200+</strong> médicos já na waitlist</p>
+            <p><strong>Plataforma ativa</strong> para médicos e empresas de saúde</p>
           </div>
 
           <div className="tl-register-card">
@@ -311,11 +309,11 @@ export default function Landing() {
 
         <section className="tl-waitlist">
           <div>
-            <p className="tl-eyebrow">Exclusividade</p>
-            <h2>Waitlist selecionada.</h2>
-            <p>Convites limitados por fase.</p>
+            <p className="tl-eyebrow">Comece agora</p>
+            <h2>Cadastro gratuito.</h2>
+            <p>Médicos e empresas entram direto na plataforma.</p>
           </div>
-          <a href={waitlistHref}>Solicitar convite</a>
+          <Link to="/cadastro?perfil=medico">Criar conta médico</Link>
         </section>
 
         <section className="tl-faq">

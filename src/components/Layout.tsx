@@ -69,7 +69,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
           </div>
 
           <div ref={profileMenuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
-            {user?.role === 'medico' && onNotificationClick && (
+            {(user?.role === 'medico' || user?.role === 'empresa') && onNotificationClick && (
               <button
                 type="button"
                 aria-label={notificationCount > 0 ? `${notificationCount} notificações` : 'Notificações'}

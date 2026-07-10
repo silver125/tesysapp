@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
+import { doctorInterestList, sortByDoctorInterests } from '../../lib/doctorPreferences';
 import { useAuth } from '../../context/useAuth';
 import {
   CompanyMark, VerifiedDot, Mono, BannerCard, Chip, ModalityBadge,
@@ -22,6 +23,7 @@ import { formatLeadError } from '../../lib/leadErrors';
 import { getLevelProgress, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import { fetchCompanyLogos } from '../../lib/companyBranding';
+import CompanyAvatar from '../../components/CompanyAvatar';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
@@ -281,8 +283,14 @@ export default function DoctorDashboard() {
   }, [products, events, courses, locations, registeredReps]);
 
   const q = search.toLowerCase();
+  const doctorInterests = doctorInterestList(user);
+  const rankedProducts = sortByDoctorInterests(
+    products,
+    doctorInterests,
+    p => [p.name, p.category, p.description, p.availableFor],
+  );
   const upcomingEvents = events.filter(isUpcomingEvent);
-  const recommendedProducts = products.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
+  const recommendedProducts = rankedProducts.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
   const filtEvents = events.filter(e => {
     const matchQ = !q || includesQ(e.title, q) || includesQ(e.companyName, q);
     const filter = evFilter.toLowerCase();
@@ -291,7 +299,7 @@ export default function DoctorDashboard() {
       || includesQ(eventFormat(e), filter);
     return matchQ && matchFilter;
   });
-  const filtProducts = products.filter(p => {
+  const filtProducts = rankedProducts.filter(p => {
     const matchQ = !q || includesQ(p.name, q) || includesQ(p.companyName, q);
     const matchCat = productFilter === 'all' || includesQ(p.category, productFilter);
     return matchQ && matchCat;
@@ -306,7 +314,11 @@ export default function DoctorDashboard() {
   const homeEvents = upcomingEvents
     .filter(e => !q || includesQ(e.title, q) || includesQ(e.companyName, q));
   const productChips = productCategoryChips(products);
-  const representatives = buildRepresentativeProfiles(events, products, courses, locations, user, registeredReps, companyLogos);
+  const representatives = sortByDoctorInterests(
+    buildRepresentativeProfiles(events, products, courses, locations, user, registeredReps, companyLogos),
+    doctorInterests,
+    rep => [rep.companyName, rep.repLabel, rep.specialty, ...rep.products.map(p => p.name)],
+  );
   const regionChips = representativeRegionFilters(representatives);
   const filtRepresentatives = representatives.filter(rep => {
     const matchQ = !q || includesQ(rep.companyName, q) || includesQ(rep.repLabel, q) || includesQ(rep.specialty, q);
@@ -314,7 +326,7 @@ export default function DoctorDashboard() {
     return matchQ && matchRegion;
   });
   const suggestedRep = representatives.find(r => matchesRepresentativeRegion(r, regionFilter !== 'all' ? regionFilter : 'all')) ?? representatives[0];
-  const suggestedProduct = (recommendedProducts.length > 0 ? recommendedProducts : products)[0];
+  const suggestedProduct = (recommendedProducts.length > 0 ? recommendedProducts : rankedProducts)[0];
   const filtCompanies = buildCompanyMatches(events, products, courses, locations).filter(co => {
     return !q || includesQ(co.name, q) || co.products.some(p => includesQ(p.name, q)) || co.events.some(e => includesQ(e.title, q));
   });
@@ -360,11 +372,7 @@ export default function DoctorDashboard() {
           />
 
           {pendingConnections.length > 0 && (
-            <PendingInboxBanner
-              lead={pendingConnections[0]}
-              total={pendingConnections.length}
-              onSeeAll={scrollToPendingConnections}
-            />
+            <PendingConnectionsInbox leads={pendingConnections} />
           )}
 
           {!user?.whatsapp && (
@@ -406,7 +414,7 @@ export default function DoctorDashboard() {
             <section style={{ marginBottom: 22 }}>
               <SectionHeader title="Produtos em destaque" onSeeAll={() => openTab('products')} />
               <HomeCarousel>
-                {products.slice(0, 8).map(product => (
+                {rankedProducts.slice(0, 8).map(product => (
                   <HomeProductCard
                     key={product.id}
                     product={product}
@@ -433,7 +441,12 @@ export default function DoctorDashboard() {
           )}
 
           {!suggestedRep && !suggestedProduct && homeEvents.length === 0 && representatives.length === 0 && (
-            <Empty text="Nada encontrado agora." hint="Novidades das empresas aparecem aqui assim que publicadas." />
+            <Empty
+              text="Nada encontrado agora."
+              hint="Complete seu perfil e interesses para receber sugestões melhores."
+              actionLabel="Completar perfil"
+              onAction={openProfileSettings}
+            />
           )}
         </div>
       )}
@@ -466,7 +479,12 @@ export default function DoctorDashboard() {
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar produto, empresa ou representante..." />
           <FilterBar chips={productChips} active={productFilter} onChange={setProductFilter} />
           {filtProducts.length === 0
-            ? <Empty text="Nenhum produto recomendado ainda." hint="Atualize seus interesses para receber sugestões mais precisas." />
+            ? <Empty
+                text="Nenhum produto disponível ainda."
+                hint="Empresas publicam novidades aqui em breve."
+                actionLabel="Atualizar interesses"
+                onAction={openProfileSettings}
+              />
             : <MarketGrid>{filtProducts.map(p => <ProductMarketCard key={p.id} product={p} onOpen={() => setOpenProduct(p)} />)}</MarketGrid>
           }
         </div>
@@ -487,6 +505,7 @@ export default function DoctorDashboard() {
       {tab === 'companies' && (
         <CompaniesView
           companies={filtCompanies}
+          companyLogos={companyLogos}
           search={search}
           onSearchChange={setSearch}
           onOpenProducts={company => openTab('products', company)}
@@ -897,6 +916,21 @@ function HomeEventRow({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
   );
 }
 
+function PendingConnectionsInbox({ leads }: { leads: Lead[] }) {
+  return (
+    <section id="pending-connections" style={{ marginBottom: 14, scrollMarginTop: 16 }}>
+      <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 650, color: 'var(--accent-ink)' }}>
+        {leads.length} conexão{leads.length === 1 ? '' : 'ões'} aguardando sua aprovação
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {leads.map(lead => (
+          <PendingInboxBanner key={lead.id} lead={lead} total={1} onSeeAll={() => undefined} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function PendingInboxBanner({
   lead,
   total,
@@ -964,7 +998,7 @@ function PendingInboxBanner({
           >
             {busy ? 'Aprovando…' : user?.whatsapp ? 'Aprovar e liberar WhatsApp' : 'Cadastrar WhatsApp'}
           </button>
-          {total > 1 && (
+          {total > 1 && onSeeAll && (
             <button
               type="button"
               onClick={onSeeAll}
@@ -1173,12 +1207,14 @@ function RepresentativesView({
 /* ─── Companies view ─── */
 function CompaniesView({
   companies,
+  companyLogos,
   search,
   onSearchChange,
   onOpenProducts,
   onOpenEvents,
 }: {
   companies: CompanyMatch[];
+  companyLogos: Record<string, string>;
   search: string;
   onSearchChange: (value: string) => void;
   onOpenProducts: (company: string) => void;
@@ -1210,9 +1246,7 @@ function CompaniesView({
         <Empty text="Nenhuma empresa encontrada." hint="Complete seu perfil para melhorar as sugestões." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {companies.map(co => {
-            const logo = co.products.find(p => p.imageUrl)?.imageUrl || co.events.find(e => e.imageUrl)?.imageUrl || '';
-            return (
+          {companies.map(co => (
               <article key={co.id} style={{
                 padding: 16,
                 borderRadius: 20,
@@ -1221,11 +1255,7 @@ function CompaniesView({
                 boxShadow: '0 10px 26px rgba(85,96,130,0.05)',
               }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  {logo ? (
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: `url(${logo}) center/cover`, flexShrink: 0 }} />
-                  ) : (
-                    <CompanyMark code={companyInitials(co.name)} tint={companyTint(co.name)} size={52} radius={14} />
-                  )}
+                  <CompanyAvatar name={co.name} avatarUrl={companyLogos[co.id]} size={52} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 16, fontWeight: 620, color: 'var(--ink)' }}>{co.name}</div>
                     <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1243,8 +1273,7 @@ function CompaniesView({
                   <button type="button" onClick={() => onOpenEvents(co.name)} style={companyMiniBtn}>Eventos</button>
                 </div>
               </article>
-            );
-          })}
+            ))}
         </div>
       )}
     </div>

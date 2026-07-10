@@ -1,11 +1,12 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
+import CompanyAvatar from '../../components/CompanyAvatar';
 import { useAuth } from '../../context/useAuth';
 import {
-  CompanyMark, Mono, Chip, ModalityBadge, WaIcon,
+  Mono, Chip, ModalityBadge, WaIcon,
 } from '../../components/ui';
-import { buildWhatsappLink, categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
+import { buildWhatsappLink, categoryTint } from '../../lib/uiHelpers';
 import { MarketGrid, MarketCard, PhotoBadge, Sheet, Breadcrumb } from '../../components/market';
 import ProfilePhotoField from '../../components/ProfilePhotoField';
 import { uploadProfileAvatar } from '../../lib/profileAvatar';
@@ -255,7 +256,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
   { key: 'listings', label: 'Meus anúncios', icon: () => null, big: true },
   { key: 'products', label: 'Produtos', icon: IcoBox },
-  { key: 'leads',    label: 'Buscar',   icon: IcoSearch },
+  { key: 'leads',    label: 'Interessados',   icon: IcoSearch },
 ];
 
 const EVENT_CATS   = ['Congresso', 'Workshop', 'Simpósio', 'Webinar', 'Treinamento'];
@@ -387,14 +388,26 @@ export default function CompanyDashboard() {
     return Boolean(event);
   });
   const myLeads = latestLeadByDoctor(activeLeads);
-  const tint = companyTint(user?.company ?? user?.name ?? '');
-  const code = companyInitials(user?.company ?? user?.name ?? 'EM');
   const [createSkipType, setCreateSkipType] = useState(false);
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
   const activeOpportunities = myEvents.length + myProducts.length + myCourses.length;
   const publishedItems = activeOpportunities + myLocations.length + myReps.length;
   const conversationsStarted = myLeads.filter(lead => lead.connectionStatus === 'requested' || lead.connectionStatus === 'approved').length;
   const suggestedDoctors = myLeads.slice(0, 4);
+  const newLeadsCount = myLeads.filter(lead => lead.connectionStatus === 'none').length;
+  const setupSteps = [
+    Boolean(user?.avatarUrl?.trim()),
+    Boolean(user?.whatsapp?.trim()),
+    activeOpportunities > 0,
+    myReps.length > 0 || myLocations.length > 0,
+  ];
+  const setupDone = setupSteps.filter(Boolean).length;
+  const setupTotal = setupSteps.length;
+  const setupComplete = setupDone === setupTotal;
+
+  function goToLeadsTab() {
+    setTab('leads');
+  }
 
   function goTab(k: string) {
     if (k === 'create') {
@@ -451,7 +464,13 @@ export default function CompanyDashboard() {
 
   return (
     <>
-    <Layout navItems={NAV_ITEMS} activeKey={tab} onNavChange={goTab}>
+    <Layout
+      navItems={NAV_ITEMS}
+      activeKey={tab}
+      onNavChange={goTab}
+      notificationCount={newLeadsCount}
+      onNotificationClick={goToLeadsTab}
+    >
 
       {/* ── HOME ── */}
       {tab === 'home' && (
@@ -495,6 +514,75 @@ export default function CompanyDashboard() {
             </button>
           </div>
 
+          {!setupComplete && (
+            <div style={{
+              marginBottom: 12,
+              padding: '12px 14px',
+              borderRadius: 18,
+              background: 'rgba(255,255,255,0.94)',
+              border: '1px solid rgba(245,130,32,0.18)',
+              boxShadow: '0 10px 24px rgba(85,96,130,0.05)',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 650, color: 'var(--accent-ink)' }}>
+                Perfil comercial · {setupDone}/{setupTotal}
+              </div>
+              <div style={{ marginTop: 8, height: 6, borderRadius: 999, background: 'rgba(245,130,32,0.12)', overflow: 'hidden' }}>
+                <div style={{ width: `${(setupDone / setupTotal) * 100}%`, height: '100%', background: 'var(--accent)', borderRadius: 999 }} />
+              </div>
+              <ul style={{ margin: '10px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>
+                {!setupSteps[0] && <li>Adicione o logo da empresa no perfil</li>}
+                {!setupSteps[1] && <li>Configure o WhatsApp de contato</li>}
+                {!setupSteps[2] && <li>Publique o primeiro anúncio (produto, evento ou workshop)</li>}
+                {!setupSteps[3] && <li>Cadastre um representante ou local de atendimento</li>}
+              </ul>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!setupSteps[0] || !setupSteps[1]) openProfileSettings();
+                  else if (!setupSteps[2]) setTab('listings');
+                  else setTab('representatives');
+                }}
+                style={{
+                  marginTop: 10,
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Continuar configuração
+              </button>
+            </div>
+          )}
+
+          {newLeadsCount > 0 && (
+            <button
+              type="button"
+              onClick={goToLeadsTab}
+              style={{
+                width: '100%',
+                marginBottom: 12,
+                padding: '12px 14px',
+                borderRadius: 16,
+                border: '1px solid rgba(245,130,32,0.22)',
+                background: 'linear-gradient(135deg, rgba(245,130,32,0.12), rgba(255,255,255,0.95))',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--accent-ink)' }}>
+                {newLeadsCount} médico{newLeadsCount === 1 ? '' : 's'} interessado{newLeadsCount === 1 ? '' : 's'}
+              </div>
+              <div style={{ marginTop: 3, fontSize: 12, color: 'var(--ink-2)' }}>
+                Toque para ver e solicitar conexão
+              </div>
+            </button>
+          )}
+
           {/* Company header */}
           <div style={{
             marginBottom: 12,
@@ -505,7 +593,11 @@ export default function CompanyDashboard() {
             boxShadow: '0 12px 34px rgba(85,96,130,0.06)',
           }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <CompanyMark code={code} tint={tint} size={60} />
+              <CompanyAvatar
+                name={user?.company ?? user?.name ?? 'Empresa'}
+                avatarUrl={user?.avatarUrl}
+                size={60}
+              />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Mono style={{ display: 'block', fontSize: 8.5, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 5 }}>
                   Perfil comercial
@@ -2220,7 +2312,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
           Ponte comercial
         </Mono>
         <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
-          Buscar médicos<span style={{ color: 'var(--accent)' }}>.</span>
+          Buscar interessados<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
           Filtre por especialidade, intenção e nome. Perfis que demonstraram interesse comercial.

@@ -1,16 +1,12 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { useAuth } from '../context/useAuth';
+import { readDoctorPreferences, writeDoctorPreferencesLocal } from '../lib/doctorPreferences';
 import type { User } from '../types';
 import { Mono, TessyMark, WaIcon } from './ui';
 
 type Step = {
   title: string;
   body: string;
-};
-
-type DoctorPreference = {
-  interests: string[];
-  savedAt: string;
 };
 
 const COMPANY_STEPS: Step[] = [
@@ -99,23 +95,6 @@ function readLocalFlag(key: string) {
   }
 }
 
-function writeLocalJson(key: string, value: DoctorPreference) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* localStorage pode estar indisponível em modo privado. */
-  }
-}
-
-function readDoctorPreferences(userId: string): DoctorPreference | null {
-  try {
-    const raw = localStorage.getItem(`tessy-doctor-preferences-${userId}`);
-    return raw ? JSON.parse(raw) as DoctorPreference : null;
-  } catch {
-    return null;
-  }
-}
-
 function shouldShowOnboarding(user: User) {
   const done = readLocalFlag(`tessy-onboarding-done-${user.id}`);
   const pending = readLocalFlag(`tessy-onboarding-pending-${user.id}`);
@@ -196,7 +175,10 @@ function OnboardingShell({ children, onClose }: { children: ReactNode; onClose: 
 
 function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => Promise<void> }) {
   const { updateProfile } = useAuth();
-  const stored = useMemo(() => readDoctorPreferences(user.id), [user.id]);
+  const stored = useMemo(
+    () => readDoctorPreferences(user.id, user.doctorInterests),
+    [user.id, user.doctorInterests],
+  );
   const [step, setStep] = useState(0);
   const [interests, setInterests] = useState<string[]>(
     stored?.interests?.length ? stored.interests : ['Produtos', 'Eventos', 'Representantes'],
@@ -221,17 +203,14 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
         return;
       }
 
-      writeLocalJson(`tessy-doctor-preferences-${user.id}`, {
-        interests,
-        savedAt: new Date().toISOString(),
-      });
+      writeDoctorPreferencesLocal(user.id, interests);
 
-      if (normalized !== (user.whatsapp ?? '') || privateOnly !== (user.whatsappConnectionOnly !== false)) {
-        await updateProfile({
-          whatsapp: normalized,
-          whatsappConnectionOnly: privateOnly,
-        });
-      }
+      await updateProfile({
+        doctorInterests: interests,
+        ...(normalized !== (user.whatsapp ?? '') || privateOnly !== (user.whatsappConnectionOnly !== false)
+          ? { whatsapp: normalized, whatsappConnectionOnly: privateOnly }
+          : {}),
+      });
 
       await onComplete();
     } catch (err) {

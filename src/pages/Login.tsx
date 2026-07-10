@@ -20,8 +20,10 @@ export default function Login() {
     setError('');
     try {
       const u = await login(email, password);
-      const dest = dashboardPathForRole(normalizeUserRole(u.role));
-      navigate(dest ?? '/entrar', { replace: true });
+      const roleDest = dashboardPathForRole(normalizeUserRole(u.role));
+      const from = (location.state as { from?: string } | null)?.from;
+      const safeFrom = from && from !== '/entrar' && from !== '/cadastro' ? from : null;
+      navigate(safeFrom ?? roleDest ?? '/entrar', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao entrar.');
     }

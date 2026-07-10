@@ -20,6 +20,7 @@ export interface AuthContextType {
     crm?: string;
     crmState?: string;
     avatarUrl?: string | null;
+    doctorInterests?: string[];
   }) => Promise<void>;
   deleteAccount: () => Promise<void>;
   events: Event[];

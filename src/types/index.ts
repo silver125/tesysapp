@@ -13,6 +13,7 @@ export interface User {
   whatsappConnectionOnly?: boolean;
   bio?: string;
   avatarUrl?: string;
+  doctorInterests?: string[];
   onboardingCompletedAt?: string | null;
   points?: number;
 }

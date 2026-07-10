@@ -101,6 +101,9 @@ function dbToUser(profile: Record<string, unknown>, email: string): User {
     whatsappConnectionOnly: profile.whatsapp_connection_only !== false,
     bio:       profile.bio       as string | undefined,
     avatarUrl: profile.avatar_url as string | undefined,
+    doctorInterests: Array.isArray(profile.doctor_interests)
+      ? (profile.doctor_interests as string[])
+      : undefined,
     onboardingCompletedAt: profile.onboarding_completed_at as string | null | undefined,
     points:    typeof profile.points === 'number' ? profile.points : Number(profile.points ?? 0) || 0,
   };
@@ -873,10 +876,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     crm?: string;
     crmState?: string;
     avatarUrl?: string | null;
+    doctorInterests?: string[];
   }) => {
     if (!user) return;
     assertSupabaseConfigured();
-    const updates: Record<string, string | boolean | null | undefined> = {};
+    const updates: Record<string, string | string[] | boolean | null | undefined> = {};
     if (data.name) { updates.name = data.name; }
     if (data.company) {
       updates.company = data.company;
@@ -888,6 +892,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.crm !== undefined) { updates.crm = data.crm; }
     if (data.crmState !== undefined) { updates.crm_state = data.crmState; }
     if (data.avatarUrl !== undefined) { updates.avatar_url = data.avatarUrl || null; }
+    if (data.doctorInterests !== undefined) { updates.doctor_interests = data.doctorInterests; }
 
     let { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
 
@@ -900,6 +905,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error && isMissingDbColumnError(error, ['whatsapp_connection_only'])) {
       ({ error } = await supabase.from('profiles').update(omitDbColumns(updates, ['whatsapp_connection_only'])).eq('id', user.id));
+    }
+
+    if (error && isMissingDbColumnError(error, ['doctor_interests'])) {
+      ({ error } = await supabase.from('profiles').update(omitDbColumns(updates, ['doctor_interests'])).eq('id', user.id));
+      if (data.doctorInterests !== undefined) {
+        console.warn('Coluna doctor_interests ausente em profiles. Interesses salvos localmente até rodar a migração SQL.');
+      }
     }
 
     if (error && isMissingDbColumnError(error, ['company', 'name'])) {
@@ -918,6 +930,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...prev,
       ...data,
       avatarUrl: data.avatarUrl === null ? undefined : (data.avatarUrl ?? prev.avatarUrl),
+      doctorInterests: data.doctorInterests ?? prev.doctorInterests,
     } : prev);
   };
 
