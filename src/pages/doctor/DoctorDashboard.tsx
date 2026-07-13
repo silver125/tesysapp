@@ -19,6 +19,7 @@ import {
   type RepresentativeProfile,
 } from '../../lib/representatives';
 import { connectWithRepresentative } from '../../lib/commercialConnect';
+import { buildHomeFeed, type HomeFeedItem } from '../../lib/homeFeed';
 import { formatLeadError } from '../../lib/leadErrors';
 import { getLevelProgress, getBadges, POINTS_PER_INTEREST, POINTS_PER_CONNECTION, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
@@ -292,7 +293,12 @@ export default function DoctorDashboard() {
     p => [p.name, p.category, p.description, p.availableFor],
   );
   const upcomingEvents = events.filter(isUpcomingEvent);
-  const recommendedProducts = rankedProducts.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
+  const homeProductPool = (() => {
+    const recommended = rankedProducts.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
+    if (recommended.length === 0) return rankedProducts;
+    const seen = new Set(recommended.map(p => p.id));
+    return [...recommended, ...rankedProducts.filter(p => !seen.has(p.id))];
+  })();
   const filtEvents = events.filter(e => {
     const matchQ = !q || includesQ(e.title, q) || includesQ(e.companyName, q);
     const filter = evFilter.toLowerCase();
@@ -336,13 +342,19 @@ export default function DoctorDashboard() {
     const matchRegion = matchesRepresentativeRegion(rep, regionFilter);
     return matchQ && matchRegion;
   });
-  const suggestedRep = representatives.find(r => matchesRepresentativeRegion(r, regionFilter !== 'all' ? regionFilter : 'all')) ?? representatives[0];
-  const suggestedProduct = (recommendedProducts.length > 0 ? recommendedProducts : rankedProducts)[0];
-  const platformEmpty = products.length === 0 && events.length === 0 && courses.length === 0;
-  const homeQuiet = !suggestedRep && !suggestedProduct && homeEvents.length === 0 && representatives.length === 0;
   const filtCompanies = buildCompanyMatches(events, products, courses, locations).filter(co => {
     return !q || includesQ(co.name, q) || co.products.some(p => includesQ(p.name, q)) || co.events.some(e => includesQ(e.title, q));
   });
+  const homeFeed = buildHomeFeed(homeProductPool, homeEvents, homeWorkshops, representatives);
+  const marketplaceCounts = {
+    products: products.length,
+    events: events.length,
+    workshops: courses.length,
+    reps: representatives.length,
+    companies: filtCompanies.length,
+  };
+  const platformEmpty = products.length === 0 && events.length === 0 && courses.length === 0;
+  const homeQuiet = homeFeed.length === 0;
 
   const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
 
@@ -394,72 +406,25 @@ export default function DoctorDashboard() {
             <SlimProfileBanner onFix={openProfileSettings} />
           )}
 
-          {(suggestedRep || suggestedProduct) && (
-            <section style={{ marginBottom: 22 }}>
-              <SectionHeader title="Sugestões para você" onSeeAll={() => openTab('products')} />
-              <HomeCarousel>
-                {suggestedRep && (
-                  <HomeRepCard
-                    rep={suggestedRep}
-                    onConnect={() => openTab('representatives', suggestedRep.companyName)}
-                  />
-                )}
-                {suggestedProduct && (
-                  <HomeProductCard
-                    product={suggestedProduct}
-                    onOpen={() => setOpenProduct(suggestedProduct)}
-                  />
-                )}
-              </HomeCarousel>
-            </section>
+          {!platformEmpty && (
+            <HomeExploreNav counts={marketplaceCounts} onNavigate={openTab} />
           )}
 
-          {homeEvents.length > 0 && (
+          {homeFeed.length > 0 && (
             <section style={{ marginBottom: 22 }}>
-              <SectionHeader title="Eventos em breve" onSeeAll={() => openTab('events')} />
+              <SectionHeader
+                title="Destaques"
+                onSeeAll={() => openTab(homeFeed[0]?.kind === 'event' || homeFeed[0]?.kind === 'course' ? 'events' : 'products')}
+              />
               <HomeCarousel>
-                {homeEvents.map(ev => (
-                  <HomeEventRow key={ev.id} ev={ev} onOpen={() => setOpenEvent(ev)} />
-                ))}
-              </HomeCarousel>
-            </section>
-          )}
-
-          {homeWorkshops.length > 0 && (
-            <section style={{ marginBottom: 22 }}>
-              <SectionHeader title="Workshops" />
-              <HomeCarousel>
-                {homeWorkshops.slice(0, 8).map(course => (
-                  <CourseMarketCard key={course.id} course={course} onOpen={() => setOpenCourse(course)} />
-                ))}
-              </HomeCarousel>
-            </section>
-          )}
-
-          {products.length > 0 && (
-            <section style={{ marginBottom: 22 }}>
-              <SectionHeader title="Produtos em destaque" onSeeAll={() => openTab('products')} />
-              <HomeCarousel>
-                {rankedProducts.slice(0, 8).map(product => (
-                  <HomeProductCard
-                    key={product.id}
-                    product={product}
-                    onOpen={() => setOpenProduct(product)}
-                  />
-                ))}
-              </HomeCarousel>
-            </section>
-          )}
-
-          {representatives.length > 0 && (
-            <section style={{ marginBottom: 8 }}>
-              <SectionHeader title="Representantes em destaque" onSeeAll={() => openTab('representatives')} />
-              <HomeCarousel>
-                {representatives.slice(0, 8).map(rep => (
-                  <HomeRepCard
-                    key={rep.id}
-                    rep={rep}
-                    onConnect={() => openTab('representatives', rep.companyName)}
+                {homeFeed.map(item => (
+                  <HomeFeedCard
+                    key={homeFeedKey(item)}
+                    item={item}
+                    onOpenProduct={setOpenProduct}
+                    onOpenEvent={setOpenEvent}
+                    onOpenCourse={setOpenCourse}
+                    onOpenRepresentatives={(name) => openTab('representatives', name)}
                   />
                 ))}
               </HomeCarousel>
@@ -807,6 +772,116 @@ function HomeMediaColumn({
       {topBadge}
       {bottomBadge}
     </div>
+  );
+}
+
+function homeFeedKey(item: HomeFeedItem): string {
+  switch (item.kind) {
+    case 'product': return `product-${item.product.id}`;
+    case 'event': return `event-${item.event.id}`;
+    case 'course': return `course-${item.course.id}`;
+    case 'rep': return `rep-${item.rep.id}`;
+  }
+}
+
+function HomeFeedCard({
+  item,
+  onOpenProduct,
+  onOpenEvent,
+  onOpenCourse,
+  onOpenRepresentatives,
+}: {
+  item: HomeFeedItem;
+  onOpenProduct: (p: Product) => void;
+  onOpenEvent: (e: Event) => void;
+  onOpenCourse: (c: Course) => void;
+  onOpenRepresentatives: (companyName: string) => void;
+}) {
+  if (item.kind === 'product') {
+    return <HomeProductCard product={item.product} onOpen={() => onOpenProduct(item.product)} />;
+  }
+  if (item.kind === 'event') {
+    return <HomeEventRow ev={item.event} onOpen={() => onOpenEvent(item.event)} />;
+  }
+  if (item.kind === 'course') {
+    return <HomeCourseRow course={item.course} onOpen={() => onOpenCourse(item.course)} />;
+  }
+  return (
+    <HomeRepCard
+      rep={item.rep}
+      onConnect={() => onOpenRepresentatives(item.rep.companyName)}
+    />
+  );
+}
+
+function HomeExploreNav({
+  counts,
+  onNavigate,
+}: {
+  counts: { products: number; events: number; workshops: number; reps: number; companies: number };
+  onNavigate: (tab: Tab) => void;
+}) {
+  const items: { tab: Tab; label: string; count: number }[] = [
+    { tab: 'products', label: 'Produtos', count: counts.products },
+    { tab: 'events', label: 'Eventos', count: counts.events + counts.workshops },
+    { tab: 'representatives', label: 'Representantes', count: counts.reps },
+    { tab: 'companies', label: 'Empresas', count: counts.companies },
+  ];
+
+  return (
+    <section style={{ marginBottom: 20 }}>
+      <Mono style={{ display: 'block', marginBottom: 10, fontSize: 9, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        Explorar marketplace
+      </Mono>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+        {items.map(entry => (
+          <button
+            key={entry.tab}
+            type="button"
+            onClick={() => onNavigate(entry.tab)}
+            style={{
+              padding: '12px 14px',
+              borderRadius: 14,
+              border: '1px solid var(--line)',
+              background: '#fff',
+              textAlign: 'left',
+              cursor: 'pointer',
+              boxShadow: '0 6px 18px rgba(85,96,130,0.04)',
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 620, color: 'var(--accent-ink)' }}>{entry.label}</div>
+            <div style={{ marginTop: 3, fontSize: 11.5, color: 'var(--muted)' }}>
+              {entry.count} {entry.count === 1 ? 'disponível' : 'disponíveis'}
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomeCourseRow({ course, onOpen }: { course: Course; onOpen: () => void }) {
+  const image = visualUrl(course.imageUrl);
+  return (
+    <article className="tessy-home-wide-card tessy-home-wide-card--action">
+      <HomeMediaColumn
+        imageUrl={image}
+        fallbackCode={companyInitials(course.companyName)}
+        fallbackTint={companyTint(course.companyName)}
+        topBadge={<span className="tessy-home-wide-card__badge tessy-home-wide-card__badge--top">Workshop</span>}
+      />
+      <div className="tessy-home-wide-card__body tessy-home-wide-card__body--stacked">
+        <div className="tessy-home-wide-card__copy">
+          <div className="tessy-home-card__label">{course.companyName}</div>
+          <div className="tessy-home-card__title">{course.title}</div>
+        </div>
+        <div className="tessy-home-wide-card__footer">
+          <button type="button" className="tessy-home-btn-inline" onClick={onOpen}>
+            Ver workshop
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 
