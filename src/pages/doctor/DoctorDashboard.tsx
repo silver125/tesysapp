@@ -830,9 +830,7 @@ function HomeExploreNav({
 
   return (
     <section style={{ marginBottom: 20 }}>
-      <Mono style={{ display: 'block', marginBottom: 10, fontSize: 9, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-        Explorar marketplace
-      </Mono>
+      <p className="tessy-section-eyebrow">Explorar marketplace</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
         {items.map(entry => (
           <button

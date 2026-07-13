@@ -574,6 +574,17 @@ button.tessy-stat-card:active {
   text-transform: uppercase;
 }
 
+.tessy-section-eyebrow {
+  display: block;
+  margin-bottom: var(--rh-space-md);
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: var(--rh-font-weight-heading-medium, 500);
+  color: var(--accent-ink);
+  letter-spacing: -0.01em;
+  line-height: var(--rh-line-height-heading);
+}
+
 .tessy-wizard-progress {
   display: flex;
   gap: var(--rh-space-sm);
