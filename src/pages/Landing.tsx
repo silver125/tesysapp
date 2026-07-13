@@ -448,6 +448,11 @@ const landingCss = `
   --tessy-heading: #343949;
   --tessy-text: #5d6474;
   --tessy-muted: #8b919e;
+  /* RHDS spacing gutters */
+  --tl-gutter: var(--rh-space-2xl, 48px);
+  --tl-gutter-md: var(--rh-space-lg, 24px);
+  --tl-gutter-sm: var(--rh-space-md, 16px);
+  --tl-gap: var(--rh-space-md, 16px);
   min-height: 100vh;
   overflow-x: hidden;
   background: #ffffff;
@@ -1118,10 +1123,14 @@ main {
 
 .tl-proof-social p {
   margin: 0;
+  min-width: 0;
+  flex: 1;
   color: #40506b;
   font-size: 30px;
   line-height: 1.25;
   font-weight: 420;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tl-proof-social strong {
@@ -1748,57 +1757,69 @@ main {
   .tl-waitlist,
   .tl-faq,
   .tl-footer {
-    width: calc(100% - 28px);
+    width: calc(100% - (2 * var(--tl-gutter-sm)));
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .tl-proof {
-    padding: 36px 0 46px;
+    padding: var(--rh-space-xl, 32px) 0 var(--rh-space-2xl, 48px);
   }
 
   .tl-proof-social {
     max-width: 100%;
-    margin-bottom: 28px;
-    gap: 10px;
+    margin-bottom: var(--rh-space-lg, 24px);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--rh-space-md, 16px);
+  }
+
+  .tl-proof-avatars {
+    flex-shrink: 0;
   }
 
   .tl-proof-avatars span {
-    width: 34px;
-    height: 34px;
-    margin-left: -7px;
+    width: 36px;
+    height: 36px;
+    margin-left: -8px;
     font-size: 14px;
     border-width: 2px;
   }
 
   .tl-proof-social p {
-    font-size: 14px;
-    line-height: 1.25;
-    white-space: nowrap;
+    width: 100%;
+    font-size: 16px;
+    line-height: 1.4;
+    white-space: normal;
   }
 
   .tl-register-card {
     max-width: 100%;
-    padding: 24px 20px;
-    border-radius: 18px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
+    border-radius: 12px;
   }
 
   .tl-register-card h2 {
-    font-size: 26px;
-    line-height: 1.08;
+    font-size: 24px;
+    line-height: 1.15;
+    max-width: 100%;
   }
 
   .tl-register-list {
-    margin-top: 22px;
-    gap: 18px;
+    margin-top: var(--rh-space-lg, 24px);
+    gap: var(--rh-space-md, 16px);
   }
 
   .tl-register-item {
-    grid-template-columns: 27px 1fr;
-    gap: 12px;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: var(--rh-space-sm, 12px);
   }
 
   .tl-register-icon {
-    width: 27px;
-    height: 27px;
+    width: 28px;
+    height: 28px;
     margin-top: 2px;
   }
 
@@ -1808,8 +1829,9 @@ main {
 
   .tl-register-item p {
     margin-top: 4px;
+    max-width: 100%;
     font-size: 14px;
-    line-height: 1.35;
+    line-height: 1.4;
   }
 
   .tl-section h2,
@@ -1938,20 +1960,27 @@ main {
 }
 
 @media (max-width: 700px) {
+  .tessy-landing {
+    --tl-gutter: var(--rh-space-lg, 24px);
+    --tl-gutter-md: var(--rh-space-lg, 24px);
+    --tl-gutter-sm: var(--rh-space-md, 16px);
+  }
+
   .tessy-landing,
   main {
     background: #ffffff;
   }
 
   .tl-hero {
-    width: calc(100% - 24px);
+    width: calc(100% - (2 * var(--tl-gutter-sm)));
     min-height: auto;
-    margin: 14px auto 0;
+    margin: var(--rh-space-md, 16px) auto 0;
     padding-bottom: 12px;
     overflow: hidden;
     border: 0;
     border-radius: 14px 14px 0 0;
     background: #ffffff;
+    box-sizing: border-box;
   }
 
   .tl-ring {
@@ -1971,7 +2000,7 @@ main {
   }
 
   .tl-header {
-    width: calc(100% - 28px);
+    width: calc(100% - (2 * var(--tl-gutter-sm)));
     height: 50px;
     padding-top: 10px;
   }
@@ -2069,11 +2098,15 @@ main {
   }
 
   .tl-hero h1 {
-    max-width: 268px;
+    max-width: min(100%, 320px);
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 var(--rh-space-md, 16px);
     color: var(--tessy-heading);
     font-size: 28px;
-    line-height: 1.08;
+    line-height: 1.15;
     font-weight: 560;
+    box-sizing: border-box;
   }
 
   .tl-hero-content > p,
@@ -2328,28 +2361,29 @@ main {
   }
 
   .tl-mobile-intro {
-    width: calc(100% - 24px);
-    margin: 10px auto 0;
+    width: calc(100% - (2 * var(--tl-gutter-md)));
+    margin: var(--rh-space-md, 16px) auto 0;
     display: block;
     text-align: center;
+    box-sizing: border-box;
   }
 
   .tl-mobile-intro h2 {
-    max-width: 300px;
+    max-width: 100%;
     margin: 0 auto;
     color: var(--tessy-heading);
     font-size: 22px;
-    line-height: 1.08;
-    font-weight: 470;
+    line-height: 1.2;
+    font-weight: 560;
     letter-spacing: 0;
   }
 
   .tl-mobile-intro p {
-    max-width: 300px;
-    margin: 8px auto 0;
+    max-width: 100%;
+    margin: var(--rh-space-sm, 12px) auto 0;
     color: var(--tessy-text);
-    font-size: 13px;
-    line-height: 1.38;
+    font-size: 14px;
+    line-height: 1.45;
     font-weight: 450;
   }
 
@@ -2390,10 +2424,11 @@ main {
   }
 
   .tl-mobile-hero-actions {
-    margin-top: 12px;
+    margin-top: var(--rh-space-md, 16px);
     display: flex;
     justify-content: center;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: var(--rh-space-sm, 12px);
   }
 
   .tl-mobile-hero-primary,
@@ -2406,10 +2441,12 @@ main {
     text-decoration: none;
     font-size: 14px;
     font-weight: 620;
+    padding: 0 var(--rh-space-md, 16px);
+    box-sizing: border-box;
   }
 
   .tl-mobile-hero-primary {
-    width: 158px;
+    min-width: 148px;
     gap: 10px;
     background: var(--tessy-gradient);
     color: #ffffff !important;
@@ -2425,7 +2462,7 @@ main {
   }
 
   .tl-mobile-hero-secondary {
-    width: 128px;
+    min-width: 128px;
     border: 1px solid transparent;
     background:
       linear-gradient(#ffffff, #ffffff) padding-box,
@@ -2434,43 +2471,46 @@ main {
   }
 
   .tl-proof {
-    width: calc(100% - 24px);
-    margin: 18px auto 0;
-    padding: 16px 12px 14px;
-    border-radius: 20px;
+    width: calc(100% - (2 * var(--tl-gutter-md)));
+    margin: var(--rh-space-lg, 24px) auto 0;
+    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
+    border-radius: 12px;
     background: #ffffff;
-    border: 1px solid rgba(119,127,149,0.12);
+    border: 1px solid rgba(119,127,149,0.14);
     box-shadow: none;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   .tl-proof-social {
-    margin: 0 0 24px;
-    gap: 8px;
+    margin: 0 0 var(--rh-space-lg, 24px);
+    gap: var(--rh-space-md, 16px);
   }
 
   .tl-register-card {
-    padding: 22px 18px 20px;
-    border-radius: 15px;
+    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
+    border-radius: 12px;
     background:
       linear-gradient(#ffffff, #ffffff) padding-box,
       linear-gradient(135deg, rgba(245,130,32,0.12), rgba(245,130,32,0.06)) border-box;
     box-shadow: none;
+    box-sizing: border-box;
   }
 
   .tl-register-card h2 {
-    max-width: 220px;
+    max-width: 100%;
     font-size: 22px;
-    line-height: 1.08;
+    line-height: 1.15;
   }
 
   .tl-register-list {
-    margin-top: 18px;
-    gap: 14px;
+    margin-top: var(--rh-space-md, 16px);
+    gap: var(--rh-space-md, 16px);
   }
 
   .tl-register-item {
-    grid-template-columns: 26px 1fr;
-    gap: 12px;
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: var(--rh-space-sm, 12px);
   }
 
   .tl-register-icon {
@@ -2483,20 +2523,21 @@ main {
   }
 
   .tl-register-item p {
-    max-width: 235px;
+    max-width: 100%;
     font-size: 13px;
-    line-height: 1.3;
+    line-height: 1.4;
   }
 
   .tl-section#o-que-encontra {
     display: block;
-    width: calc(100% - 48px);
-    margin: 16px auto 0;
-    padding: 22px 14px 18px;
+    width: calc(100% - (2 * var(--tl-gutter-md)));
+    margin: var(--rh-space-md, 16px) auto 0;
+    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
     border: 0;
-    border-radius: 2px;
+    border-radius: 0;
     background: #ffffff;
     box-shadow: none;
+    box-sizing: border-box;
   }
 
   .tl-section#o-que-encontra .tl-eyebrow {
@@ -2506,7 +2547,7 @@ main {
   }
 
   .tl-section#o-que-encontra h2 {
-    max-width: 240px;
+    max-width: 100%;
     margin: 0 auto;
     font-size: 22px;
     text-align: center;
@@ -2545,13 +2586,14 @@ main {
   }
 
   .tl-section#como-ajuda {
-    width: calc(100% - 48px);
-    margin: 14px auto 0;
-    padding: 22px 14px 18px;
+    width: calc(100% - (2 * var(--tl-gutter-md)));
+    margin: var(--rh-space-md, 16px) auto 0;
+    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
     border: 0;
-    border-radius: 2px;
+    border-radius: 0;
     background: #ffffff;
     box-shadow: none;
+    box-sizing: border-box;
   }
 
   .tl-section#como-ajuda .tl-eyebrow {
@@ -2561,26 +2603,27 @@ main {
   }
 
   .tl-section#como-ajuda h2 {
-    max-width: 240px;
+    max-width: 100%;
     margin: 0 auto;
     font-size: 22px;
     text-align: center;
   }
 
   .tl-section#como-ajuda .tl-section-subtitle {
-    max-width: 285px;
-    margin-top: 10px;
-    font-size: 12px;
-    line-height: 1.4;
+    max-width: 100%;
+    margin-top: var(--rh-space-sm, 12px);
+    font-size: 14px;
+    line-height: 1.45;
     text-align: center;
   }
 
   .tl-waitlist {
-    width: calc(100% - 48px);
-    margin: 8px auto 0;
-    padding: 22px 16px 16px;
+    width: calc(100% - (2 * var(--tl-gutter-md)));
+    margin: var(--rh-space-sm, 12px) auto 0;
+    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
     display: block;
-    border-radius: 4px 4px 0 0;
+    border-radius: 8px 8px 0 0;
+    box-sizing: border-box;
   }
 
   .tl-waitlist .tl-eyebrow {
@@ -2609,12 +2652,13 @@ main {
   }
 
   .tl-faq {
-    width: calc(100% - 72px);
+    width: calc(100% - (2 * var(--tl-gutter-md)));
     margin: 0 auto;
-    padding: 24px 10px 26px;
+    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px) var(--rh-space-xl, 32px);
     border: 0;
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 12px 12px;
     background: #ffffff;
+    box-sizing: border-box;
   }
 
   .tl-faq .tl-eyebrow {
@@ -2647,22 +2691,24 @@ main {
   }
 
   .tl-footer {
-    width: 240px;
-    margin: 42px auto 48px;
-    padding: 22px 12px;
+    width: calc(100% - (2 * var(--tl-gutter-md)));
+    max-width: 100%;
+    margin: var(--rh-space-2xl, 48px) auto var(--rh-space-3xl, 64px);
+    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
     display: block;
     border-top: 1px solid rgba(119,127,149,0.14);
     border-left: 0;
     background: #ffffff;
+    box-sizing: border-box;
   }
 
   .tl-footer strong {
-    font-size: 13px;
+    font-size: 16px;
   }
 
   .tl-footer p,
   .tl-footer a {
-    font-size: 8px;
+    font-size: 13px;
   }
 
   .tl-footer nav {
