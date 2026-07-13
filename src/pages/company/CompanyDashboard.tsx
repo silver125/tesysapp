@@ -3288,8 +3288,8 @@ function ImageUploadField({
 
 /* ─── Wizard field ─── */
 function fieldFocus(e: { currentTarget: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement }) {
-  e.currentTarget.style.borderColor = 'rgba(245,130,32,0.45)';
-  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(245,130,32,0.10)';
+  e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent) 45%, var(--line))';
+  e.currentTarget.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent)';
 }
 
 function fieldBlur(e: { currentTarget: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement }) {
@@ -3305,21 +3305,28 @@ function WField({ label, value, onChange, type = 'text', placeholder, as = 'inpu
 }) {
   const base = {
     width: '100%',
-    padding: '12px 14px',
-    borderRadius: 12,
-    border: '1px solid var(--line)',
-    background: '#FAFBFF',
+    padding: 'var(--rh-space-md) var(--rh-space-lg)',
+    borderRadius: 'var(--r-md)',
+    border: 'var(--rh-border-width-sm) solid var(--line)',
+    background: 'var(--card)',
     color: 'var(--ink)',
-    fontSize: 15,
-    fontWeight: 500,
+    fontSize: 'var(--text-sm)',
+    fontWeight: 'var(--rh-font-weight-body-text-regular, 400)',
     outline: 'none',
     fontFamily: 'var(--font-sans)',
+    lineHeight: 'var(--rh-line-height-body-text)',
     transition: 'border-color 140ms ease, box-shadow 140ms ease',
   } as const;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <label style={{ fontSize: 13, fontWeight: 560, color: 'var(--ink)', letterSpacing: '-0.01em' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--rh-space-md)' }}>
+      <label style={{
+        fontFamily: 'var(--font-heading)',
+        fontSize: 'var(--text-sm)',
+        fontWeight: 'var(--rh-font-weight-heading-medium, 500)',
+        color: 'var(--accent-ink)',
+        letterSpacing: 0,
+      }}>
         {humanizeFieldLabel(label)}
       </label>
       {as === 'textarea'

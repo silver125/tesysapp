@@ -58,13 +58,21 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
     <div className="tessy-app-shell" style={{ color: 'var(--ink)' }}>
       <header style={{
         position: 'sticky', top: 0, zIndex: 20,
-        background: 'rgba(247,248,255,0.9)', backdropFilter: 'blur(14px)',
-        borderBottom: '1px solid var(--line)',
+        background: 'color-mix(in srgb, var(--bg) 92%, transparent)',
+        backdropFilter: 'blur(14px)',
+        borderBottom: 'var(--rh-border-width-sm) solid var(--line)',
       }}>
         <div className="tessy-app-header-inner">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--rh-space-md)', minWidth: 0 }}>
             <TessyMark size={30} />
-            <span style={{ fontWeight: 560, fontSize: 15, letterSpacing: 0, color: 'var(--accent-ink)', whiteSpace: 'nowrap' }}>
+            <span style={{
+              fontFamily: 'var(--font-heading)',
+              fontWeight: 'var(--rh-font-weight-heading-medium, 500)',
+              fontSize: 'var(--text-md)',
+              letterSpacing: 0,
+              color: 'var(--accent-ink)',
+              whiteSpace: 'nowrap',
+            }}>
               Tessy<span style={{ color: 'var(--lavender)' }}>.app</span>
             </span>
           </div>

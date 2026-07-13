@@ -1,50 +1,62 @@
 @import "tailwindcss";
 
-/* ── Tessy design tokens (light) ── */
+/* ── Tessy tokens (aliases over RHDS — loaded in main via ./lib/rhds) ── */
 :root {
-  --bg:          #F7F8FF;
-  --card:        #FFFFFF;
-  --ink:         #5D6474;
-  --ink-2:       #6F7686;
-  --muted:       #9299A8;
-  --line:        #E3E7F2;
-  --chip:        #F1F3FA;
+  /* Tessy brand on RHDS components */
+  --rh-color-accent-brand-on-light: #F58220;
+  --rh-color-accent-brand-on-dark: #FF9A4D;
+
+  /* Surfaces & text */
+  --bg:          color-mix(in srgb, var(--rh-color-surface-lighter) 70%, #e8ecff);
+  --card:        var(--rh-color-surface-lightest);
+  --ink:         var(--rh-color-text-secondary-on-light);
+  --ink-2:       color-mix(in srgb, var(--rh-color-text-secondary-on-light) 82%, var(--rh-color-text-primary-on-light));
+  --muted:       color-mix(in srgb, var(--rh-color-text-secondary-on-light) 62%, var(--rh-color-surface-light));
+  --line:        color-mix(in srgb, var(--rh-color-border-subtle-on-light) 55%, #e3e7f2);
+  --chip:        color-mix(in srgb, var(--rh-color-surface-lighter) 88%, #eef1fa);
 
   --accent:      #F58220;
-  --accent-blue: #4AA8FF;
-  --accent-ink:  #343949;
-  --accent-soft: #FFF3E9;
-  --brand-gradient: linear-gradient(115deg, #F58220 0%, #FF9A4D 45%, #4AA8FF 100%);
+  --accent-blue: var(--rh-color-interactive-blue-darker);
+  --accent-ink:  var(--rh-color-text-primary-on-light);
+  --accent-soft: color-mix(in srgb, var(--accent) 11%, var(--rh-color-surface-lightest));
+  --brand-gradient: linear-gradient(115deg, #F58220 0%, #FF9A4D 45%, var(--rh-color-interactive-blue-darker) 100%);
   --lavender:    #B9C1EA;
-  --deep:        #171B2A;
+  --deep:        var(--rh-color-surface-darkest);
 
-  --success:     #12A06C;
-  --warn:        #F58220;
-  --danger:      #E84545;
+  --success:     var(--rh-color-status-success-on-light);
+  --warn:        var(--rh-color-status-caution-on-light);
+  --danger:      var(--rh-color-status-danger-on-light);
   --whats:       #25D366;
 
-  --font-sans: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
-  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans:   var(--rh-font-family-body-text), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: var(--rh-font-family-heading), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:   var(--rh-font-family-code), "JetBrains Mono", ui-monospace, monospace;
+  --font-serif:  'Fraunces', Georgia, serif;
 
-  --r-sm:  6px;
-  --r-md:  10px;
-  --r-lg:  16px;
-  --r-xl:  20px;
-  --r-2xl: 24px;
+  --text-xs:     var(--rh-font-size-body-text-xs);
+  --text-sm:     var(--rh-font-size-body-text-sm);
+  --text-md:     var(--rh-font-size-body-text-md);
+  --text-lg:     var(--rh-font-size-body-text-lg);
+  --text-xl:     var(--rh-font-size-body-text-xl);
 
-  --shadow-sm: 0 1px 3px rgba(52,57,73,0.06);
-  --shadow-md: 0 10px 28px rgba(52,57,73,0.08);
-  --shadow-lg: 0 24px 64px rgba(52,57,73,0.12);
+  --r-sm:        var(--rh-length-md);
+  --r-md:        calc(var(--rh-length-lg) - var(--rh-length-3xs));
+  --r-lg:        var(--rh-length-lg);
+  --r-xl:        var(--rh-length-xl);
+  --r-2xl:       var(--rh-length-2xl);
 
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --shadow-sm:   var(--rh-box-shadow-sm);
+  --shadow-md:   var(--rh-box-shadow-md);
+  --shadow-lg:   var(--rh-box-shadow-lg);
 
-  --app-gutter: clamp(10px, 3.2vw, 14px);
-  --app-header-pad-y: clamp(5px, 1.6vw, 8px);
-  --app-main-pad-top: clamp(10px, 2.8vw, 16px);
+  --ease:        var(--rh-animation-timing);
+
+  --app-gutter:        clamp(var(--rh-space-md), 3.2vw, var(--rh-space-lg));
+  --app-header-pad-y:  var(--rh-space-sm);
+  --app-main-pad-top:  var(--rh-space-lg);
   --app-main-pad-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-  --app-title-size: clamp(20px, 5.4vw, 26px);
-  --app-section-gap: clamp(10px, 2.8vw, 14px);
+  --app-title-size:    var(--rh-font-size-heading-xs);
+  --app-section-gap:   var(--rh-space-md);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,8 +72,27 @@ html, body {
 
 body {
   font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--rh-font-weight-body-text-regular, 400);
+  line-height: var(--rh-line-height-body-text);
+  letter-spacing: var(--rh-letter-spacing-body-text);
   min-height: 100vh;
   background: var(--bg);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--accent-ink);
+  line-height: var(--rh-line-height-heading);
+  font-weight: var(--rh-font-weight-heading-medium, 500);
+}
+
+p {
+  line-height: var(--rh-line-height-body-text);
+}
+
+strong, b {
+  font-weight: var(--rh-font-weight-body-text-medium, 500);
 }
 
 #root { min-height: 100vh; }
@@ -117,9 +148,9 @@ select option { background: var(--card); color: var(--ink); }
 
 .tessy-home-rail {
   display: flex;
-  gap: 12px;
+  gap: var(--rh-space-md);
   overflow-x: auto;
-  padding: 2px 4px 6px;
+  padding: var(--rh-space-3xs) var(--rh-space-xs) var(--rh-space-sm);
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -194,8 +225,8 @@ select option { background: var(--card); color: var(--ink); }
   justify-content: space-between;
   min-height: 124px;
   min-width: 0;
-  padding: 10px 10px 10px 12px;
-  gap: 10px;
+  padding: var(--rh-space-md) var(--rh-space-md) var(--rh-space-md) var(--rh-space-lg);
+  gap: var(--rh-space-md);
   overflow: hidden;
 }
 
@@ -208,7 +239,8 @@ select option { background: var(--card); color: var(--ink); }
 }
 
 .tessy-home-wide-card__body--stacked .tessy-home-card__title {
-  font-size: 14px;
+  font-size: var(--text-sm);
+  font-weight: var(--rh-font-weight-heading-medium, 500);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -268,7 +300,7 @@ select option { background: var(--card); color: var(--ink); }
 }
 
 .tessy-home-wide-card__body {
-  padding: 12px 12px 12px 14px;
+  padding: var(--rh-space-lg) var(--rh-space-lg) var(--rh-space-lg) calc(var(--rh-space-lg) + var(--rh-space-3xs));
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -311,10 +343,10 @@ select option { background: var(--card); color: var(--ink); }
   scroll-snap-align: start;
   flex-shrink: 0;
   width: 272px;
-  padding: 14px 14px 12px;
+  padding: calc(var(--rh-space-lg) - var(--rh-space-3xs)) calc(var(--rh-space-lg) - var(--rh-space-3xs)) var(--rh-space-lg);
   border-radius: var(--r-md);
   background: var(--card);
-  border: 1px solid var(--line);
+  border: var(--rh-border-width-sm) solid var(--line);
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
@@ -322,7 +354,7 @@ select option { background: var(--card); color: var(--ink); }
 
 .tessy-home-card__row {
   display: flex;
-  gap: 12px;
+  gap: var(--rh-space-lg);
   align-items: flex-start;
   flex: 1;
 }
@@ -333,35 +365,35 @@ select option { background: var(--card); color: var(--ink); }
 }
 
 .tessy-home-card__label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--text-xs);
+  font-weight: var(--rh-font-weight-body-text-medium, 500);
   color: var(--accent);
 }
 
 .tessy-home-card__title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--text-md);
+  font-weight: var(--rh-font-weight-heading-medium, 500);
   color: var(--accent-ink);
-  line-height: 1.25;
+  line-height: var(--rh-line-height-heading);
 }
 
 .tessy-home-card__meta {
-  margin-top: 2px;
-  font-size: 12px;
+  margin-top: var(--rh-space-3xs);
+  font-size: var(--text-sm);
   color: var(--muted);
-  line-height: 1.35;
+  line-height: var(--rh-line-height-body-text);
 }
 
 .tessy-home-card__info {
-  margin-top: 3px;
-  font-size: 11px;
+  margin-top: var(--rh-space-3xs);
+  font-size: var(--text-xs);
   color: var(--muted);
-  line-height: 1.35;
+  line-height: var(--rh-line-height-body-text);
 }
 
 .tessy-home-card__info--accent {
   color: var(--accent);
-  font-weight: 600;
+  font-weight: var(--rh-font-weight-body-text-medium, 500);
 }
 
 .tessy-home-card__info--bio {
@@ -421,23 +453,27 @@ select option { background: var(--card); color: var(--ink); }
 }
 
 .tessy-page-title {
+  font-family: var(--font-heading);
   font-size: var(--app-title-size);
-  font-weight: 560;
+  font-weight: var(--rh-font-weight-heading-medium, 500);
   letter-spacing: 0;
-  line-height: 1.08;
+  line-height: var(--rh-line-height-heading);
+  color: var(--accent-ink);
 }
 
 .tessy-section-title {
-  font-size: clamp(18px, 4.8vw, 22px);
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: clamp(var(--rh-font-size-body-text-lg), 4.8vw, var(--rh-font-size-heading-xs));
+  font-weight: var(--rh-font-weight-heading-medium, 500);
   letter-spacing: 0;
-  line-height: 1.1;
+  line-height: var(--rh-line-height-heading);
+  color: var(--accent-ink);
 }
 
 .tessy-market-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(8px, 2.5vw, 12px);
+  gap: clamp(var(--rh-space-md), 2.5vw, var(--rh-space-lg));
 }
 
 .tessy-category-rail {
@@ -477,8 +513,8 @@ select option { background: var(--card); color: var(--ink); }
 
 .tessy-wizard-progress {
   display: flex;
-  gap: 6px;
-  margin-bottom: clamp(16px, 4.5vw, 24px);
+  gap: var(--rh-space-sm);
+  margin-bottom: clamp(var(--rh-space-lg), 4.5vw, var(--rh-space-xl));
 }
 
 @media (max-width: 390px) {
