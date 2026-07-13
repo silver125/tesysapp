@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TessyMark } from '../components/ui';
 
+const flowSteps = [
+  { num: '01', title: 'Descubra', text: 'Produtos, eventos e representantes' },
+  { num: '02', title: 'Avise interesse', text: 'Sem expor seu WhatsApp' },
+  { num: '03', title: 'Aprove', text: 'Empresa pede permissão' },
+  { num: '04', title: 'WhatsApp', text: 'Conversa fora do app' },
+];
+
 const findCards = [
   {
     title: 'Representantes',
@@ -83,14 +90,20 @@ export default function Landing() {
         </header>
 
         <div className="tl-hero-content">
+          <p className="tl-hero-eyebrow">Marketplace médico-empresa</p>
+
           <h1>
             <span className="tl-desktop-title">Descubra oportunidades da saúde — e fale com empresas pelo WhatsApp.</span>
-            <span className="tl-mobile-title">Seja bem vindo<br />a Tessy.</span>
+            <span className="tl-mobile-title">Oportunidades da saúde,<br />direto no seu WhatsApp.</span>
           </h1>
 
           <p>
             Produtos, eventos, workshops e representantes em um fluxo simples: você demonstra interesse, a empresa pede contato e a conversa acontece no WhatsApp.
           </p>
+
+          <div className="tl-hero-flow">
+            <FlowStrip />
+          </div>
 
           <div className="tl-hero-actions">
             <Link to="/cadastro?perfil=medico" className="tl-hero-primary">
@@ -104,8 +117,8 @@ export default function Landing() {
         <div className="tl-phone-stage" aria-hidden="true">
           <div className="tl-phone-card tl-phone-card-left">
             <span>Médico</span>
-            <strong>Solicitou contato</strong>
-            <small>Sculptra · representante em SP</small>
+            <strong>Avisei interesse</strong>
+            <small>Sculptra · marketplace Tessy</small>
           </div>
 
           <div className="tl-iphone">
@@ -126,12 +139,12 @@ export default function Landing() {
               <div className="tl-phone-dashboard">
                 <span>SEX, 2 DE MAI.</span>
                 <h3>Olá, silvio.</h3>
-                <p>1 eventos disponíveis para você esta semana.</p>
+                <p>3 oportunidades curadas para você esta semana.</p>
 
                 <div className="tl-phone-stats">
+                  <span><strong>2</strong> Produtos</span>
                   <span><strong>1</strong> Eventos</span>
-                  <span><strong>1</strong> Produtos</span>
-                  <span><strong>0</strong> Workshops</span>
+                  <span><strong>1</strong> Rep.</span>
                 </div>
               </div>
 
@@ -162,27 +175,27 @@ export default function Landing() {
 
               <div className="tl-phone-feature">
                 <div>
-                  <span>Nova oportunidade</span>
+                  <span>Marketplace</span>
                   <h3>Bioestimulador Sculptra</h3>
-                  <p>Material científico, amostra e representante em SP.</p>
+                  <p>Material científico e representante em SP.</p>
                 </div>
-                <strong>Alta intenção</strong>
+                <strong>Interesse</strong>
               </div>
 
               <div className="tl-phone-list">
                 <div>
-                  <span>Representante</span>
-                  <strong>Agenda disponível hoje</strong>
+                  <span>Permissão</span>
+                  <strong>Empresa pediu WhatsApp</strong>
                 </div>
-                <button>Solicitar contato</button>
+                <button>Aprovar</button>
               </div>
 
               <div className="tl-phone-list">
                 <div>
-                  <span>Evento</span>
-                  <strong>Demonstração para médicos</strong>
+                  <span>WhatsApp</span>
+                  <strong>Conversa liberada</strong>
                 </div>
-                <button>Entrar</button>
+                <button>Abrir</button>
               </div>
 
               <div className="tl-phone-nav">
@@ -197,30 +210,21 @@ export default function Landing() {
 
           <div className="tl-phone-card tl-phone-card-right">
             <span>Empresa</span>
-            <strong>Médico interessado</strong>
-            <small>Pediu permissão para WhatsApp</small>
+            <strong>Pediu permissão</strong>
+            <small>Aguardando aprovação do médico</small>
           </div>
         </div>
       </section>
 
       <section className="tl-mobile-intro">
-        <h2>Descubra oportunidades da saúde — e fale com empresas pelo WhatsApp.</h2>
+        <h2>Marketplace da saúde — do interesse ao WhatsApp.</h2>
         <p>
           Produtos, eventos e representantes em um fluxo simples: avise interesse, aprove o contato e converse no WhatsApp.
         </p>
 
-        <div className="tl-mobile-flow" style={{
-          marginTop: 18,
-          padding: '14px 16px',
-          borderRadius: 16,
-          background: 'rgba(255,255,255,0.12)',
-          border: '1px solid rgba(255,255,255,0.2)',
-          fontSize: 13,
-          lineHeight: 1.5,
-          color: 'rgba(255,255,255,0.92)',
-        }}>
-          <strong style={{ display: 'block', marginBottom: 8 }}>Como funciona</strong>
-          1. Descubra · 2. Avise interesse · 3. Aprove pedido · 4. WhatsApp
+        <div className="tl-mobile-flow">
+          <p className="tl-mobile-flow-label">Como funciona</p>
+          <FlowStrip compact />
         </div>
 
         <div className="tl-mobile-hero-actions">
@@ -291,8 +295,9 @@ export default function Landing() {
           </div>
 
           <div className="tl-solution-grid tl-find-grid">
-            {findCards.map(card => (
+            {findCards.map((card, index) => (
               <article key={card.title}>
+                <span className="tl-find-num">{String(index + 1).padStart(2, '0')}</span>
                 <h3>{card.title}</h3>
                 <p>{card.text}</p>
               </article>
@@ -318,8 +323,10 @@ export default function Landing() {
         </section>
 
         <section className="tl-positioning">
-          <h2>Interesse → aprovação → WhatsApp.</h2>
-          <p>Sem feed público, sem spam — só oportunidades com intenção clara.</p>
+          <div className="tl-positioning-inner">
+            <h2>Interesse → aprovação → WhatsApp.</h2>
+            <p>Sem feed público, sem spam — só oportunidades com intenção clara.</p>
+          </div>
         </section>
 
         <section className="tl-waitlist">
@@ -361,6 +368,24 @@ export default function Landing() {
           <a href="/privacidade">Privacidade</a>
         </nav>
       </footer>
+    </div>
+  );
+}
+
+function FlowStrip({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className={`tl-flow-strip${compact ? ' tl-flow-strip--compact' : ''}`} role="list" aria-label="Como funciona">
+      {flowSteps.map(step => (
+        <div key={step.num} className="tl-flow-step" role="listitem">
+          <span className="tl-flow-step-num">{step.num}</span>
+          <strong>{step.title}</strong>
+          {compact ? (
+            <span className="tl-flow-step-text">{step.text}</span>
+          ) : (
+            <p>{step.text}</p>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -570,30 +595,133 @@ const landingCss = `
   z-index: 3;
   width: calc(100% - 48px);
   max-width: 980px;
-  margin: 108px auto 0;
+  margin: 96px auto 0;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
+.tl-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 18px;
+  padding: 8px 16px;
+  border: 1px solid rgba(119,127,149,0.18);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.72);
+  color: var(--tessy-steel);
+  font-size: 13px;
+  font-weight: 560;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 28px rgba(52,57,73,0.05);
+}
+
 .tl-hero h1 {
   max-width: 920px;
   margin-top: 0;
   color: var(--tessy-heading);
-  font-size: 70px;
-  line-height: 1.04;
-  letter-spacing: 0;
+  font-size: 68px;
+  line-height: 1.06;
+  letter-spacing: -0.01em;
   font-weight: 470;
 }
 
 .tl-hero-content > p {
-  max-width: 760px;
-  margin-top: 26px;
+  max-width: 740px;
+  margin-top: 22px;
   color: var(--tessy-text);
-  font-size: 21px;
-  line-height: 1.5;
+  font-size: 20px;
+  line-height: 1.52;
   font-weight: 460;
+}
+
+.tl-hero-flow {
+  width: 100%;
+  max-width: 920px;
+  margin-top: 30px;
+}
+
+.tl-flow-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.tl-flow-step {
+  position: relative;
+  padding: 18px 16px 16px;
+  border: 1px solid rgba(119,127,149,0.14);
+  border-radius: 12px;
+  background:
+    linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)) padding-box,
+    linear-gradient(135deg, rgba(63,131,241,0.14), rgba(255,111,70,0.12)) border-box;
+  border-color: transparent;
+  text-align: left;
+  box-shadow: 0 14px 36px rgba(52,57,73,0.05);
+}
+
+.tl-flow-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--tessy-gradient-soft);
+  color: var(--tessy-steel);
+  font-size: 11px;
+  font-weight: 620;
+  letter-spacing: 0.04em;
+}
+
+.tl-flow-step strong {
+  display: block;
+  margin-top: 12px;
+  color: var(--tessy-graphite);
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 560;
+}
+
+.tl-flow-step p,
+.tl-flow-step-text {
+  display: block;
+  margin-top: 6px;
+  color: var(--tessy-text);
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 450;
+}
+
+.tl-flow-strip--compact {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.tl-flow-strip--compact .tl-flow-step {
+  padding: 12px 10px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.tl-flow-strip--compact .tl-flow-step-num {
+  min-width: 28px;
+  padding: 3px 7px;
+  font-size: 10px;
+}
+
+.tl-flow-strip--compact .tl-flow-step strong {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.tl-flow-strip--compact .tl-flow-step-text {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .tl-hero-actions {
@@ -1125,6 +1253,13 @@ main {
     linear-gradient(135deg, rgba(63,131,241,0.16), rgba(255,111,70,0.14)) border-box;
   border-color: transparent;
   box-shadow: 0 18px 56px rgba(52,57,73,0.06);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.tl-solution-grid article:hover,
+.tl-find-grid article:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 48px rgba(52,57,73,0.1);
 }
 
 .tl-solution-grid article {
@@ -1134,6 +1269,21 @@ main {
 
 .tl-find-grid article {
   min-height: 190px;
+}
+
+.tl-find-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  margin-bottom: 14px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--tessy-gradient-soft);
+  color: var(--tessy-steel);
+  font-size: 12px;
+  font-weight: 620;
+  letter-spacing: 0.05em;
 }
 
 .tl-solution-grid h3 {
@@ -1238,9 +1388,19 @@ main {
 }
 
 .tl-positioning {
-  padding: 92px 0;
+  padding: 76px 0;
   text-align: center;
   border-top: 1px solid rgba(119,127,149,0.14);
+}
+
+.tl-positioning-inner {
+  padding: 48px 56px;
+  border: 1px solid rgba(119,127,149,0.12);
+  border-radius: 16px;
+  background:
+    linear-gradient(118deg, rgba(63,131,241,0.08) 0%, rgba(149,130,172,0.06) 52%, rgba(255,111,70,0.08) 100%),
+    var(--tessy-soft);
+  box-shadow: 0 20px 52px rgba(52,57,73,0.06);
 }
 
 .tl-positioning h2 {
@@ -1344,6 +1504,7 @@ main {
 .tl-mobile-title,
 .tl-mobile-nav,
 .tl-mobile-intro,
+.tl-mobile-flow,
 .tl-phone-mini-header,
 .tl-phone-dashboard,
 .tl-phone-sectionbar,
@@ -1358,6 +1519,10 @@ main {
 @media (max-width: 980px) {
   .tl-hero h1 {
     font-size: 54px;
+  }
+
+  .tl-flow-strip:not(.tl-flow-strip--compact) {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .tl-proof-social,
@@ -1741,7 +1906,12 @@ main {
   }
 
   .tl-positioning {
-    padding: 52px 0;
+    padding: 40px 0;
+  }
+
+  .tl-positioning-inner {
+    padding: 28px 20px;
+    border-radius: 12px;
   }
 
   .tl-waitlist {
@@ -1899,7 +2069,9 @@ main {
   }
 
   .tl-hero-content > p,
-  .tl-hero-actions {
+  .tl-hero-actions,
+  .tl-hero-flow,
+  .tl-hero-eyebrow {
     display: none;
   }
 
@@ -2174,6 +2346,42 @@ main {
     font-weight: 450;
   }
 
+  .tl-mobile-flow {
+    margin-top: 18px;
+    padding: 14px 12px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .tl-mobile-flow-label {
+    margin: 0 0 10px;
+    color: rgba(255,255,255,0.92);
+    font-size: 12px;
+    font-weight: 620;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .tl-mobile-flow .tl-flow-step {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.18);
+    box-shadow: none;
+  }
+
+  .tl-mobile-flow .tl-flow-step-num {
+    background: rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.92);
+  }
+
+  .tl-mobile-flow .tl-flow-step strong {
+    color: #ffffff;
+  }
+
+  .tl-mobile-flow .tl-flow-step-text {
+    color: rgba(255,255,255,0.82);
+  }
+
   .tl-mobile-hero-actions {
     margin-top: 20px;
     display: flex;
@@ -2272,7 +2480,58 @@ main {
     line-height: 1.18;
   }
 
-  .tl-section#o-que-encontra,
+  .tl-section#o-que-encontra {
+    display: block;
+    width: calc(100% - 72px);
+    margin: 26px auto 0;
+    padding: 34px 18px 30px;
+    border: 0;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+    box-shadow: 0 20px 46px rgba(52,57,73,0.06);
+  }
+
+  .tl-section#o-que-encontra .tl-eyebrow {
+    margin-bottom: 12px;
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .tl-section#o-que-encontra h2 {
+    max-width: 260px;
+    margin: 0 auto;
+    font-size: 27px;
+    text-align: center;
+  }
+
+  .tl-section#o-que-encontra .tl-find-grid {
+    margin-top: 20px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .tl-section#o-que-encontra .tl-find-grid article {
+    min-height: auto;
+    padding: 16px 14px;
+  }
+
+  .tl-section#o-que-encontra .tl-find-num {
+    min-width: 30px;
+    margin-bottom: 10px;
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .tl-section#o-que-encontra .tl-find-grid h3 {
+    font-size: 16px;
+  }
+
+  .tl-section#o-que-encontra .tl-find-grid p {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.38;
+  }
+
   .tl-audience {
     display: none;
   }
