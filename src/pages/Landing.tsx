@@ -1597,20 +1597,20 @@ main {
 
   .tl-hero-content {
     width: calc(100% - 32px);
-    margin-top: 48px;
+    margin-top: 32px;
   }
 
   .tl-hero h1 {
     max-width: 340px;
-    font-size: 36px;
+    font-size: 32px;
     line-height: 1.05;
   }
 
   .tl-hero-content > p {
     max-width: 325px;
-    margin-top: 16px;
-    font-size: 14px;
-    line-height: 1.45;
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.4;
   }
 
   .tl-section-subtitle,
@@ -1947,13 +1947,14 @@ main {
   }
 
   .tl-hero {
-    width: calc(100% - 36px);
-    min-height: 477px;
-    margin: 26px auto 0;
+    width: calc(100% - 24px);
+    min-height: auto;
+    margin: 14px auto 0;
+    padding-bottom: 12px;
     overflow: hidden;
     border: 0;
     border-radius: 14px 14px 0 0;
-    background: linear-gradient(135deg, #5a82dc 0%, #ae7899 50%, #ff6948 100%);
+    background: linear-gradient(135deg, #F58220 0%, #c97a9a 52%, #4AA8FF 100%);
   }
 
   .tl-hero:before,
@@ -1962,9 +1963,9 @@ main {
   }
 
   .tl-header {
-    width: calc(100% - 38px);
-    height: 58px;
-    padding-top: 18px;
+    width: calc(100% - 28px);
+    height: 50px;
+    padding-top: 10px;
   }
 
   .tl-brand {
@@ -2048,7 +2049,7 @@ main {
 
   .tl-hero-content {
     width: 100%;
-    margin-top: 26px;
+    margin-top: 10px;
   }
 
   .tl-desktop-title {
@@ -2060,10 +2061,10 @@ main {
   }
 
   .tl-hero h1 {
-    max-width: 310px;
+    max-width: 268px;
     color: #ffffff;
-    font-size: 39px;
-    line-height: 1.08;
+    font-size: 28px;
+    line-height: 1.05;
     font-weight: 430;
   }
 
@@ -2075,10 +2076,12 @@ main {
   }
 
   .tl-phone-stage {
-    top: 209px;
+    position: relative;
+    top: auto;
     bottom: auto;
     width: 100%;
-    min-height: 526px;
+    min-height: auto;
+    margin: 6px auto 0;
     z-index: 2;
   }
 
@@ -2087,12 +2090,12 @@ main {
   }
 
   .tl-iphone {
-    width: 256px;
-    height: 526px;
-    padding: 6px;
-    border-radius: 42px;
+    width: 200px;
+    height: 408px;
+    padding: 5px;
+    border-radius: 34px;
     background: #070912;
-    box-shadow: 0 18px 40px rgba(12,15,26,0.16);
+    box-shadow: 0 14px 32px rgba(12,15,26,0.14);
   }
 
   .tl-iphone:before {
@@ -2179,7 +2182,7 @@ main {
 
   .tl-phone-dashboard {
     display: block;
-    padding: 18px 18px 0;
+    padding: 12px 14px 0;
   }
 
   .tl-phone-dashboard > span {
@@ -2190,9 +2193,9 @@ main {
   }
 
   .tl-phone-dashboard h3 {
-    margin: 8px 0 0;
+    margin: 6px 0 0;
     color: #5d6474;
-    font-size: 17px;
+    font-size: 14px;
     line-height: 1.1;
     font-weight: 650;
   }
@@ -2204,9 +2207,9 @@ main {
   }
 
   .tl-phone-stats {
-    margin-top: 14px;
+    margin-top: 10px;
     display: flex;
-    gap: 6px;
+    gap: 5px;
   }
 
   .tl-phone-stats span {
@@ -2230,7 +2233,7 @@ main {
   }
 
   .tl-phone-sectionbar {
-    margin: 16px 18px 0;
+    margin: 12px 14px 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2248,7 +2251,7 @@ main {
   }
 
   .tl-phone-event {
-    margin: 8px 18px 0;
+    margin: 6px 14px 0;
     display: block;
     overflow: hidden;
     border: 1px solid rgba(119,127,149,0.16);
@@ -2257,7 +2260,7 @@ main {
   }
 
   .tl-phone-event-visual {
-    height: 112px;
+    height: 88px;
     position: relative;
     padding: 11px;
     background:
@@ -2320,69 +2323,69 @@ main {
   }
 
   .tl-mobile-intro {
-    width: calc(100% - 36px);
-    margin: 24px auto 0;
+    width: calc(100% - 24px);
+    margin: 10px auto 0;
     display: block;
     text-align: center;
   }
 
   .tl-mobile-intro h2 {
-    max-width: 340px;
+    max-width: 300px;
     margin: 0 auto;
     color: var(--tessy-heading);
-    font-size: 32px;
-    line-height: 1.06;
+    font-size: 22px;
+    line-height: 1.08;
     font-weight: 470;
     letter-spacing: 0;
   }
 
   .tl-mobile-intro p {
-    max-width: 330px;
-    margin: 14px auto 0;
+    max-width: 300px;
+    margin: 8px auto 0;
     color: var(--tessy-text);
-    font-size: 14px;
-    line-height: 1.42;
+    font-size: 13px;
+    line-height: 1.38;
     font-weight: 450;
   }
 
   .tl-mobile-flow {
-    margin-top: 18px;
-    padding: 14px 12px;
-    border-radius: 16px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.2);
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 14px;
+    background: rgba(245,130,32,0.06);
+    border: 1px solid rgba(245,130,32,0.12);
   }
 
   .tl-mobile-flow-label {
-    margin: 0 0 10px;
-    color: rgba(255,255,255,0.92);
-    font-size: 12px;
+    margin: 0 0 8px;
+    color: var(--tessy-steel);
+    font-size: 11px;
     font-weight: 620;
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
   .tl-mobile-flow .tl-flow-step {
-    background: rgba(255,255,255,0.14);
-    border-color: rgba(255,255,255,0.18);
+    background: #ffffff;
+    border-color: rgba(119,127,149,0.12);
     box-shadow: none;
   }
 
   .tl-mobile-flow .tl-flow-step-num {
-    background: rgba(255,255,255,0.22);
-    color: rgba(255,255,255,0.92);
+    background: rgba(245,130,32,0.10);
+    color: var(--tessy-steel);
   }
 
   .tl-mobile-flow .tl-flow-step strong {
-    color: #ffffff;
+    color: var(--tessy-graphite);
   }
 
   .tl-mobile-flow .tl-flow-step-text {
-    color: rgba(255,255,255,0.82);
+    color: var(--tessy-text);
   }
 
   .tl-mobile-hero-actions {
-    margin-top: 20px;
+    margin-top: 12px;
     display: flex;
     justify-content: center;
     gap: 8px;
@@ -2390,34 +2393,34 @@ main {
 
   .tl-mobile-hero-primary,
   .tl-mobile-hero-secondary {
-    min-height: 48px;
+    min-height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 999px;
     text-decoration: none;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 620;
   }
 
   .tl-mobile-hero-primary {
-    width: 172px;
-    gap: 12px;
+    width: 158px;
+    gap: 10px;
     background: var(--tessy-gradient);
     color: #ffffff !important;
     box-shadow:
-      0 18px 42px rgba(63,131,241,0.14),
-      0 18px 42px rgba(255,111,70,0.12);
+      0 12px 32px rgba(245,130,32,0.14),
+      0 12px 32px rgba(74,168,255,0.10);
   }
 
   .tl-mobile-hero-primary span:last-child {
-    font-size: 24px;
+    font-size: 20px;
     line-height: 1;
     font-weight: 400;
   }
 
   .tl-mobile-hero-secondary {
-    width: 140px;
+    width: 128px;
     border: 1px solid transparent;
     background:
       linear-gradient(#ffffff, #ffffff) padding-box,
@@ -2426,109 +2429,109 @@ main {
   }
 
   .tl-proof {
-    width: calc(100% - 36px);
-    margin: 34px auto 0;
-    padding: 22px 12px 16px;
-    border-radius: 24px;
+    width: calc(100% - 24px);
+    margin: 18px auto 0;
+    padding: 16px 12px 14px;
+    border-radius: 20px;
     background: linear-gradient(180deg, #f6faff 0%, #ffffff 70%);
-    box-shadow: 0 18px 42px rgba(63,131,241,0.10);
+    box-shadow: 0 14px 32px rgba(245,130,32,0.08);
   }
 
   .tl-proof-social {
-    margin: 0 0 50px;
-    gap: 10px;
+    margin: 0 0 24px;
+    gap: 8px;
   }
 
   .tl-register-card {
-    padding: 30px 22px 28px;
+    padding: 22px 18px 20px;
     border-radius: 15px;
     background:
       linear-gradient(#ffffff, #ffffff) padding-box,
-      linear-gradient(135deg, rgba(63,131,241,0.16), rgba(255,111,70,0.14)) border-box;
+      linear-gradient(135deg, rgba(245,130,32,0.14), rgba(74,168,255,0.12)) border-box;
     box-shadow: none;
   }
 
   .tl-register-card h2 {
     max-width: 220px;
-    font-size: 28px;
-    line-height: 1.07;
+    font-size: 22px;
+    line-height: 1.08;
   }
 
   .tl-register-list {
-    margin-top: 30px;
-    gap: 22px;
-  }
-
-  .tl-register-item {
-    grid-template-columns: 29px 1fr;
+    margin-top: 18px;
     gap: 14px;
   }
 
+  .tl-register-item {
+    grid-template-columns: 26px 1fr;
+    gap: 12px;
+  }
+
   .tl-register-icon {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
 
   .tl-register-item h3 {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .tl-register-item p {
     max-width: 235px;
-    font-size: 15px;
-    line-height: 1.18;
+    font-size: 13px;
+    line-height: 1.3;
   }
 
   .tl-section#o-que-encontra {
     display: block;
-    width: calc(100% - 72px);
-    margin: 26px auto 0;
-    padding: 34px 18px 30px;
+    width: calc(100% - 48px);
+    margin: 16px auto 0;
+    padding: 22px 14px 18px;
     border: 0;
     border-radius: 2px;
     background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
-    box-shadow: 0 20px 46px rgba(52,57,73,0.06);
+    box-shadow: 0 16px 36px rgba(52,57,73,0.05);
   }
 
   .tl-section#o-que-encontra .tl-eyebrow {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     font-size: 10px;
     text-align: center;
   }
 
   .tl-section#o-que-encontra h2 {
-    max-width: 260px;
+    max-width: 240px;
     margin: 0 auto;
-    font-size: 27px;
+    font-size: 22px;
     text-align: center;
   }
 
   .tl-section#o-que-encontra .tl-find-grid {
-    margin-top: 20px;
+    margin-top: 14px;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
   }
 
   .tl-section#o-que-encontra .tl-find-grid article {
     min-height: auto;
-    padding: 16px 14px;
+    padding: 12px 10px;
   }
 
   .tl-section#o-que-encontra .tl-find-num {
-    min-width: 30px;
-    margin-bottom: 10px;
-    padding: 4px 8px;
-    font-size: 10px;
+    min-width: 28px;
+    margin-bottom: 8px;
+    padding: 3px 7px;
+    font-size: 9px;
   }
 
   .tl-section#o-que-encontra .tl-find-grid h3 {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .tl-section#o-que-encontra .tl-find-grid p {
-    margin-top: 8px;
-    font-size: 12px;
-    line-height: 1.38;
+    margin-top: 6px;
+    font-size: 11px;
+    line-height: 1.35;
   }
 
   .tl-audience {
@@ -2536,40 +2539,40 @@ main {
   }
 
   .tl-section#como-ajuda {
-    width: calc(100% - 72px);
-    margin: 26px auto 0;
-    padding: 38px 18px 34px;
+    width: calc(100% - 48px);
+    margin: 14px auto 0;
+    padding: 22px 14px 18px;
     border: 0;
     border-radius: 2px;
     background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
-    box-shadow: 0 20px 46px rgba(52,57,73,0.06);
+    box-shadow: 0 16px 36px rgba(52,57,73,0.05);
   }
 
   .tl-section#como-ajuda .tl-eyebrow {
-    margin-bottom: 14px;
+    margin-bottom: 8px;
     font-size: 10px;
     text-align: center;
   }
 
   .tl-section#como-ajuda h2 {
-    max-width: 260px;
+    max-width: 240px;
     margin: 0 auto;
-    font-size: 27px;
+    font-size: 22px;
     text-align: center;
   }
 
   .tl-section#como-ajuda .tl-section-subtitle {
     max-width: 285px;
-    margin-top: 18px;
-    font-size: 13px;
-    line-height: 1.45;
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.4;
     text-align: center;
   }
 
   .tl-waitlist {
-    width: calc(100% - 72px);
-    margin: 10px auto 0;
-    padding: 28px 20px 20px;
+    width: calc(100% - 48px);
+    margin: 8px auto 0;
+    padding: 22px 16px 16px;
     display: block;
     border-radius: 4px 4px 0 0;
   }
@@ -2579,14 +2582,14 @@ main {
   }
 
   .tl-waitlist h2 {
-    margin-top: 16px;
+    margin-top: 10px;
     color: #ffffff;
-    font-size: 28px;
+    font-size: 22px;
   }
 
   .tl-waitlist p {
     color: #ffffff;
-    font-size: 15px;
+    font-size: 13px;
   }
 
   .tl-waitlist a {
