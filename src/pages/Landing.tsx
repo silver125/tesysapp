@@ -6,10 +6,6 @@ const waitlistHref = 'mailto:contato@tessybr.com?subject=Acesso%20antecipado%20T
 
 const findCards = [
   {
-    title: 'Representantes',
-    text: 'Veja empresas e contatos da sua região.',
-  },
-  {
     title: 'Eventos',
     text: 'Encontre congressos, aulas, imersões e encontros médicos.',
   },
