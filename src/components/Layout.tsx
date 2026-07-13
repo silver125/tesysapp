@@ -121,7 +121,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
             )}
             {user?.role === 'medico' && (
               <div
-                title="Sua pontuação Tessy"
+                title="Pontos Tessy: ganhe ao avisar interesse. Conexões aprovadas valem +50."
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',

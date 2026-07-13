@@ -56,10 +56,10 @@ export default function Login() {
               Tessy para saúde
             </div>
             <h2 style={{ marginTop: 10, fontSize: 32, lineHeight: 1.08, letterSpacing: 0, fontWeight: 560 }}>
-              Acesso direto entre médicos e empresas.
+              Oportunidades médicas em um fluxo simples.
             </h2>
             <p style={{ marginTop: 12, maxWidth: 430, color: 'rgba(255,255,255,0.72)', fontSize: 15, lineHeight: 1.55 }}>
-              Produtos, eventos e representantes em um fluxo simples, comercial e objetivo.
+              Descubra produtos e eventos, avise seu interesse e converse no WhatsApp quando fizer sentido.
             </p>
           </div>
         </section>
@@ -86,7 +86,7 @@ export default function Login() {
                 Entrar no Tessy<span style={{ color: 'var(--accent)' }}>.</span>
               </h1>
               <p style={{ marginTop: 12, fontSize: 16, color: 'var(--ink-2)', lineHeight: 1.55 }}>
-                Acesse sua conta para gerenciar conexões, produtos, eventos e contatos salvos.
+                Acesse oportunidades, aprovar contatos comerciais e gerenciar seus anúncios.
               </p>
             </div>
 

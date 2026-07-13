@@ -2,6 +2,7 @@ import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import CompanyAvatar from '../../components/CompanyAvatar';
+import FirstVisitTip from '../../components/FirstVisitTip';
 import { useAuth } from '../../context/useAuth';
 import {
   Mono, Chip, ModalityBadge, WaIcon,
@@ -256,7 +257,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
   { key: 'listings', label: 'Meus anúncios', icon: () => null, big: true },
   { key: 'products', label: 'Produtos', icon: IcoBox },
-  { key: 'leads',    label: 'Interessados',   icon: IcoSearch },
+  { key: 'leads',    label: 'Médicos',   icon: IcoSearch },
 ];
 
 const EVENT_CATS   = ['Congresso', 'Workshop', 'Simpósio', 'Webinar', 'Treinamento'];
@@ -514,6 +515,8 @@ export default function CompanyDashboard() {
             </button>
           </div>
 
+          {user?.id && <FirstVisitTip userId={user.id} role="empresa" />}
+
           {!setupComplete && (
             <div style={{
               marginBottom: 12,
@@ -642,8 +645,8 @@ export default function CompanyDashboard() {
           <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
             {[
               { v: publishedItems, l: 'anúncios', go: 'listings' as Tab, accent: true },
-              { v: myLeads.length, l: 'interessados', go: 'leads' as Tab, accent: myLeads.length > 0 },
-              { v: conversationsStarted, l: 'conversas', go: 'leads' as Tab, accent: conversationsStarted > 0 },
+              { v: myLeads.length, l: 'interesses', go: 'leads' as Tab, accent: myLeads.length > 0 },
+              { v: conversationsStarted, l: 'conexões iniciadas', go: 'leads' as Tab, accent: conversationsStarted > 0 },
             ].map((s) => (
               <button key={s.l} onClick={() => setTab(s.go)} style={{
                 minHeight: 74,
@@ -2176,12 +2179,12 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
   }
 
   const buttonText = waLink
-    ? 'Conectar no WhatsApp'
+    ? 'Abrir WhatsApp'
     : isRequested
-      ? 'Aguardando aprovação'
+      ? 'Aguardando o médico liberar WhatsApp'
       : requesting
-        ? 'Solicitando...'
-        : 'Solicitar conexão';
+        ? 'Enviando pedido...'
+        : 'Pedir permissão para WhatsApp';
 
   const buttonStyle = {
     marginTop: 12,
@@ -2309,13 +2312,13 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
     <div>
       <div style={{ marginBottom: 18 }}>
         <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-          Ponte comercial
+          Médicos interessados
         </Mono>
         <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
-          Buscar interessados<span style={{ color: 'var(--accent)' }}>.</span>
+          Quem demonstrou interesse<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
-          Filtre por especialidade, intenção e nome. Perfis que demonstraram interesse comercial.
+          Médicos que clicaram em interesse nos seus anúncios. Peça permissão para WhatsApp — o médico precisa aprovar.
         </p>
       </div>
 
@@ -2525,7 +2528,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
                     fontSize: 13,
                     fontWeight: 560,
                   }}>
-                    Aguardando aprovação
+                    Aguardando o médico liberar WhatsApp
                   </div>
                 ) : (
                   <button
@@ -2546,7 +2549,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
                       opacity: requestingId === lead.id ? 0.72 : 1,
                     }}
                   >
-                    {requestingId === lead.id ? 'Solicitando...' : 'Solicitar conexão'}
+                    {requestingId === lead.id ? 'Enviando pedido...' : 'Pedir permissão para WhatsApp'}
                   </button>
                 )}
               </div>

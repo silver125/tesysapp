@@ -221,8 +221,8 @@ export default function Register() {
         {step === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {([
-              { role: 'medico' as UserRole, code: 'M', title: 'Sou médico', desc: 'Acesso a eventos, produtos e representantes' },
-              { role: 'empresa' as UserRole, code: 'E', title: 'Sou empresa', desc: 'Publique produtos, eventos e receba leads médicos' },
+              { role: 'medico' as UserRole, code: 'M', title: 'Sou médico', desc: 'Veja produtos, eventos e representantes da sua área' },
+              { role: 'empresa' as UserRole, code: 'E', title: 'Sou empresa', desc: 'Publique anúncios e receba médicos interessados' },
             ]).map(opt => {
               const active = data.role === opt.role;
               return (
@@ -457,7 +457,7 @@ export default function Register() {
                 />
               </div>
               <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
-                Médicos clicam no seu card e abrem o chat direto.
+                Médicos demonstram interesse. Você pede permissão para WhatsApp — o médico aprova antes da conversa.
               </div>
             </div>
           </div>

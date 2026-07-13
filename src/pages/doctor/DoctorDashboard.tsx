@@ -25,6 +25,7 @@ import { getLevelProgress, POINTS_PER_INTEREST, countApprovedConnections } from 
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import { fetchCompanyLogos } from '../../lib/companyBranding';
 import CompanyAvatar from '../../components/CompanyAvatar';
+import FirstVisitTip from '../../components/FirstVisitTip';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
@@ -79,7 +80,7 @@ function IcoRepresentatives(a: boolean) {
 const NAV_ITEMS: NavItem[] = [
   { key: 'home',             label: 'Início',          icon: IcoHome },
   { key: 'products',         label: 'Produtos',        icon: IcoBox },
-  { key: 'events',           label: 'Eventos',         icon: IcoCalendar },
+  { key: 'events',           label: 'Eventos e workshops', icon: IcoCalendar },
   { key: 'representatives',  label: 'Representantes',  icon: IcoRepresentatives },
   { key: 'companies',        label: 'Empresas',        icon: IcoCompanies },
 ];
@@ -308,6 +309,13 @@ export default function DoctorDashboard() {
   const homeEvents = upcomingEvents
     .filter(e => !q || includesQ(e.title, q) || includesQ(e.companyName, q));
   const homeWorkshops = courses.filter(c => !q || includesQ(c.title, q) || includesQ(c.companyName, q));
+  const filtCourses = courses.filter(c => {
+    const matchQ = !q || includesQ(c.title, q) || includesQ(c.companyName, q);
+    const matchFilter = evFilter === 'all'
+      || evFilter === 'workshop'
+      || (evFilter === 'online' && c.modality === 'online');
+    return matchQ && matchFilter;
+  });
   const productChips = productCategoryChips(products);
   const representatives = sortByDoctorInterests(
     buildRepresentativeProfiles(events, products, courses, locations, user, registeredReps, companyLogos),
@@ -362,6 +370,8 @@ export default function DoctorDashboard() {
       {tab === 'home' && (
         <div>
           <HomeGreeting user={user} />
+
+          {user?.id && <FirstVisitTip userId={user.id} role="medico" />}
 
           <DoctorPointsBar
             points={user?.points ?? 0}
@@ -468,17 +478,18 @@ export default function DoctorDashboard() {
       {/* ── EVENTS ── */}
       {tab === 'events' && (
         <div>
-          <MarketHead title="Eventos" count={events.length} countWord="evento" />
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos..." />
+          <MarketHead title="Eventos e workshops" count={events.length + courses.length} countWord="atividade" />
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos ou workshops..." />
           <FilterBar
             chips={[['all','Todos'],['congresso','Congresso'],['workshop','Workshop'],['online','Online']]}
             active={evFilter} onChange={setEvFilter}
           />
-          {filtEvents.length === 0
-            ? <Empty text="Nenhum evento disponível no momento." hint="Novos eventos aparecerão aqui quando forem publicados." />
+          {filtEvents.length === 0 && filtCourses.length === 0
+            ? <Empty text="Nenhum evento ou workshop disponível." hint="Novas oportunidades aparecerão aqui quando forem publicadas." />
             : (
               <MarketGrid>
                 {filtEvents.map(e => <EventMarketCard key={e.id} ev={e} onOpen={() => setOpenEvent(e)} />)}
+                {filtCourses.map(c => <CourseMarketCard key={c.id} course={c} onOpen={() => setOpenCourse(c)} />)}
               </MarketGrid>
             )
           }
@@ -624,9 +635,12 @@ function DoctorPointsBar({
               Nível {progress.level.index + 1} · {progress.level.name}
             </div>
             <div style={{ marginTop: 3, display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)' }}>
-              <span>{connections} conexão{connections === 1 ? '' : 'ões'}</span>
+              <span>{connections} conexão{connections === 1 ? '' : 'ões'} aprovada{connections === 1 ? '' : 's'}</span>
               <span>{progress.points} pts</span>
             </div>
+            <p style={{ marginTop: 6, fontSize: 11.5, lineHeight: 1.35, color: 'var(--muted)' }}>
+              Ganhe pontos ao avisar interesse. Conexões aprovadas valem mais.
+            </p>
           </div>
         </div>
         <div style={{ marginTop: 10, height: 4, borderRadius: 999, background: 'var(--chip)', overflow: 'hidden' }}>
@@ -788,7 +802,7 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
         </div>
         <div className="tessy-home-wide-card__footer">
           <button type="button" className="tessy-home-btn-inline" onClick={() => { void handleConnect(); }} disabled={busy}>
-            {busy ? 'Conectando…' : feedback ? 'Conectado ✓' : 'Conectar'}
+            {busy ? 'Abrindo WhatsApp…' : feedback ? 'WhatsApp aberto ✓' : 'Falar no WhatsApp'}
           </button>
         </div>
         {feedback && !error && (
@@ -991,7 +1005,7 @@ function PendingInboxBanner({
           {lead.companyName} quer falar com você
         </div>
         <p style={{ marginTop: 4, fontSize: 12.5, lineHeight: 1.35, color: 'rgba(255,255,255,0.92)' }}>
-          Sobre: {lead.itemName || 'oportunidade comercial'}
+          Sobre: {lead.itemName || 'oportunidade comercial'}. Ao aprovar, a empresa poderá falar com você no WhatsApp.
         </p>
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           <button
@@ -1211,7 +1225,7 @@ function RepresentativesView({
                 fontWeight: 650,
                 cursor: busyId === rep.id ? 'not-allowed' : 'pointer',
               }}>
-                {busyId === rep.id ? 'Conectando...' : successId === rep.id ? 'Conectado ✓' : 'Conectar'}
+                {busyId === rep.id ? 'Abrindo WhatsApp...' : successId === rep.id ? 'WhatsApp aberto ✓' : 'Falar no WhatsApp'}
               </button>
               {successId === rep.id && successMsg && (
                 <div style={{ marginTop: 8, fontSize: 11.5, color: '#1EA97C', lineHeight: 1.35 }}>{successMsg}</div>
@@ -1382,7 +1396,7 @@ function EventCard({ ev }: { ev: Event }) {
     }
   }
 
-  const btnLabel = busy ? '...' : registered ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : full ? 'Esgotado' : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`;
+  const btnLabel = busy ? '...' : registered ? 'Interesse enviado' : full ? 'Esgotado' : `Avisar empresa (+${POINTS_PER_INTEREST} pts)`;
   const btnBg = full && !registered ? 'var(--chip)' : registered ? 'rgba(30,169,124,0.10)' : 'var(--accent)';
   const btnColor = full && !registered ? 'var(--muted)' : registered ? '#1EA97C' : '#fff';
   const btnBorder = registered ? '1px solid rgba(30,169,124,0.28)' : 'none';
@@ -1636,7 +1650,7 @@ function ProductCard({ product }: { product: Product }) {
               fontSize: 13, fontWeight: 600,
               cursor: interestSent ? 'default' : 'pointer',
             }}>
-            {interestSent ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`}
+            {interestSent ? 'Interesse enviado' : `Avisar empresa (+${POINTS_PER_INTEREST} pts)`}
           </button>
         </div>
         {leadError && (
@@ -1750,7 +1764,7 @@ function CourseCard({ course }: { course: Course }) {
             fontSize: 13, fontWeight: 560,
             cursor: interestSent ? 'not-allowed' : 'pointer',
           }}>
-          {interestSent ? `Interesse enviado (+${POINTS_PER_INTEREST} pts)` : `Tenho interesse (+${POINTS_PER_INTEREST} pts)`}
+          {interestSent ? 'Interesse enviado' : `Avisar empresa (+${POINTS_PER_INTEREST} pts)`}
         </button>
         {leadError && (
           <div style={{ marginTop: 8, fontSize: 12, color: '#F25C54', lineHeight: 1.35, textAlign: 'center' }}>{leadError}</div>

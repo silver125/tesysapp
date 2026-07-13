@@ -33,9 +33,10 @@ const doctorBenefits = [
 ];
 
 const faqs = [
+  ['Como funciona?', 'Médico vê oportunidades → avisa interesse → empresa pede contato → médico aprova → WhatsApp liberado.'],
   ['Para quais áreas?', 'Estética, dermato, cirurgia, medicina premium e áreas estratégicas.'],
-  ['Médico paga?', 'O acesso inicial poderá ser gratuito para perfis aprovados.'],
-  ['Como empresas entram?', 'Onboarding comercial e validação de categoria.'],
+  ['Médico paga?', 'Gratuito para médicos cadastrados.'],
+  ['Como empresas entram?', 'Cadastro comercial e validação de categoria.'],
   ['Quando acesso?', 'Imediatamente após criar conta em tessybr.com/cadastro.'],
 ];
 
@@ -83,12 +84,12 @@ export default function Landing() {
 
         <div className="tl-hero-content">
           <h1>
-            <span className="tl-desktop-title">Comunidade para quem vive o mundo da medicina.</span>
+            <span className="tl-desktop-title">Descubra oportunidades da saúde — e fale com empresas pelo WhatsApp.</span>
             <span className="tl-mobile-title">Seja bem vindo<br />a Tessy.</span>
           </h1>
 
           <p>
-            Encontre representantes, eventos, workshops, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
+            Produtos, eventos, workshops e representantes em um fluxo simples: você demonstra interesse, a empresa pede contato e a conversa acontece no WhatsApp.
           </p>
 
           <div className="tl-hero-actions">
@@ -303,8 +304,8 @@ export default function Landing() {
         </section>
 
         <section className="tl-positioning">
-          <h2>Conexão é o novo canal.</h2>
-          <p>A ponte entre decisão médica e oportunidade comercial.</p>
+          <h2>Interesse → aprovação → WhatsApp.</h2>
+          <p>Sem feed público, sem spam — só oportunidades com intenção clara.</p>
         </section>
 
         <section className="tl-waitlist">

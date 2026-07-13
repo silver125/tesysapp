@@ -11,16 +11,16 @@ type Step = {
 
 const COMPANY_STEPS: Step[] = [
   {
-    title: 'Publique oportunidades claras.',
-    body: 'Produtos, eventos, workshops e amostras aparecem para médicos com perfil compatível.',
+    title: 'Publique seu primeiro anúncio.',
+    body: 'Produto, evento ou workshop — médicos da sua área veem na plataforma.',
   },
   {
-    title: 'Receba interesse médico.',
-    body: 'Cada clique vira sinal comercial para sua empresa responder com contexto.',
+    title: 'Médicos interessados aparecem na aba Médicos.',
+    body: 'Quando clicam em interesse, você recebe o sinal com especialidade e contexto.',
   },
   {
-    title: 'Converse pelo WhatsApp.',
-    body: 'A Tessy aproxima a relação, mas a conversa acontece no canal que o mercado já usa.',
+    title: 'Peça permissão para WhatsApp.',
+    body: 'O médico aprova antes de liberar o número. A conversa acontece no WhatsApp, fora do app.',
   },
 ];
 
@@ -37,6 +37,7 @@ const DOCTOR_STEPS = [
   'interesses',
   'contato',
   'privacidade',
+  'como-funciona',
   'pronto',
 ] as const;
 
@@ -237,13 +238,15 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
           {current === 'interesses' && 'Ajuste suas oportunidades.'}
           {current === 'contato' && 'Seu canal profissional.'}
           {current === 'privacidade' && 'Você controla o contato.'}
+          {current === 'como-funciona' && 'Como a Tessy conecta você.'}
           {current === 'pronto' && 'Pronto para usar a Tessy.'}
         </h2>
         <p style={{ marginTop: 10, color: 'var(--ink-2)', fontSize: 14, lineHeight: 1.48 }}>
           {current === 'interesses' && 'Escolha o que você quer ver primeiro. A experiência fica mais direta para sua rotina.'}
           {current === 'contato' && 'Empresas aprovadas podem falar com você por WhatsApp, sem chat interno complicado.'}
-          {current === 'privacidade' && 'Seu número não fica aberto publicamente. A conexão precisa ter intenção clara.'}
-          {current === 'pronto' && 'Comece pelas oportunidades em destaque e conecte apenas quando fizer sentido.'}
+          {current === 'privacidade' && 'Seu número não fica aberto publicamente. A empresa precisa pedir permissão e você aprova.'}
+          {current === 'como-funciona' && 'Três ações, três resultados — tudo pelo WhatsApp, sem chat interno.'}
+          {current === 'pronto' && 'Comece por Produtos, Eventos ou Representantes. Avise interesse quando fizer sentido.'}
         </p>
       </div>
 
@@ -381,7 +384,7 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
             />
             <span>
               <span style={{ display: 'block', color: 'var(--accent-ink)', fontSize: 15, fontWeight: 560 }}>
-                Mostrar WhatsApp apenas para empresas com conexão aprovada.
+                Mostrar WhatsApp apenas depois que eu aprovar o contato.
               </span>
               <span style={{ display: 'block', marginTop: 5, color: 'var(--ink-2)', fontSize: 12.5, lineHeight: 1.45 }}>
                 Recomendado para manter controle e evitar abordagem fria.
@@ -390,9 +393,9 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
           </label>
 
           {[
-            'Empresas veem “Solicitar conexão” antes do contato.',
-            'Você decide quando liberar a conversa.',
-            'O WhatsApp abre direto quando a conexão for aprovada.',
+            'Empresas veem "Pedir permissão para WhatsApp" antes do contato.',
+            'Você decide quando liberar seu número.',
+            'O WhatsApp abre direto quando você aprovar.',
           ].map(item => (
             <div key={item} style={{
               display: 'flex',
@@ -413,6 +416,26 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
                 flexShrink: 0,
               }} />
               {item}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {current === 'como-funciona' && (
+        <div style={{ marginTop: 20, display: 'grid', gap: 10 }}>
+          {[
+            ['Avisar interesse', 'Notifica a empresa. Seu WhatsApp continua privado.'],
+            ['Falar no WhatsApp', 'Abre conversa direta com o representante (quando disponível).'],
+            ['Aprovar contato', 'Se a empresa pedir, você libera o número antes da conversa.'],
+          ].map(([title, body]) => (
+            <div key={title} style={{
+              padding: '14px 15px',
+              borderRadius: 16,
+              background: '#fff',
+              border: '1px solid var(--line)',
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 620, color: 'var(--accent-ink)' }}>{title}</div>
+              <p style={{ marginTop: 5, fontSize: 12.5, lineHeight: 1.45, color: 'var(--ink-2)' }}>{body}</p>
             </div>
           ))}
         </div>
