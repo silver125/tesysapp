@@ -488,15 +488,14 @@ const landingCss = `
   left: 0;
   right: 0;
   bottom: 0;
-  height: 58%;
+  height: 28%;
   z-index: 3;
   pointer-events: none;
   background: linear-gradient(
     180deg,
     rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0.55) 28%,
-    rgba(255,255,255,0.92) 62%,
-    #ffffff 100%
+    rgba(255,255,255,0.35) 45%,
+    rgba(255,255,255,0.85) 100%
   );
 }
 
@@ -1989,13 +1988,13 @@ main {
 
   .tl-hero:before {
     display: block;
-    height: 48%;
+    height: 22%;
     z-index: 3;
     background: linear-gradient(
       180deg,
       rgba(255,255,255,0) 0%,
-      rgba(255,255,255,0.6) 30%,
-      #ffffff 100%
+      rgba(255,255,255,0.4) 55%,
+      rgba(255,255,255,0.9) 100%
     );
   }
 
