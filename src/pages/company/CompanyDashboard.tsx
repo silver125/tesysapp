@@ -3,6 +3,7 @@ import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import CompanyAvatar from '../../components/CompanyAvatar';
 import FirstVisitTip from '../../components/FirstVisitTip';
+import InviteShareCard from '../../components/InviteShareCard';
 import { useAuth } from '../../context/useAuth';
 import {
   Mono, Chip, ModalityBadge, WaIcon,
@@ -242,12 +243,12 @@ function OpportunityIcon({ type }: { type: 'event' | 'product' | 'course' | 'par
     </svg>
   );
 }
-function IcoSearch(a: boolean) {
-  const c = a ? 'var(--accent)' : '#6F7A90';
+function IcoPeople(a: boolean) {
+  const c = a ? 'var(--accent)' : 'var(--muted)';
   return (
-    <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6">
-      <circle cx="8.5" cy="8.5" r="5.5" />
-      <path d="M13 13l3.5 3.5" strokeLinecap="round" />
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8">
+      <circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" />
+      <path d="M3 19c0-3 2.5-5 6-5s6 2 6 5M14 19c0-2.2 1.8-4 4-4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -257,7 +258,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'events',   label: 'Eventos',  icon: IcoCalendar },
   { key: 'listings', label: 'Meus anúncios', icon: () => null, big: true },
   { key: 'products', label: 'Produtos', icon: IcoBox },
-  { key: 'leads',    label: 'Médicos',   icon: IcoSearch },
+  { key: 'leads',    label: 'Médicos',   icon: IcoPeople },
 ];
 
 const EVENT_CATS   = ['Congresso', 'Workshop', 'Simpósio', 'Webinar', 'Treinamento'];
@@ -684,13 +685,13 @@ export default function CompanyDashboard() {
             <div style={{ minWidth: 0, display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'flex-start' }}>
               <div style={{ minWidth: 0 }}>
                 <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                  Ponte comercial
+                  Médicos interessados
                 </Mono>
                 <div style={{ marginTop: 8, fontSize: 19, color: 'var(--ink)', fontWeight: 600, lineHeight: 1.16 }}>
                   {myLeads.length} {myLeads.length === 1 ? 'médico interessado' : 'médicos interessados'}
                 </div>
                 <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.4 }}>
-                  Veja os perfis e inicie uma conversa pelo WhatsApp.
+                  Peça permissão para WhatsApp — o médico aprova antes da conversa.
                 </div>
               </div>
               <div style={{
@@ -771,7 +772,7 @@ export default function CompanyDashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
                 { text: 'Publique um produto para aumentar sua visibilidade na vitrine.', cta: 'Meus anúncios', action: () => setTab('listings') },
-                { text: 'Complete seu perfil com WhatsApp para médicos iniciarem conversa.', cta: 'Editar perfil', action: () => openProfileSettings() },
+                { text: 'Complete seu perfil com WhatsApp para receber pedidos de contato.', cta: 'Editar perfil', action: () => openProfileSettings() },
                 { text: 'Convide médicos interessados para o seu próximo evento.', cta: 'Meus anúncios', action: () => setTab('listings') },
               ].map(item => (
                 <button key={item.text} onClick={item.action} style={{
@@ -798,6 +799,9 @@ export default function CompanyDashboard() {
                   </span>
                 </button>
               ))}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <InviteShareCard target="medico" />
             </div>
           </div>
 
@@ -927,7 +931,9 @@ export default function CompanyDashboard() {
           title="Meus eventos"
           onAdd={() => openCreate('event')}
           empty={myEvents.length === 0}
-          emptyText="Nenhum evento criado ainda."
+          emptyText="Nenhum evento publicado"
+          emptyHint="Congressos, webinars e simpósios aparecem para médicos na aba Eventos e workshops."
+          emptyActionLabel="Publicar primeiro evento"
           grid
         >
           {myEvents.map(e => (
@@ -950,7 +956,9 @@ export default function CompanyDashboard() {
           title="Meus produtos"
           onAdd={() => openCreate('product')}
           empty={myProducts.length === 0}
-          emptyText="Nenhum produto criado ainda."
+          emptyText="Nenhum produto publicado"
+          emptyHint="Produtos e parcerias comerciais ficam visíveis na vitrine dos médicos."
+          emptyActionLabel="Publicar primeiro produto"
           grid
         >
           {myProducts.map(p => <ProductCompactCard key={p.id} product={p} onOpen={() => setOpenProductId(p.id)} />)}
@@ -966,7 +974,9 @@ export default function CompanyDashboard() {
           title="Minhas capacitações"
           onAdd={() => openCreate('course')}
           empty={myCourses.length === 0}
-          emptyText="Nenhuma capacitação criada ainda."
+          emptyText="Nenhum workshop publicado"
+          emptyHint="Capacitações com instrutor e carga horária — médicos veem junto com eventos."
+          emptyActionLabel="Publicar primeiro workshop"
           grid
         >
           {myCourses.map(c => <CourseCompactCard key={c.id} course={c} onOpen={() => setOpenCourseId(c.id)} />)}
@@ -1490,8 +1500,15 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
 }
 
 /* ─── List tab wrapper ─── */
-function ListTab({ title, onAdd, empty, emptyText, grid = false, children }: {
-  title: string; onAdd: () => void; empty: boolean; emptyText: string; grid?: boolean; children: React.ReactNode;
+function ListTab({ title, onAdd, empty, emptyText, emptyHint, emptyActionLabel, grid = false, children }: {
+  title: string;
+  onAdd: () => void;
+  empty: boolean;
+  emptyText: string;
+  emptyHint?: string;
+  emptyActionLabel?: string;
+  grid?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <div>
@@ -1505,7 +1522,29 @@ function ListTab({ title, onAdd, empty, emptyText, grid = false, children }: {
         }}>+ Novo</button>
       </div>
       {empty
-        ? <div style={{ padding: '48px 20px', textAlign: 'center', background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', color: 'var(--muted)', fontSize: 14 }}>{emptyText}</div>
+        ? (
+          <div style={{ padding: '32px 20px', textAlign: 'center', background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)' }}>
+            <div style={{ color: 'var(--ink)', fontWeight: 560, fontSize: 14 }}>{emptyText}</div>
+            {emptyHint && (
+              <p style={{ marginTop: 8, fontSize: 12.5, lineHeight: 1.45, color: 'var(--muted)' }}>{emptyHint}</p>
+            )}
+            {emptyActionLabel && (
+              <button type="button" onClick={onAdd} style={{
+                marginTop: 14,
+                padding: '10px 16px',
+                borderRadius: 10,
+                border: 'none',
+                background: 'var(--accent)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}>
+                {emptyActionLabel}
+              </button>
+            )}
+          </div>
+        )
         : grid
           ? <MarketGrid>{children}</MarketGrid>
           : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>

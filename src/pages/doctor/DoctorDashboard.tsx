@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import Layout, { type NavItem } from '../../components/Layout';
-import { openProfileSettings } from '../../lib/profileSettingsEvents';
+import { openProfileSettings, openHelp } from '../../lib/profileSettingsEvents';
 import { doctorInterestList, sortByDoctorInterests } from '../../lib/doctorPreferences';
 import { useAuth } from '../../context/useAuth';
 import {
@@ -20,11 +20,12 @@ import {
 } from '../../lib/representatives';
 import { connectWithRepresentative } from '../../lib/commercialConnect';
 import { formatLeadError } from '../../lib/leadErrors';
-import { getLevelProgress, POINTS_PER_INTEREST, countApprovedConnections } from '../../lib/gamification';
+import { getLevelProgress, getBadges, POINTS_PER_INTEREST, POINTS_PER_CONNECTION, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import { fetchCompanyLogos } from '../../lib/companyBranding';
 import CompanyAvatar from '../../components/CompanyAvatar';
 import FirstVisitTip from '../../components/FirstVisitTip';
+import InviteShareCard from '../../components/InviteShareCard';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
@@ -337,6 +338,8 @@ export default function DoctorDashboard() {
   });
   const suggestedRep = representatives.find(r => matchesRepresentativeRegion(r, regionFilter !== 'all' ? regionFilter : 'all')) ?? representatives[0];
   const suggestedProduct = (recommendedProducts.length > 0 ? recommendedProducts : rankedProducts)[0];
+  const platformEmpty = products.length === 0 && events.length === 0 && courses.length === 0;
+  const homeQuiet = !suggestedRep && !suggestedProduct && homeEvents.length === 0 && representatives.length === 0;
   const filtCompanies = buildCompanyMatches(events, products, courses, locations).filter(co => {
     return !q || includesQ(co.name, q) || co.products.some(p => includesQ(p.name, q)) || co.events.some(e => includesQ(e.title, q));
   });
@@ -463,13 +466,25 @@ export default function DoctorDashboard() {
             </section>
           )}
 
-          {!suggestedRep && !suggestedProduct && homeEvents.length === 0 && representatives.length === 0 && (
-            <Empty
-              text="Nada encontrado agora."
-              hint="Complete seu perfil e interesses para receber sugestões melhores."
-              actionLabel="Completar perfil"
-              onAction={openProfileSettings}
-            />
+          {homeQuiet && (
+            platformEmpty ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <Empty
+                  text="A vitrine ainda está sendo montada"
+                  hint="Empresas estão entrando na Tessy. Complete seu perfil para receber sugestões melhores quando novos anúncios chegarem."
+                  actionLabel="Completar perfil"
+                  onAction={openProfileSettings}
+                />
+                <InviteShareCard target="empresa" />
+              </div>
+            ) : (
+              <Empty
+                text="Nenhuma sugestão para seu perfil agora"
+                hint="Explore Produtos, Eventos ou Representantes — ou ajuste seus interesses."
+                actionLabel="Ajustar interesses"
+                onAction={openProfileSettings}
+              />
+            )
           )}
         </div>
       )}
@@ -602,6 +617,8 @@ function DoctorPointsBar({
   connections: number;
 }) {
   const progress = getLevelProgress(points);
+  const badges = getBadges(connections, points);
+  const unlockedBadges = badges.filter(b => b.unlocked);
 
   return (
     <section style={{ marginBottom: 16 }}>
@@ -630,18 +647,59 @@ function DoctorPointsBar({
             {progress.level.index + 1}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--accent-ink)' }}>
-              Nível {progress.level.index + 1} · {progress.level.name}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--accent-ink)' }}>
+                Nível {progress.level.index + 1} · {progress.level.name}
+              </div>
+              <button
+                type="button"
+                onClick={openHelp}
+                aria-label="Como funcionam os pontos"
+                style={{
+                  border: 'none',
+                  background: 'rgba(74,168,255,0.10)',
+                  color: 'var(--accent-ink)',
+                  borderRadius: 8,
+                  width: 26,
+                  height: 26,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                ?
+              </button>
             </div>
             <div style={{ marginTop: 3, display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)' }}>
               <span>{connections} conexão{connections === 1 ? '' : 'ões'} aprovada{connections === 1 ? '' : 's'}</span>
               <span>{progress.points} pts</span>
             </div>
             <p style={{ marginTop: 6, fontSize: 11.5, lineHeight: 1.35, color: 'var(--muted)' }}>
-              Ganhe pontos ao avisar interesse. Conexões aprovadas valem mais.
+              Ganhe pontos ao avisar interesse. Conexões aprovadas valem +{POINTS_PER_CONNECTION}.
             </p>
           </div>
         </div>
+        {unlockedBadges.length > 0 && (
+          <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {unlockedBadges.map(badge => (
+              <span
+                key={badge.id}
+                title={badge.description}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 999,
+                  background: 'rgba(245,130,32,0.08)',
+                  border: '1px solid rgba(245,130,32,0.14)',
+                  fontSize: 11,
+                  color: 'var(--accent-ink)',
+                }}
+              >
+                {badge.icon} {badge.label}
+              </span>
+            ))}
+          </div>
+        )}
         <div style={{ marginTop: 10, height: 4, borderRadius: 999, background: 'var(--chip)', overflow: 'hidden' }}>
           <div style={{
             height: '100%',

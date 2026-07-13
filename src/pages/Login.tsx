@@ -86,7 +86,7 @@ export default function Login() {
                 Entrar no Tessy<span style={{ color: 'var(--accent)' }}>.</span>
               </h1>
               <p style={{ marginTop: 12, fontSize: 16, color: 'var(--ink-2)', lineHeight: 1.55 }}>
-                Acesse oportunidades, aprovar contatos comerciais e gerenciar seus anúncios.
+                Acesse oportunidades, aprovar contatos comerciais e gerenciar sua conta Tessy.
               </p>
             </div>
 

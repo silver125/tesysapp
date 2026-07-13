@@ -197,17 +197,31 @@ export default function Landing() {
 
           <div className="tl-phone-card tl-phone-card-right">
             <span>Empresa</span>
-            <strong>Lead qualificado</strong>
-            <small>Médico pediu contato comercial</small>
+            <strong>Médico interessado</strong>
+            <small>Pediu permissão para WhatsApp</small>
           </div>
         </div>
       </section>
 
       <section className="tl-mobile-intro">
-        <h2>Comunidade para quem vive o mundo da medicina.</h2>
+        <h2>Descubra oportunidades da saúde — e fale com empresas pelo WhatsApp.</h2>
         <p>
-          Encontre representantes, eventos, workshops, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
+          Produtos, eventos e representantes em um fluxo simples: avise interesse, aprove o contato e converse no WhatsApp.
         </p>
+
+        <div className="tl-mobile-flow" style={{
+          marginTop: 18,
+          padding: '14px 16px',
+          borderRadius: 16,
+          background: 'rgba(255,255,255,0.12)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: 'rgba(255,255,255,0.92)',
+        }}>
+          <strong style={{ display: 'block', marginBottom: 8 }}>Como funciona</strong>
+          1. Descubra · 2. Avise interesse · 3. Aprove pedido · 4. WhatsApp
+        </div>
 
         <div className="tl-mobile-hero-actions">
           <Link to="/cadastro?perfil=medico" className="tl-mobile-hero-primary">
@@ -2259,8 +2273,7 @@ main {
   }
 
   .tl-section#o-que-encontra,
-  .tl-audience,
-  .tl-positioning {
+  .tl-audience {
     display: none;
   }
 

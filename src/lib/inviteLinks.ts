@@ -12,6 +12,6 @@ export const INVITE_WHATSAPP = {
     'Olá! Estou usando a Tessy para conectar com empresas de saúde, eventos e oportunidades. Cadastre-se como médico: ' +
     INVITE_URLS.medico,
   empresa:
-    'Olá! A Tessy conecta empresas de saúde a médicos interessados. Publique produtos, eventos e receba leads: ' +
+    'Olá! A Tessy conecta empresas de saúde a médicos interessados. Publique produtos, eventos e receba médicos interessados: ' +
     INVITE_URLS.empresa,
 } as const;

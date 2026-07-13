@@ -73,7 +73,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
             {(user?.role === 'medico' || user?.role === 'empresa') && onNotificationClick && (
               <button
                 type="button"
-                aria-label={notificationCount > 0 ? `${notificationCount} notificações` : 'Notificações'}
+                aria-label={notificationCount > 0 ? `${notificationCount} pedido${notificationCount === 1 ? '' : 's'} de contato` : 'Pedidos de contato'}
                 onClick={onNotificationClick}
                 style={{
                   position: 'relative',

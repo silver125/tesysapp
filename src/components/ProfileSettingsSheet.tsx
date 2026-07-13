@@ -5,7 +5,7 @@ import { Sheet } from './market';
 import { Mono, WaIcon } from './ui';
 import ProfilePhotoField from './ProfilePhotoField';
 import { uploadProfileAvatar } from '../lib/profileAvatar';
-import { OPEN_DELETE_ACCOUNT_EVENT, OPEN_PROFILE_SETTINGS_EVENT } from '../lib/profileSettingsEvents';
+import { OPEN_DELETE_ACCOUNT_EVENT, OPEN_PROFILE_SETTINGS_EVENT, openHelp } from '../lib/profileSettingsEvents';
 
 const SPECIALTIES = [
   'Nutrologia', 'Endocrinologia', 'Dermatologia', 'Cirurgia Plástica',
@@ -307,6 +307,31 @@ export default function ProfileSettingsSheet() {
         )}
 
         <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+          <button
+            type="button"
+            onClick={() => {
+              close();
+              openHelp();
+            }}
+            disabled={saving || deleting}
+            style={{
+              width: '100%',
+              height: 40,
+              borderRadius: 11,
+              border: '1px solid rgba(74,168,255,0.22)',
+              background: 'rgba(74,168,255,0.08)',
+              color: 'var(--accent-ink)',
+              fontSize: 13,
+              fontWeight: 560,
+              cursor: saving || deleting ? 'not-allowed' : 'pointer',
+              marginBottom: 4,
+            }}
+          >
+            Como funciona a Tessy
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
           <button
             type="button"
             onClick={close}
