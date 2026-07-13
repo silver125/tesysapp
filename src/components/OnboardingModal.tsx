@@ -425,8 +425,8 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
         <div style={{ marginTop: 20, display: 'grid', gap: 10 }}>
           {[
             ['Avisar interesse', 'Notifica a empresa. Seu WhatsApp continua privado.'],
-            ['Falar no WhatsApp', 'Abre conversa direta com o representante (quando disponível).'],
-            ['Aprovar contato', 'Se a empresa pedir, você libera o número antes da conversa.'],
+            ['Empresa pede permissão', 'Você recebe um aviso na home para aprovar ou ignorar.'],
+            ['Aprovar contato', 'Libera seu WhatsApp — a conversa segue fora do app.'],
           ].map(([title, body]) => (
             <div key={title} style={{
               padding: '14px 15px',

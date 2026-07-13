@@ -5,7 +5,8 @@ import { CompanyMark, TessyMark, BellIcon } from './ui';
 import { companyInitials, companyTint, displayUserLabel } from '../lib/uiHelpers';
 import OnboardingModal from './OnboardingModal';
 import ProfileSettingsSheet from './ProfileSettingsSheet';
-import { openDeleteAccountDialog, openProfileSettings } from '../lib/profileSettingsEvents';
+import HelpSheet from './HelpSheet';
+import { openDeleteAccountDialog, openHelp, openProfileSettings } from '../lib/profileSettingsEvents';
 
 export interface NavItem {
   label: string;
@@ -192,11 +193,27 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                   type="button"
                   onClick={() => {
                     setProfileOpen(false);
-                    openProfileSettings();
+                    openHelp();
                   }}
                   style={{
                     ...menuButtonStyle,
                     marginTop: 10,
+                    border: '1px solid rgba(74,168,255,0.22)',
+                    background: 'rgba(74,168,255,0.08)',
+                    color: 'var(--accent-ink)',
+                  }}
+                >
+                  Como funciona
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    openProfileSettings();
+                  }}
+                  style={{
+                    ...menuButtonStyle,
+                    marginTop: 8,
                     border: '1px solid rgba(245,130,32,0.22)',
                     background: 'rgba(245,130,32,0.08)',
                     color: 'var(--accent-ink)',
@@ -346,6 +363,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
 
       <OnboardingModal />
       <ProfileSettingsSheet />
+      <HelpSheet />
     </div>
   );
 }

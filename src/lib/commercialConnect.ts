@@ -1,5 +1,4 @@
 import type { AddLeadResult, LeadInput } from '../types';
-import { openWhatsappLink } from './uiHelpers';
 
 export function representativeLeadInput(companyId: string, companyName: string): LeadInput {
   return {
@@ -12,10 +11,6 @@ export function representativeLeadInput(companyId: string, companyName: string):
   };
 }
 
-export function representativeWhatsappMessage(companyName: string) {
-  return `Olá ${companyName}, sou médico no Tessy e gostaria de falar com o representante.`;
-}
-
 export type RepresentativeConnectResult = {
   whatsappOpened: boolean;
   created: boolean;
@@ -24,33 +19,28 @@ export type RepresentativeConnectResult = {
 };
 
 /**
- * Abre WhatsApp no gesto do clique e registra o lead de forma idempotente.
- * Pontos só entram na primeira vez (via RPC award_doctor_interest_points).
+ * Registra interesse no representante/empresa — fluxo unificado sem abrir WhatsApp direto.
+ * A empresa vê o sinal em Médicos e pode pedir permissão para WhatsApp.
  */
 export async function connectWithRepresentative(
   companyId: string,
   companyName: string,
-  whatsapp: string | undefined,
+  _whatsapp: string | undefined,
   addLead: (input: LeadInput) => Promise<AddLeadResult>,
 ): Promise<RepresentativeConnectResult> {
-  const whatsappOpened = openWhatsappLink(whatsapp, representativeWhatsappMessage(companyName));
   const lead = await addLead(representativeLeadInput(companyId, companyName));
 
   let message: string;
   if (lead.pointsAwarded > 0) {
-    message = whatsappOpened
-      ? `WhatsApp aberto · +${lead.pointsAwarded} pts`
-      : `Contato registrado · +${lead.pointsAwarded} pts`;
-  } else if (whatsappOpened) {
-    message = 'WhatsApp aberto · contato já registrado';
+    message = `Interesse enviado · +${lead.pointsAwarded} pts. A empresa pode pedir permissão para WhatsApp.`;
   } else if (lead.created) {
-    message = 'Contato registrado';
+    message = 'Interesse enviado. A empresa pode pedir permissão para WhatsApp.';
   } else {
-    message = 'Contato já registrado. Peça à empresa para atualizar o WhatsApp.';
+    message = 'Interesse já registrado. Aguarde a empresa pedir permissão para WhatsApp.';
   }
 
   return {
-    whatsappOpened,
+    whatsappOpened: false,
     created: lead.created,
     pointsAwarded: lead.pointsAwarded,
     message,

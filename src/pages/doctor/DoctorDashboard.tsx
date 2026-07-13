@@ -5,9 +5,8 @@ import { doctorInterestList, sortByDoctorInterests } from '../../lib/doctorPrefe
 import { useAuth } from '../../context/useAuth';
 import {
   CompanyMark, VerifiedDot, Mono, BannerCard, Chip, ModalityBadge,
-  WaIcon,
 } from '../../components/ui';
-import { buildWhatsappLink, categoryTint, companyInitials, companyTint, openExternalLink } from '../../lib/uiHelpers';
+import { categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
 import {
   buildRepresentativeProfiles,
   matchesRepresentativeRegion,
@@ -802,7 +801,7 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
         </div>
         <div className="tessy-home-wide-card__footer">
           <button type="button" className="tessy-home-btn-inline" onClick={() => { void handleConnect(); }} disabled={busy}>
-            {busy ? 'Abrindo WhatsApp…' : feedback ? 'WhatsApp aberto ✓' : 'Falar no WhatsApp'}
+            {busy ? 'Enviando…' : feedback ? 'Interesse enviado ✓' : 'Avisar interesse'}
           </button>
         </div>
         {feedback && !error && (
@@ -1225,7 +1224,7 @@ function RepresentativesView({
                 fontWeight: 650,
                 cursor: busyId === rep.id ? 'not-allowed' : 'pointer',
               }}>
-                {busyId === rep.id ? 'Abrindo WhatsApp...' : successId === rep.id ? 'WhatsApp aberto ✓' : 'Falar no WhatsApp'}
+                {busyId === rep.id ? 'Enviando...' : successId === rep.id ? 'Interesse enviado ✓' : 'Avisar interesse'}
               </button>
               {successId === rep.id && successMsg && (
                 <div style={{ marginTop: 8, fontSize: 11.5, color: '#1EA97C', lineHeight: 1.35 }}>{successMsg}</div>
@@ -1363,7 +1362,6 @@ function EventCard({ ev }: { ev: Event }) {
   const full = pct >= 100;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const waLink = buildWhatsappLink(ev.companyWhatsapp, `Olá! Vi o evento "${ev.title}" no Tessy e tenho interesse.`);
   const code = companyInitials(ev.companyName);
 
   async function handleInterest() {
@@ -1469,12 +1467,12 @@ function EventCard({ ev }: { ev: Event }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+      <div style={{ marginTop: 14 }}>
         <button
           onClick={handleInterest}
           disabled={(full && !registered) || busy || registered}
           style={{
-            flex: 1, padding: '11px 0', borderRadius: 12, border: btnBorder,
+            width: '100%', padding: '11px 0', borderRadius: 12, border: btnBorder,
             background: btnBg, color: btnColor,
             fontSize: 13, fontWeight: 560, cursor: btnCursor,
             transition: 'all 0.2s',
@@ -1482,17 +1480,6 @@ function EventCard({ ev }: { ev: Event }) {
         >
           {btnLabel}
         </button>
-        {waLink && (
-          <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '11px 0', borderRadius: 12, textDecoration: 'none',
-            background: 'rgba(37,211,102,0.1)', color: '#25D366',
-            border: '1px solid rgba(37,211,102,0.3)',
-            fontSize: 13, fontWeight: 560,
-          }}>
-            <WaIcon size={14} /> Falar com organizador
-          </a>
-        )}
       </div>
     </BannerCard>
   );
@@ -1504,20 +1491,14 @@ function ProductCard({ product }: { product: Product }) {
   const [leadSent, setLeadSent] = useState(false);
   const [tint1] = categoryTint(product.category);
   const code = companyInitials(product.companyName);
-  const repMessage = `Olá! Vi o produto "${product.name}" no Tessy e gostaria de falar com o representante sobre uma possível parceria.`;
-  const waLink = buildWhatsappLink(product.companyWhatsapp, repMessage);
-
-  // Prioriza conversa com representante. Se a empresa não cadastrou WhatsApp, cai para o site.
-  const repTarget = waLink || product.website || '';
-  const canContactRep = !!repTarget;
   const interestSent = leadSent || hasLeadInterest(leads, 'product', product.id, 'sample_request');
 
   const [leadError, setLeadError] = useState('');
 
-  async function sendProductLead(intent: 'representative_contact' | 'sample_request' | 'instagram_partnership') {
-    if (interestSent && intent === 'sample_request') return;
+  async function sendProductInterest() {
+    if (interestSent) return;
     setLeadError('');
-    if (intent === 'sample_request') setLeadSent(true);
+    setLeadSent(true);
     try {
       const result = await addLead({
         companyId: product.companyId,
@@ -1525,18 +1506,14 @@ function ProductCard({ product }: { product: Product }) {
         itemType: 'product',
         itemId: product.id,
         itemName: product.name,
-        intent,
-        message: intent === 'sample_request'
-          ? 'Médico pediu amostra, material científico e condições comerciais.'
-          : intent === 'instagram_partnership'
-            ? 'Médico quer avaliar parceria para divulgação no Instagram.'
-            : 'Médico pediu contato do representante do produto.',
+        intent: 'sample_request',
+        message: 'Médico pediu amostra, material científico e condições comerciais.',
       });
       if (result.pointsAwarded > 0) {
         setLeadError('');
       }
     } catch (e) {
-      if (intent === 'sample_request') setLeadSent(false);
+      setLeadSent(false);
       setLeadError(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
     }
   }
@@ -1578,7 +1555,6 @@ function ProductCard({ product }: { product: Product }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 14, color: 'var(--ink-2)', fontWeight: 560 }}>{product.companyName}</span>
               <VerifiedDot size={12} />
-              {product.companyWhatsapp && <Chip color="#25D366">Representante direto</Chip>}
             </div>
             <h2 style={{ marginTop: 7, fontSize: 20, fontWeight: 560, letterSpacing: 0, color: 'var(--ink)', lineHeight: 1.1 }}>
               {product.name}
@@ -1618,40 +1594,24 @@ function ProductCard({ product }: { product: Product }) {
 
         {product.website && <div style={{ marginTop: 8 }}><WebsiteLink url={product.website} /></div>}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 14 }}>
+        <div style={{ marginTop: 14 }}>
           <button
             type="button"
-            disabled={!canContactRep}
-            onClick={() => {
-              if (!canContactRep) return;
-              openExternalLink(repTarget);
-              void sendProductLead('representative_contact');
-            }}
+            disabled={interestSent}
+            onClick={() => { void sendProductInterest(); }}
             style={{
+              width: '100%',
               padding: '13px 12px', borderRadius: 12, border: 'none',
-              background: canContactRep ? '#25D366' : 'var(--chip)',
-              color: canContactRep ? '#fff' : 'var(--muted)',
+              background: interestSent ? 'rgba(30,169,124,0.10)' : 'var(--accent)',
+              color: interestSent ? '#1EA97C' : '#fff',
               fontSize: 14, fontWeight: 650,
-              cursor: canContactRep ? 'pointer' : 'not-allowed',
-              opacity: canContactRep ? 1 : 0.7,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            }}>
-            <WaIcon size={15} />
-            {leadSent ? 'Contato registrado' : 'WhatsApp do representante'}
-          </button>
-          <button
-            type="button"
-            onClick={() => { void sendProductLead('sample_request'); }}
-            style={{
-              padding: '12px 10px', borderRadius: 12,
-              background: interestSent ? 'var(--chip)' : 'rgba(245,130,32,0.10)',
-              color: interestSent ? 'var(--muted)' : 'var(--accent-ink)',
-              border: `1px solid ${interestSent ? 'var(--line)' : 'rgba(245,130,32,0.22)'}`,
-              fontSize: 13, fontWeight: 600,
               cursor: interestSent ? 'default' : 'pointer',
             }}>
             {interestSent ? 'Interesse enviado' : `Avisar empresa (+${POINTS_PER_INTEREST} pts)`}
           </button>
+          <p style={{ marginTop: 8, fontSize: 11.5, lineHeight: 1.35, color: 'var(--muted)' }}>
+            A empresa recebe seu interesse e pode pedir permissão para WhatsApp.
+          </p>
         </div>
         {leadError && (
           <div style={{ marginTop: 8, fontSize: 12, color: '#F25C54', lineHeight: 1.35 }}>{leadError}</div>
@@ -1667,8 +1627,6 @@ function CourseCard({ course }: { course: Course }) {
   const [tint1, tint2] = categoryTint(course.category);
   const [sent, setSent] = useState(false);
   const code = companyInitials(course.companyName);
-  const waLink = buildWhatsappLink(course.companyWhatsapp, `Olá! Vi "${course.title}" no Tessy e gostaria de falar com o representante.`);
-  const interestTarget = course.website || '';
   const displayDate = courseDisplayDate(course);
   const schedule = { date: displayDate, time: course.time };
   const dateLabel = displayDate ? eventDateLabel(schedule) : 'Data a confirmar';
@@ -1694,7 +1652,6 @@ function CourseCard({ course }: { course: Course }) {
         intent: 'course_interest',
         message: `Médico demonstrou interesse em ${course.title}.`,
       });
-      if (interestTarget) openExternalLink(interestTarget);
     } catch (e) {
       setSent(false);
       setLeadError(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
@@ -1748,7 +1705,7 @@ function CourseCard({ course }: { course: Course }) {
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+      <div style={{ marginTop: 14 }}>
         <button
           type="button"
           disabled={interestSent}
@@ -1756,7 +1713,7 @@ function CourseCard({ course }: { course: Course }) {
             void sendCourseInterest();
           }}
           style={{
-            flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
+            width: '100%', padding: '11px 0', borderRadius: 12, border: 'none',
             background: interestSent
               ? 'rgba(30,169,124,0.10)'
               : 'linear-gradient(135deg, var(--accent-ink) 0%, var(--accent) 100%)',
@@ -1768,16 +1725,6 @@ function CourseCard({ course }: { course: Course }) {
         </button>
         {leadError && (
           <div style={{ marginTop: 8, fontSize: 12, color: '#F25C54', lineHeight: 1.35, textAlign: 'center' }}>{leadError}</div>
-        )}
-        {waLink && (
-          <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '11px 0', borderRadius: 12, textDecoration: 'none',
-            background: 'rgba(37,211,102,0.1)', color: '#25D366',
-            border: '1px solid rgba(37,211,102,0.3)', fontSize: 13, fontWeight: 560,
-          }}>
-            <WaIcon size={14} /> WhatsApp
-          </a>
         )}
       </div>
     </BannerCard>

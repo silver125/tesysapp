@@ -4,7 +4,7 @@ import type { UserRole } from '../types';
 const TIPS: Record<UserRole, { title: string; body: string }> = {
   medico: {
     title: 'Como a Tessy funciona',
-    body: 'Veja oportunidades em Produtos, Eventos ou Representantes. Use "Avisar interesse" para notificar a empresa sem expor seu WhatsApp. Se a empresa pedir contato, você aprova antes de liberar o número.',
+    body: 'Veja oportunidades e use "Avisar interesse". A empresa pede permissão para WhatsApp — você aprova na home antes de liberar seu número.',
   },
   empresa: {
     title: 'Como a Tessy funciona',
