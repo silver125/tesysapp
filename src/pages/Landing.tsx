@@ -60,7 +60,7 @@ export default function Landing() {
 
         <header className="tl-header">
           <Link to="/" className="tl-brand" aria-label="Tessy.app">
-            <img src="/tessy-icon-white.png" className="tl-mobile-glyph" alt="" aria-hidden="true" />
+            <img src="/tessy-icon-current.svg" className="tl-mobile-glyph" alt="" aria-hidden="true" />
             <TessyMark className="tl-brand-mark" />
             <span className="tl-brand-name">Tessy<span>.app</span></span>
           </Link>
@@ -442,17 +442,15 @@ const landingCss = `
   --tessy-coral: #F58220;
   --tessy-mauve: #8b919e;
   --tessy-gradient: linear-gradient(115deg, #F58220 0%, #E8933A 100%);
-  --tessy-gradient-soft: linear-gradient(115deg, rgba(245,130,32,0.12) 0%, rgba(245,130,32,0.05) 100%);
-  --tessy-paper: #fafafa;
-  --tessy-soft: #f2f2f2;
+  --tessy-gradient-soft: linear-gradient(115deg, rgba(245,130,32,0.10) 0%, rgba(52,57,73,0.04) 100%);
+  --tessy-paper: #ffffff;
+  --tessy-soft: #f5f5f5;
   --tessy-heading: #343949;
   --tessy-text: #5d6474;
   --tessy-muted: #8b919e;
   min-height: 100vh;
   overflow-x: hidden;
-  background:
-    linear-gradient(180deg, rgba(245,130,32,0.04) 0%, rgba(245,130,32,0) 42%),
-    var(--tessy-paper);
+  background: #ffffff;
   color: var(--tessy-text);
   font-family: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -475,21 +473,26 @@ const landingCss = `
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background:
-    linear-gradient(180deg, rgba(245,130,32,0.07) 0%, rgba(245,130,32,0.02) 55%),
-    radial-gradient(860px 520px at 50% 26%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 72%),
-    linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-  border-bottom: 1px solid rgba(119,127,149,0.16);
+  background: #ffffff;
+  border-bottom: 1px solid rgba(119,127,149,0.14);
 }
 
 .tl-hero:before {
   content: "";
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 58%;
+  z-index: 3;
   pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.42) 48%, rgba(255,255,255,0.16) 100%),
-    linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.82) 76%, #ffffff 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.55) 28%,
+    rgba(255,255,255,0.92) 62%,
+    #ffffff 100%
+  );
 }
 
 .tl-ring {
@@ -507,7 +510,7 @@ const landingCss = `
 
 .tl-header {
   position: relative;
-  z-index: 4;
+  z-index: 5;
   width: calc(100% - 96px);
   max-width: 1540px;
   height: 88px;
@@ -598,7 +601,7 @@ const landingCss = `
 
 .tl-hero-content {
   position: relative;
-  z-index: 3;
+  z-index: 5;
   width: calc(100% - 48px);
   max-width: 980px;
   margin: 56px auto 0;
@@ -1073,9 +1076,7 @@ const landingCss = `
 }
 
 main {
-  background:
-    linear-gradient(180deg, rgba(245,130,32,0.03) 0%, rgba(255,255,255,0) 38%),
-    #ffffff;
+  background: #ffffff;
 }
 
 .tl-proof {
@@ -1379,9 +1380,7 @@ main {
   justify-content: space-between;
   border: 1px solid rgba(119,127,149,0.16);
   border-radius: 8px;
-  background:
-    linear-gradient(115deg, rgba(245,130,32,0.06) 0%, rgba(245,130,32,0.02) 100%),
-    var(--tessy-soft);
+  background: var(--tessy-soft);
 }
 
 .tl-audience-panel strong {
@@ -1401,9 +1400,7 @@ main {
   padding: 48px 56px;
   border: 1px solid rgba(119,127,149,0.12);
   border-radius: 16px;
-  background:
-    linear-gradient(118deg, rgba(245,130,32,0.05) 0%, rgba(245,130,32,0.02) 100%),
-    var(--tessy-soft);
+  background: var(--tessy-soft);
   box-shadow: 0 20px 52px rgba(52,57,73,0.06);
 }
 
@@ -1954,12 +1951,23 @@ main {
     overflow: hidden;
     border: 0;
     border-radius: 14px 14px 0 0;
-    background: linear-gradient(135deg, #F58220 0%, #E07318 100%);
+    background: #ffffff;
   }
 
-  .tl-hero:before,
   .tl-ring {
     display: none;
+  }
+
+  .tl-hero:before {
+    display: block;
+    height: 48%;
+    z-index: 3;
+    background: linear-gradient(
+      180deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.6) 30%,
+      #ffffff 100%
+    );
   }
 
   .tl-header {
@@ -2001,9 +2009,9 @@ main {
 
   .tl-mobile-menu span {
     width: 29px;
-    height: 4px;
+    height: 3px;
     border-radius: 2px;
-    background: #ffffff;
+    background: var(--tessy-graphite);
   }
 
   .tl-mobile-nav {
@@ -2015,10 +2023,10 @@ main {
     padding: 8px;
     display: grid;
     gap: 6px;
-    border: 1px solid rgba(255,255,255,0.38);
-    border-radius: 16px;
-    background: rgba(255,255,255,0.96);
-    box-shadow: 0 18px 44px rgba(15,22,40,0.16);
+    border: 1px solid rgba(119,127,149,0.16);
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 18px 44px rgba(15,22,40,0.12);
     opacity: 0;
     transform: translateY(-8px);
     pointer-events: none;
@@ -2062,10 +2070,10 @@ main {
 
   .tl-hero h1 {
     max-width: 268px;
-    color: #ffffff;
+    color: var(--tessy-heading);
     font-size: 28px;
-    line-height: 1.05;
-    font-weight: 430;
+    line-height: 1.08;
+    font-weight: 560;
   }
 
   .tl-hero-content > p,
@@ -2349,8 +2357,8 @@ main {
     margin-top: 12px;
     padding: 10px;
     border-radius: 14px;
-    background: rgba(245,130,32,0.06);
-    border: 1px solid rgba(245,130,32,0.12);
+    background: #f5f5f5;
+    border: 1px solid rgba(119,127,149,0.12);
   }
 
   .tl-mobile-flow-label {
@@ -2369,7 +2377,7 @@ main {
   }
 
   .tl-mobile-flow .tl-flow-step-num {
-    background: rgba(245,130,32,0.10);
+    background: #ebebeb;
     color: var(--tessy-steel);
   }
 
@@ -2430,8 +2438,9 @@ main {
     margin: 18px auto 0;
     padding: 16px 12px 14px;
     border-radius: 20px;
-    background: linear-gradient(180deg, #fafafa 0%, #ffffff 70%);
-    box-shadow: 0 14px 32px rgba(245,130,32,0.08);
+    background: #ffffff;
+    border: 1px solid rgba(119,127,149,0.12);
+    box-shadow: none;
   }
 
   .tl-proof-social {
@@ -2486,8 +2495,8 @@ main {
     padding: 22px 14px 18px;
     border: 0;
     border-radius: 2px;
-    background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-    box-shadow: 0 16px 36px rgba(52,57,73,0.05);
+    background: #ffffff;
+    box-shadow: none;
   }
 
   .tl-section#o-que-encontra .tl-eyebrow {
@@ -2541,8 +2550,8 @@ main {
     padding: 22px 14px 18px;
     border: 0;
     border-radius: 2px;
-    background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-    box-shadow: 0 16px 36px rgba(52,57,73,0.05);
+    background: #ffffff;
+    box-shadow: none;
   }
 
   .tl-section#como-ajuda .tl-eyebrow {
@@ -2605,7 +2614,7 @@ main {
     padding: 24px 10px 26px;
     border: 0;
     border-radius: 0 0 16px 16px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(245,130,32,0.04));
+    background: #ffffff;
   }
 
   .tl-faq .tl-eyebrow {
@@ -2642,9 +2651,9 @@ main {
     margin: 42px auto 48px;
     padding: 22px 12px;
     display: block;
-    border-top: 0;
-    border-left: 1px solid #252b39;
-    background: linear-gradient(115deg, rgba(245,130,32,0.04), rgba(52,57,73,0.03));
+    border-top: 1px solid rgba(119,127,149,0.14);
+    border-left: 0;
+    background: #ffffff;
   }
 
   .tl-footer strong {
