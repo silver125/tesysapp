@@ -637,7 +637,7 @@ function DoctorPointsBar({
               </button>
             </div>
             <div style={{ marginTop: 3, display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)' }}>
-              <span>{connections} conexão{connections === 1 ? '' : 'ões'} aprovada{connections === 1 ? '' : 's'}</span>
+              <span>{connections} {connections === 1 ? 'conexão aprovada' : 'conexões aprovadas'}</span>
               <span>{progress.points} pts</span>
             </div>
             <p style={{ marginTop: 6, fontSize: 11.5, lineHeight: 1.35, color: 'var(--muted)' }}>
@@ -1081,7 +1081,7 @@ function PendingConnectionsInbox({ leads }: { leads: Lead[] }) {
   return (
     <section id="pending-connections" style={{ marginBottom: 14, scrollMarginTop: 16 }}>
       <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 650, color: 'var(--accent-ink)' }}>
-        {leads.length} conexão{leads.length === 1 ? '' : 'ões'} aguardando sua aprovação
+        {leads.length} {leads.length === 1 ? 'conexão aguardando sua aprovação' : 'conexões aguardando sua aprovação'}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {leads.map(lead => (
