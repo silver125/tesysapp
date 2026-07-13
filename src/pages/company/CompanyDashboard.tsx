@@ -359,6 +359,36 @@ function eventLeadDoctorCount(event: Event, leads: Lead[]) {
   return doctors.size;
 }
 
+function CompanyStatCard({
+  value,
+  label,
+  accent = false,
+  onClick,
+}: {
+  value: number;
+  label: string;
+  accent?: boolean;
+  onClick?: () => void;
+}) {
+  const className = `tessy-stat-card${accent ? ' tessy-stat-card--accent' : ''}`;
+  const content = (
+    <>
+      <span className="tessy-stat-card__value">{value}</span>
+      <span className="tessy-stat-card__label">{label}</span>
+    </>
+  );
+
+  if (!onClick) {
+    return <div className={className}>{content}</div>;
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {content}
+    </button>
+  );
+}
+
 export default function CompanyDashboard() {
   const { user, events, products, courses, leads, locations, representatives, addEvent, addProduct, addCourse, addLocation, deleteLocation, addRepresentative, updateRepresentative, deleteRepresentative, deleteEvent, deleteProduct, deleteCourse, updateEvent, requestConnection } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
@@ -603,9 +633,7 @@ export default function CompanyDashboard() {
                 size={60}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <Mono style={{ display: 'block', fontSize: 8.5, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 5 }}>
-                  Perfil comercial
-                </Mono>
+                <span className="tessy-profile-eyebrow">Perfil comercial</span>
                 <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: 0, lineHeight: 1.08 }}>
                   {user?.company ?? user?.name}<span style={{ color: 'var(--accent)' }}>.</span>
                 </h1>
@@ -644,27 +672,24 @@ export default function CompanyDashboard() {
 
           {/* Stats */}
           <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
-            {[
-              { v: publishedItems, l: 'anúncios', go: 'listings' as Tab, accent: true },
-              { v: myLeads.length, l: 'interesses', go: 'leads' as Tab, accent: myLeads.length > 0 },
-              { v: conversationsStarted, l: 'conexões iniciadas', go: 'leads' as Tab, accent: conversationsStarted > 0 },
-            ].map((s) => (
-              <button key={s.l} onClick={() => setTab(s.go)} style={{
-                minHeight: 74,
-                textAlign: 'left',
-                padding: '10px 8px',
-                borderRadius: 16,
-                border: s.accent ? '1px solid rgba(245,130,32,0.22)' : '1px solid var(--line)',
-                background: s.accent
-                  ? 'linear-gradient(135deg, rgba(245,130,32,0.14), rgba(255,255,255,0.92))'
-                  : 'rgba(255,255,255,0.84)',
-                cursor: 'pointer',
-                boxShadow: s.accent ? '0 10px 26px rgba(245,130,32,0.10)' : '0 8px 22px rgba(85,96,130,0.05)',
-              }}>
-                <div style={{ fontSize: 24, fontWeight: 620, color: s.accent ? 'var(--accent-ink)' : 'var(--ink)', letterSpacing: 0, lineHeight: 1 }}>{s.v}</div>
-                <Mono style={{ display: 'block', marginTop: 6, fontSize: 8, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.2 }}>{s.l}</Mono>
-              </button>
-            ))}
+            <CompanyStatCard
+              value={publishedItems}
+              label="Anúncios"
+              accent={publishedItems > 0}
+              onClick={() => setTab('listings')}
+            />
+            <CompanyStatCard
+              value={myLeads.length}
+              label="Interesses"
+              accent={myLeads.length > 0}
+              onClick={() => setTab('leads')}
+            />
+            <CompanyStatCard
+              value={conversationsStarted}
+              label="Conexões"
+              accent={conversationsStarted > 0}
+              onClick={() => setTab('leads')}
+            />
           </div>
 
           {/* Leads access */}
@@ -1611,23 +1636,9 @@ function MyListings({
       </div>
 
       <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
-        {[
-          { v: events.length, l: 'eventos' },
-          { v: products.length, l: 'produtos' },
-          { v: courses.length, l: 'workshops' },
-        ].map(item => (
-          <div key={item.l} style={{
-            minHeight: 68,
-            padding: '10px 8px',
-            borderRadius: 16,
-            border: '1px solid rgba(245,130,32,0.16)',
-            background: 'rgba(255,255,255,0.84)',
-            boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
-          }}>
-            <div style={{ fontSize: 22, fontWeight: 620, color: 'var(--accent-ink)', lineHeight: 1 }}>{item.v}</div>
-            <Mono style={{ display: 'block', marginTop: 6, fontSize: 8, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.2 }}>{item.l}</Mono>
-          </div>
-        ))}
+        <CompanyStatCard value={events.length} label="Eventos" accent={events.length > 0} />
+        <CompanyStatCard value={products.length} label="Produtos" accent={products.length > 0} />
+        <CompanyStatCard value={courses.length} label="Workshops" accent={courses.length > 0} />
       </div>
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 3, marginBottom: 18 }}>
