@@ -435,11 +435,12 @@ const landingCss = `
   --tessy-graphite: #343949;
   --tessy-steel: #777f95;
   --tessy-lavender: #b9c1ea;
-  --tessy-blue: #3f83f1;
-  --tessy-coral: #ff6f46;
+  --tessy-accent: #F58220;
+  --tessy-blue: #4AA8FF;
+  --tessy-coral: #F58220;
   --tessy-mauve: #9582ac;
-  --tessy-gradient: linear-gradient(115deg, #3f83f1 0%, #8b82b6 48%, #ff6f46 100%);
-  --tessy-gradient-soft: linear-gradient(115deg, rgba(63,131,241,0.14) 0%, rgba(139,130,182,0.12) 48%, rgba(255,111,70,0.16) 100%);
+  --tessy-gradient: linear-gradient(115deg, #F58220 0%, #FF9A4D 45%, #4AA8FF 100%);
+  --tessy-gradient-soft: linear-gradient(115deg, rgba(245,130,32,0.16) 0%, rgba(255,154,77,0.12) 45%, rgba(74,168,255,0.14) 100%);
   --tessy-paper: #f7f8ff;
   --tessy-soft: #f1f3fa;
   --tessy-heading: #5d6474;
@@ -448,7 +449,7 @@ const landingCss = `
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    linear-gradient(118deg, rgba(63,131,241,0.055) 0%, rgba(149,130,172,0.035) 50%, rgba(255,111,70,0.065) 100%),
+    linear-gradient(118deg, rgba(245,130,32,0.055) 0%, rgba(185,193,234,0.035) 50%, rgba(74,168,255,0.05) 100%),
     var(--tessy-paper);
   color: var(--tessy-text);
   font-family: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -473,7 +474,7 @@ const landingCss = `
   display: flex;
   flex-direction: column;
   background:
-    linear-gradient(118deg, rgba(63,131,241,0.20) 0%, rgba(149,130,172,0.14) 52%, rgba(255,111,70,0.22) 100%),
+    linear-gradient(118deg, rgba(245,130,32,0.18) 0%, rgba(185,193,234,0.12) 52%, rgba(74,168,255,0.14) 100%),
     radial-gradient(860px 520px at 50% 26%, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0) 72%),
     linear-gradient(180deg, #ffffff 0%, #f8f9ff 100%);
   border-bottom: 1px solid rgba(119,127,149,0.16);
@@ -583,8 +584,8 @@ const landingCss = `
   font-size: 17px;
   font-weight: 560;
   box-shadow:
-    0 18px 44px rgba(63,131,241,0.18),
-    0 18px 48px rgba(255,111,70,0.13);
+    0 18px 44px rgba(245,130,32,0.18),
+    0 18px 48px rgba(74,168,255,0.12);
 }
 
 .tessy-landing .tl-primary,
@@ -661,7 +662,7 @@ const landingCss = `
   border-radius: 12px;
   background:
     linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)) padding-box,
-    linear-gradient(135deg, rgba(63,131,241,0.14), rgba(255,111,70,0.12)) border-box;
+    linear-gradient(135deg, rgba(245,130,32,0.14), rgba(74,168,255,0.12)) border-box;
   border-color: transparent;
   text-align: left;
   box-shadow: 0 14px 36px rgba(52,57,73,0.05);

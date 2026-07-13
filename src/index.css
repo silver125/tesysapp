@@ -14,6 +14,7 @@
   --accent-blue: #4AA8FF;
   --accent-ink:  #343949;
   --accent-soft: #FFF3E9;
+  --brand-gradient: linear-gradient(115deg, #F58220 0%, #FF9A4D 45%, #4AA8FF 100%);
   --lavender:    #B9C1EA;
   --deep:        #171B2A;
 
@@ -60,7 +61,7 @@ html, body {
 body {
   font-family: var(--font-sans);
   min-height: 100vh;
-  background: #F2F3F7;
+  background: var(--bg);
 }
 
 #root { min-height: 100vh; }

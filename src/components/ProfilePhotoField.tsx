@@ -1,4 +1,4 @@
-import { Mono } from './ui';
+import { humanizeFieldLabel } from '../lib/uiHelpers';
 
 export default function ProfilePhotoField({
   label,
@@ -13,9 +13,9 @@ export default function ProfilePhotoField({
 }) {
   return (
     <div>
-      <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
-        {label}
-      </Mono>
+      <label style={{ fontSize: 13, fontWeight: 560, color: 'var(--ink)', letterSpacing: '-0.01em', display: 'block', marginBottom: 8 }}>
+        {humanizeFieldLabel(label)}
+      </label>
       <div style={{ margin: '-3px 0 8px', fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
         Toque para escolher uma imagem da fototeca ou galeria. Máx. 5 MB.
       </div>

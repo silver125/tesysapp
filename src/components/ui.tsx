@@ -68,10 +68,54 @@ export function CompanyMark({
 /* ── Verified checkmark badge ── */
 export function VerifiedDot({ size = 13 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
+    <svg width={size} height={size} viewBox="0 0 14 14" style={{ flexShrink: 0 }} aria-hidden="true">
       <circle cx="7" cy="7" r="7" fill="var(--accent)" />
       <path d="M4 7.2l2 2L10 5.2" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+const VERIFIED_TITLE = 'Empresa com perfil comercial ativo na Tessy';
+
+/** Badge com selo + rótulo para passar confiança sem ambiguidade. */
+export function VerifiedBadge({
+  size = 11,
+  showLabel = true,
+  compact = false,
+}: {
+  size?: number;
+  showLabel?: boolean;
+  compact?: boolean;
+}) {
+  if (compact) {
+    return (
+      <span title={VERIFIED_TITLE} style={{ display: 'inline-flex', lineHeight: 0 }}>
+        <VerifiedDot size={size} />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      title={VERIFIED_TITLE}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: showLabel ? '3px 8px 3px 6px' : 0,
+        borderRadius: 999,
+        background: showLabel ? 'rgba(245,130,32,0.10)' : 'transparent',
+        border: showLabel ? '1px solid rgba(245,130,32,0.18)' : 'none',
+        color: 'var(--accent)',
+        fontSize: 11,
+        fontWeight: 560,
+        lineHeight: 1.2,
+        flexShrink: 0,
+      }}
+    >
+      <VerifiedDot size={size} />
+      {showLabel && <span>Verificada</span>}
+    </span>
   );
 }
 

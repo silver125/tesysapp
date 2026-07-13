@@ -15,6 +15,16 @@ export function companyInitials(name?: string | null, fallback = 'EM'): string {
   return source.split(/\s+/).slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase() || fallback;
 }
 
+/** Converte rótulos em CAPS para sentence case amigável em formulários. */
+export function humanizeFieldLabel(label: string): string {
+  const raw = label.trim();
+  const match = raw.match(/^(.+?)(\s*\((.+)\))?$/);
+  if (!match) return raw;
+  const main = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+  if (match[3]) return `${main} (${match[3].toLowerCase()})`;
+  return main;
+}
+
 export function displayUserLabel(user: { role?: string; company?: string; name?: string } | null | undefined): string {
   if (!user) return 'Perfil';
   if (user.role === 'empresa') return (user.company ?? user.name ?? 'Empresa').trim() || 'Empresa';

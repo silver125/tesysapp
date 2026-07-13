@@ -8,7 +8,7 @@ import { useAuth } from '../../context/useAuth';
 import {
   Mono, Chip, ModalityBadge, WaIcon,
 } from '../../components/ui';
-import { buildWhatsappLink, categoryTint } from '../../lib/uiHelpers';
+import { buildWhatsappLink, categoryTint, humanizeFieldLabel } from '../../lib/uiHelpers';
 import { MarketGrid, MarketCard, PhotoBadge, Sheet, Breadcrumb } from '../../components/market';
 import ProfilePhotoField from '../../components/ProfilePhotoField';
 import { uploadProfileAvatar } from '../../lib/profileAvatar';
@@ -1273,10 +1273,10 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
           width: 40, height: 40, borderRadius: 12, border: '1px solid var(--line)',
           background: 'var(--card)', cursor: 'pointer', color: 'var(--ink)', fontSize: 18,
         }}>×</button>
-        <Mono style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+        <Mono style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.02em' }}>
           {skipTypeStep
-            ? `publicar ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'}`
-            : `novo ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'} · etapa ${step + 1} de ${totalSteps}`}
+            ? `Publicar ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'}`
+            : `Novo ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'} · etapa ${step + 1} de ${totalSteps}`}
         </Mono>
         <div style={{ width: 40 }} />
       </div>
@@ -1421,7 +1421,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
             <WField label="TÍTULO" value={co.title} onChange={v => setCo(p => ({ ...p, title: v }))} placeholder="Ex: Atualização em ECG" />
             <WField label="INSTRUTOR" value={co.instructor} onChange={v => setCo(p => ({ ...p, instructor: v }))} placeholder="Dr. João Silva" />
             <div>
-              <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 10 }}>MODALIDADE</Mono>
+              <label style={{ fontSize: 13, fontWeight: 560, color: 'var(--ink)', letterSpacing: '-0.01em', display: 'block', marginBottom: 10 }}>Modalidade</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                 {MODALITIES.map(m => (
                   <button key={m.value} onClick={() => setCo(p => ({ ...p, modality: m.value }))} style={{
@@ -3202,9 +3202,9 @@ function ImageUploadField({
 }) {
   return (
     <div>
-      <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
-        {label}
-      </Mono>
+      <label style={{ fontSize: 13, fontWeight: 560, color: 'var(--ink)', letterSpacing: '-0.01em', display: 'block', marginBottom: 8 }}>
+        {humanizeFieldLabel(label)}
+      </label>
       <div style={{ margin: '-3px 0 8px', fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.35 }}>
         Toque para escolher uma imagem da fototeca ou galeria. Máx. 5 MB.
       </div>
@@ -3287,6 +3287,16 @@ function ImageUploadField({
 }
 
 /* ─── Wizard field ─── */
+function fieldFocus(e: { currentTarget: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement }) {
+  e.currentTarget.style.borderColor = 'rgba(245,130,32,0.45)';
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(245,130,32,0.10)';
+}
+
+function fieldBlur(e: { currentTarget: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement }) {
+  e.currentTarget.style.borderColor = 'var(--line)';
+  e.currentTarget.style.boxShadow = 'none';
+}
+
 function WField({ label, value, onChange, type = 'text', placeholder, as = 'input', options, min, max, inputMode }: {
   label: string; value: string; onChange: (v: string) => void;
   type?: string; placeholder?: string; as?: 'input' | 'textarea' | 'select'; options?: string[];
@@ -3294,20 +3304,29 @@ function WField({ label, value, onChange, type = 'text', placeholder, as = 'inpu
   inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
 }) {
   const base = {
-    width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid var(--line)',
-    background: 'transparent', color: 'var(--ink)', fontSize: 16, fontWeight: 500,
-    outline: 'none', fontFamily: "var(--font-sans)",
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 12,
+    border: '1px solid var(--line)',
+    background: '#FAFBFF',
+    color: 'var(--ink)',
+    fontSize: 15,
+    fontWeight: 500,
+    outline: 'none',
+    fontFamily: 'var(--font-sans)',
+    transition: 'border-color 140ms ease, box-shadow 140ms ease',
   } as const;
+
   return (
-    <div>
-      <Mono style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
-        {label}
-      </Mono>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={{ fontSize: 13, fontWeight: 560, color: 'var(--ink)', letterSpacing: '-0.01em' }}>
+        {humanizeFieldLabel(label)}
+      </label>
       {as === 'textarea'
-        ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...base, resize: 'none' }} onFocus={e => e.target.style.borderBottomColor = 'var(--accent)'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
+        ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...base, resize: 'vertical', minHeight: 96 }} onFocus={fieldFocus} onBlur={fieldBlur} />
         : as === 'select'
-          ? <select value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>{options?.map(o => <option key={o} value={o}>{o}</option>)}</select>
-          : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} min={min} max={max} inputMode={inputMode} style={base} onFocus={e => e.target.style.borderBottomColor = 'var(--accent)'} onBlur={e => e.target.style.borderBottomColor = 'var(--line)'} />
+          ? <select value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }} onFocus={fieldFocus} onBlur={fieldBlur}>{options?.map(o => <option key={o} value={o}>{o}</option>)}</select>
+          : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} min={min} max={max} inputMode={inputMode} style={base} onFocus={fieldFocus} onBlur={fieldBlur} />
       }
     </div>
   );

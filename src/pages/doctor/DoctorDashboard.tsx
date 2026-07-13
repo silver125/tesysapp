@@ -4,7 +4,7 @@ import { openProfileSettings, openHelp } from '../../lib/profileSettingsEvents';
 import { doctorInterestList, sortByDoctorInterests } from '../../lib/doctorPreferences';
 import { useAuth } from '../../context/useAuth';
 import {
-  CompanyMark, VerifiedDot, Mono, BannerCard, Chip, ModalityBadge,
+  CompanyMark, VerifiedBadge, Mono, BannerCard, Chip, ModalityBadge,
 } from '../../components/ui';
 import { categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
 import {
@@ -1549,7 +1549,7 @@ function EventCard({ ev }: { ev: Event }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <CompanyMark code={code} tint={companyTint(ev.companyName)} size={22} radius={6} />
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>{ev.companyName}</span>
-        <VerifiedDot size={11} />
+        <VerifiedBadge size={10} />
       </div>
       <div style={{ marginBottom: 6, fontSize: 12, color: 'var(--accent)', fontWeight: 560, lineHeight: 1.35 }}>
         Para médicos que buscam atualização prática em {(ev.category || 'saúde').toLowerCase()}.
@@ -1687,7 +1687,7 @@ function ProductCard({ product }: { product: Product }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 14, color: 'var(--ink-2)', fontWeight: 560 }}>{product.companyName}</span>
-              <VerifiedDot size={12} />
+              <VerifiedBadge size={11} />
             </div>
             <h2 style={{ marginTop: 7, fontSize: 20, fontWeight: 560, letterSpacing: 0, color: 'var(--ink)', lineHeight: 1.1 }}>
               {product.name}
@@ -1714,8 +1714,8 @@ function ProductCard({ product }: { product: Product }) {
           marginTop: 13,
           padding: '11px 12px',
           borderRadius: 12,
-          background: 'rgba(74,168,255,0.06)',
-          border: '1px solid rgba(74,168,255,0.16)',
+          background: 'rgba(245,130,32,0.06)',
+          border: '1px solid rgba(245,130,32,0.16)',
         }}>
           <Mono style={{ display: 'block', fontSize: 9, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 5 }}>
             Próximo passo
