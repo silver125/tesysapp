@@ -3,32 +3,37 @@ import { Link } from 'react-router-dom';
 import { TessyMark } from '../components/ui';
 
 const flowSteps = [
-  { num: '01', title: 'Descubra', text: 'Produtos, eventos e representantes' },
-  { num: '02', title: 'Avise interesse', text: 'Sem expor seu WhatsApp' },
-  { num: '03', title: 'Aprove', text: 'Empresa pede permissão' },
-  { num: '04', title: 'WhatsApp', text: 'Conversa fora do app' },
+  { num: '01', title: 'Descubra', text: 'Produtos, eventos e representantes', icon: 'search' },
+  { num: '02', title: 'Interesse', text: 'Sem expor seu WhatsApp', icon: 'heart' },
+  { num: '03', title: 'Aprove', text: 'Empresa pede permissão', icon: 'check' },
+  { num: '04', title: 'WhatsApp', text: 'Conversa fora do app', icon: 'chat' },
 ];
 
 const findCards = [
   {
     title: 'Representantes',
     text: 'Veja empresas e contatos da sua região.',
+    icon: 'people',
   },
   {
     title: 'Eventos',
     text: 'Encontre congressos, aulas, imersões e encontros médicos.',
+    icon: 'calendar',
   },
   {
     title: 'Workshops',
     text: 'Descubra capacitações alinhadas à sua especialidade.',
+    icon: 'learn',
   },
   {
     title: 'Produtos',
     text: 'Conheça produtos, tecnologias e soluções para sua prática.',
+    icon: 'box',
   },
   {
     title: 'Serviços',
     text: 'Encontre parceiros úteis para o consultório ou clínica.',
+    icon: 'brief',
   },
 ];
 
@@ -95,8 +100,8 @@ export default function Landing() {
           <h1>
             <span className="tl-desktop-title">Descubra oportunidades da saúde — e fale com empresas pelo WhatsApp.</span>
             <span className="tl-mobile-title">
-              <span className="tl-mobile-title-line">Oportunidades da saúde,</span>
-              <span className="tl-mobile-title-line">direto no seu WhatsApp.</span>
+              <span className="tl-mobile-title-line">Oportunidades da saúde</span>
+              <span className="tl-mobile-title-line">no WhatsApp</span>
             </span>
           </h1>
 
@@ -220,13 +225,7 @@ export default function Landing() {
       </section>
 
       <section className="tl-mobile-intro">
-        <h2>Marketplace da saúde — do interesse ao WhatsApp.</h2>
-        <p>
-          Produtos, eventos e representantes em um fluxo simples: avise interesse, aprove o contato e converse no WhatsApp.
-        </p>
-
-        <div className="tl-mobile-flow">
-          <p className="tl-mobile-flow-label">Como funciona</p>
+        <div className="tl-mobile-flow" aria-label="Como funciona">
           <FlowStrip compact />
         </div>
 
@@ -247,7 +246,8 @@ export default function Landing() {
               <span>B</span>
               <span>C</span>
             </div>
-            <p><strong>Plataforma ativa</strong> para médicos e empresas de saúde</p>
+            <p className="tl-proof-desktop-copy"><strong>Plataforma ativa</strong> para médicos e empresas de saúde</p>
+            <p className="tl-proof-mobile-copy"><strong>Ativa</strong> para médicos e empresas</p>
           </div>
 
           <div className="tl-register-card">
@@ -300,6 +300,9 @@ export default function Landing() {
           <div className="tl-solution-grid tl-find-grid">
             {findCards.map((card, index) => (
               <article key={card.title}>
+                <span className="tl-find-icon" aria-hidden="true">
+                  <FindIcon name={card.icon} />
+                </span>
                 <span className="tl-find-num">{String(index + 1).padStart(2, '0')}</span>
                 <h3>{card.title}</h3>
                 <p>{card.text}</p>
@@ -380,6 +383,9 @@ function FlowStrip({ compact = false }: { compact?: boolean }) {
     <div className={`tl-flow-strip${compact ? ' tl-flow-strip--compact' : ''}`} role="list" aria-label="Como funciona">
       {flowSteps.map(step => (
         <div key={step.num} className="tl-flow-step" role="listitem">
+          <span className="tl-flow-step-icon" aria-hidden="true">
+            <FlowIcon name={step.icon} />
+          </span>
           <span className="tl-flow-step-num">{step.num}</span>
           <strong>{step.title}</strong>
           {compact ? (
@@ -400,6 +406,82 @@ function BenefitList({ items }: { items: string[] }) {
         <li key={item}>{item}</li>
       ))}
     </ul>
+  );
+}
+
+function FlowIcon({ name }: { name: string }) {
+  const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name === 'heart') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path {...common} d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.7-7 10-7 10Z" />
+      </svg>
+    );
+  }
+  if (name === 'check') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle {...common} cx="12" cy="12" r="8" />
+        <path {...common} d="m8.5 12 2.4 2.4 4.6-4.8" />
+      </svg>
+    );
+  }
+  if (name === 'chat') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path {...common} d="M5 18.5 4 21l3-1.2A8.5 8.5 0 1 0 5 18.5Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle {...common} cx="11" cy="11" r="6.5" />
+      <path {...common} d="m16 16 3.5 3.5" />
+    </svg>
+  );
+}
+
+function FindIcon({ name }: { name: string }) {
+  const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name === 'calendar') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect {...common} x="4" y="5" width="16" height="15" rx="2" />
+        <path {...common} d="M8 3v4M16 3v4M4 10h16" />
+      </svg>
+    );
+  }
+  if (name === 'learn') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path {...common} d="M4 19V6.8A1.8 1.8 0 0 1 5.8 5H12v14H5.8A1.8 1.8 0 0 0 4 19Z" />
+        <path {...common} d="M20 19V6.8A1.8 1.8 0 0 0 18.2 5H12v14h6.2A1.8 1.8 0 0 1 20 19Z" />
+      </svg>
+    );
+  }
+  if (name === 'box') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path {...common} d="m4 8 8-4 8 4v9l-8 4-8-4V8Z" />
+        <path {...common} d="M12 12v9M4 8l8 4 8-4" />
+      </svg>
+    );
+  }
+  if (name === 'brief') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect {...common} x="3" y="7" width="18" height="13" rx="2" />
+        <path {...common} d="M9 7V5.8A1.8 1.8 0 0 1 10.8 4h2.4A1.8 1.8 0 0 1 15 5.8V7" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle {...common} cx="9" cy="9" r="3.2" />
+      <circle {...common} cx="16" cy="10.5" r="2.5" />
+      <path {...common} d="M3.5 19c1-3.5 3.3-5.2 5.5-5.2S13 15.5 14 19" />
+      <path {...common} d="M13.8 15.5c1.4-.8 3-.8 4.5.1 1.6 1 2.7 2.9 3.2 5.4" />
+    </svg>
   );
 }
 
@@ -680,6 +762,16 @@ const landingCss = `
   box-shadow: 0 14px 36px rgba(52,57,73,0.05);
 }
 
+.tl-flow-step-icon {
+  display: none;
+}
+
+.tl-flow-step-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
 .tl-flow-step-num {
   display: inline-flex;
   align-items: center;
@@ -692,6 +784,20 @@ const landingCss = `
   font-size: 11px;
   font-weight: 620;
   letter-spacing: 0.04em;
+}
+
+.tl-find-icon {
+  display: none;
+}
+
+.tl-find-icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.tl-proof-mobile-copy {
+  display: none;
 }
 
 .tl-flow-step strong {
@@ -2395,39 +2501,53 @@ main {
   }
 
   .tl-mobile-flow {
-    margin-top: 12px;
-    padding: 10px;
-    border-radius: 14px;
-    background: #f5f5f5;
-    border: 1px solid rgba(119,127,149,0.12);
+    margin-top: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    border: 0;
   }
 
   .tl-mobile-flow-label {
-    margin: 0 0 8px;
-    color: var(--tessy-steel);
-    font-size: 11px;
-    font-weight: 620;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    display: none;
   }
 
   .tl-mobile-flow .tl-flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 14px 8px;
+    border-radius: 12px;
     background: #ffffff;
-    border-color: rgba(119,127,149,0.12);
+    border: 1px solid rgba(119,127,149,0.14);
     box-shadow: none;
+    text-align: center;
+  }
+
+  .tl-mobile-flow .tl-flow-step-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(245,130,32,0.10);
+    color: var(--tessy-accent);
   }
 
   .tl-mobile-flow .tl-flow-step-num {
-    background: #ebebeb;
-    color: var(--tessy-steel);
+    display: none;
   }
 
   .tl-mobile-flow .tl-flow-step strong {
-    color: var(--tessy-graphite);
+    margin-top: 0;
+    font-size: 13px;
+    line-height: 1.2;
   }
 
   .tl-mobile-flow .tl-flow-step-text {
-    color: var(--tessy-text);
+    display: none;
   }
 
   .tl-mobile-hero-actions {
@@ -2490,56 +2610,71 @@ main {
   }
 
   .tl-proof-social {
-    margin: 0 0 var(--rh-space-lg, 24px);
-    gap: var(--rh-space-md, 16px);
+    margin: 0 0 var(--rh-space-md, 16px);
+    flex-direction: row;
+    align-items: center;
+    gap: var(--rh-space-sm, 12px);
   }
 
-  .tl-register-card {
-    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
-    border-radius: 12px;
-    background:
-      linear-gradient(#ffffff, #ffffff) padding-box,
-      linear-gradient(135deg, rgba(245,130,32,0.12), rgba(245,130,32,0.06)) border-box;
-    box-shadow: none;
-    box-sizing: border-box;
+  .tl-proof-desktop-copy {
+    display: none;
+  }
+
+  .tl-proof-mobile-copy {
+    display: block;
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.35;
+    white-space: normal;
   }
 
   .tl-register-card h2 {
     max-width: 100%;
-    font-size: 22px;
-    line-height: 1.15;
+    font-size: 20px;
+    line-height: 1.2;
   }
 
   .tl-register-list {
     margin-top: var(--rh-space-md, 16px);
-    gap: var(--rh-space-md, 16px);
-  }
-
-  .tl-register-item {
-    grid-template-columns: 24px minmax(0, 1fr);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--rh-space-sm, 12px);
   }
 
+  .tl-register-item {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 12px 8px;
+    border: 1px solid rgba(119,127,149,0.12);
+    border-radius: 12px;
+  }
+
   .tl-register-icon {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    color: var(--tessy-accent);
   }
 
   .tl-register-item h3 {
-    font-size: 16px;
+    font-size: 13px;
   }
 
   .tl-register-item p {
-    max-width: 100%;
-    font-size: 13px;
-    line-height: 1.4;
+    display: none;
+  }
+
+  .tl-section#como-ajuda {
+    display: none;
   }
 
   .tl-section#o-que-encontra {
     display: block;
     width: calc(100% - (2 * var(--tl-gutter-md)));
     margin: var(--rh-space-md, 16px) auto 0;
-    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
+    padding: var(--rh-space-md, 16px);
     border: 0;
     border-radius: 0;
     background: #ffffff;
@@ -2548,80 +2683,57 @@ main {
   }
 
   .tl-section#o-que-encontra .tl-eyebrow {
-    margin-bottom: 8px;
-    font-size: 10px;
-    text-align: center;
+    display: none;
   }
 
   .tl-section#o-que-encontra h2 {
     max-width: 100%;
     margin: 0 auto;
-    font-size: 22px;
+    font-size: 20px;
     text-align: center;
   }
 
   .tl-section#o-que-encontra .tl-find-grid {
-    margin-top: 14px;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    margin-top: var(--rh-space-md, 16px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .tl-section#o-que-encontra .tl-find-grid article {
     min-height: auto;
-    padding: 12px 10px;
+    padding: 16px 10px;
+    text-align: center;
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+  }
+
+  .tl-section#o-que-encontra .tl-find-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(245,130,32,0.10);
+    color: var(--tessy-accent);
   }
 
   .tl-section#o-que-encontra .tl-find-num {
-    min-width: 28px;
-    margin-bottom: 8px;
-    padding: 3px 7px;
-    font-size: 9px;
+    display: none;
   }
 
   .tl-section#o-que-encontra .tl-find-grid h3 {
     font-size: 14px;
+    margin: 0;
   }
 
   .tl-section#o-que-encontra .tl-find-grid p {
-    margin-top: 6px;
-    font-size: 11px;
-    line-height: 1.35;
-  }
-
-  .tl-audience {
     display: none;
   }
 
-  .tl-section#como-ajuda {
-    width: calc(100% - (2 * var(--tl-gutter-md)));
-    margin: var(--rh-space-md, 16px) auto 0;
-    padding: var(--rh-space-lg, 24px) var(--rh-space-md, 16px);
-    border: 0;
-    border-radius: 0;
-    background: #ffffff;
-    box-shadow: none;
-    box-sizing: border-box;
-  }
-
-  .tl-section#como-ajuda .tl-eyebrow {
-    margin-bottom: 8px;
-    font-size: 10px;
-    text-align: center;
-  }
-
-  .tl-section#como-ajuda h2 {
-    max-width: 100%;
-    margin: 0 auto;
-    font-size: 22px;
-    text-align: center;
-  }
-
-  .tl-section#como-ajuda .tl-section-subtitle {
-    max-width: 100%;
-    margin-top: var(--rh-space-sm, 12px);
-    font-size: 14px;
-    line-height: 1.45;
-    text-align: center;
+  .tl-audience,
+  .tl-positioning {
+    display: none;
   }
 
   .tl-waitlist {
@@ -2634,24 +2746,23 @@ main {
   }
 
   .tl-waitlist .tl-eyebrow {
-    font-size: 10px;
+    display: none;
   }
 
   .tl-waitlist h2 {
-    margin-top: 10px;
+    margin-top: 0;
     color: #ffffff;
     font-size: 22px;
   }
 
   .tl-waitlist p {
-    color: #ffffff;
-    font-size: 13px;
+    display: none;
   }
 
   .tl-waitlist a {
     width: 100%;
     min-height: 40px;
-    margin-top: 26px;
+    margin-top: 18px;
     padding: 0 18px;
     border-radius: 999px;
     color: #0f1628;
