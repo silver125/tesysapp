@@ -467,8 +467,11 @@ const landingCss = `
 
 .tl-hero {
   position: relative;
-  min-height: 1060px;
+  min-height: auto;
+  padding-bottom: 56px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background:
     linear-gradient(118deg, rgba(63,131,241,0.20) 0%, rgba(149,130,172,0.14) 52%, rgba(255,111,70,0.22) 100%),
     radial-gradient(860px 520px at 50% 26%, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0) 72%),
@@ -489,8 +492,8 @@ const landingCss = `
 .tl-ring {
   position: absolute;
   left: 50%;
-  top: 48%;
-  transform: translate(-50%, -50%);
+  bottom: 180px;
+  transform: translateX(-50%);
   border: 1px solid rgba(91,103,142,0.14);
   border-radius: 9999px;
   pointer-events: none;
@@ -595,11 +598,12 @@ const landingCss = `
   z-index: 3;
   width: calc(100% - 48px);
   max-width: 980px;
-  margin: 96px auto 0;
+  margin: 56px auto 0;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .tl-hero-eyebrow {
@@ -725,7 +729,7 @@ const landingCss = `
 }
 
 .tl-hero-actions {
-  margin-top: 34px;
+  margin-top: 28px;
   gap: 12px;
   justify-content: center;
 }
@@ -768,17 +772,16 @@ const landingCss = `
 }
 
 .tl-phone-stage {
-  position: absolute;
-  z-index: 1;
-  left: 50%;
-  bottom: -330px;
+  position: relative;
+  z-index: 2;
   width: min(980px, calc(100% - 48px));
-  min-height: 650px;
-  transform: translateX(-50%);
+  min-height: 760px;
+  margin: 36px auto 0;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   pointer-events: none;
+  flex-shrink: 0;
 }
 
 .tl-section,
@@ -1080,7 +1083,7 @@ main {
 
 .tl-proof-social {
   max-width: 900px;
-  margin: 0 auto 118px;
+  margin: 0 auto 48px;
   display: flex;
   align-items: center;
   gap: 34px;
@@ -1531,7 +1534,7 @@ main {
   }
 
   .tl-proof-social {
-    margin-bottom: 76px;
+    margin-bottom: 40px;
   }
 
   .tl-register-card {
@@ -1553,7 +1556,8 @@ main {
 
 @media (max-width: 700px) {
   .tl-hero {
-    min-height: 980px;
+    min-height: auto;
+    padding-bottom: 0;
   }
 
   .tl-header {
@@ -1650,12 +1654,6 @@ main {
     background: rgba(255,255,255,0.82);
     color: #171b2a;
     border-color: rgba(119,127,149,0.22);
-  }
-
-  .tl-phone-stage {
-    bottom: -126px;
-    width: 100%;
-    min-height: 500px;
   }
 
   .tl-phone-card {
