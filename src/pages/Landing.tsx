@@ -94,7 +94,10 @@ export default function Landing() {
 
           <h1>
             <span className="tl-desktop-title">Descubra oportunidades da saúde — e fale com empresas pelo WhatsApp.</span>
-            <span className="tl-mobile-title">Oportunidades da saúde,<br />direto no seu WhatsApp.</span>
+            <span className="tl-mobile-title">
+              <span className="tl-mobile-title-line">Oportunidades da saúde,</span>
+              <span className="tl-mobile-title-line">direto no seu WhatsApp.</span>
+            </span>
           </h1>
 
           <p>
@@ -2096,14 +2099,19 @@ main {
     display: block;
   }
 
+  .tl-mobile-title-line {
+    display: block;
+    white-space: nowrap;
+  }
+
   .tl-hero h1 {
-    max-width: min(100%, 320px);
+    max-width: 100%;
     margin-left: auto;
     margin-right: auto;
     padding: 0 var(--rh-space-md, 16px);
     color: var(--tessy-heading);
-    font-size: 28px;
-    line-height: 1.15;
+    font-size: clamp(22px, 6.2vw, 28px);
+    line-height: 1.2;
     font-weight: 560;
     box-sizing: border-box;
   }
