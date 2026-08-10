@@ -311,25 +311,23 @@ export default function Landing() {
 
 const css = `
 .lv {
-  --ink: #151a28;
-  --ink-2: #3f4860;
-  --muted: #7a8399;
-  --line: rgba(28, 36, 56, 0.10);
-  --paper: #f6f7fb;
+  --ink: #1c1f26;
+  --ink-2: #4a505c;
+  --muted: #8a909c;
+  --line: rgba(28, 31, 38, 0.10);
+  --paper: #f5f5f6;
   --card: #ffffff;
-  --blue: #3f83f1;
-  --coral: #ff6f46;
-  --mauve: #9582ac;
-  --orange: #F58220;
-  --grad: linear-gradient(115deg, #3f83f1 0%, #8b82b6 48%, #ff6f46 100%);
-  --shadow: 0 18px 50px rgba(28, 36, 56, 0.10);
-  --shadow-lg: 0 28px 70px rgba(28, 36, 56, 0.16);
+  --accent: #2a2f3a;
+  --accent-soft: #5c6370;
+  --grad: linear-gradient(145deg, #2f3440 0%, #1c1f26 100%);
+  --shadow: 0 16px 40px rgba(28, 31, 38, 0.07);
+  --shadow-lg: 0 24px 60px rgba(28, 31, 38, 0.12);
   --r: 22px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   min-height: 100vh;
   background:
-    radial-gradient(900px 420px at 12% -10%, rgba(245,130,32,0.10), transparent 55%),
-    radial-gradient(700px 380px at 100% 8%, rgba(63,131,241,0.10), transparent 50%),
+    radial-gradient(800px 380px at 10% -8%, rgba(28,31,38,0.04), transparent 55%),
+    radial-gradient(640px 320px at 100% 0%, rgba(28,31,38,0.03), transparent 50%),
     var(--paper);
   color: var(--ink-2);
   font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -363,7 +361,7 @@ const css = `
   z-index: 40;
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  background: rgba(246,247,251,0.82);
+  background: rgba(245,245,246,0.88);
   border-bottom: 1px solid rgba(255,255,255,0.65);
 }
 
@@ -387,7 +385,7 @@ const css = `
   color: var(--ink);
 }
 
-.lv-brand span span { color: var(--orange); }
+.lv-brand span span { color: var(--accent-soft); }
 
 .lv-nav__links {
   display: none;
@@ -460,7 +458,7 @@ const css = `
 .lv-btn--primary {
   background: var(--grad);
   color: #fff !important;
-  box-shadow: 0 12px 28px rgba(255,111,70,0.22);
+  box-shadow: 0 12px 28px rgba(28,31,38,0.18);
 }
 
 .lv a.lv-btn--primary,
@@ -505,7 +503,7 @@ const css = `
   width: 620px;
   height: 620px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(63,131,241,0.18), transparent 68%);
+  background: radial-gradient(circle, rgba(28,31,38,0.06), transparent 68%);
   pointer-events: none;
 }
 
@@ -520,9 +518,9 @@ const css = `
   margin: 0 0 16px;
   padding: 7px 12px;
   border-radius: 999px;
-  background: rgba(245,130,32,0.10);
-  border: 1px solid rgba(245,130,32,0.18);
-  color: var(--orange);
+  background: rgba(28,31,38,0.06);
+  border: 1px solid rgba(28,31,38,0.10);
+  color: var(--accent-soft);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -535,7 +533,7 @@ const css = `
   max-width: 14ch;
 }
 
-.lv-hero h1 span { color: var(--orange); }
+.lv-hero h1 span { color: var(--accent-soft); }
 
 .lv-lead {
   margin: 18px 0 0;
@@ -612,7 +610,7 @@ const css = `
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--orange);
+  color: var(--accent-soft);
 }
 
 .lv-float strong {
@@ -673,7 +671,7 @@ const css = `
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--orange);
+  color: var(--accent-soft);
 }
 
 .lv-eyebrow--light { color: rgba(255,255,255,0.8); }
@@ -712,10 +710,12 @@ const css = `
   margin-bottom: 14px;
 }
 
-.lv-feature--blue .lv-feature__icon { background: linear-gradient(145deg, #3f83f1, #6ea0f5); }
-.lv-feature--coral .lv-feature__icon { background: linear-gradient(145deg, #ff6f46, #ff9a6b); }
-.lv-feature--mauve .lv-feature__icon { background: linear-gradient(145deg, #9582ac, #b9c1ea); }
-.lv-feature--orange .lv-feature__icon { background: linear-gradient(145deg, #F58220, #ff9a4d); }
+.lv-feature--blue .lv-feature__icon,
+.lv-feature--coral .lv-feature__icon,
+.lv-feature--mauve .lv-feature__icon,
+.lv-feature--orange .lv-feature__icon {
+  background: linear-gradient(145deg, #4a505c, #2a2f3a);
+}
 
 .lv-feature h3 {
   font-size: 1.25rem;
@@ -800,7 +800,7 @@ const css = `
   height: 18px;
   border-radius: 999px;
   background: var(--grad);
-  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.35);
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.25);
 }
 
 /* Steps */
@@ -822,7 +822,7 @@ const css = `
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: var(--orange);
+  color: var(--accent-soft);
   margin-bottom: 10px;
 }
 
@@ -866,7 +866,7 @@ const css = `
 .lv-cta-band__scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(115deg, rgba(21,26,40,0.78), rgba(63,131,241,0.45), rgba(255,111,70,0.55));
+  background: linear-gradient(145deg, rgba(20,22,28,0.82), rgba(42,47,58,0.72));
 }
 
 .lv-cta-band__copy {
