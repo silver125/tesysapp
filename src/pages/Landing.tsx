@@ -37,7 +37,7 @@ const doctorBenefits = [
 const faqs = [
   ['Para quais áreas?', 'Estética, dermato, cirurgia, medicina premium e áreas estratégicas.'],
   ['Médico paga?', 'O acesso inicial poderá ser gratuito para perfis aprovados.'],
-  ['Como empresas entram?', 'Onboarding comercial e validação de categoria.'],
+  ['Como empresas entram?', 'O atendimento a empresas é feito por reunião. Fale conosco em contato@tessybr.com.'],
   ['Quando acesso?', 'Por fases, conforme perfil e ordem da waitlist.'],
 ];
 
@@ -80,8 +80,8 @@ export default function Landing() {
 
           <nav className={`tl-mobile-nav ${isMobileMenuOpen ? 'is-open' : ''}`} aria-label="Menu mobile">
             <Link to="/entrar" onClick={() => setIsMobileMenuOpen(false)}>Entrar</Link>
+            <Link to="/cadastro" onClick={() => setIsMobileMenuOpen(false)}>Criar conta</Link>
             <a href={waitlistHref} onClick={() => setIsMobileMenuOpen(false)}>Entrar na lista</a>
-            <Link to="/cadastro?perfil=empresa" onClick={() => setIsMobileMenuOpen(false)}>Sou empresa</Link>
           </nav>
         </header>
 
@@ -96,11 +96,11 @@ export default function Landing() {
           </p>
 
           <div className="tl-hero-actions">
-            <a href={waitlistHref} className="tl-hero-primary">
-              <span>Entrar na lista</span>
+            <Link to="/cadastro" className="tl-hero-primary">
+              <span>Médico, crie sua conta</span>
               <span className="tl-hero-arrow" aria-hidden="true">→</span>
-            </a>
-            <Link to="/cadastro?perfil=empresa" className="tl-hero-secondary">Sou empresa</Link>
+            </Link>
+            <a href={waitlistHref} className="tl-hero-secondary">Entrar na lista</a>
           </div>
         </div>
 
@@ -213,25 +213,16 @@ export default function Landing() {
         </p>
 
         <div className="tl-mobile-hero-actions">
-          <a href={waitlistHref} className="tl-mobile-hero-primary">
-            <span>Entrar na lista</span>
+          <Link to="/cadastro" className="tl-mobile-hero-primary">
+            <span>Médico, crie sua conta</span>
             <span aria-hidden="true">→</span>
-          </a>
-          <Link to="/cadastro?perfil=empresa" className="tl-mobile-hero-secondary">Sou empresa</Link>
+          </Link>
+          <a href={waitlistHref} className="tl-mobile-hero-secondary">Entrar na lista</a>
         </div>
       </section>
 
       <main>
         <section className="tl-proof">
-          <div className="tl-proof-social" aria-label="200 médicos já na waitlist">
-            <div className="tl-proof-avatars" aria-hidden="true">
-              <span>A</span>
-              <span>B</span>
-              <span>C</span>
-            </div>
-            <p><strong>200+</strong> médicos já na waitlist</p>
-          </div>
-
           <div className="tl-register-card">
             <h2>Por que se cadastrar?</h2>
 
@@ -297,7 +288,7 @@ export default function Landing() {
               Veja conexões relevantes para sua especialidade, sua região e sua rotina.
             </p>
             <BenefitList items={doctorBenefits} />
-            <Link to="/cadastro?perfil=medico" className="tl-dark-cta">Receber oportunidades</Link>
+            <Link to="/cadastro" className="tl-dark-cta">Médico, crie sua conta</Link>
           </div>
 
           <div className="tl-audience-panel">
@@ -343,11 +334,11 @@ export default function Landing() {
           <a href="mailto:contato@tessybr.com">contato@tessybr.com</a>
         </div>
         <nav aria-label="Rodapé">
-          <a href="#top">Instagram</a>
-          <a href="#top">LinkedIn</a>
+          <a href="https://instagram.com/tessybr" target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a href="https://linkedin.com/company/tessybr" target="_blank" rel="noopener noreferrer">LinkedIn</a>
           <a href="mailto:contato@tessybr.com">Contato</a>
-          <a href="#top">Termos</a>
-          <a href="#top">Privacidade</a>
+          <a href="/termos">Termos</a>
+          <a href="/privacidade">Privacidade</a>
         </nav>
       </footer>
     </div>
@@ -939,52 +930,6 @@ main {
   padding: 58px 0 76px;
 }
 
-.tl-proof-social {
-  max-width: 900px;
-  margin: 0 auto 118px;
-  display: flex;
-  align-items: center;
-  gap: 34px;
-}
-
-.tl-proof-avatars {
-  display: flex;
-  align-items: center;
-}
-
-.tl-proof-avatars span {
-  width: 74px;
-  height: 74px;
-  margin-left: -15px;
-  display: grid;
-  place-items: center;
-  border: 3px solid #ffffff;
-  border-radius: 999px;
-  background: var(--tessy-gradient);
-  color: #ffffff;
-  font-size: 30px;
-  line-height: 1;
-  font-weight: 680;
-  box-shadow: 0 14px 28px rgba(52,57,73,0.10);
-}
-
-.tl-proof-avatars span:first-child {
-  margin-left: 0;
-}
-
-.tl-proof-social p {
-  margin: 0;
-  color: #40506b;
-  font-size: 30px;
-  line-height: 1.25;
-  font-weight: 420;
-}
-
-.tl-proof-social strong {
-  color: #0f1628;
-  font-weight: 760;
-}
-
 .tl-register-card {
   max-width: 900px;
   margin: 0 auto;
@@ -1349,13 +1294,8 @@ main {
     font-size: 54px;
   }
 
-  .tl-proof-social,
   .tl-register-card {
     max-width: calc(100% - 48px);
-  }
-
-  .tl-proof-social {
-    margin-bottom: 76px;
   }
 
   .tl-register-card {
@@ -1581,26 +1521,6 @@ main {
 
   .tl-proof {
     padding: 36px 0 46px;
-  }
-
-  .tl-proof-social {
-    max-width: 100%;
-    margin-bottom: 28px;
-    gap: 10px;
-  }
-
-  .tl-proof-avatars span {
-    width: 34px;
-    height: 34px;
-    margin-left: -7px;
-    font-size: 14px;
-    border-width: 2px;
-  }
-
-  .tl-proof-social p {
-    font-size: 14px;
-    line-height: 1.25;
-    white-space: nowrap;
   }
 
   .tl-register-card {
@@ -2244,11 +2164,6 @@ main {
     border-radius: 24px;
     background: linear-gradient(180deg, #f6faff 0%, #ffffff 70%);
     box-shadow: 0 18px 42px rgba(63,131,241,0.10);
-  }
-
-  .tl-proof-social {
-    margin: 0 0 50px;
-    gap: 10px;
   }
 
   .tl-register-card {
