@@ -61,10 +61,26 @@ const steps = [
 ];
 
 const faqs = [
-  ['Para quais áreas?', 'Estética, dermato, cirurgia, medicina premium e áreas estratégicas.'],
-  ['Médico paga?', 'O acesso inicial poderá ser gratuito para perfis aprovados.'],
-  ['Como empresas entram?', 'O atendimento a empresas é feito por reunião. Fale conosco em contato@tessybr.com.'],
-  ['Quando acesso?', 'Por fases, conforme perfil e ordem da waitlist.'],
+  [
+    'A Tessy é só para estética?',
+    'Não. A Tessy conecta médicos de diversas áreas — estética, dermatologia, cirurgia, medicina premium e outras especialidades estratégicas. O foco é quem busca oportunidades comerciais e de atualização com qualidade, independentemente da área.',
+  ],
+  [
+    'Quem pode se cadastrar?',
+    'O cadastro é exclusivo para médicos. Empresas e marcas entram por atendimento dedicado: agendamos uma reunião para entender o perfil e liberar o acesso.',
+  ],
+  [
+    'O médico precisa pagar para usar?',
+    'O acesso inicial pode ser gratuito para perfis aprovados. Conforme a plataforma evolui, algumas funcionalidades poderão ter planos — sempre com transparência antes de qualquer cobrança.',
+  ],
+  [
+    'Como empresas e marcas entram na Tessy?',
+    'Não há auto-cadastro para empresas. O onboarding é feito por reunião com nosso time. Escreva para contato@tessybr.com e alinhamos o próximo passo.',
+  ],
+  [
+    'Quando vou ter acesso?',
+    'Liberamos por fases, conforme perfil profissional e ordem da waitlist. Quem se cadastra agora entra na fila de convites com prioridade para as próximas aberturas.',
+  ],
 ];
 
 export default function Landing() {
@@ -285,7 +301,11 @@ export default function Landing() {
             <h2>Waitlist selecionada.</h2>
             <p>Convites limitados por fase. Cadastro exclusivo para médicos.</p>
             <div className="lv-hero__cta">
-              <Link to="/cadastro" className="lv-btn lv-btn--light lv-btn--lg">
+              <Link
+                to="/cadastro"
+                className="lv-btn lv-btn--light lv-btn--lg"
+                style={{ color: '#1c1f26', WebkitTextFillColor: '#1c1f26' }}
+              >
                 Criar conta
               </Link>
               <a href={waitlistHref} className="lv-btn lv-btn--outline-light lv-btn--lg">
@@ -300,7 +320,7 @@ export default function Landing() {
           <div className="lv-container lv-faq">
             <div className="lv-section__head lv-section__head--left">
               <p className="lv-eyebrow">FAQ</p>
-              <h2>Dúvidas.</h2>
+              <h2>Perguntas frequentes.</h2>
             </div>
             <div className="lv-faq__list">
               {faqs.map(([q, a]) => (
@@ -510,12 +530,15 @@ const css = `
 .lv-btn--light {
   background: #fff;
   color: #1c1f26 !important;
+  -webkit-text-fill-color: #1c1f26 !important;
   box-shadow: 0 12px 28px rgba(0,0,0,0.12);
 }
 
 .lv a.lv-btn--light,
+.lv .lv-cta-band a.lv-btn--light,
 .lv a.lv-btn--light span {
   color: #1c1f26 !important;
+  -webkit-text-fill-color: #1c1f26 !important;
 }
 
 .lv-btn--outline-light {

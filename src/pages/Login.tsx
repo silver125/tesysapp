@@ -52,13 +52,13 @@ export default function Login() {
             background: 'linear-gradient(180deg, rgba(23,27,42,0.06) 0%, rgba(23,27,42,0.72) 100%)',
           }} />
           <div style={{ position: 'absolute', left: 28, right: 28, bottom: 28, color: '#fff' }}>
-            <div style={{ fontSize: 12, fontWeight: 560, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#D9DEF6' }}>
+            <div style={{ fontSize: 12, fontWeight: 560, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.78)' }}>
               Tessy para saúde
             </div>
-            <h2 style={{ marginTop: 10, fontSize: 32, lineHeight: 1.08, letterSpacing: 0, fontWeight: 560 }}>
+            <h2 style={{ marginTop: 10, fontSize: 32, lineHeight: 1.08, letterSpacing: 0, fontWeight: 560, color: '#fff' }}>
               Oportunidades médicas em um fluxo simples.
             </h2>
-            <p style={{ marginTop: 12, maxWidth: 430, color: 'rgba(255,255,255,0.72)', fontSize: 15, lineHeight: 1.55 }}>
+            <p style={{ marginTop: 12, maxWidth: 430, color: 'rgba(255,255,255,0.78)', fontSize: 15, lineHeight: 1.55 }}>
               Descubra produtos e eventos, avise seu interesse e converse no WhatsApp quando fizer sentido.
             </p>
           </div>
