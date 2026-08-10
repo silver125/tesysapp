@@ -21,17 +21,12 @@ const findCards = [
     title: 'Produtos',
     text: 'Conheça produtos, tecnologias e soluções para sua prática.',
   },
-  {
-    title: 'Serviços',
-    text: 'Encontre parceiros úteis para o consultório ou clínica.',
-  },
 ];
 
 const doctorBenefits = [
   'Produtos para sua área',
   'Representantes da sua região',
   'Eventos e cursos médicos',
-  'Serviços úteis para sua prática',
 ];
 
 const faqs = [
