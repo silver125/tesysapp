@@ -75,7 +75,7 @@ const faqs = [
   ],
   [
     'Como empresas e marcas entram na Tessy?',
-    'Não há auto-cadastro para empresas. O onboarding é feito por reunião com nosso time. Escreva para contato@tessybr.com e alinhamos o próximo passo.',
+    'Não há auto-cadastro para empresas. O onboarding é feito por reunião com nosso time. Conheça a página Para Empresas ou escreva para contato@tessybr.com.',
   ],
   [
     'Quando vou ter acesso?',
@@ -100,6 +100,7 @@ export default function Landing() {
           </Link>
 
           <nav className="lv-nav__links" aria-label="Principal">
+            <Link to="/para-empresas">Para empresas</Link>
             <a href="#clientes">Clientes</a>
             <a href="#recursos">Recursos</a>
             <a href="#como-funciona">Como funciona</a>
@@ -130,6 +131,7 @@ export default function Landing() {
 
         {menuOpen && (
           <div className="lv-drawer">
+            <Link to="/para-empresas" onClick={() => setMenuOpen(false)}>Para empresas</Link>
             <a href="#clientes" onClick={() => setMenuOpen(false)}>Clientes</a>
             <a href="#recursos" onClick={() => setMenuOpen(false)}>Recursos</a>
             <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
@@ -342,6 +344,7 @@ export default function Landing() {
             <a href="mailto:contato@tessybr.com">contato@tessybr.com</a>
           </div>
           <nav aria-label="Rodapé">
+            <Link to="/para-empresas">Para empresas</Link>
             <a href="https://instagram.com/tessybr" target="_blank" rel="noopener noreferrer">
               Instagram
             </a>

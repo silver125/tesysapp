@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/useAuth';
 import Landing from './pages/Landing';
+import ForCompanies from './pages/ForCompanies';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -82,6 +83,7 @@ function AppRoutes() {
         <Route path="/cadastro" element={<PublicOnly><Register /></PublicOnly>} />
         <Route path="/privacidade" element={<PrivacyPolicy />} />
         <Route path="/termos" element={<TermsOfUse />} />
+        <Route path="/para-empresas" element={<ForCompanies />} />
         <Route path="/medico/*" element={<ProtectedRoute role="medico"><DoctorDashboard /></ProtectedRoute>} />
         <Route path="/empresa/*" element={<ProtectedRoute role="empresa"><CompanyDashboard /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />

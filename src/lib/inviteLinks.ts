@@ -3,10 +3,16 @@
 export const TESSY_BASE_URL = 'https://www.tessybr.com';
 export const TESSY_CONTACT_EMAIL = 'contato@tessybr.com';
 
+/** CTA principal da página Para Empresas — abre agendamento com o time comercial. */
+export const COMPANY_MEETING_HREF =
+  `mailto:${TESSY_CONTACT_EMAIL}?subject=${encodeURIComponent('Agendar reunião comercial — Tessy para Empresas')}&body=${encodeURIComponent(
+    'Olá, time Tessy!\n\nGostaria de agendar uma conversa para conhecer as possibilidades de presença estratégica na plataforma (marca, produtos, conteúdos e eventos).\n\nEmpresa:\nNome:\nCargo:\nTelefone:\n',
+  )}`;
+
 export const INVITE_URLS = {
   medico: `${TESSY_BASE_URL}/cadastro`,
-  /** Empresas entram via reunião comercial — sem self-serve nesta etapa. */
-  empresa: `mailto:${TESSY_CONTACT_EMAIL}?subject=${encodeURIComponent('Reunião comercial Tessy')}&body=${encodeURIComponent('Olá, gostaria de agendar uma reunião para conhecer a Tessy como empresa.')}`,
+  /** Página pública para empresas/representantes — sem self-serve de cadastro. */
+  empresa: `${TESSY_BASE_URL}/para-empresas`,
 } as const;
 
 export const INVITE_WHATSAPP = {
@@ -14,7 +20,6 @@ export const INVITE_WHATSAPP = {
     'Olá! Estou usando a Tessy para conectar com empresas de saúde, eventos e oportunidades. Cadastre-se como médico: ' +
     INVITE_URLS.medico,
   empresa:
-    'Olá! Na Tessy, o atendimento a empresas é feito por reunião. Para agendar, escreva para ' +
-    TESSY_CONTACT_EMAIL +
-    '.',
+    'Olá! Conheça a Tessy para empresas — presença estratégica junto a médicos. Agende uma conversa pelo site: ' +
+    INVITE_URLS.empresa,
 } as const;

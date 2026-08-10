@@ -23,7 +23,7 @@ export default function InviteShareCard({ target }: { target: InviteTarget }) {
   async function copyLink() {
     try {
       const text = target === 'empresa'
-        ? `Agende uma reunião comercial com a Tessy: ${url}`
+        ? `Conheça a Tessy para empresas e agende uma reunião: ${url}`
         : url;
       await navigator.clipboard.writeText(text);
       setCopied(true);
