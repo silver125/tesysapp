@@ -344,7 +344,7 @@ const css = `
 .lv a { color: inherit; text-decoration: none; }
 
 .lv h1, .lv h2, .lv h3 {
-  font-family: Fraunces, Georgia, serif;
+  font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: var(--ink);
   letter-spacing: -0.03em;
   font-weight: 550;
@@ -381,7 +381,7 @@ const css = `
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-family: Fraunces, Georgia, serif;
+  font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 1.2rem;
   font-weight: 550;
   color: var(--ink);
@@ -701,7 +701,7 @@ const css = `
   display: grid;
   place-items: center;
   color: #fff;
-  font-family: Fraunces, Georgia, serif;
+  font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 1.2rem;
   font-weight: 550;
   margin-bottom: 14px;
@@ -935,7 +935,7 @@ const css = `
 
 .lv-footer strong {
   display: block;
-  font-family: Fraunces, Georgia, serif;
+  font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 1.15rem;
   color: var(--ink);
 }
