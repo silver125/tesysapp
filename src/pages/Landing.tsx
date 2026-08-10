@@ -509,8 +509,13 @@ const css = `
 
 .lv-btn--light {
   background: #fff;
-  color: var(--ink);
+  color: #1c1f26 !important;
   box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+}
+
+.lv a.lv-btn--light,
+.lv a.lv-btn--light span {
+  color: #1c1f26 !important;
 }
 
 .lv-btn--outline-light {
