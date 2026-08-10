@@ -92,7 +92,7 @@ export default function Landing() {
           </h1>
 
           <p>
-            Encontre representantes, eventos, cursos, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
+            Encontre representantes, eventos, cursos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
           </p>
 
           <div className="tl-hero-actions">
@@ -209,7 +209,7 @@ export default function Landing() {
       <section className="tl-mobile-intro">
         <h2>Comunidade para quem vive o mundo da medicina.</h2>
         <p>
-          Encontre representantes, eventos, cursos, produtos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
+          Encontre representantes, eventos, cursos e serviços. Tessy é a ponte entre médicos e empresas da saúde.
         </p>
 
         <div className="tl-mobile-hero-actions">
