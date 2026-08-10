@@ -5,6 +5,16 @@ import { TessyMark } from '../components/ui';
 const waitlistHref =
   'mailto:contato@tessybr.com?subject=Acesso%20antecipado%20Tessy&body=Ol%C3%A1%2C%20quero%20acesso%20antecipado%20%C3%A0%20Tessy.';
 
+const clients = [
+  { name: 'Round Lab', src: '/clients/round-lab.svg' },
+  { name: 'TIRTIR', src: '/clients/tirtir.svg' },
+  { name: 'd’Alba', src: '/clients/dalba.svg' },
+  { name: 'VT Cosmetics', src: '/clients/vt-cosmetics.svg' },
+  { name: 'Torriden', src: '/clients/torriden.svg' },
+  { name: 'SKIN1004', src: '/clients/skin1004.svg' },
+  { name: 'Dr. Althea', src: '/clients/dr-althea.svg' },
+];
+
 const features = [
   {
     title: 'Representantes',
@@ -74,6 +84,7 @@ export default function Landing() {
           </Link>
 
           <nav className="lv-nav__links" aria-label="Principal">
+            <a href="#clientes">Clientes</a>
             <a href="#recursos">Recursos</a>
             <a href="#como-funciona">Como funciona</a>
             <a href="#faq">FAQ</a>
@@ -103,6 +114,7 @@ export default function Landing() {
 
         {menuOpen && (
           <div className="lv-drawer">
+            <a href="#clientes" onClick={() => setMenuOpen(false)}>Clientes</a>
             <a href="#recursos" onClick={() => setMenuOpen(false)}>Recursos</a>
             <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
             <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
@@ -165,6 +177,23 @@ export default function Landing() {
                 <strong>Workshop na sua região</strong>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Clients / brands that already joined */}
+        <section className="lv-clients" id="clientes" aria-label="Empresas que já aderiram">
+          <div className="lv-container">
+            <div className="lv-clients__head">
+              <p className="lv-eyebrow">Empresas que já aderiram</p>
+              <h2>Marcas na Tessy.</h2>
+            </div>
+          </div>
+          <div className="lv-clients__rail" role="list">
+            {[...clients, ...clients].map((c, i) => (
+              <div className="lv-clients__item" role="listitem" key={`${c.name}-${i}`}>
+                <img src={c.src} alt={c.name} loading="lazy" decoding="async" />
+              </div>
+            ))}
           </div>
         </section>
 
@@ -634,6 +663,60 @@ const css = `
   50% { transform: translateY(-8px); }
 }
 
+/* Clients logo wall */
+.lv-clients {
+  padding: 28px 0 56px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: rgba(255,255,255,0.55);
+  overflow: hidden;
+}
+
+.lv-clients__head {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.lv-clients__head h2 {
+  margin-top: 8px;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+}
+
+.lv-clients__rail {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  width: max-content;
+  padding: 8px 24px;
+  animation: lv-marquee 32s linear infinite;
+}
+
+.lv-clients__item {
+  flex: 0 0 auto;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  opacity: 0.88;
+  filter: grayscale(1) contrast(1.15);
+}
+
+.lv-clients__item img {
+  height: 28px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  display: block;
+}
+
+@keyframes lv-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lv-clients__rail { animation: none; flex-wrap: wrap; width: 100%; justify-content: center; }
+}
+
 /* Sections */
 .lv-section {
   padding: 72px 0;
@@ -1015,7 +1098,8 @@ const css = `
 
 @media (prefers-reduced-motion: reduce) {
   .lv-hero__frame,
-  .lv-float {
+  .lv-float,
+  .lv-clients__rail {
     animation: none !important;
   }
 }
