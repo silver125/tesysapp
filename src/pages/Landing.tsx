@@ -459,8 +459,13 @@ const css = `
 
 .lv-btn--primary {
   background: var(--grad);
-  color: #fff;
+  color: #fff !important;
   box-shadow: 0 12px 28px rgba(255,111,70,0.22);
+}
+
+.lv a.lv-btn--primary,
+.lv a.lv-btn--primary span {
+  color: #fff !important;
 }
 
 .lv-btn--ghost {
