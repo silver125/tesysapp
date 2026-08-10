@@ -8,18 +8,22 @@ const findCards = [
   {
     title: 'Representantes',
     text: 'Veja empresas e contatos da sua região.',
+    tone: 'blue',
   },
   {
     title: 'Eventos',
     text: 'Encontre congressos, aulas, imersões e encontros médicos.',
+    tone: 'coral',
   },
   {
     title: 'Cursos',
     text: 'Descubra formações alinhadas à sua especialidade.',
+    tone: 'mauve',
   },
   {
     title: 'Produtos',
     text: 'Conheça produtos, tecnologias e soluções para sua prática.',
+    tone: 'orange',
   },
 ];
 
@@ -44,6 +48,18 @@ export default function Landing() {
       <style>{landingCss}</style>
 
       <section className="tl-hero">
+        <div className="tl-hero-media" aria-hidden="true">
+          <img
+            src="/hero-clinic-premium.png"
+            alt=""
+            className="tl-hero-photo"
+            width={1622}
+            height={970}
+            decoding="async"
+            fetchPriority="high"
+          />
+          <div className="tl-hero-scrim" />
+        </div>
         <div className="tl-ring tl-ring-a" />
         <div className="tl-ring tl-ring-b" />
 
@@ -58,7 +74,7 @@ export default function Landing() {
 
           <div className="tl-actions">
             <Link to="/entrar" className="tl-login">ENTRAR</Link>
-            <a href={waitlistHref} className="tl-primary">Acesso antecipado</a>
+            <Link to="/cadastro" className="tl-primary">Médico, crie sua conta</Link>
           </div>
 
           <button
@@ -80,7 +96,8 @@ export default function Landing() {
           </nav>
         </header>
 
-        <div className="tl-hero-content">
+        <div className="tl-hero-content tl-reveal">
+          <p className="tl-hero-kicker">Exclusivo para médicos</p>
           <h1>
             <span className="tl-desktop-title">Comunidade para quem vive o mundo da medicina.</span>
             <span className="tl-mobile-title">Seja bem vindo<br />a Tessy.</span>
@@ -194,9 +211,9 @@ export default function Landing() {
           </div>
 
           <div className="tl-phone-card tl-phone-card-right">
-            <span>Empresa</span>
-            <strong>Lead qualificado</strong>
-            <small>Médico pediu contato comercial</small>
+            <span>Oportunidade</span>
+            <strong>Evento na sua região</strong>
+            <small>Workshop · vagas abertas</small>
           </div>
         </div>
       </section>
@@ -267,7 +284,10 @@ export default function Landing() {
 
           <div className="tl-solution-grid tl-find-grid">
             {findCards.map(card => (
-              <article key={card.title}>
+              <article key={card.title} className={`tl-find-card tl-find-card--${card.tone}`}>
+                <div className="tl-find-card__visual" aria-hidden="true">
+                  <span>{card.title.slice(0, 1)}</span>
+                </div>
                 <h3>{card.title}</h3>
                 <p>{card.text}</p>
               </article>
@@ -287,14 +307,31 @@ export default function Landing() {
           </div>
 
           <div className="tl-audience-panel">
-            <span>Onde interesse vira conversa.</span>
-            <strong>Produtos alinhados à prática médica, sem feed público e sem spam.</strong>
+            <img
+              src="/hero-bg.jpg"
+              alt="Consulta médica em clínica moderna"
+              className="tl-audience-photo"
+              width={1440}
+              height={1589}
+              loading="lazy"
+              decoding="async"
+            />
+            <div className="tl-audience-panel__copy">
+              <span>Onde interesse vira conversa.</span>
+              <strong>Produtos alinhados à prática médica, sem feed público e sem spam.</strong>
+            </div>
           </div>
         </section>
 
         <section className="tl-positioning">
-          <h2>Conexão é o novo canal.</h2>
-          <p>A ponte entre decisão médica e oportunidade comercial.</p>
+          <div className="tl-positioning__media" aria-hidden="true">
+            <img src="/hero-clinic-premium.png" alt="" loading="lazy" decoding="async" />
+            <div className="tl-positioning__scrim" />
+          </div>
+          <div className="tl-positioning__copy">
+            <h2>Conexão é o novo canal.</h2>
+            <p>A ponte entre decisão médica e oportunidade comercial.</p>
+          </div>
         </section>
 
         <section className="tl-waitlist">
@@ -401,8 +438,16 @@ const landingCss = `
     linear-gradient(118deg, rgba(63,131,241,0.055) 0%, rgba(149,130,172,0.035) 50%, rgba(255,111,70,0.065) 100%),
     var(--tessy-paper);
   color: var(--tessy-text);
-  font-family: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: Inter, "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+.tessy-landing h1,
+.tessy-landing h2,
+.tessy-landing .tl-brand-name {
+  font-family: Fraunces, Georgia, "Times New Roman", serif;
+  font-weight: 550;
+  letter-spacing: -0.02em;
 }
 
 .tessy-landing *,
@@ -419,21 +464,65 @@ const landingCss = `
   position: relative;
   min-height: 1060px;
   overflow: hidden;
-  background:
-    linear-gradient(118deg, rgba(63,131,241,0.20) 0%, rgba(149,130,172,0.14) 52%, rgba(255,111,70,0.22) 100%),
-    radial-gradient(860px 520px at 50% 26%, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0) 72%),
-    linear-gradient(180deg, #ffffff 0%, #f8f9ff 100%);
+  background: #0f1628;
   border-bottom: 1px solid rgba(119,127,149,0.16);
 }
 
-.tl-hero:before {
-  content: "";
+.tl-hero-media {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.tl-hero-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  transform: scale(1.04);
+  animation: tl-hero- ken 18s ease-out both;
+}
+
+.tl-hero-scrim {
+  position: absolute;
+  inset: 0;
   background:
-    linear-gradient(90deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.42) 48%, rgba(255,255,255,0.16) 100%),
-    linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.82) 76%, #ffffff 100%);
+    linear-gradient(180deg, rgba(15,22,40,0.28) 0%, rgba(15,22,40,0.18) 32%, rgba(255,255,255,0.72) 68%, #ffffff 100%),
+    linear-gradient(115deg, rgba(63,131,241,0.28) 0%, rgba(149,130,172,0.18) 45%, rgba(255,111,70,0.22) 100%);
+}
+
+.tl-hero:before {
+  content: none;
+}
+
+@keyframes tl-hero-ken {
+  from { transform: scale(1.08); }
+  to { transform: scale(1.04); }
+}
+
+@keyframes tl-reveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tl-float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-10px); }
+}
+
+.tl-reveal {
+  animation: tl-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tl-hero-kicker {
+  margin: 0 0 14px;
+  font-family: Inter, "Helvetica Neue", sans-serif;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ff6f46;
 }
 
 .tl-ring {
@@ -441,13 +530,14 @@ const landingCss = `
   left: 50%;
   top: 48%;
   transform: translate(-50%, -50%);
-  border: 1px solid rgba(91,103,142,0.14);
+  border: 1px solid rgba(255,255,255,0.28);
   border-radius: 9999px;
   pointer-events: none;
+  z-index: 1;
 }
 
 .tl-ring-a { width: 900px; height: 900px; }
-.tl-ring-b { width: 1360px; height: 1360px; }
+.tl-ring-b { width: 1360px; height: 1360px; opacity: 0.7; }
 
 .tl-header {
   position: relative;
@@ -555,17 +645,18 @@ const landingCss = `
 .tl-hero h1 {
   max-width: 920px;
   margin-top: 0;
-  color: var(--tessy-heading);
+  color: #1a2236;
   font-size: 70px;
   line-height: 1.04;
-  letter-spacing: 0;
-  font-weight: 470;
+  letter-spacing: -0.025em;
+  font-weight: 550;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
 }
 
 .tl-hero-content > p {
   max-width: 760px;
   margin-top: 26px;
-  color: var(--tessy-text);
+  color: #3d465c;
   font-size: 21px;
   line-height: 1.5;
   font-weight: 460;
@@ -616,7 +707,7 @@ const landingCss = `
 
 .tl-phone-stage {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   left: 50%;
   bottom: -330px;
   width: min(980px, calc(100% - 48px));
@@ -626,6 +717,7 @@ const landingCss = `
   justify-content: center;
   align-items: flex-start;
   pointer-events: none;
+  animation: tl-float 7s ease-in-out infinite;
 }
 
 .tl-section,
@@ -1065,6 +1157,48 @@ main {
   min-height: 190px;
 }
 
+.tl-find-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.tl-find-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 48px rgba(52,57,73,0.10);
+}
+
+.tl-find-card__visual {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 22px;
+  font-weight: 550;
+  box-shadow: 0 10px 24px rgba(52,57,73,0.12);
+}
+
+.tl-find-card--blue .tl-find-card__visual {
+  background: linear-gradient(145deg, #3f83f1, #6ea0f5);
+}
+
+.tl-find-card--coral .tl-find-card__visual {
+  background: linear-gradient(145deg, #ff6f46, #ff9a6b);
+}
+
+.tl-find-card--mauve .tl-find-card__visual {
+  background: linear-gradient(145deg, #9582ac, #b9c1ea);
+}
+
+.tl-find-card--orange .tl-find-card__visual {
+  background: linear-gradient(145deg, #F58220, #ff9a4d);
+}
+
 .tl-solution-grid h3 {
   margin-top: 0;
   color: var(--tessy-graphite);
@@ -1147,40 +1281,102 @@ main {
 }
 
 .tl-audience-panel {
-  min-height: 330px;
-  padding: 34px;
+  position: relative;
+  min-height: 420px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
   border: 1px solid rgba(119,127,149,0.16);
-  border-radius: 8px;
-  background:
-    linear-gradient(115deg, rgba(63,131,241,0.12) 0%, rgba(149,130,172,0.08) 48%, rgba(255,111,70,0.12) 100%),
-    var(--tessy-soft);
+  border-radius: 22px;
+  overflow: hidden;
+  background: #1a2236;
+  box-shadow: 0 24px 60px rgba(52,57,73,0.14);
 }
 
-.tl-audience-panel strong {
-  color: var(--tessy-graphite);
-  font-size: 34px;
-  line-height: 1.1;
-  font-weight: 500;
+.tl-audience-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.tl-audience-panel__copy {
+  position: relative;
+  z-index: 1;
+  padding: 28px;
+  background: linear-gradient(180deg, transparent 0%, rgba(15,22,40,0.78) 55%, rgba(15,22,40,0.92) 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tl-audience-panel__copy span {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.78);
+  font-weight: 650;
+}
+
+.tl-audience-panel__copy strong {
+  color: #fff;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 550;
+  font-family: Fraunces, Georgia, serif;
 }
 
 .tl-positioning {
-  padding: 92px 0;
+  position: relative;
+  padding: 120px 24px;
   text-align: center;
-  border-top: 1px solid rgba(119,127,149,0.14);
+  border-top: 0;
+  overflow: hidden;
+  color: #fff;
+}
+
+.tl-positioning__media {
+  position: absolute;
+  inset: 0;
+}
+
+.tl-positioning__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  filter: saturate(0.92);
+}
+
+.tl-positioning__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, rgba(15,22,40,0.72) 0%, rgba(63,131,241,0.42) 48%, rgba(255,111,70,0.48) 100%);
+}
+
+.tl-positioning__copy {
+  position: relative;
+  z-index: 1;
+  max-width: 820px;
+  margin: 0 auto;
 }
 
 .tl-positioning h2 {
   max-width: 820px;
   margin: 0 auto;
+  color: #fff;
+  font-size: clamp(2rem, 5vw, 3.2rem);
 }
 
 .tl-positioning p {
   max-width: 720px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 16px auto 0;
+  color: rgba(255,255,255,0.88);
 }
 
 .tl-waitlist {
@@ -1614,11 +1810,33 @@ main {
   }
 
   .tl-audience-panel {
-    min-height: 190px;
+    min-height: 280px;
   }
 
-  .tl-audience-panel strong {
+  .tl-audience-panel__copy {
+    padding: 20px;
+  }
+
+  .tl-audience-panel__copy strong {
     font-size: 22px;
+  }
+
+  .tl-positioning {
+    padding: 72px 18px;
+    border-radius: 18px;
+    width: calc(100% - 28px);
+    margin: 0 auto;
+  }
+
+  .tl-positioning h2 {
+    font-size: 28px;
+  }
+
+  .tl-find-card__visual {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 18px;
   }
 
   .tl-benefits {
@@ -1645,7 +1863,8 @@ main {
   }
 
   .tl-positioning {
-    padding: 52px 0;
+    padding: 64px 18px;
+    border-radius: 18px;
   }
 
   .tl-waitlist {
@@ -1688,7 +1907,27 @@ main {
     overflow: hidden;
     border: 0;
     border-radius: 14px 14px 0 0;
-    background: linear-gradient(135deg, #5a82dc 0%, #ae7899 50%, #ff6948 100%);
+    background: #0f1628;
+  }
+
+  .tl-hero-media {
+    opacity: 1;
+  }
+
+  .tl-hero-photo {
+    object-position: center 30%;
+    animation: none;
+    transform: scale(1.02);
+  }
+
+  .tl-hero-scrim {
+    background:
+      linear-gradient(180deg, rgba(90,130,220,0.55) 0%, rgba(174,120,153,0.45) 45%, rgba(255,105,72,0.72) 100%),
+      linear-gradient(180deg, rgba(15,22,40,0.15) 0%, rgba(15,22,40,0.35) 100%);
+  }
+
+  .tl-hero-kicker {
+    display: none;
   }
 
   .tl-hero:before,
@@ -2330,6 +2569,20 @@ main {
 
   .tl-footer nav {
     display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .tl-phone-stage {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-hero-photo,
+  .tl-reveal,
+  .tl-phone-stage {
+    animation: none !important;
   }
 }
 `;
