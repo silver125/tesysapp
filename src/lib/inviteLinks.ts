@@ -3,11 +3,15 @@
 export const TESSY_BASE_URL = 'https://www.tessybr.com';
 export const TESSY_CONTACT_EMAIL = 'contato@tessybr.com';
 
-/** CTA principal da página Para Empresas — abre agendamento com o time comercial. */
+/**
+ * CTA principal da página Para Empresas — abre WhatsApp do time comercial.
+ * Número não é exibido na UI; o link abre em nova aba.
+ */
 export const COMPANY_MEETING_HREF =
-  `mailto:${TESSY_CONTACT_EMAIL}?subject=${encodeURIComponent('Agendar reunião comercial — Tessy para Empresas')}&body=${encodeURIComponent(
-    'Olá, time Tessy!\n\nGostaria de agendar uma conversa para conhecer as possibilidades de presença estratégica na plataforma (marca, produtos, conteúdos e eventos).\n\nEmpresa:\nNome:\nCargo:\nTelefone:\n',
-  )}`;
+  'https://wa.me/5511916391848?text=' +
+  encodeURIComponent(
+    'Olá! Conheci a Tessy e gostaria de agendar uma reunião para conhecer as oportunidades para empresas.',
+  );
 
 export const INVITE_URLS = {
   medico: `${TESSY_BASE_URL}/cadastro`,

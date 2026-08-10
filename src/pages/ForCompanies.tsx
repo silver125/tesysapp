@@ -1,10 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { TessyMark } from '../components/ui';
 import { COMPANY_MEETING_HREF, TESSY_CONTACT_EMAIL } from '../lib/inviteLinks';
 
-/** Métricas configuráveis — substituir por resultados reais quando disponíveis. */
-const METRICS = [
+/**
+ * Resultados de campanha — administráveis.
+ * Mantém `enabled: false` até existir dado comprovado.
+ * Ao publicar: informe período e contexto da campanha.
+ */
+const CAMPAIGN_RESULTS = {
+  enabled: false,
+  period: '', // ex.: 'Jan–Mar 2026'
+  campaign: '', // ex.: 'Presença estratégica — marca parceira'
+  items: [
+    // Exemplos (ocultos enquanto enabled=false):
+    // { value: '+240%', label: 'em oportunidades comerciais' },
+    // { value: '4x', label: 'mais leads qualificados' },
+    // { value: '3x', label: 'mais interações com médicos' },
+    // { value: '+X', label: 'médicos alcançados' },
+  ] as Array<{ value: string; label: string }>,
+};
+
+/** Cards flutuantes do bloco visual — posicionamento de produto (não ROI). */
+const PHOTO_METRICS = [
   {
     id: 'touchpoints',
     value: '4x',
@@ -60,6 +78,37 @@ const STEPS = [
   },
 ] as const;
 
+function WhatsAppIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+  );
+}
+
+function MeetingLink({
+  children,
+  className,
+  onClick,
+}: {
+  children: ReactNode;
+  className?: string;
+  onClick?: () => void;
+}) {
+  return (
+    <a
+      href={COMPANY_MEETING_HREF}
+      className={className}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick}
+    >
+      <WhatsAppIcon />
+      {children}
+    </a>
+  );
+}
+
 function useReveal() {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -82,6 +131,12 @@ function useReveal() {
   }, []);
   return ref;
 }
+
+const showCampaignResults =
+  CAMPAIGN_RESULTS.enabled &&
+  CAMPAIGN_RESULTS.items.length > 0 &&
+  Boolean(CAMPAIGN_RESULTS.period.trim()) &&
+  Boolean(CAMPAIGN_RESULTS.campaign.trim());
 
 export default function ForCompanies() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -113,9 +168,7 @@ export default function ForCompanies() {
             <Link to="/entrar" className="fc-btn fc-btn--ghost">
               Entrar
             </Link>
-            <a href={COMPANY_MEETING_HREF} className="fc-btn fc-btn--primary">
-              Agende uma conversa
-            </a>
+            <MeetingLink className="fc-btn fc-btn--primary">Agende uma conversa</MeetingLink>
           </div>
 
           <button
@@ -145,13 +198,12 @@ export default function ForCompanies() {
             <Link to="/entrar" onClick={() => setMenuOpen(false)}>
               Entrar
             </Link>
-            <a
-              href={COMPANY_MEETING_HREF}
+            <MeetingLink
               className="fc-btn fc-btn--primary"
               onClick={() => setMenuOpen(false)}
             >
               Agende uma conversa
-            </a>
+            </MeetingLink>
           </div>
         )}
       </header>
@@ -174,9 +226,9 @@ export default function ForCompanies() {
               visibilidade em novas conexões e oportunidades de negócio.
             </p>
             <div className="fc-hero__cta">
-              <a href={COMPANY_MEETING_HREF} className="fc-btn fc-btn--primary fc-btn--lg">
+              <MeetingLink className="fc-btn fc-btn--primary fc-btn--lg">
                 Agende uma conversa
-              </a>
+              </MeetingLink>
               <a href="#possibilidades" className="fc-btn fc-btn--soft fc-btn--lg">
                 Conheça as possibilidades
               </a>
@@ -195,9 +247,7 @@ export default function ForCompanies() {
                 profissional criado para médicos.
               </p>
               <div className="fc-dark__cta">
-                <a href={COMPANY_MEETING_HREF} className="fc-btn fc-btn--light">
-                  Falar com o time Tessy
-                </a>
+                <MeetingLink className="fc-btn fc-btn--light">Falar com o time Tessy</MeetingLink>
                 <a href="#possibilidades" className="fc-btn fc-btn--outline-light">
                   Ver possibilidades
                 </a>
@@ -222,7 +272,7 @@ export default function ForCompanies() {
               />
               <div className="fc-photo__scrim" aria-hidden="true" />
 
-              {METRICS.map((m, i) => (
+              {PHOTO_METRICS.map((m, i) => (
                 <aside
                   key={m.id}
                   className={`fc-metric fc-metric--${i === 0 ? 'a' : 'b'}`}
@@ -282,20 +332,49 @@ export default function ForCompanies() {
           </div>
         </section>
 
+        {/* Campaign results — hidden until enabled with real data */}
+        {showCampaignResults && (
+          <section className="fc-section" id="resultados" aria-label="Resultados de campanhas">
+            <div className="fc-container">
+              <div className="fc-section__head" data-reveal>
+                <p className="fc-kicker">Resultados</p>
+                <h2>Campanhas com impacto mensurável.</h2>
+                <p className="fc-note">
+                  {CAMPAIGN_RESULTS.campaign}
+                  <span className="fc-results__sep" aria-hidden="true">
+                    ·
+                  </span>
+                  Período: {CAMPAIGN_RESULTS.period}
+                </p>
+              </div>
+              <div className="fc-results">
+                {CAMPAIGN_RESULTS.items.map(item => (
+                  <article key={`${item.value}-${item.label}`} className="fc-results__card" data-reveal>
+                    <div className="fc-results__value">{item.value}</div>
+                    <p>{item.label}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Final CTA */}
-        <section className="fc-final" data-reveal>
+        <section className="fc-final" id="agendar" data-reveal>
           <div className="fc-container fc-final__inner">
-            <h2>Sua empresa pronta para se conectar com médicos?</h2>
+            <p className="fc-kicker fc-kicker--on-dark">Agendamento</p>
+            <h2>Sua empresa mais próxima do público médico.</h2>
             <p>
-              Converse com o time Tessy e descubra como posicionar sua marca dentro da plataforma.
+              A Tessy aproxima sua empresa de um público médico qualificado por meio de conteúdos,
+              eventos, soluções em destaque e experiências estratégicas.
             </p>
-            <a href={COMPANY_MEETING_HREF} className="fc-btn fc-btn--primary fc-btn--lg">
+            <p className="fc-final__extra">
+              Quer descobrir como sua empresa pode fazer parte da Tessy? Agende uma conversa com
+              nosso time.
+            </p>
+            <MeetingLink className="fc-btn fc-btn--primary fc-btn--lg">
               Agendar uma reunião
-            </a>
-            <p className="fc-final__mail">
-              Ou escreva para{' '}
-              <a href={`mailto:${TESSY_CONTACT_EMAIL}`}>{TESSY_CONTACT_EMAIL}</a>
-            </p>
+            </MeetingLink>
           </div>
         </section>
       </main>
@@ -318,9 +397,7 @@ export default function ForCompanies() {
 
       {/* Sticky mobile CTA */}
       <div className="fc-sticky" aria-hidden="false">
-        <a href={COMPANY_MEETING_HREF} className="fc-btn fc-btn--primary fc-btn--lg">
-          Agende uma conversa
-        </a>
+        <MeetingLink className="fc-btn fc-btn--primary fc-btn--lg">Agende uma conversa</MeetingLink>
       </div>
     </div>
   );
@@ -852,27 +929,63 @@ const css = `
 .fc-final h2 {
   color: #fff;
   font-size: clamp(1.6rem, 4vw, 2.4rem);
-  max-width: 16ch;
+  max-width: 18ch;
   margin: 0 auto;
 }
 
 .fc-final p {
   margin: 14px auto 0;
-  max-width: 440px;
+  max-width: 520px;
   line-height: 1.55;
 }
 
-.fc-final .fc-btn { margin-top: 26px; }
-
-.fc-final__mail {
-  margin-top: 16px !important;
-  font-size: 13px;
-  color: rgba(255,255,255,0.5) !important;
+.fc-final__extra {
+  margin-top: 18px !important;
+  max-width: 460px !important;
+  color: rgba(255,255,255,0.88) !important;
+  font-weight: 500;
 }
-.fc-final__mail a {
-  color: #fff !important;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+
+.fc-final .fc-btn { margin-top: 28px; }
+
+/* Campaign results */
+.fc-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.fc-results__card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 10px 28px rgba(20,23,28,0.04);
+}
+
+.fc-results__value {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 620;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.fc-results__card p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.fc-results__sep {
+  margin: 0 8px;
+  opacity: 0.55;
 }
 
 /* Footer */
@@ -927,6 +1040,7 @@ const css = `
   .fc-nav__actions { display: flex; }
   .fc-poss { grid-template-columns: 1fr 1fr; gap: 16px; }
   .fc-steps { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .fc-results { grid-template-columns: repeat(4, 1fr); gap: 16px; }
   .fc-footer__inner {
     flex-direction: row;
     align-items: flex-end;
