@@ -18,26 +18,26 @@ const clients = [
 const features = [
   {
     title: 'Representantes',
-    text: 'Contatos comerciais da sua região, sem spam e sem grupos barulhentos.',
-    icon: 'R',
+    text: 'Contatos comerciais da sua região em um ambiente simples.',
+    icon: 'representantes',
     tone: 'blue',
   },
   {
     title: 'Eventos',
     text: 'Congressos, aulas e imersões alinhadas à sua especialidade.',
-    icon: 'E',
+    icon: 'eventos',
     tone: 'coral',
   },
   {
     title: 'Cursos',
     text: 'Formações práticas para evoluir sua rotina clínica.',
-    icon: 'C',
+    icon: 'cursos',
     tone: 'mauve',
   },
   {
     title: 'Produtos',
     text: 'Tecnologias e soluções curadas para a prática médica.',
-    icon: 'P',
+    icon: 'produtos',
     tone: 'orange',
   },
 ];
@@ -55,7 +55,7 @@ const steps = [
   },
   {
     n: '03',
-    title: 'Conecte com intenção',
+    title: 'Converse quando fizer sentido',
     text: 'Avise interesse e converse quando fizer sentido para você.',
   },
 ];
@@ -63,7 +63,7 @@ const steps = [
 const faqs = [
   [
     'A Tessy é só para estética?',
-    'Não. A Tessy conecta médicos de diversas áreas — estética, dermatologia, cirurgia, medicina premium e outras especialidades estratégicas. O foco é quem busca oportunidades comerciais e de atualização com qualidade, independentemente da área.',
+    'Não. A Tessy conecta médicos de diversas especialidades, como estética, dermatologia, cirurgia e outras áreas estratégicas. O foco é reunir oportunidades comerciais e de atualização com qualidade para a rotina médica, independentemente da especialidade.',
   ],
   [
     'Quem pode se cadastrar?',
@@ -71,7 +71,7 @@ const faqs = [
   ],
   [
     'O médico precisa pagar para usar?',
-    'O acesso inicial pode ser gratuito para perfis aprovados. Conforme a plataforma evolui, algumas funcionalidades poderão ter planos — sempre com transparência antes de qualquer cobrança.',
+    'O acesso inicial pode ser gratuito para perfis aprovados. Conforme a plataforma evolui, algumas funcionalidades poderão ter planos, sempre com transparência antes de qualquer cobrança.',
   ],
   [
     'Como empresas e marcas entram na Tessy?',
@@ -82,6 +82,56 @@ const faqs = [
     'Liberamos por fases, conforme perfil profissional e ordem da waitlist. Quem se cadastra agora entra na fila de convites com prioridade para as próximas aberturas.',
   ],
 ];
+
+type FeatureIconName = (typeof features)[number]['icon'];
+
+function FeatureIcon({ name }: { name: FeatureIconName }) {
+  if (name === 'representantes') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M8.4 12.2 10.9 9.7a2.2 2.2 0 0 1 3.1 0l.7.7" />
+        <path d="m14 10.3 1.6-1.6a2.1 2.1 0 0 1 3 0l2.1 2.1-4.4 4.4" />
+        <path d="m3.3 10.8 2.1-2.1a2.1 2.1 0 0 1 3 0l1.4 1.4" />
+        <path d="m7.7 15.2 2.4 2.4a2 2 0 0 0 2.8 0l.5-.5" />
+        <path d="m12 15.8 1.1 1.1a2 2 0 0 0 2.8 0l.4-.4" />
+        <path d="m15.8 13.8 1.2 1.2a1.9 1.9 0 0 1-2.7 2.7" />
+        <path d="m5.4 15.2 2.3 2.3" />
+        <path d="m18.6 15.2-2.3 2.3" />
+      </svg>
+    );
+  }
+
+  if (name === 'eventos') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M7 3.8v3.4M17 3.8v3.4" />
+        <path d="M5.8 5.5h12.4a2.4 2.4 0 0 1 2.4 2.4v10.3a2.4 2.4 0 0 1-2.4 2.4H5.8a2.4 2.4 0 0 1-2.4-2.4V7.9a2.4 2.4 0 0 1 2.4-2.4Z" />
+        <path d="M3.8 9.5h16.4" />
+        <path d="M8 13h2.1M13.9 13H16M8 16.6h2.1M13.9 16.6H16" />
+      </svg>
+    );
+  }
+
+  if (name === 'cursos') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3.2 8.2 12 4.3l8.8 3.9-8.8 3.9-8.8-3.9Z" />
+        <path d="M6.7 10v4.7c0 1.5 2.4 2.8 5.3 2.8s5.3-1.3 5.3-2.8V10" />
+        <path d="M20.8 8.2v5.4" />
+        <path d="M20.8 16.4v.1" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4.4 8.2 12 4.1l7.6 4.1-7.6 4.1-7.6-4.1Z" />
+      <path d="M4.4 8.2v7.9l7.6 4.1v-7.9" />
+      <path d="M19.6 8.2v7.9L12 20.2" />
+      <path d="m8.1 6.2 7.7 4.1" />
+    </svg>
+  );
+}
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -156,22 +206,21 @@ export default function Landing() {
                 <span> na Tessy.</span>
               </h1>
               <p className="lv-lead">
-                Encontre representantes, eventos e cursos em um ambiente simples —
+                Encontre representantes, eventos e cursos em um ambiente simples,
                 feito para a rotina de quem vive medicina.
               </p>
               <div className="lv-hero__cta">
                 <Link to="/cadastro" className="lv-btn lv-btn--primary lv-btn--lg">
                   Criar conta gratuita
-                  <span aria-hidden="true">→</span>
                 </Link>
                 <a href={waitlistHref} className="lv-btn lv-btn--soft lv-btn--lg">
                   Entrar na lista
                 </a>
               </div>
               <ul className="lv-hero__pills">
-                <li>Sem spam</li>
+                <li>Sem grupos</li>
                 <li>Curadoria por especialidade</li>
-                <li>Conexão com intenção</li>
+                <li>Contato no momento certo</li>
               </ul>
             </div>
 
@@ -231,7 +280,7 @@ export default function Landing() {
               {features.map(f => (
                 <article key={f.title} className={`lv-feature lv-feature--${f.tone}`}>
                   <div className="lv-feature__icon" aria-hidden="true">
-                    {f.icon}
+                    <FeatureIcon name={f.icon} />
                   </div>
                   <h3>{f.title}</h3>
                   <p>{f.text}</p>
@@ -258,8 +307,7 @@ export default function Landing() {
               <p className="lv-eyebrow">Para médicos</p>
               <h2>Menos ruído. Mais relevância.</h2>
               <p>
-                Veja conexões alinhadas à sua especialidade, região e rotina —
-                sem feed público e sem spam.
+                Veja conexões alinhadas à sua especialidade, região e rotina.
               </p>
               <ul className="lv-checklist">
                 <li>Produtos para sua área</li>
@@ -822,6 +870,16 @@ const css = `
   font-size: 1.2rem;
   font-weight: 550;
   margin-bottom: 14px;
+}
+
+.lv-feature__icon svg {
+  width: 30px;
+  height: 30px;
+  display: block;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .lv-feature--blue .lv-feature__icon,
