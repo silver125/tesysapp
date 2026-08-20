@@ -1468,14 +1468,47 @@ function CompaniesView({
   return (
     <div className="tessy-companies">
       <MarketHead title="Empresas" subtitle="Perfis comerciais e vitrine completa." count={companies.length} countWord="empresa" />
+
+      <div style={{
+        marginBottom: 14,
+        padding: 14,
+        borderRadius: 16,
+        border: '1px solid rgba(245,130,32,0.22)',
+        background: 'linear-gradient(135deg, rgba(245,130,32,0.10), rgba(255,255,255,0.96))',
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--accent-ink)' }}>
+          Cadastro de empresa (teste)
+        </div>
+        <p style={{ marginTop: 4, fontSize: 12, lineHeight: 1.45, color: 'var(--ink-2)' }}>
+          Crie uma conta empresa para publicar produtos/eventos e testar a vitrine do médico.
+        </p>
+        <button
+          type="button"
+          onClick={() => { void goCompanyTestSignup(); }}
+          style={{
+            marginTop: 10,
+            width: '100%',
+            minHeight: 44,
+            borderRadius: 12,
+            border: 'none',
+            background: 'var(--brand-gradient)',
+            color: '#fff',
+            fontSize: 14,
+            fontWeight: 650,
+            cursor: 'pointer',
+            boxShadow: '0 10px 22px rgba(245,130,32,0.22)',
+          }}
+        >
+          Cadastrar empresa de teste
+        </button>
+      </div>
+
       <SearchBar value={search} onChange={onSearchChange} placeholder="Buscar empresa, produto, evento ou workshop..." />
       {companies.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <Empty
             text="Nenhuma empresa na vitrine ainda"
-            hint="Cadastre uma empresa de teste para publicar produtos e eventos e ver o match no médico."
-            actionLabel="Cadastrar empresa de teste"
-            onAction={() => { void goCompanyTestSignup(); }}
+            hint="Use o botão laranja acima para cadastrar uma empresa de teste."
           />
           <InviteShareCard target="empresa" />
         </div>
@@ -1544,29 +1577,9 @@ function CompaniesView({
           })}
         </div>
       )}
-      {companies.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <InviteShareCard target="empresa" />
-          <button
-            type="button"
-            onClick={() => { void goCompanyTestSignup(); }}
-            style={{
-              marginTop: 10,
-              width: '100%',
-              minHeight: 42,
-              borderRadius: 12,
-              border: '1px solid var(--line)',
-              background: '#fff',
-              color: 'var(--accent-ink)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Cadastrar outra empresa de teste
-          </button>
-        </div>
-      )}
+      <div style={{ marginTop: 16 }}>
+        <InviteShareCard target="empresa" />
+      </div>
     </div>
   );
 }
