@@ -6,22 +6,25 @@
   --rh-color-accent-brand-on-light: #F58220;
   --rh-color-accent-brand-on-dark: #FF9A4D;
 
-  /* Surfaces & text */
-  --bg:          color-mix(in srgb, var(--rh-color-surface-lighter) 70%, #e8ecff);
-  --card:        var(--rh-color-surface-lightest);
-  --ink:         var(--rh-color-text-secondary-on-light);
-  --ink-2:       color-mix(in srgb, var(--rh-color-text-secondary-on-light) 82%, var(--rh-color-text-primary-on-light));
-  --muted:       color-mix(in srgb, var(--rh-color-text-secondary-on-light) 62%, var(--rh-color-surface-light));
-  --line:        color-mix(in srgb, var(--rh-color-border-subtle-on-light) 55%, #e3e7f2);
-  --chip:        color-mix(in srgb, var(--rh-color-surface-lighter) 88%, #eef1fa);
+  /* Surfaces & text — soft clinical warmth */
+  --bg:          #F4F6FC;
+  --card:        #FFFFFF;
+  --ink:         #3A4258;
+  --ink-2:       #5A647C;
+  --muted:       #8B93A8;
+  --line:        rgba(58, 66, 88, 0.10);
+  --chip:        #EEF1F8;
 
   --accent:      #F58220;
-  --accent-blue: var(--rh-color-interactive-blue-darker);
-  --accent-ink:  var(--rh-color-text-primary-on-light);
-  --accent-soft: color-mix(in srgb, var(--accent) 11%, var(--rh-color-surface-lightest));
-  --brand-gradient: linear-gradient(115deg, #F58220 0%, #FF9A4D 45%, var(--rh-color-interactive-blue-darker) 100%);
-  --lavender:    #B9C1EA;
-  --deep:        var(--rh-color-surface-darkest);
+  --accent-blue: #3D7FE8;
+  --accent-ink:  #1E2433;
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, #FFFFFF);
+  --brand-gradient: linear-gradient(118deg, #F58220 0%, #FF9A4D 42%, #5B8FE8 100%);
+  --hero-gradient: linear-gradient(145deg, #F58220 0%, #FF8F3A 48%, #FFB060 100%);
+  --lavender:    #A8B4E8;
+  --deep:        #1E2433;
+  --glass:       rgba(255, 255, 255, 0.78);
+  --glass-strong: rgba(255, 255, 255, 0.92);
 
   --success:     var(--rh-color-status-success-on-light);
   --warn:        var(--rh-color-status-caution-on-light);
@@ -45,16 +48,18 @@
   --r-xl:        var(--rh-length-xl);
   --r-2xl:       var(--rh-length-2xl);
 
-  --shadow-sm:   var(--rh-box-shadow-sm);
-  --shadow-md:   var(--rh-box-shadow-md);
-  --shadow-lg:   var(--rh-box-shadow-lg);
+  --shadow-sm:   0 2px 8px rgba(30, 36, 51, 0.04);
+  --shadow-md:   0 8px 24px rgba(30, 36, 51, 0.07);
+  --shadow-lg:   0 18px 40px rgba(30, 36, 51, 0.10);
+  --shadow-accent: 0 14px 32px rgba(245, 130, 32, 0.22);
 
-  --ease:        var(--rh-animation-timing);
+  --ease:        cubic-bezier(0.22, 1, 0.36, 1);
 
-  --app-gutter:        clamp(var(--rh-space-md), 3.2vw, var(--rh-space-lg));
+  --app-gutter:        clamp(12px, 3.2vw, var(--rh-space-lg));
   --app-header-pad-y:  var(--rh-space-sm);
   --app-main-pad-top:  var(--rh-space-lg);
-  --app-main-pad-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  /* Nav ~64px + home indicator + safe area — evita conteúdo cortado no iPhone */
+  --app-main-pad-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
   --app-title-size:    var(--rh-font-size-heading-xs);
   --app-section-gap:   var(--rh-space-md);
 }
@@ -68,6 +73,10 @@ html, body {
   -webkit-font-smoothing: antialiased;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -123,6 +132,406 @@ select option { background: var(--card); color: var(--ink); }
   display: flex;
   flex-direction: column;
   width: 100%;
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 90% 55% at 12% -8%, rgba(245, 130, 32, 0.16), transparent 58%),
+    radial-gradient(ellipse 70% 45% at 100% 8%, rgba(91, 143, 232, 0.14), transparent 52%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(168, 180, 232, 0.12), transparent 55%),
+    var(--bg);
+}
+
+.tessy-app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: soft-light;
+}
+
+.tessy-app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--glass-strong) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 1px 0 rgba(30, 36, 51, 0.04);
+}
+
+.tessy-app-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--rh-space-md);
+  min-width: 0;
+}
+
+.tessy-app-brand__name {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--text-md);
+  letter-spacing: -0.02em;
+  color: var(--accent-ink);
+  white-space: nowrap;
+}
+
+.tessy-app-brand__dot {
+  color: var(--accent);
+}
+
+.tessy-app-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 0 max(0px, calc((100% - 480px) / 2));
+  pointer-events: none;
+}
+
+.tessy-app-bottom-nav__inner {
+  pointer-events: auto;
+  margin: 0 auto;
+  max-width: min(480px, 100%);
+  background: var(--glass-strong);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 -8px 32px rgba(30, 36, 51, 0.08);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tessy-home-hero {
+  position: relative;
+  margin-bottom: 18px;
+  padding: 18px 16px 16px;
+  border-radius: 22px;
+  overflow: hidden;
+  color: #fff;
+  background: var(--hero-gradient);
+  box-shadow: var(--shadow-accent);
+}
+
+.tessy-home-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -40% 40%;
+  height: 120%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.28), transparent 68%);
+  pointer-events: none;
+}
+
+.tessy-home-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.tessy-home-hero--soft {
+  color: var(--accent-ink);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 247, 240, 0.88)),
+    radial-gradient(ellipse at 100% 0%, rgba(245, 130, 32, 0.14), transparent 55%);
+  border: 1px solid rgba(245, 130, 32, 0.14);
+  box-shadow: var(--shadow-md);
+}
+
+.tessy-home-hero__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+
+.tessy-home-hero--soft .tessy-home-hero__eyebrow {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.tessy-home-hero__title {
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(1.35rem, 5.2vw, 1.65rem);
+  font-weight: 550;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.tessy-home-hero__sub {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.92;
+}
+
+.tessy-home-hero--soft .tessy-home-hero__sub {
+  color: var(--ink-2);
+  opacity: 1;
+}
+
+.tessy-home-hero__cta {
+  margin-top: 14px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: none;
+  background: #fff;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 620;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(80, 40, 0, 0.14);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+.tessy-home-hero__cta:active {
+  transform: scale(0.98);
+}
+
+.tessy-panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.tessy-explore-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tessy-explore-tile {
+  padding: 14px 14px 13px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFF 100%);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+.tessy-explore-tile:hover {
+  border-color: rgba(245, 130, 32, 0.28);
+  box-shadow: var(--shadow-md);
+}
+
+.tessy-explore-tile:active {
+  transform: scale(0.98);
+}
+
+.tessy-explore-tile__label {
+  font-size: 13px;
+  font-weight: 620;
+  color: var(--ink-2);
+  letter-spacing: -0.01em;
+}
+
+.tessy-explore-tile__count {
+  margin-top: 4px;
+  font-size: 1.55rem;
+  font-weight: 680;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--accent-ink);
+}
+
+.tessy-explore-tile__meta {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.tessy-search-fab {
+  width: 56px;
+  height: 56px;
+  margin-top: -20px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #4A8BFF 0%, #3D7FE8 100%);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 14px 28px rgba(61, 127, 232, 0.34);
+}
+
+.tessy-search-fab:active {
+  transform: scale(0.96);
+}
+
+.tessy-opp-card,
+.tessy-opp-card--secondary {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.tessy-opp-card {
+  padding: 16px 16px 14px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 12px;
+}
+
+.tessy-opp-card__kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.tessy-opp-card__title {
+  margin-top: 8px;
+  font-size: 1.22rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--accent-ink);
+}
+
+.tessy-opp-card__reason {
+  margin-top: 8px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.tessy-opp-card__cta {
+  margin-top: 12px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+.tessy-opp-card--secondary {
+  padding: 12px 14px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+}
+
+.tessy-opp-card--secondary .tessy-opp-card__kicker {
+  color: var(--muted);
+}
+
+.tessy-opp-card--secondary .tessy-opp-card__title {
+  font-size: 15px;
+  margin-top: 4px;
+}
+
+.tessy-opp-card--secondary .tessy-opp-card__reason {
+  font-size: 12.5px;
+  margin-top: 4px;
+}
+
+.tessy-pending-quiet {
+  margin-bottom: 14px;
+  padding: 8px 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tessy-global-search__group {
+  margin-top: 16px;
+}
+
+.tessy-global-search__group-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.tessy-global-search__hit {
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.tessy-global-search__hit-title {
+  font-size: 14px;
+  font-weight: 620;
+  color: var(--accent-ink);
+}
+
+.tessy-global-search__hit-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.tessy-search {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.tessy-search__icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.tessy-search__input {
+  width: 100%;
+  padding: 13px 16px 13px 42px;
+  border-radius: 16px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  color: var(--accent-ink);
+  font-size: 14px;
+  outline: none;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+.tessy-search__input:focus {
+  border-color: rgba(245, 130, 32, 0.45);
+  box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.12), var(--shadow-sm);
+}
+
+.tessy-market-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s var(--ease);
+}
+
+.tessy-market-card:hover {
+  border-color: rgba(245, 130, 32, 0.22);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.tessy-market-card:active {
+  transform: translateY(0) scale(0.99);
 }
 
 .tessy-app-header-inner,
@@ -146,12 +555,17 @@ select option { background: var(--card); color: var(--ink); }
   padding: var(--app-main-pad-top) var(--app-gutter) var(--app-main-pad-bottom);
 }
 
+.tessy-tab-panel {
+  animation: tessy-fade-up 0.22s ease-out;
+}
+
 .tessy-home-rail {
   display: flex;
   gap: var(--rh-space-md);
   overflow-x: auto;
-  padding: var(--rh-space-3xs) var(--rh-space-xs) var(--rh-space-sm);
+  padding: var(--rh-space-3xs) 2px var(--rh-space-sm);
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 2px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -192,31 +606,38 @@ select option { background: var(--card); color: var(--ink); }
 }
 
 .tessy-home-carousel__btn--prev {
-  left: -4px;
+  left: 2px;
 }
 
 .tessy-home-carousel__btn--next {
-  right: -4px;
+  right: 2px;
 }
 
 .tessy-home-wide-card {
   scroll-snap-align: start;
   flex-shrink: 0;
-  width: min(100%, 340px);
+  width: min(100%, 320px);
+  max-width: calc(100vw - (var(--app-gutter) * 2) - 8px);
   min-height: 112px;
   display: grid;
-  grid-template-columns: 118px 1fr auto;
+  grid-template-columns: minmax(96px, 112px) minmax(0, 1fr);
   align-items: stretch;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: 18px;
   overflow: hidden;
-  background: var(--card);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFF 100%);
+  box-shadow: var(--shadow-md);
   text-align: left;
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+
+.tessy-home-wide-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
 }
 
 .tessy-home-wide-card--action {
-  grid-template-columns: 118px minmax(0, 1fr);
+  grid-template-columns: minmax(96px, 112px) minmax(0, 1fr);
 }
 
 .tessy-home-wide-card__body--stacked {
@@ -258,16 +679,21 @@ select option { background: var(--card); color: var(--ink); }
 }
 
 .tessy-home-btn-inline {
-  padding: 7px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--accent);
-  background: #fff;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent-soft);
   color: var(--accent);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
   white-space: nowrap;
   line-height: 1.2;
+  transition: background 0.15s var(--ease), transform 0.12s var(--ease);
+}
+
+.tessy-home-btn-inline:hover {
+  background: rgba(245, 130, 32, 0.18);
 }
 
 .tessy-home-btn-inline:disabled {
@@ -342,7 +768,8 @@ select option { background: var(--card); color: var(--ink); }
 .tessy-home-card {
   scroll-snap-align: start;
   flex-shrink: 0;
-  width: 272px;
+  width: min(272px, calc(100vw - (var(--app-gutter) * 2) - 8px));
+  max-width: 100%;
   padding: calc(var(--rh-space-lg) - var(--rh-space-3xs)) calc(var(--rh-space-lg) - var(--rh-space-3xs)) var(--rh-space-lg);
   border-radius: var(--r-md);
   background: var(--card);
@@ -350,6 +777,8 @@ select option { background: var(--card); color: var(--ink); }
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .tessy-home-card__row {
@@ -448,17 +877,49 @@ select option { background: var(--card); color: var(--ink); }
 .tessy-app-nav-inner {
   display: flex;
   justify-content: space-around;
-  align-items: center;
-  padding: clamp(4px, 1.4vw, 6px) clamp(4px, 1.8vw, 8px) clamp(2px, 1vw, 4px);
+  align-items: stretch;
+  gap: 2px;
+  padding: clamp(6px, 1.6vw, 8px) clamp(4px, 1.5vw, 8px) clamp(2px, 1vw, 4px);
+  min-width: 0;
+}
+
+.tessy-nav-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 88px;
+  transition: color 0.15s ease, transform 0.12s ease, background 0.15s ease;
+}
+
+.tessy-nav-btn:active {
+  transform: scale(0.94);
+}
+
+.tessy-nav-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.15;
+}
+
+.tessy-create-cta {
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+
+.tessy-create-cta:active {
+  transform: scale(0.96);
 }
 
 .tessy-page-title {
-  font-family: var(--font-heading);
-  font-size: var(--app-title-size);
-  font-weight: var(--rh-font-weight-heading-medium, 500);
-  letter-spacing: 0;
-  line-height: var(--rh-line-height-heading);
+  font-family: var(--font-serif);
+  font-size: clamp(1.2rem, 5vw, 1.55rem);
+  font-weight: 550;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   color: var(--accent-ink);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tessy-section-title {
@@ -473,7 +934,116 @@ select option { background: var(--card); color: var(--ink); }
 .tessy-market-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(var(--rh-space-md), 2.5vw, var(--rh-space-lg));
+  gap: clamp(10px, 2.5vw, var(--rh-space-lg));
+}
+
+.tessy-companies__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tessy-company-card {
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+
+.tessy-company-card__head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.tessy-company-card__meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.tessy-company-card__name {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+
+.tessy-company-card__chips {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.tessy-company-card__empty-meta {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.tessy-company-card__save {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+
+.tessy-company-card__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tessy-company-card__btn {
+  min-width: 0;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.tessy-company-card__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: var(--muted);
+}
+
+@media (max-width: 360px) {
+  .tessy-company-card__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .tessy-home-wide-card,
+  .tessy-home-wide-card--action {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .tessy-home-wide-card__media,
+  .tessy-home-wide-card__media-fill,
+  .tessy-home-wide-card__media-fallback {
+    min-height: 104px;
+  }
 }
 
 .tessy-category-rail {
@@ -512,12 +1082,12 @@ select option { background: var(--card); color: var(--ink); }
 }
 
 .tessy-stat-card {
-  min-height: 84px;
+  min-height: 88px;
   text-align: left;
   padding: var(--rh-space-md) var(--rh-space-lg);
-  border-radius: var(--r-lg);
+  border-radius: 18px;
   border: var(--rh-border-width-sm) solid var(--line);
-  background: var(--card);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFF 100%);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   display: flex;
@@ -597,14 +1167,23 @@ button.tessy-stat-card:active {
   }
 
   .tessy-nav-btn {
-    padding: 3px 5px !important;
+    padding: 5px 4px !important;
   }
 
   .tessy-create-cta {
-    min-width: 96px !important;
+    min-width: 88px !important;
     height: 38px !important;
-    font-size: 11px !important;
-    padding: 0 10px !important;
+    font-size: 10.5px !important;
+    padding: 0 8px !important;
+  }
+
+  .tessy-market-grid {
+    gap: 8px;
+  }
+
+  .tessy-app-main {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }
 

@@ -10,8 +10,8 @@ const LABELS: Record<InviteTarget, { title: string; subtitle: string }> = {
     subtitle: 'Compartilhe o cadastro com médicos da sua rede.',
   },
   empresa: {
-    title: 'Indicar empresa',
-    subtitle: 'Empresas entram por reunião. Compartilhe o contato comercial da Tessy.',
+    title: 'Cadastrar empresa',
+    subtitle: 'Cadastro liberado para teste. Crie uma conta empresa e publique na vitrine.',
   },
 };
 
@@ -23,7 +23,7 @@ export default function InviteShareCard({ target }: { target: InviteTarget }) {
   async function copyLink() {
     try {
       const text = target === 'empresa'
-        ? `Conheça a Tessy para empresas e agende uma reunião: ${url}`
+        ? `Cadastre sua empresa na Tessy (teste): ${url}`
         : url;
       await navigator.clipboard.writeText(text);
       setCopied(true);

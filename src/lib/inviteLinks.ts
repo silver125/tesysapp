@@ -15,8 +15,8 @@ export const COMPANY_MEETING_HREF =
 
 export const INVITE_URLS = {
   medico: `${TESSY_BASE_URL}/cadastro`,
-  /** Página pública para empresas/representantes — sem self-serve de cadastro. */
-  empresa: `${TESSY_BASE_URL}/para-empresas`,
+  /** Cadastro de empresa liberado para teste — sem self-serve na landing. */
+  empresa: `${TESSY_BASE_URL}/cadastro?perfil=empresa`,
 } as const;
 
 export const INVITE_WHATSAPP = {
@@ -24,6 +24,6 @@ export const INVITE_WHATSAPP = {
     'Olá! Estou usando a Tessy para conectar com empresas de saúde, eventos e oportunidades. Cadastre-se como médico: ' +
     INVITE_URLS.medico,
   empresa:
-    'Olá! Conheça a Tessy para empresas — presença estratégica junto a médicos. Agende uma conversa pelo site: ' +
+    'Olá! Cadastre sua empresa na Tessy para publicar produtos e eventos e conectar com médicos: ' +
     INVITE_URLS.empresa,
 } as const;

@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { TessyMark, WaIcon } from '../components/ui';
-import { dashboardPathForRole } from '../lib/authRoutes';
+import type { UserRole } from '../types';
+import { dashboardPathForRole, normalizeUserRole } from '../lib/authRoutes';
 import { EMAIL_CONFIRMATION_REQUIRED } from '../lib/pendingRegistration';
 
 type FormData = {
+  role: UserRole | null;
   name: string;
   crm: string;
   crmState: string;
   specialty: string;
+  company: string;
   whatsapp: string;
   whatsappConnectionOnly: boolean;
   email: string;
@@ -18,15 +21,7 @@ type FormData = {
 };
 
 const INITIAL: FormData = {
-  name: '',
-  crm: '',
-  crmState: '',
-  specialty: '',
-  whatsapp: '',
-  whatsappConnectionOnly: true,
-  email: '',
-  password: '',
-  privacyAccepted: false,
+  role: null, name: '', crm: '', crmState: '', specialty: '', company: '', whatsapp: '', whatsappConnectionOnly: true, email: '', password: '', privacyAccepted: false,
 };
 
 const BR_STATES = [
@@ -46,21 +41,28 @@ const SPECIALTIES = [
 export default function Register() {
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState<FormData>(INITIAL);
+  const [searchParams] = useSearchParams();
+  const roleParam = searchParams.get('perfil');
+  const initialRole: UserRole | null = roleParam === 'medico' || roleParam === 'empresa' ? roleParam : null;
+  const [step, setStep] = useState(initialRole ? 1 : 0);
+  const [data, setData] = useState<FormData>({ ...INITIAL, role: initialRole });
   const [error, setError] = useState('');
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
 
-  const totalSteps = 2;
+  const totalSteps = 3;
   const update = <K extends keyof FormData>(k: K, v: FormData[K]) =>
     setData(prev => ({ ...prev, [k]: v }));
 
   const canAdvance = () => {
-    if (step === 0) {
-      const hasValidWhatsapp = data.whatsapp.trim() === '' || normalizePhone(data.whatsapp).length >= 12;
-      return data.name.trim().length > 2 && data.crm.trim().length >= 4 && data.crmState !== '' && hasValidWhatsapp;
-    }
+    if (step === 0) return data.role !== null;
     if (step === 1) {
+      if (data.role === 'medico') {
+        const hasValidWhatsapp = data.whatsapp.trim() === '' || normalizePhone(data.whatsapp).length >= 12;
+        return data.name.trim().length > 2 && data.crm.trim().length >= 4 && data.crmState !== '' && hasValidWhatsapp;
+      }
+      return data.company.trim().length > 2 && normalizePhone(data.whatsapp).length >= 12;
+    }
+    if (step === 2) {
       return /^\S+@\S+\.\S+$/.test(data.email) && data.password.length >= 6 && data.privacyAccepted;
     }
     return false;
@@ -69,22 +71,29 @@ export default function Register() {
   const next = () => { setError(''); if (step < totalSteps - 1) setStep(s => s + 1); };
   const back = () => { setError(''); if (step > 0) setStep(s => s - 1); };
 
+  const pickRole = (r: UserRole) => {
+    update('role', r);
+    setError('');
+    setTimeout(() => setStep(1), 120);
+  };
+
   const submit = async () => {
     setError('');
     try {
       await register({
-        name: data.name,
+        name: data.role === 'medico' ? data.name : data.company,
         email: data.email,
         password: data.password,
-        role: 'medico',
-        specialty: data.specialty || undefined,
-        crm: data.crm.trim(),
-        crmState: data.crmState,
+        role: data.role!,
+        specialty: data.role === 'medico' ? data.specialty || undefined : undefined,
+        crm: data.role === 'medico' ? data.crm.trim() : undefined,
+        crmState: data.role === 'medico' ? data.crmState : undefined,
+        company: data.role === 'empresa' ? data.company : undefined,
         whatsapp: data.whatsapp.trim() ? normalizePhone(data.whatsapp) : undefined,
-        whatsappConnectionOnly: data.whatsappConnectionOnly,
+        whatsappConnectionOnly: data.role === 'medico' ? data.whatsappConnectionOnly : undefined,
         privacyAccepted: data.privacyAccepted,
       });
-      const dest = dashboardPathForRole('medico');
+      const dest = dashboardPathForRole(normalizeUserRole(data.role));
       navigate(dest ?? '/entrar', { replace: true });
     } catch (err) {
       if (err instanceof Error && err.message === EMAIL_CONFIRMATION_REQUIRED) {
@@ -96,7 +105,12 @@ export default function Register() {
     }
   };
 
-  const stepLabels = ['Seus dados', 'Acesso'];
+  const stepLabels = [
+    'Quem é você?',
+    data.role === 'empresa' ? 'Sua empresa' : 'Seus dados',
+    'Acesso',
+  ];
+
   const ready = canAdvance() && !isLoading;
 
   return (
@@ -105,6 +119,7 @@ export default function Register() {
       color: 'var(--ink)', background: 'var(--bg)',
     }}>
 
+      {/* ── Header ── */}
       <header style={{
         padding: '16px clamp(20px, 5vw, 72px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -141,6 +156,7 @@ export default function Register() {
         </Link>
       </header>
 
+      {/* ── Step dots ── */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, paddingTop: 20 }}>
         {Array.from({ length: totalSteps }).map((_, i) => (
           <div key={i} style={{
@@ -152,22 +168,29 @@ export default function Register() {
         ))}
       </div>
 
+      {/* ── Content ── */}
       <main className="tessy-register-main" style={{ flex: 1, maxWidth: 460, width: '100%', margin: '0 auto', padding: '34px 24px 28px' }}>
 
+        {/* Title */}
         <div style={{ marginBottom: 26 }}>
           <p style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 560, marginBottom: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             Etapa {step + 1} de {totalSteps} · {stepLabels[step]}
           </p>
-          <h1 className="tessy-auth-title" style={{ fontSize: 34, fontWeight: 560, letterSpacing: 0, lineHeight: 1.1, color: 'var(--accent-ink)' }}>
-            {step === 0 && <>Médico, crie sua conta<span style={{ color: 'var(--accent)' }}>.</span></>}
-            {step === 1 && <>Crie seu acesso<span style={{ color: 'var(--accent)' }}>.</span></>}
+          <h1 className="tessy-auth-title" style={{ fontSize: 38, fontWeight: 560, letterSpacing: 0, lineHeight: 1.08, color: 'var(--accent-ink)' }}>
+            {step === 0 && <>Escolha seu perfil<span style={{ color: 'var(--accent)' }}>.</span></>}
+            {step === 1 && data.role === 'medico' && <>Dados profissionais<span style={{ color: 'var(--accent)' }}>.</span></>}
+            {step === 1 && data.role === 'empresa' && <>Dados comerciais<span style={{ color: 'var(--accent)' }}>.</span></>}
+            {step === 2 && <>Crie seu acesso<span style={{ color: 'var(--accent)' }}>.</span></>}
           </h1>
           <p style={{ marginTop: 12, fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.55 }}>
-            {step === 0 && 'Cadastro exclusivo para médicos. Esses dados ajudam a personalizar oportunidades para o seu perfil.'}
-            {step === 1 && 'Use um e-mail profissional para acessar sua conta com segurança.'}
+            {step === 0 && 'Médicos e empresas. O cadastro de empresa está liberado para testes agora.'}
+            {step === 1 && data.role === 'medico' && 'Esses dados ajudam empresas a entenderem seu perfil profissional.'}
+            {step === 1 && data.role === 'empresa' && 'Configure o contato que médicos usarão para falar com seu representante.'}
+            {step === 2 && 'Use um e-mail profissional para acessar sua conta com segurança.'}
           </p>
         </div>
 
+        {/* Confirmação de e-mail pendente */}
         {emailConfirmationSent && (
           <div style={{
             marginBottom: 20, padding: '16px 16px', borderRadius: 10,
@@ -183,6 +206,7 @@ export default function Register() {
           </div>
         )}
 
+        {/* Error */}
         {error && (
           <div style={{
             marginBottom: 20, padding: '13px 14px', borderRadius: 8,
@@ -193,7 +217,63 @@ export default function Register() {
           </div>
         )}
 
+        {/* ── STEP 0: Role ── */}
         {step === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {([
+              { role: 'medico' as UserRole, code: 'M', title: 'Sou médico', desc: 'Veja produtos, eventos e representantes da sua área' },
+              { role: 'empresa' as UserRole, code: 'E', title: 'Sou empresa', desc: 'Publique anúncios e receba médicos interessados' },
+            ]).map(opt => {
+              const active = data.role === opt.role;
+              return (
+                <button
+                  key={opt.role}
+                  type="button"
+                  onClick={() => pickRole(opt.role)}
+                  style={{
+                    textAlign: 'left', padding: '18px 16px',
+                    borderRadius: 8, border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
+                    background: active ? 'var(--accent-soft)' : '#fff',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16,
+                    transition: 'border-color 0.15s, background 0.15s',
+                    WebkitTapHighlightColor: 'transparent',
+                    boxShadow: active ? '0 12px 28px rgba(74,168,255,0.10)' : 'var(--shadow-sm)',
+                  }}
+                >
+                  <div style={{
+                    width: 46, height: 46, borderRadius: 8, flexShrink: 0,
+                    background: active ? 'var(--accent-ink)' : 'var(--chip)',
+                    color: active ? '#fff' : 'var(--ink-2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16, fontWeight: 560,
+                  }}>
+                    {opt.code}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 17, fontWeight: 560, color: 'var(--accent-ink)' }}>{opt.title}</div>
+                    <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 3, lineHeight: 1.4 }}>{opt.desc}</div>
+                  </div>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                    background: active ? 'var(--accent)' : 'transparent',
+                    border: `2px solid ${active ? 'var(--accent)' : 'rgba(26,27,46,0.14)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fff', fontSize: 13, fontWeight: 560,
+                    transition: 'all 0.15s',
+                  }}>
+                    {active && '✓'}
+                  </div>
+                </button>
+              );
+            })}
+            <p style={{ textAlign: 'center', fontSize: 13, color: '#777487', marginTop: 4 }}>
+              Selecione para continuar
+            </p>
+          </div>
+        )}
+
+        {/* ── STEP 1: Medico ── */}
+        {step === 1 && data.role === 'medico' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
             <BigField
               label="Nome completo"
@@ -337,7 +417,54 @@ export default function Register() {
           </div>
         )}
 
-        {step === 1 && (
+        {/* ── STEP 1: Empresa ── */}
+        {step === 1 && data.role === 'empresa' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            <BigField
+              label="Nome da empresa"
+              type="text"
+              value={data.company}
+              onChange={v => update('company', v)}
+              placeholder="Pharma Brasil"
+              autoComplete="organization"
+            />
+
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 10 }}>
+                WhatsApp de contato
+              </div>
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+                  color: '#25D366', display: 'flex', alignItems: 'center',
+                }}>
+                  <WaIcon size={18} />
+                </span>
+                <input
+                  type="tel"
+                  value={data.whatsapp}
+                  onChange={e => update('whatsapp', formatPhone(e.target.value))}
+                  placeholder="(11) 99999-9999"
+                  style={{
+                    width: '100%', padding: '18px 16px 18px 46px',
+                    borderRadius: 8, border: '1.5px solid var(--line)',
+                    background: '#fff', color: 'var(--ink)',
+                    fontSize: 16, outline: 'none', boxSizing: 'border-box',
+                    transition: 'border-color 0.15s',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#25D366'}
+                  onBlur={e => e.target.style.borderColor = 'var(--line)'}
+                />
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
+                Médicos demonstram interesse. Você pede permissão para WhatsApp — o médico aprova antes da conversa.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 2: Credentials ── */}
+        {step === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
             <BigField
               label="E-mail"
@@ -391,7 +518,8 @@ export default function Register() {
         )}
       </main>
 
-      {!emailConfirmationSent && (
+      {/* ── Sticky bottom CTA ── */}
+      {step > 0 && !emailConfirmationSent && (
         <div style={{
           padding: '8px 24px 34px',
           background: 'transparent',
@@ -414,11 +542,23 @@ export default function Register() {
             >
               {isLoading ? 'Criando sua conta...' : step < totalSteps - 1 ? 'Continuar' : 'Criar conta'}
             </button>
-            <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)' }}>
-              Já tem conta?{' '}
-              <Link to="/entrar" style={{ color: 'var(--accent-ink)', fontWeight: 560, textDecoration: 'none' }}>Entrar</Link>
-            </p>
+            {step === totalSteps - 1 && (
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)' }}>
+                Já tem conta?{' '}
+                <Link to="/entrar" style={{ color: 'var(--accent-ink)', fontWeight: 560, textDecoration: 'none' }}>Entrar</Link>
+              </p>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* ── Footer link on step 0 ── */}
+      {step === 0 && (
+        <div style={{ textAlign: 'center', padding: '0 24px 32px', marginTop: 'auto' }}>
+          <p style={{ fontSize: 13, color: 'var(--ink-2)' }}>
+            Já tem conta?{' '}
+            <Link to="/entrar" style={{ color: 'var(--accent-ink)', fontWeight: 560, textDecoration: 'none' }}>Entrar</Link>
+          </p>
         </div>
       )}
     </div>
@@ -459,17 +599,17 @@ function BigField({ label, type = 'text', value, onChange, placeholder, autoComp
   );
 }
 
-function normalizePhone(raw: string) {
-  const digits = raw.replace(/\D/g, '');
-  if (digits.startsWith('55') && digits.length >= 12) return `+${digits}`;
-  if (digits.length >= 10) return `+55${digits}`;
-  return digits ? `+55${digits}` : '';
-}
-
 function formatPhone(raw: string) {
   const d = raw.replace(/\D/g, '').slice(0, 11);
   if (d.length <= 2) return d;
   if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
   if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+function normalizePhone(raw: string) {
+  const d = raw.replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('55')) return d;
+  return `55${d}`;
 }

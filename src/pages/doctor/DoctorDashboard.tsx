@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDashboardTab } from '../../hooks/useDashboardTab';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings, openHelp } from '../../lib/profileSettingsEvents';
 import { doctorInterestList, sortByDoctorInterests } from '../../lib/doctorPreferences';
@@ -20,6 +22,7 @@ import {
 } from '../../lib/representatives';
 import { connectWithRepresentative } from '../../lib/commercialConnect';
 import { buildHomeFeed, type HomeFeedItem } from '../../lib/homeFeed';
+import { pickDoctorOpportunities, type DoctorOpportunity } from '../../lib/doctorRecommendations';
 import { formatLeadError } from '../../lib/leadErrors';
 import { getLevelProgress, getBadges, POINTS_PER_INTEREST, POINTS_PER_CONNECTION, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
@@ -68,22 +71,21 @@ function IcoCompanies(a: boolean) {
   );
 }
 
-function IcoRepresentatives(a: boolean) {
-  const c = a ? 'var(--accent)' : '#6F7A90';
+function IcoSearch(_active: boolean) {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
-      <circle cx="10" cy="7" r="3" />
-      <path d="M4 17c0-3.3 2.7-5 6-5s6 1.7 6 5" strokeLinecap="round" />
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#fff" strokeWidth="2">
+      <circle cx="10" cy="10" r="6.5" />
+      <path d="M15 15l4 4" strokeLinecap="round" />
     </svg>
   );
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'home',             label: 'Início',          icon: IcoHome },
-  { key: 'products',         label: 'Produtos',        icon: IcoBox },
-  { key: 'events',           label: 'Eventos e workshops', icon: IcoCalendar },
-  { key: 'representatives',  label: 'Representantes',  icon: IcoRepresentatives },
-  { key: 'companies',        label: 'Empresas',        icon: IcoCompanies },
+  { key: 'home',             label: 'Início',   icon: IcoHome },
+  { key: 'products',         label: 'Produtos', icon: IcoBox },
+  { key: 'search',           label: 'Buscar',   icon: IcoSearch, big: true, variant: 'search' },
+  { key: 'events',           label: 'Eventos',  icon: IcoCalendar },
+  { key: 'companies',        label: 'Empresas', icon: IcoCompanies },
 ];
 
 const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
@@ -250,7 +252,9 @@ function doctorMetaLine(user: User | null | undefined) {
 
 export default function DoctorDashboard() {
   const { user, events, products, courses, leads, locations, representatives: registeredReps, refreshData } = useAuth();
-  const [tab, setTab] = useState<Tab>('home');
+  const [tab, setTab] = useDashboardTab<Tab>('home', [
+    'home', 'products', 'events', 'representatives', 'companies',
+  ] as const);
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
   const [regionFilter, setRegionFilter] = useState('all');
@@ -259,6 +263,8 @@ export default function DoctorDashboard() {
   const [openEvent, setOpenEvent] = useState<Event | null>(null);
   const [openCourse, setOpenCourse] = useState<Course | null>(null);
   const [companyLogos, setCompanyLogos] = useState<Record<string, string>>({});
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [globalQuery, setGlobalQuery] = useState('');
 
   // Refresh data every time the doctor switches tabs so new items from companies appear
   useEffect(() => {
@@ -342,19 +348,35 @@ export default function DoctorDashboard() {
     const matchRegion = matchesRepresentativeRegion(rep, regionFilter);
     return matchQ && matchRegion;
   });
-  const filtCompanies = buildCompanyMatches(events, products, courses, locations).filter(co => {
-    return !q || includesQ(co.name, q) || co.products.some(p => includesQ(p.name, q)) || co.events.some(e => includesQ(e.title, q));
+  const companyMatches = buildCompanyMatches(events, products, courses, locations);
+  const filtCompanies = companyMatches.filter(co => {
+    return !q
+      || includesQ(co.name, q)
+      || co.products.some(p => includesQ(p.name, q))
+      || co.events.some(e => includesQ(e.title, q))
+      || co.courses.some(c => includesQ(c.title, q));
   });
   const homeFeed = buildHomeFeed(homeProductPool, homeEvents, homeWorkshops, representatives);
   const marketplaceCounts = {
     products: products.length,
-    events: events.length,
+    events: upcomingEvents.length + courses.length,
     workshops: courses.length,
     reps: representatives.length,
     companies: filtCompanies.length,
   };
+  const opportunities = pickDoctorOpportunities(
+    companyMatches,
+    homeProductPool,
+    homeEvents,
+    representatives,
+    user,
+    doctorInterests,
+    2,
+  );
+  const bestOpportunity = opportunities[0];
+  const nextOpportunity = opportunities[1];
   const platformEmpty = products.length === 0 && events.length === 0 && courses.length === 0;
-  const homeQuiet = homeFeed.length === 0;
+  const homeQuiet = homeFeed.length === 0 && !bestOpportunity;
 
   const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
 
@@ -367,7 +389,27 @@ export default function DoctorDashboard() {
     setSearch(nextSearch);
   }
 
+  function openOpportunity(item: DoctorOpportunity) {
+    if (item.kind === 'product' && item.product) {
+      setOpenProduct(item.product);
+      return;
+    }
+    if (item.kind === 'event' && item.event) {
+      setOpenEvent(item.event);
+      return;
+    }
+    if (item.kind === 'rep') {
+      openTab('representatives', item.companyName);
+      return;
+    }
+    openTab('companies', item.companyName);
+  }
+
   function goTab(k: string) {
+    if (k === 'search') {
+      setSearchOpen(true);
+      return;
+    }
     openTab(k as Tab);
   }
 
@@ -392,15 +434,16 @@ export default function DoctorDashboard() {
             connections={countApprovedConnections(leads)}
           />
 
-          <SearchBar
-            value={search}
-            onChange={setSearch}
-            placeholder="Buscar produtos, eventos, empresas ou representantes"
-          />
-
-          {pendingConnections.length > 0 && (
-            <PendingConnectionsInbox leads={pendingConnections} />
+          {bestOpportunity && (
+            <button type="button" className="tessy-opp-card" onClick={() => openOpportunity(bestOpportunity)}>
+              <div className="tessy-opp-card__kicker">Sua melhor oportunidade hoje</div>
+              <div className="tessy-opp-card__title">{bestOpportunity.companyName}</div>
+              <p className="tessy-opp-card__reason">{bestOpportunity.sentence}</p>
+              <div className="tessy-opp-card__cta">Ver oportunidade</div>
+            </button>
           )}
+
+          <PendingConnectionsInbox leads={pendingConnections} />
 
           {!user?.whatsapp && (
             <SlimProfileBanner onFix={openProfileSettings} />
@@ -408,6 +451,14 @@ export default function DoctorDashboard() {
 
           {!platformEmpty && (
             <HomeExploreNav counts={marketplaceCounts} onNavigate={openTab} />
+          )}
+
+          {nextOpportunity && (
+            <button type="button" className="tessy-opp-card tessy-opp-card--secondary" onClick={() => openOpportunity(nextOpportunity)}>
+              <div className="tessy-opp-card__kicker">Também pode interessar</div>
+              <div className="tessy-opp-card__title">{nextOpportunity.companyName}</div>
+              <p className="tessy-opp-card__reason">{nextOpportunity.sentence}</p>
+            </button>
           )}
 
           {homeFeed.length > 0 && (
@@ -457,7 +508,7 @@ export default function DoctorDashboard() {
       {/* ── EVENTS ── */}
       {tab === 'events' && (
         <div>
-          <MarketHead title="Eventos e workshops" count={events.length + courses.length} countWord="atividade" />
+          <MarketHead title="Eventos" subtitle="Congressos, simpósios e workshops." count={events.length + courses.length} countWord="atividade" />
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar eventos ou workshops..." />
           <FilterBar
             chips={[['all','Todos'],['congresso','Congresso'],['workshop','Workshop'],['online','Online']]}
@@ -531,6 +582,20 @@ export default function DoctorDashboard() {
           {openCourse && <CourseCard course={openCourse} />}
         </div>
       </Sheet>
+      <GlobalSearchSheet
+        open={searchOpen}
+        query={globalQuery}
+        onQueryChange={setGlobalQuery}
+        onClose={() => { setSearchOpen(false); setGlobalQuery(''); }}
+        companies={companyMatches}
+        events={events}
+        products={rankedProducts}
+        representatives={representatives}
+        onOpenCompany={name => { setSearchOpen(false); openTab('companies', name); }}
+        onOpenEvent={ev => { setSearchOpen(false); setOpenEvent(ev); }}
+        onOpenProduct={p => { setSearchOpen(false); setOpenProduct(p); }}
+        onOpenRep={name => { setSearchOpen(false); openTab('representatives', name); }}
+      />
     </Layout>
   );
 }
@@ -540,11 +605,11 @@ function MarketHead({ title, subtitle, count, countWord }: {
   title: string; subtitle?: string; count: number; countWord: string;
 }) {
   return (
-      <div style={{ marginBottom: 10 }}>
-      <h1 className="tessy-page-title" style={{ marginBottom: 4 }}>
+    <div style={{ marginBottom: 14 }}>
+      <h1 className="tessy-page-title" style={{ marginBottom: 6, fontFamily: 'var(--font-serif)', fontWeight: 550 }}>
         {title}<span style={{ color: 'var(--accent)' }}>.</span>
       </h1>
-      <p style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.4 }}>
+      <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
         {subtitle ? `${subtitle} ` : ''}
         <b style={{ color: 'var(--accent)' }}>{count}</b> {count === 1 ? countWord : `${countWord}s`} {count === 1 ? 'disponível' : 'disponíveis'}.
       </p>
@@ -563,13 +628,10 @@ function productCategoryChips(products: Product[]): [string, string][] {
 
 function HomeGreeting({ user }: { user: User | null | undefined }) {
   return (
-    <section style={{ marginBottom: 16, paddingTop: 2 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 650, lineHeight: 1.15, color: 'var(--accent-ink)', letterSpacing: -0.2 }}>
-        {doctorGreeting(user)}
-      </h1>
-      <p style={{ marginTop: 4, fontSize: 13, color: 'var(--muted)', lineHeight: 1.35 }}>
-        {doctorMetaLine(user)}
-      </p>
+    <section className="tessy-home-hero tessy-home-hero--soft">
+      <div className="tessy-home-hero__eyebrow">Vitrine médica</div>
+      <h1 className="tessy-home-hero__title">{doctorGreeting(user)}</h1>
+      <p className="tessy-home-hero__sub">{doctorMetaLine(user)}</p>
     </section>
   );
 }
@@ -587,27 +649,23 @@ function DoctorPointsBar({
 
   return (
     <section style={{ marginBottom: 16 }}>
-      <div style={{
-        padding: '12px 14px',
-        borderRadius: 'var(--r-md)',
-        background: '#fff',
-        border: '1px solid var(--line)',
-        boxShadow: 'var(--shadow-sm)',
-      }}>
+      <div className="tessy-panel" style={{ padding: '14px 14px 13px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 40,
-            height: 40,
-            borderRadius: 8,
-            background: 'var(--accent-soft)',
-            border: '1px solid rgba(245,130,32,0.16)',
+            width: 44,
+            height: 44,
+            borderRadius: 14,
+            background: 'linear-gradient(145deg, rgba(245,130,32,0.18), rgba(255,176,96,0.28))',
+            border: '1px solid rgba(245,130,32,0.18)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 14,
-            fontWeight: 700,
+            fontFamily: 'var(--font-serif)',
+            fontSize: 18,
+            fontWeight: 600,
             color: 'var(--accent)',
             flexShrink: 0,
+            boxShadow: '0 8px 18px rgba(245,130,32,0.12)',
           }}>
             {progress.level.index + 1}
           </div>
@@ -665,12 +723,13 @@ function DoctorPointsBar({
             ))}
           </div>
         )}
-        <div style={{ marginTop: 10, height: 4, borderRadius: 999, background: 'var(--chip)', overflow: 'hidden' }}>
+        <div style={{ marginTop: 12, height: 6, borderRadius: 999, background: 'var(--chip)', overflow: 'hidden' }}>
           <div style={{
             height: '100%',
             borderRadius: 999,
             width: `${progress.percent}%`,
-            background: 'var(--accent)',
+            background: 'var(--brand-gradient)',
+            boxShadow: '0 0 12px rgba(245,130,32,0.35)',
           }} />
         </div>
       </div>
@@ -822,35 +881,25 @@ function HomeExploreNav({
   onNavigate: (tab: Tab) => void;
 }) {
   const items: { tab: Tab; label: string; count: number }[] = [
-    { tab: 'products', label: 'Produtos', count: counts.products },
-    { tab: 'events', label: 'Eventos', count: counts.events + counts.workshops },
-    { tab: 'representatives', label: 'Representantes', count: counts.reps },
+    { tab: 'events', label: 'Eventos', count: counts.events },
     { tab: 'companies', label: 'Empresas', count: counts.companies },
+    { tab: 'products', label: 'Produtos', count: counts.products },
+    { tab: 'representatives', label: 'Representantes', count: counts.reps },
   ];
 
   return (
-    <section style={{ marginBottom: 20 }}>
-      <p className="tessy-section-eyebrow">Explorar marketplace</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+    <section style={{ marginBottom: 16 }}>
+      <p className="tessy-section-eyebrow">Acesso rápido</p>
+      <div className="tessy-explore-grid">
         {items.map(entry => (
           <button
             key={entry.tab}
             type="button"
             onClick={() => onNavigate(entry.tab)}
-            style={{
-              padding: '12px 14px',
-              borderRadius: 14,
-              border: '1px solid var(--line)',
-              background: '#fff',
-              textAlign: 'left',
-              cursor: 'pointer',
-              boxShadow: '0 6px 18px rgba(85,96,130,0.04)',
-            }}
+            className="tessy-explore-tile"
           >
-            <div style={{ fontSize: 14, fontWeight: 620, color: 'var(--accent-ink)' }}>{entry.label}</div>
-            <div style={{ marginTop: 3, fontSize: 11.5, color: 'var(--muted)' }}>
-              {entry.count} {entry.count === 1 ? 'disponível' : 'disponíveis'}
-            </div>
+            <div className="tessy-explore-tile__label">{entry.label}</div>
+            <div className="tessy-explore-tile__count">{entry.count}</div>
           </button>
         ))}
       </div>
@@ -1076,10 +1125,18 @@ function HomeEventRow({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
 }
 
 function PendingConnectionsInbox({ leads }: { leads: Lead[] }) {
+  if (leads.length === 0) {
+    return (
+      <p id="pending-connections" className="tessy-pending-quiet">
+        Nenhuma solicitação pendente
+      </p>
+    );
+  }
+
   return (
     <section id="pending-connections" style={{ marginBottom: 14, scrollMarginTop: 16 }}>
-      <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 650, color: 'var(--accent-ink)' }}>
-        {leads.length} {leads.length === 1 ? 'conexão aguardando sua aprovação' : 'conexões aguardando sua aprovação'}
+      <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 700, color: '#C2410C' }}>
+        {leads.length} {leads.length === 1 ? 'solicitação pendente' : 'solicitações pendentes'}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {leads.map(lead => (
@@ -1120,14 +1177,14 @@ function PendingInboxBanner({
   }
 
   return (
-    <section id="pending-connections" style={{ marginBottom: 14, scrollMarginTop: 16 }}>
-      <div style={{
-        padding: 14,
-        borderRadius: 18,
-        background: 'linear-gradient(135deg, #F58220 0%, #FF9A4D 100%)',
-        color: '#fff',
-        boxShadow: '0 14px 34px rgba(245,130,32,0.28)',
-      }}>
+    <div style={{
+      padding: 14,
+      borderRadius: 18,
+      background: 'linear-gradient(135deg, #F58220 0%, #FF9A4D 100%)',
+      color: '#fff',
+      boxShadow: '0 14px 34px rgba(245,130,32,0.28)',
+      outline: '3px solid rgba(245,130,32,0.22)',
+    }}>
         <Mono style={{ fontSize: 9, color: 'rgba(255,255,255,0.82)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
           Ação rápida
         </Mono>
@@ -1179,7 +1236,6 @@ function PendingInboxBanner({
         </div>
         {error && <p style={{ marginTop: 8, fontSize: 11.5, color: '#fff' }}>{error}</p>}
       </div>
-    </section>
   );
 }
 
@@ -1384,6 +1440,8 @@ function CompaniesView({
   onOpenProducts: (company: string) => void;
   onOpenEvents: (company: string) => void;
 }) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [saved, setSaved] = useState<Set<string>>(() => {
     try {
       return new Set(JSON.parse(localStorage.getItem('tessy-saved-companies') ?? '[]'));
@@ -1402,58 +1460,116 @@ function CompaniesView({
     });
   }
 
+  async function goCompanyTestSignup() {
+    await logout();
+    navigate('/cadastro?perfil=empresa', { replace: true });
+  }
+
   return (
-    <div>
+    <div className="tessy-companies">
       <MarketHead title="Empresas" subtitle="Perfis comerciais e vitrine completa." count={companies.length} countWord="empresa" />
-      <SearchBar value={search} onChange={onSearchChange} placeholder="Buscar empresa, produto ou evento..." />
+      <SearchBar value={search} onChange={onSearchChange} placeholder="Buscar empresa, produto, evento ou workshop..." />
       {companies.length === 0 ? (
-        <Empty text="Nenhuma empresa encontrada." hint="Complete seu perfil para melhorar as sugestões." />
-      ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {companies.map(co => (
-              <article key={co.id} style={{
-                padding: 16,
-                borderRadius: 20,
-                background: '#fff',
-                border: '1px solid rgba(216,222,236,0.92)',
-                boxShadow: '0 10px 26px rgba(85,96,130,0.05)',
-              }}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <CompanyAvatar name={co.name} avatarUrl={companyLogos[co.id]} size={52} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 16, fontWeight: 620, color: 'var(--ink)' }}>{co.name}</div>
-                    <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {co.products.length > 0 && <Chip color="#1EA97C">{co.products.length} produto{co.products.length > 1 ? 's' : ''}</Chip>}
-                      {co.events.length > 0 && <Chip color="var(--accent)">{co.events.length} evento{co.events.length > 1 ? 's' : ''}</Chip>}
+          <Empty
+            text="Nenhuma empresa na vitrine ainda"
+            hint="Cadastre uma empresa de teste para publicar produtos e eventos e ver o match no médico."
+            actionLabel="Cadastrar empresa de teste"
+            onAction={() => { void goCompanyTestSignup(); }}
+          />
+          <InviteShareCard target="empresa" />
+        </div>
+      ) : (
+        <div className="tessy-companies__list">
+          {companies.map(co => {
+            const workshopCount = co.courses.length;
+            const eventCount = co.events.length;
+            const agendaCount = eventCount + workshopCount;
+            return (
+              <article key={co.id} className="tessy-company-card">
+                <div className="tessy-company-card__head">
+                  <CompanyAvatar name={co.name} avatarUrl={companyLogos[co.id]} size={48} />
+                  <div className="tessy-company-card__meta">
+                    <div className="tessy-company-card__name" title={co.name}>{co.name}</div>
+                    <div className="tessy-company-card__chips">
+                      {co.products.length > 0 && (
+                        <Chip color="#1EA97C">{co.products.length} produto{co.products.length > 1 ? 's' : ''}</Chip>
+                      )}
+                      {eventCount > 0 && (
+                        <Chip color="var(--accent)">{eventCount} evento{eventCount > 1 ? 's' : ''}</Chip>
+                      )}
+                      {workshopCount > 0 && (
+                        <Chip color="#F58220">{workshopCount} workshop{workshopCount > 1 ? 's' : ''}</Chip>
+                      )}
+                      {co.products.length === 0 && agendaCount === 0 && (
+                        <span className="tessy-company-card__empty-meta">Sem anúncios ainda</span>
+                      )}
                     </div>
                   </div>
-                  <button type="button" onClick={() => toggleSaved(co.id)} style={{
-                    border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 18,
-                    color: saved.has(co.id) ? 'var(--accent)' : 'var(--muted)',
-                  }}>{saved.has(co.id) ? '★' : '☆'}</button>
+                  <button
+                    type="button"
+                    aria-label={saved.has(co.id) ? 'Remover dos salvos' : 'Salvar empresa'}
+                    onClick={() => toggleSaved(co.id)}
+                    className="tessy-company-card__save"
+                    style={{ color: saved.has(co.id) ? 'var(--accent)' : 'var(--muted)' }}
+                  >
+                    {saved.has(co.id) ? '★' : '☆'}
+                  </button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
-                  <button type="button" onClick={() => onOpenProducts(co.name)} style={companyMiniBtn}>Produtos</button>
-                  <button type="button" onClick={() => onOpenEvents(co.name)} style={companyMiniBtn}>Eventos</button>
+                <div className="tessy-company-card__actions">
+                  <button
+                    type="button"
+                    onClick={() => onOpenProducts(co.name)}
+                    className="tessy-company-card__btn"
+                    disabled={co.products.length === 0}
+                  >
+                    Produtos
+                    {co.products.length > 0 ? ` (${co.products.length})` : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenEvents(co.name)}
+                    className="tessy-company-card__btn"
+                    disabled={agendaCount === 0}
+                  >
+                    {workshopCount > 0 && eventCount === 0
+                      ? `Workshops (${workshopCount})`
+                      : workshopCount > 0
+                        ? `Eventos e workshops`
+                        : `Eventos${eventCount > 0 ? ` (${eventCount})` : ''}`}
+                  </button>
                 </div>
               </article>
-            ))}
+            );
+          })}
+        </div>
+      )}
+      {companies.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <InviteShareCard target="empresa" />
+          <button
+            type="button"
+            onClick={() => { void goCompanyTestSignup(); }}
+            style={{
+              marginTop: 10,
+              width: '100%',
+              minHeight: 42,
+              borderRadius: 12,
+              border: '1px solid var(--line)',
+              background: '#fff',
+              color: 'var(--accent-ink)',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Cadastrar outra empresa de teste
+          </button>
         </div>
       )}
     </div>
   );
 }
-
-const companyMiniBtn: React.CSSProperties = {
-  padding: '10px 8px',
-  borderRadius: 12,
-  border: '1px solid rgba(216,222,236,0.92)',
-  background: '#fff',
-  color: 'var(--accent)',
-  fontSize: 12.5,
-  fontWeight: 650,
-  cursor: 'pointer',
-};
 
 
 /* ─── WebsiteLink (link para site da empresa, exibido nos cards) ─── */
@@ -1866,7 +1982,15 @@ function CourseCard({ course }: { course: Course }) {
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-      <span style={{ fontSize: 17, fontWeight: 650, color: 'var(--accent-ink)' }}>{title}</span>
+      <span style={{
+        fontFamily: 'var(--font-serif)',
+        fontSize: 18,
+        fontWeight: 550,
+        color: 'var(--accent-ink)',
+        letterSpacing: '-0.02em',
+      }}>
+        {title}
+      </span>
       {onSeeAll && (
         <button type="button" className="tessy-section-link" onClick={onSeeAll}>
           Ver todas
@@ -1876,23 +2000,124 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => vo
   );
 }
 
+function GlobalSearchSheet({
+  open,
+  query,
+  onQueryChange,
+  onClose,
+  companies,
+  events,
+  products,
+  representatives,
+  onOpenCompany,
+  onOpenEvent,
+  onOpenProduct,
+  onOpenRep,
+}: {
+  open: boolean;
+  query: string;
+  onQueryChange: (value: string) => void;
+  onClose: () => void;
+  companies: CompanyMatch[];
+  events: Event[];
+  products: Product[];
+  representatives: RepresentativeProfile[];
+  onOpenCompany: (name: string) => void;
+  onOpenEvent: (ev: Event) => void;
+  onOpenProduct: (product: Product) => void;
+  onOpenRep: (name: string) => void;
+}) {
+  const q = query.trim().toLowerCase();
+  const companyHits = companies.filter(co => !q || includesQ(co.name, q)).slice(0, 4);
+  const eventHits = events.filter(e => !q || includesQ(e.title, q) || includesQ(e.companyName, q)).slice(0, 4);
+  const productHits = products.filter(p => !q || includesQ(p.name, q) || includesQ(p.companyName, q)).slice(0, 4);
+  const repHits = representatives.filter(r =>
+    !q || includesQ(r.companyName, q) || includesQ(r.repLabel, q) || includesQ(r.specialty, q),
+  ).slice(0, 4);
+  const empty = companyHits.length + eventHits.length + productHits.length + repHits.length === 0;
+
+  return (
+    <Sheet open={open} onClose={onClose}>
+      <div style={{ padding: '4px 16px 20px' }}>
+        <div style={{ fontSize: 18, fontWeight: 650, color: 'var(--accent-ink)', marginBottom: 12 }}>
+          Buscar na Tessy
+        </div>
+        <SearchBar
+          value={query}
+          onChange={onQueryChange}
+          placeholder="Empresas, eventos, produtos ou contatos"
+        />
+        {empty ? (
+          <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 8 }}>
+            Nenhum resultado para essa busca.
+          </p>
+        ) : (
+          <>
+            {companyHits.length > 0 && (
+              <div className="tessy-global-search__group">
+                <div className="tessy-global-search__group-title">Empresas</div>
+                {companyHits.map(co => (
+                  <button key={co.id} type="button" className="tessy-global-search__hit" onClick={() => onOpenCompany(co.name)}>
+                    <div className="tessy-global-search__hit-title">{co.name}</div>
+                    <div className="tessy-global-search__hit-meta">
+                      {co.products.length} produtos · {co.events.length + co.courses.length} eventos
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {eventHits.length > 0 && (
+              <div className="tessy-global-search__group">
+                <div className="tessy-global-search__group-title">Eventos</div>
+                {eventHits.map(ev => (
+                  <button key={ev.id} type="button" className="tessy-global-search__hit" onClick={() => onOpenEvent(ev)}>
+                    <div className="tessy-global-search__hit-title">{ev.title}</div>
+                    <div className="tessy-global-search__hit-meta">{ev.companyName}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {productHits.length > 0 && (
+              <div className="tessy-global-search__group">
+                <div className="tessy-global-search__group-title">Produtos</div>
+                {productHits.map(p => (
+                  <button key={p.id} type="button" className="tessy-global-search__hit" onClick={() => onOpenProduct(p)}>
+                    <div className="tessy-global-search__hit-title">{p.name}</div>
+                    <div className="tessy-global-search__hit-meta">{p.companyName}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {repHits.length > 0 && (
+              <div className="tessy-global-search__group">
+                <div className="tessy-global-search__group-title">Contatos</div>
+                {repHits.map(r => (
+                  <button key={r.id} type="button" className="tessy-global-search__hit" onClick={() => onOpenRep(r.companyName)}>
+                    <div className="tessy-global-search__hit-title">{representativeDisplayName(r)}</div>
+                    <div className="tessy-global-search__hit-meta">{r.companyName}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
 function SearchBar({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div style={{ position: 'relative', marginBottom: 16 }}>
-      <svg style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}
-        width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <div className="tessy-search">
+      <svg className="tessy-search__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
         <circle cx="7" cy="7" r="5.5"/><path d="M11 11l3.5 3.5" strokeLinecap="round"/>
       </svg>
       <input
-        type="search" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{
-          width: '100%', paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12,
-          borderRadius: 'var(--r-md)', background: '#fff', border: '1px solid var(--line)',
-          color: 'var(--accent-ink)', fontSize: 14, outline: 'none',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-        onFocus={e => { e.target.style.borderColor = 'var(--accent)'; }}
-        onBlur={e => { e.target.style.borderColor = 'var(--line)'; }}
+        type="search"
+        className="tessy-search__input"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
       />
     </div>
   );
@@ -1910,14 +2135,27 @@ function Empty({
   onAction?: () => void;
 }) {
   return (
-    <div style={{
-      padding: '16px 14px', textAlign: 'center',
-      background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)',
+    <div className="tessy-panel" style={{
+      padding: '22px 16px', textAlign: 'center',
       color: 'var(--muted)', fontSize: 12.5,
     }}>
-      <div style={{ color: 'var(--ink)', fontWeight: 560 }}>{text}</div>
+      <div style={{
+        width: 44,
+        height: 44,
+        margin: '0 auto 12px',
+        borderRadius: 14,
+        background: 'linear-gradient(145deg, rgba(245,130,32,0.14), rgba(91,143,232,0.14))',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 18,
+        color: 'var(--accent)',
+      }}>
+        ···
+      </div>
+      <div style={{ color: 'var(--ink)', fontWeight: 600, fontSize: 14 }}>{text}</div>
       {hint && (
-        <div style={{ marginTop: 5, fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.35 }}>
+        <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
           {hint}
         </div>
       )}
@@ -1926,15 +2164,16 @@ function Empty({
           type="button"
           onClick={onAction}
           style={{
-            marginTop: 12,
-            padding: '8px 12px',
-            borderRadius: 10,
+            marginTop: 14,
+            padding: '9px 14px',
+            borderRadius: 12,
             border: 'none',
-            background: 'var(--accent)',
+            background: 'var(--brand-gradient)',
             color: '#fff',
-            fontSize: 11.5,
-            fontWeight: 560,
+            fontSize: 12,
+            fontWeight: 600,
             cursor: 'pointer',
+            boxShadow: '0 8px 18px rgba(245,130,32,0.22)',
           }}
         >
           {actionLabel}
