@@ -165,9 +165,11 @@ function dbToEvent(row: Record<string, unknown>): Event {
 }
 
 function dbToProduct(row: Record<string, unknown>): Product {
+  const listingRaw = dbText(row.listing_type, 'product').toLowerCase();
+  const listingType = listingRaw === 'partnership' ? 'partnership' : 'product';
   return {
     id:              row.id              as string,
-    name:            dbText(row.name, 'Produto'),
+    name:            dbText(row.name, listingType === 'partnership' ? 'Parceria' : 'Produto'),
     description:     dbText(row.description),
     category:        dbText(row.category, 'Outros'),
     price:           row.price           as string | undefined,
@@ -177,6 +179,7 @@ function dbToProduct(row: Record<string, unknown>): Product {
     website:         row.website         as string | undefined,
     imageUrl:        row.image_url       as string | undefined,
     availableFor:    row.available_for   as string,
+    listingType,
     anvisaRegularized: row.anvisa_regularized === true,
     commerciallyAvailable: row.commercially_available === true,
     createdAt:       row.created_at      as string,

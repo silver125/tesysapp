@@ -606,7 +606,7 @@ function MarketHead({ title, subtitle, count, countWord }: {
 }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <h1 className="tessy-page-title" style={{ marginBottom: 6, fontFamily: 'var(--font-serif)', fontWeight: 550 }}>
+      <h1 className="tessy-page-title" style={{ marginBottom: 6, fontWeight: 600 }}>
         {title}<span style={{ color: 'var(--accent)' }}>.</span>
       </h1>
       <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
@@ -660,7 +660,7 @@ function DoctorPointsBar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontFamily: 'var(--font-serif)',
+            fontFamily: 'var(--font-heading)',
             fontSize: 18,
             fontWeight: 600,
             color: 'var(--accent)',
@@ -1264,10 +1264,13 @@ function SlimProfileBanner({ onFix }: { onFix: () => void }) {
 /* ─── Cards compactos de vitrine ─── */
 function ProductMarketCard({ product, onOpen }: { product: Product; onOpen: () => void }) {
   const hasPrice = /^r\$/i.test(product.price?.trim() ?? '');
+  const isPartnership = product.listingType === 'partnership';
   return (
     <MarketCard
       image={visualUrl(product.imageUrl)}
-      topLeft={<PhotoBadge color="#1EA97C">Produto</PhotoBadge>}
+      topLeft={<PhotoBadge color={isPartnership ? 'var(--accent)' : '#1EA97C'}>
+        {isPartnership ? 'Parceria' : 'Produto'}
+      </PhotoBadge>}
       highlight={hasPrice ? product.price : undefined}
       title={product.name}
       subtitle={`${product.companyName} • ${product.category}`}
@@ -1996,9 +1999,9 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => vo
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
       <span style={{
-        fontFamily: 'var(--font-serif)',
+        fontFamily: 'var(--font-heading)',
         fontSize: 18,
-        fontWeight: 550,
+        fontWeight: 600,
         color: 'var(--accent-ink)',
         letterSpacing: '-0.02em',
       }}>

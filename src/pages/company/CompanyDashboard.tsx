@@ -397,6 +397,7 @@ export default function CompanyDashboard() {
     'home', 'listings', 'events', 'create', 'products', 'courses', 'leads', 'locations', 'representatives',
   ] as const);
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
+  const [createAsPartnership, setCreateAsPartnership] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [openProductId, setOpenProductId] = useState<string | null>(null);
@@ -454,6 +455,7 @@ export default function CompanyDashboard() {
   function goTab(k: string) {
     if (k === 'create') {
       setCreateSkipType(false);
+      setCreateAsPartnership(false);
       setTab('create');
       return;
     }
@@ -462,13 +464,22 @@ export default function CompanyDashboard() {
 
   function openPublishChooser() {
     setCreateSkipType(false);
+    setCreateAsPartnership(false);
     setTab('create');
   }
 
-  function openCreate(target: 'event' | 'product' | 'course' | 'location' | 'representative') {
+  function openCreate(target: 'event' | 'product' | 'course' | 'location' | 'representative' | 'partnership') {
     if (target === 'location') { setTab('locations'); return; }
     if (target === 'representative') { setTab('representatives'); return; }
+    if (target === 'partnership') {
+      setCreateKind('product');
+      setCreateAsPartnership(true);
+      setCreateSkipType(true);
+      setTab('create');
+      return;
+    }
     setCreateKind(target);
+    setCreateAsPartnership(false);
     setCreateSkipType(true);
     setTab('create');
   }
@@ -523,20 +534,21 @@ export default function CompanyDashboard() {
       {tab === 'home' && (
         <div>
           {/* Welcome hero */}
-          <div className="tessy-home-hero">
-            <div className="tessy-home-hero__eyebrow">Vitrine comercial Tessy</div>
+          <div className="tessy-home-hero tessy-home-hero--soft">
+            <div className="tessy-home-hero__eyebrow">Vitrine comercial</div>
             <div className="tessy-home-hero__title">
-              Sua marca na mão de médicos qualificados
+              Sua marca na mão de médicos
             </div>
             <p className="tessy-home-hero__sub">
               {activeOpportunities === 0
-                ? 'Publique eventos, produtos ou workshops e receba interesses reais.'
+                ? 'Publique um produto, parceria, evento ou workshop para começar.'
                 : `${activeOpportunities} oportunidade${activeOpportunities === 1 ? '' : 's'} ativa${activeOpportunities === 1 ? '' : 's'} · ${myLeads.length} médico${myLeads.length === 1 ? '' : 's'} interessado${myLeads.length === 1 ? '' : 's'}`}
             </p>
             <button
               type="button"
               onClick={() => (publishedItems === 0 ? openPublishChooser() : setTab('listings'))}
               className="tessy-home-hero__cta"
+              style={{ background: 'var(--accent)', color: '#fff', boxShadow: '0 8px 18px rgba(245,130,32,0.22)' }}
             >
               {publishedItems === 0 ? 'Publicar primeiro anúncio →' : 'Ver Meus anúncios →'}
             </button>
@@ -557,14 +569,14 @@ export default function CompanyDashboard() {
                 <div style={{
                   width: `${(setupDone / setupTotal) * 100}%`,
                   height: '100%',
-                  background: 'var(--brand-gradient)',
+                  background: 'var(--accent)',
                   borderRadius: 999,
                 }} />
               </div>
               <ul style={{ margin: '10px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>
                 {!setupSteps[0] && <li>Adicione o logo da empresa no perfil</li>}
                 {!setupSteps[1] && <li>Configure o WhatsApp de contato</li>}
-                {!setupSteps[2] && <li>Publique o primeiro anúncio (produto, evento ou workshop)</li>}
+                {!setupSteps[2] && <li>Publique o primeiro anúncio (produto, parceria, evento ou workshop)</li>}
                 {!setupSteps[3] && <li>Cadastre um representante ou local de atendimento</li>}
               </ul>
               <button
@@ -595,15 +607,14 @@ export default function CompanyDashboard() {
             <button
               type="button"
               onClick={goToLeadsTab}
+              className="tessy-panel"
               style={{
                 width: '100%',
                 marginBottom: 12,
                 padding: '12px 14px',
-                borderRadius: 16,
-                border: '1px solid rgba(245,130,32,0.22)',
-                background: 'linear-gradient(135deg, rgba(245,130,32,0.12), rgba(255,255,255,0.95))',
                 textAlign: 'left',
                 cursor: 'pointer',
+                borderColor: 'rgba(245,130,32,0.18)',
               }}
             >
               <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--accent-ink)' }}>
@@ -619,9 +630,6 @@ export default function CompanyDashboard() {
           <div className="tessy-panel" style={{
             marginBottom: 12,
             padding: 14,
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.98), rgba(255,247,240,0.9))',
-            borderColor: 'rgba(245,130,32,0.12)',
-            boxShadow: 'var(--shadow-md)',
           }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <CompanyAvatar
@@ -632,9 +640,9 @@ export default function CompanyDashboard() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span className="tessy-profile-eyebrow">Perfil comercial</span>
                 <h1 style={{
-                  fontFamily: 'var(--font-serif)',
+                  fontFamily: 'var(--font-heading)',
                   fontSize: 22,
-                  fontWeight: 550,
+                  fontWeight: 600,
                   letterSpacing: '-0.02em',
                   lineHeight: 1.1,
                 }}>
@@ -698,14 +706,11 @@ export default function CompanyDashboard() {
           {/* Leads access */}
           <button
             onClick={() => setTab('leads')}
+            className="tessy-panel"
             style={{
               width: '100%',
               marginBottom: 24,
               padding: 15,
-              borderRadius: 22,
-              background: 'linear-gradient(135deg, rgba(245,130,32,0.16), rgba(255,112,81,0.12))',
-              border: '1px solid rgba(245,130,32,0.22)',
-              boxShadow: '0 14px 36px rgba(85,96,130,0.08)',
               cursor: 'pointer',
               textAlign: 'left',
             }}
@@ -888,11 +893,9 @@ export default function CompanyDashboard() {
               }}>{myReps.length > 0 ? 'gerenciar →' : 'cadastrar →'}</button>
             </div>
             {myReps.length === 0 ? (
-              <button onClick={() => setTab('representatives')} style={{
+              <button onClick={() => setTab('representatives')} className="tessy-panel" style={{
                 width: '100%', textAlign: 'left', cursor: 'pointer',
-                padding: 16, borderRadius: 18,
-                background: 'linear-gradient(135deg, rgba(74,168,255,0.10), rgba(255,255,255,0.92))',
-                border: '1px solid rgba(74,168,255,0.22)',
+                padding: 16,
               }}>
                 <div style={{ fontSize: 14, fontWeight: 620, color: 'var(--ink)' }}>Cadastre seu representante</div>
                 <p style={{ margin: '5px 0 0', fontSize: 12.5, lineHeight: 1.4, color: 'var(--ink-2)' }}>
@@ -982,12 +985,12 @@ export default function CompanyDashboard() {
         <>
         <Breadcrumb items={['início', 'produtos']} />
         <ListTab
-          title="Meus produtos"
+          title="Produtos e parcerias"
           onAdd={() => openCreate('product')}
           empty={myProducts.length === 0}
-          emptyText="Nenhum produto publicado"
+          emptyText="Nenhum produto ou parceria publicado"
           emptyHint="Produtos e parcerias comerciais ficam visíveis na vitrine dos médicos."
-          emptyActionLabel="Publicar primeiro produto"
+          emptyActionLabel="Publicar primeiro anúncio"
           grid
         >
           {myProducts.map(p => <ProductCompactCard key={p.id} product={p} onOpen={() => setOpenProductId(p.id)} />)}
@@ -1046,15 +1049,16 @@ export default function CompanyDashboard() {
       {/* ── CREATE WIZARD ── */}
       {tab === 'create' && (
         <CreateWizard
-          key={`${createKind}-${createSkipType ? 'direct' : 'menu'}`}
+          key={`${createKind}-${createAsPartnership ? 'partnership' : 'standard'}-${createSkipType ? 'direct' : 'menu'}`}
           kind={createKind}
           setKind={setCreateKind}
           skipTypeStep={createSkipType}
+          initialPartnership={createAsPartnership}
           company={companyInfo}
-          onSaveEvent={async data => { await addEvent(data); setCreateSkipType(false); setTab('listings'); }}
-          onSaveProduct={async data => { await addProduct(data); setCreateSkipType(false); setTab('listings'); }}
-          onSaveCourse={async data => { await addCourse(data); setCreateSkipType(false); setTab('listings'); }}
-          onCancel={() => { setCreateSkipType(false); setTab('home'); }}
+          onSaveEvent={async data => { await addEvent(data); setCreateSkipType(false); setCreateAsPartnership(false); setTab('listings'); }}
+          onSaveProduct={async data => { await addProduct(data); setCreateSkipType(false); setCreateAsPartnership(false); setTab('listings'); }}
+          onSaveCourse={async data => { await addCourse(data); setCreateSkipType(false); setCreateAsPartnership(false); setTab('listings'); }}
+          onCancel={() => { setCreateSkipType(false); setCreateAsPartnership(false); setTab('home'); }}
         />
       )}
     </Layout>
@@ -1151,10 +1155,11 @@ export default function CompanyDashboard() {
 }
 
 /* ─── Create wizard ─── */
-function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSaveProduct, onSaveCourse, onCancel }: {
+function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company, onSaveEvent, onSaveProduct, onSaveCourse, onCancel }: {
   kind: 'event' | 'product' | 'course';
   setKind: (k: 'event' | 'product' | 'course') => void;
   skipTypeStep?: boolean;
+  initialPartnership?: boolean;
   company: { id: string; name: string; whatsapp?: string };
   onSaveEvent: (e: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => Promise<void>;
   onSaveProduct: (p: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
@@ -1162,7 +1167,9 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(skipTypeStep ? 1 : 0);
-  const [selectedChoice, setSelectedChoice] = useState<'event' | 'product' | 'course' | 'partnership'>(kind);
+  const [selectedChoice, setSelectedChoice] = useState<'event' | 'product' | 'course' | 'partnership'>(
+    initialPartnership ? 'partnership' : kind,
+  );
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -1174,8 +1181,10 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
     name: '',
     description: '',
     category: PRODUCT_CATS[0],
-    availableFor: 'Representante envia amostra, materiais e condições comerciais para médicos interessados.',
-    price: 'Parceria sob consulta',
+    availableFor: initialPartnership
+      ? 'Representante apresenta briefing, condições e proposta de parceria.'
+      : 'Representante envia amostra, materiais e condições comerciais para médicos interessados.',
+    price: initialPartnership ? 'Parceria sob consulta' : 'Sob consulta',
     website: '',
   });
   const [prImage, setPrImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
@@ -1212,8 +1221,14 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
     }
     if (kind === 'product') {
       if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
-      if (!prImage.file) return 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
-      if (!pr.name.trim()) return 'Informe o nome do produto.';
+      if (!prImage.file) {
+        return isPartnership
+          ? 'Adicione uma foto da parceria — anúncios com foto recebem muito mais contatos.'
+          : 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
+      }
+      if (!pr.name.trim()) {
+        return isPartnership ? 'Informe o nome da parceria.' : 'Informe o nome do produto.';
+      }
     }
     if (kind === 'course') {
       if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
@@ -1308,8 +1323,8 @@ function CreateWizard({ kind, setKind, skipTypeStep, company, onSaveEvent, onSav
         }}>×</button>
         <Mono style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.02em' }}>
           {skipTypeStep
-            ? `Publicar ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'}`
-            : `Novo ${kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'} · etapa ${step + 1} de ${totalSteps}`}
+            ? `Publicar ${initialPartnership || selectedChoice === 'partnership' ? 'parceria' : kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'}`
+            : `Novo anúncio · etapa ${step + 1} de ${totalSteps}`}
         </Mono>
         <div style={{ width: 40 }} />
       </div>
@@ -1611,7 +1626,7 @@ function MyListings({
   representatives: Representative[];
   leads: Lead[];
   deletingId: string | null;
-  onCreate: (target: 'event' | 'product' | 'course' | 'location' | 'representative') => void;
+  onCreate: (target: 'event' | 'product' | 'course' | 'location' | 'representative' | 'partnership') => void;
   onStartPublish: () => void;
   onOpenEvent: (id: string) => void;
   onOpenProduct: (id: string) => void;
@@ -1622,15 +1637,17 @@ function MyListings({
   onDeleteRepresentative: (id: string) => Promise<void>;
 }) {
   const total = events.length + products.length + courses.length + locations.length + representatives.length;
-  const quickCreates: { target: 'event' | 'product' | 'course' | 'location' | 'representative'; label: string }[] = [
+  const quickCreates: { target: 'event' | 'product' | 'course' | 'location' | 'representative' | 'partnership'; label: string }[] = [
     { target: 'product', label: 'Produto' },
+    { target: 'partnership', label: 'Parceria' },
     { target: 'event', label: 'Evento' },
     { target: 'course', label: 'Workshop' },
     { target: 'location', label: 'Local' },
     { target: 'representative', label: 'Representante' },
   ];
-  const firstChoices: { target: 'product' | 'event' | 'course'; label: string; hint: string }[] = [
+  const firstChoices: { target: 'product' | 'event' | 'course' | 'partnership'; label: string; hint: string }[] = [
     { target: 'product', label: 'Produto', hint: 'Solução ou tecnologia' },
+    { target: 'partnership', label: 'Parceria', hint: 'Divulgação ou ação comercial' },
     { target: 'event', label: 'Evento', hint: 'Congresso ou encontro' },
     { target: 'course', label: 'Workshop', hint: 'Capacitação prática' },
   ];
@@ -1674,8 +1691,8 @@ function MyListings({
                   textAlign: 'left',
                   padding: '14px 14px',
                   borderRadius: 14,
-                  border: '1.5px solid rgba(245,130,32,0.22)',
-                  background: 'linear-gradient(180deg, #FFFFFF 0%, #FFF8F2 100%)',
+                  border: '1px solid var(--line)',
+                  background: '#fff',
                   cursor: 'pointer',
                 }}
               >
@@ -1693,12 +1710,12 @@ function MyListings({
               minHeight: 44,
               borderRadius: 12,
               border: 'none',
-              background: 'var(--brand-gradient)',
+              background: 'var(--accent)',
               color: '#fff',
               fontSize: 14,
               fontWeight: 650,
               cursor: 'pointer',
-              boxShadow: '0 10px 22px rgba(245,130,32,0.24)',
+              boxShadow: '0 8px 18px rgba(245,130,32,0.22)',
             }}
           >
             Ver todas as opções →
@@ -1708,7 +1725,7 @@ function MyListings({
         <>
           <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
             <CompanyStatCard value={events.length} label="Eventos" accent={events.length > 0} />
-            <CompanyStatCard value={products.length} label="Produtos" accent={products.length > 0} />
+            <CompanyStatCard value={products.length} label="Produtos/parc." accent={products.length > 0} />
             <CompanyStatCard value={courses.length} label="Workshops" accent={courses.length > 0} />
           </div>
 
@@ -1718,11 +1735,11 @@ function MyListings({
                 flexShrink: 0,
                 padding: '9px 12px',
                 borderRadius: 999,
-                border: '1px solid rgba(245,130,32,0.22)',
-                background: 'rgba(255,255,255,0.92)',
-                color: 'var(--accent-ink)',
+                border: '1px solid var(--line)',
+                background: 'var(--card)',
+                color: 'var(--ink)',
                 fontSize: 12,
-                fontWeight: 620,
+                fontWeight: 600,
                 cursor: 'pointer',
               }}>
                 + {item.label}
@@ -1755,10 +1772,16 @@ function MyListings({
             emptyText="Nenhum produto ou parceria publicado."
             actionLabel="+ Produto"
             onAction={() => onCreate('product')}
+            secondaryActionLabel="+ Parceria"
+            onSecondaryAction={() => onCreate('partnership')}
             isEmpty={products.length === 0}
           >
             <MarketGrid>
-              {products.map(product => (
+              {[...products].sort((a, b) => {
+                const aP = a.listingType === 'partnership' ? 0 : 1;
+                const bP = b.listingType === 'partnership' ? 0 : 1;
+                return aP - bP;
+              }).map(product => (
                 <ProductCompactCard key={product.id} product={product} onOpen={() => onOpenProduct(product.id)} />
               ))}
             </MarketGrid>
@@ -1824,11 +1847,13 @@ function MyListings({
   );
 }
 
-function ListingsSection({ title, emptyText, actionLabel, onAction, isEmpty, children }: {
+function ListingsSection({ title, emptyText, actionLabel, onAction, secondaryActionLabel, onSecondaryAction, isEmpty, children }: {
   title: string;
   emptyText: string;
   actionLabel: string;
   onAction: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
   isEmpty: boolean;
   children: React.ReactNode;
 }) {
@@ -1838,20 +1863,38 @@ function ListingsSection({ title, emptyText, actionLabel, onAction, isEmpty, chi
         <h2 style={{ fontSize: 16, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>
           {title}<span style={{ color: 'var(--accent)' }}>.</span>
         </h2>
-        <button onClick={onAction} style={{
-          border: 'none',
-          background: 'transparent',
-          color: 'var(--accent)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          fontWeight: 620,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-        }}>
-          {actionLabel}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {secondaryActionLabel && onSecondaryAction && (
+            <button type="button" onClick={onSecondaryAction} style={{
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--accent)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              fontWeight: 620,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}>
+              {secondaryActionLabel}
+            </button>
+          )}
+          <button type="button" onClick={onAction} style={{
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--accent)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            fontWeight: 620,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}>
+            {actionLabel}
+          </button>
+        </div>
       </div>
       {isEmpty ? (
         <div style={{
@@ -1946,7 +1989,7 @@ function RepresentativeListingCard({ rep, deleting, onManage, onDelete }: {
           borderRadius: 14,
           background: rep.photoUrl
             ? `url(${rep.photoUrl}) center/cover`
-            : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+            : 'var(--accent)',
           color: '#fff',
           display: 'flex',
           alignItems: 'center',
@@ -2115,13 +2158,16 @@ function EventCompactCard({ ev, interestedCount, onOpen }: {
 }
 
 function ProductCompactCard({ product, onOpen }: { product: Product; onOpen: () => void }) {
+  const isPartnership = product.listingType === 'partnership';
   return (
     <MarketCard
       image={visualImage(product.imageUrl)}
-      topLeft={<PhotoBadge color="#25D366">Representante</PhotoBadge>}
+      topLeft={<PhotoBadge color={isPartnership ? 'var(--accent)' : 'var(--accent-ink)'}>
+        {isPartnership ? 'Parceria' : 'Produto'}
+      </PhotoBadge>}
       title={product.name}
       subtitle={product.description}
-      tag={product.price ? <Chip color="#1EA97C">{product.price}</Chip> : <Chip color="var(--accent-ink)">{product.category}</Chip>}
+      tag={product.price ? <Chip color="var(--accent-ink)">{product.price}</Chip> : <Chip color="var(--accent-ink)">{product.category}</Chip>}
       onClick={onOpen}
     />
   );
@@ -2302,21 +2348,17 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
   } as const;
 
   return (
-    <div style={{
+    <div className="tessy-panel" style={{
       minWidth: 226,
       maxWidth: 248,
       padding: 13,
-      borderRadius: 20,
-      background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.84))',
-      border: '1px solid rgba(216,222,236,0.92)',
-      boxShadow: '0 10px 28px rgba(85,96,130,0.06)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
           width: 42,
           height: 42,
           borderRadius: 15,
-          background: 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+          background: 'var(--accent)',
           color: '#fff',
           display: 'flex',
           alignItems: 'center',
@@ -2338,7 +2380,7 @@ function DoctorSuggestionCard({ lead, onRequestConnection }: {
       </div>
       <div style={{ marginTop: 11, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <Chip color="var(--accent)">Perfil médico</Chip>
-        <Chip color="#1EA97C">{lead.itemType === 'event' ? 'Evento' : lead.itemType === 'product' ? 'Produto' : lead.itemType === 'course' ? 'Workshop' : 'Empresa'}</Chip>
+        <Chip color="var(--ink-2)">{lead.itemType === 'event' ? 'Evento' : lead.itemType === 'product' ? 'Produto' : lead.itemType === 'course' ? 'Workshop' : 'Empresa'}</Chip>
       </div>
       <p style={{ margin: '10px 0 0', color: 'var(--ink-2)', fontSize: 12, lineHeight: 1.38 }}>
         Interesse em {lead.itemName || 'sua solicitação'}.
@@ -2457,9 +2499,9 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
             flexShrink: 0,
             padding: '8px 12px',
             borderRadius: 999,
-            border: `1px solid ${specialtyFilter === key ? '#4AA8FF' : 'var(--line)'}`,
-            background: specialtyFilter === key ? 'rgba(74,168,255,0.10)' : '#fff',
-            color: specialtyFilter === key ? '#4AA8FF' : 'var(--ink-2)',
+            border: `1px solid ${specialtyFilter === key ? 'var(--accent)' : 'var(--line)'}`,
+            background: specialtyFilter === key ? 'rgba(245,130,32,0.10)' : '#fff',
+            color: specialtyFilter === key ? 'var(--accent-ink)' : 'var(--ink-2)',
             fontSize: 12,
             fontWeight: 600,
             cursor: 'pointer',
@@ -2468,12 +2510,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
       </div>
 
       {leads.length === 0 ? (
-        <div style={{
-          padding: 24,
-          borderRadius: 18,
-          background: 'linear-gradient(135deg, rgba(245,130,32,0.08), rgba(255,255,255,0.96))',
-          border: '1px solid rgba(245,130,32,0.16)',
-        }}>
+        <div className="tessy-panel" style={{ padding: 24 }}>
           <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>Nenhum médico interessado ainda.</div>
           <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
             Quando um médico demonstrar interesse em evento, produto ou representante, ele aparecerá aqui para você iniciar a conversa.
@@ -2545,7 +2582,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
                       borderRadius: 14,
                       background: lead.doctorAvatarUrl
                         ? `url(${lead.doctorAvatarUrl}) center/cover`
-                        : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+                        : 'var(--accent)',
                       color: '#fff',
                       display: 'flex',
                       alignItems: 'center',
@@ -2843,7 +2880,7 @@ function RepMiniCard({ rep }: { rep: Representative }) {
         width: 44, height: 44, borderRadius: 14, marginBottom: 8,
         background: rep.photoUrl
           ? `url(${rep.photoUrl}) center/cover`
-          : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+          : 'var(--accent)',
         color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 15, fontWeight: 620, overflow: 'hidden',
       }}>
@@ -2904,7 +2941,7 @@ function RepresentativeAvatarEditor({
         cursor: uploading ? 'not-allowed' : 'pointer',
         background: rep.photoUrl
           ? `url(${rep.photoUrl}) center/cover`
-          : 'linear-gradient(135deg, #4AA8FF, #FF7051)',
+          : 'var(--accent)',
         color: '#fff',
         boxShadow: '0 6px 16px rgba(80,90,120,0.1)',
       }}>
@@ -3138,6 +3175,7 @@ function ProductCardCompany({ product, onDelete, deleting = false }: {
   deleting?: boolean;
 }) {
   const [tint1] = categoryTint(product.category);
+  const isPartnership = product.listingType === 'partnership';
   return (
     <div style={{ background: 'var(--card)', borderRadius: 18, border: '1px solid var(--line)', overflow: 'hidden' }}>
       <div style={{
@@ -3153,14 +3191,14 @@ function ProductCardCompany({ product, onDelete, deleting = false }: {
           fontSize: 10,
           fontWeight: 560,
         }}>
-          Produto
+          {isPartnership ? 'Parceria' : 'Produto'}
         </span>
       </div>
       <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <Chip color={tint1}>{product.category}</Chip>
-            <Chip color="#25D366">Representante</Chip>
+            <Chip color="var(--accent-ink)">{isPartnership ? 'Parceria' : 'Produto'}</Chip>
           </div>
           <div style={{ fontSize: 15, fontWeight: 560, marginTop: 8, color: 'var(--ink)' }}>{product.name}</div>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3, lineHeight: 1.4 }}>{product.description}</div>
@@ -3169,8 +3207,8 @@ function ProductCardCompany({ product, onDelete, deleting = false }: {
               marginTop: 9,
               padding: '9px 10px',
               borderRadius: 10,
-              background: 'rgba(245,130,32,0.08)',
-              border: '1px solid rgba(245,130,32,0.16)',
+              background: 'var(--chip)',
+              border: '1px solid var(--line)',
               color: 'var(--ink-2)',
               fontSize: 12,
               lineHeight: 1.4,

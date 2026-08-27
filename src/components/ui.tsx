@@ -181,7 +181,12 @@ export function Chip({ children, color = 'var(--accent)' }: { children: ReactNod
       background: softBg, color: safeColor,
       border: `1px solid ${softBorder}`,
       fontFamily: 'var(--font-mono)',
-      fontSize: 10, fontWeight: 560, letterSpacing: '0.04em', flexShrink: 0,
+      fontSize: 10, fontWeight: 560, letterSpacing: '0.04em',
+      maxWidth: '100%',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      lineHeight: 1.2,
     }}>
       {children}
     </span>

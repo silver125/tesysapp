@@ -155,19 +155,7 @@ export function MarketCard({
     <button
       type="button"
       onClick={onClick}
-      className="lift"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        textAlign: 'left',
-        background: 'var(--card)',
-        border: '1px solid var(--line)',
-        borderRadius: 16,
-        overflow: 'hidden',
-        cursor: 'pointer',
-        padding: 0,
-        boxShadow: '0 4px 16px rgba(85,96,130,0.05)',
-      }}
+      className="tessy-market-card lift"
     >
       <div style={{
         position: 'relative',
@@ -175,7 +163,7 @@ export function MarketCard({
         aspectRatio: aspect,
         background: image
           ? `url(${image}) center/cover`
-          : 'linear-gradient(135deg, rgba(74,168,255,0.20), rgba(185,193,234,0.30))',
+          : 'linear-gradient(145deg, rgba(245,130,32,0.16), rgba(91,143,232,0.22))',
       }}>
         {topLeft && (
           <div style={{ position: 'absolute', left: 8, bottom: 8, display: 'flex', gap: 5 }}>{topLeft}</div>
@@ -184,7 +172,7 @@ export function MarketCard({
           <div style={{ position: 'absolute', right: 8, top: 8 }}>{topRight}</div>
         )}
       </div>
-      <div style={{ padding: '9px 10px 12px', display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+      <div style={{ padding: '10px 11px 13px', display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
         {(highlight || highlightStrike) && (
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
             {highlight && <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent)', lineHeight: 1.1 }}>{highlight}</span>}
@@ -192,7 +180,7 @@ export function MarketCard({
           </div>
         )}
         <div style={{
-          fontSize: 13, fontWeight: 560, color: 'var(--ink)', lineHeight: 1.2,
+          fontSize: 13, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.25,
           overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
           WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
         }}>
@@ -220,15 +208,20 @@ export function PhotoBadge({ children, color = 'var(--success)', solid = true }:
 }) {
   return (
     <span style={{
-      padding: '4px 8px',
+      padding: '4px 7px',
       borderRadius: 8,
       background: solid ? color : 'rgba(255,255,255,0.92)',
       color: solid ? '#fff' : 'var(--ink)',
-      fontSize: 10.5,
+      fontSize: 10,
       fontWeight: 700,
       letterSpacing: '0.02em',
       boxShadow: '0 6px 14px rgba(15,22,38,0.18)',
+      maxWidth: 'min(100%, 7.5rem)',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
       whiteSpace: 'nowrap',
+      lineHeight: 1.2,
+      display: 'inline-block',
     }}>
       {children}
     </span>
@@ -293,11 +286,13 @@ export function Sheet({ open, onClose, children }: {
         className="fade-up"
         style={{
           width: '100%', maxWidth: 480,
-          maxHeight: '92vh', overflowY: 'auto',
+          maxHeight: 'min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px))',
+          overflowY: 'auto',
           background: 'var(--card)',
           borderTopLeftRadius: 24, borderTopRightRadius: 24,
           boxShadow: '0 -20px 60px rgba(15,18,30,0.30)',
-          paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--card)', padding: '10px 0 6px', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
