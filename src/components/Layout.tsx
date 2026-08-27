@@ -297,7 +297,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                         minWidth: 118,
                         height: 42,
                         borderRadius: 999,
-                        background: active ? 'var(--brand-gradient)' : 'var(--accent-ink)',
+                        background: 'var(--brand-gradient)',
                         border: '1px solid rgba(255,255,255,0.72)',
                         color: '#fff',
                         cursor: 'pointer',
@@ -310,9 +310,10 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                         fontWeight: 600,
                         lineHeight: 1.05,
                         textAlign: 'center',
+                        opacity: active ? 1 : 0.92,
                         boxShadow: active
                           ? '0 14px 28px rgba(245,130,32,0.32)'
-                          : '0 12px 28px rgba(30,36,51,0.22)',
+                          : '0 10px 22px rgba(245,130,32,0.22)',
                       }}
                     >
                       {item.label}

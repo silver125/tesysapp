@@ -52,9 +52,8 @@ async function deleteCompanyOwnedRow(
     `Excluir ${label}`,
   );
   if (error) throw new Error(error.message);
-  if (!data?.length) {
-    throw new Error(`Não foi possível excluir ${label.toLowerCase()}. Tente novamente.`);
-  }
+  // Já ausente no banco (RLS/refresh) → trata como sucesso idempotente.
+  if (!data?.length) return;
 }
 
 async function cleanupLeadsForDeletedItem(
@@ -572,12 +571,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const interval = window.setInterval(() => {
       refreshData();
       refreshLeads();
-    }, 8000);
+    }, 30000);
 
     // Saldo de pontos pode mudar no banco (ao aprovar conexões) — relê com folga.
     const profileInterval = window.setInterval(() => {
       refreshProfile();
-    }, 15000);
+    }, 45000);
 
     return () => {
       window.clearInterval(interval);

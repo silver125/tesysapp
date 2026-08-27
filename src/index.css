@@ -59,7 +59,7 @@
   --app-header-pad-y:  var(--rh-space-sm);
   --app-main-pad-top:  var(--rh-space-lg);
   /* Nav ~64px + home indicator + safe area — evita conteúdo cortado no iPhone */
-  --app-main-pad-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+  --app-main-pad-bottom: calc(118px + env(safe-area-inset-bottom, 0px));
   --app-title-size:    var(--rh-font-size-heading-xs);
   --app-section-gap:   var(--rh-space-md);
 }

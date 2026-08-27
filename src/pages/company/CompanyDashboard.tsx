@@ -1,4 +1,6 @@
-import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useDashboardTab } from '../../hooks/useDashboardTab';
+import { companyNavActiveKey } from '../../lib/companyNavActiveKey';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import CompanyAvatar from '../../components/CompanyAvatar';
@@ -391,7 +393,9 @@ function CompanyStatCard({
 
 export default function CompanyDashboard() {
   const { user, events, products, courses, leads, locations, representatives, addEvent, addProduct, addCourse, addLocation, deleteLocation, addRepresentative, updateRepresentative, deleteRepresentative, deleteEvent, deleteProduct, deleteCourse, updateEvent, requestConnection } = useAuth();
-  const [tab, setTab] = useState<Tab>('home');
+  const [tab, setTab] = useDashboardTab<Tab>('home', [
+    'home', 'listings', 'events', 'create', 'products', 'courses', 'leads', 'locations', 'representatives',
+  ] as const);
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
@@ -437,6 +441,12 @@ export default function CompanyDashboard() {
   const setupTotal = setupSteps.length;
   const setupComplete = setupDone === setupTotal;
 
+  useEffect(() => {
+    if (!deleteError) return;
+    const timer = window.setTimeout(() => setDeleteError(''), 4200);
+    return () => window.clearTimeout(timer);
+  }, [deleteError]);
+
   function goToLeadsTab() {
     setTab('leads');
   }
@@ -448,6 +458,11 @@ export default function CompanyDashboard() {
       return;
     }
     setTab(k as Tab);
+  }
+
+  function openPublishChooser() {
+    setCreateSkipType(false);
+    setTab('create');
   }
 
   function openCreate(target: 'event' | 'product' | 'course' | 'location' | 'representative') {
@@ -498,7 +513,7 @@ export default function CompanyDashboard() {
     <>
     <Layout
       navItems={NAV_ITEMS}
-      activeKey={tab}
+      activeKey={companyNavActiveKey(tab)}
       onNavChange={goTab}
       notificationCount={newLeadsCount}
       onNotificationClick={goToLeadsTab}
@@ -508,60 +523,43 @@ export default function CompanyDashboard() {
       {tab === 'home' && (
         <div>
           {/* Welcome hero */}
-          <div style={{
-            marginBottom: 12,
-            padding: '14px 14px 12px',
-            borderRadius: 22,
-            background: 'linear-gradient(135deg, #F58220 0%, #FF9A4D 52%, #FFB366 100%)',
-            boxShadow: '0 16px 40px rgba(245,130,32,0.28)',
-            color: '#fff',
-          }}>
-            <Mono style={{ fontSize: 9, color: 'rgba(255,255,255,0.82)', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
-              Vitrine comercial Tessy
-            </Mono>
-            <div style={{ marginTop: 8, fontSize: 20, fontWeight: 620, lineHeight: 1.15, letterSpacing: -0.2 }}>
+          <div className="tessy-home-hero">
+            <div className="tessy-home-hero__eyebrow">Vitrine comercial Tessy</div>
+            <div className="tessy-home-hero__title">
               Sua marca na mão de médicos qualificados
             </div>
-            <p style={{ margin: '6px 0 0', fontSize: 12.5, lineHeight: 1.45, color: 'rgba(255,255,255,0.92)' }}>
+            <p className="tessy-home-hero__sub">
               {activeOpportunities === 0
                 ? 'Publique eventos, produtos ou workshops e receba interesses reais.'
                 : `${activeOpportunities} oportunidade${activeOpportunities === 1 ? '' : 's'} ativa${activeOpportunities === 1 ? '' : 's'} · ${myLeads.length} médico${myLeads.length === 1 ? '' : 's'} interessado${myLeads.length === 1 ? '' : 's'}`}
             </p>
             <button
-              onClick={() => setTab('listings')}
-              style={{
-                marginTop: 14,
-                padding: '10px 16px',
-                borderRadius: 12,
-                border: 'none',
-                background: '#fff',
-                color: 'var(--accent)',
-                fontSize: 13,
-                fontWeight: 620,
-                cursor: 'pointer',
-                boxShadow: '0 8px 22px rgba(80,40,0,0.14)',
-              }}
+              type="button"
+              onClick={() => (publishedItems === 0 ? openPublishChooser() : setTab('listings'))}
+              className="tessy-home-hero__cta"
             >
-              {publishedItems === 0 ? 'Ir para Meus anúncios →' : 'Ver Meus anúncios →'}
+              {publishedItems === 0 ? 'Publicar primeiro anúncio →' : 'Ver Meus anúncios →'}
             </button>
           </div>
 
           {user?.id && <FirstVisitTip userId={user.id} role="empresa" />}
 
           {!setupComplete && (
-            <div style={{
+            <div className="tessy-panel" style={{
               marginBottom: 12,
-              padding: '12px 14px',
-              borderRadius: 18,
-              background: 'rgba(255,255,255,0.94)',
-              border: '1px solid rgba(245,130,32,0.18)',
-              boxShadow: '0 10px 24px rgba(85,96,130,0.05)',
+              padding: '13px 14px',
+              borderColor: 'rgba(245,130,32,0.18)',
             }}>
-              <div style={{ fontSize: 12, fontWeight: 650, color: 'var(--accent-ink)' }}>
+              <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>
                 Perfil comercial · {setupDone}/{setupTotal}
               </div>
-              <div style={{ marginTop: 8, height: 6, borderRadius: 999, background: 'rgba(245,130,32,0.12)', overflow: 'hidden' }}>
-                <div style={{ width: `${(setupDone / setupTotal) * 100}%`, height: '100%', background: 'var(--accent)', borderRadius: 999 }} />
+              <div style={{ marginTop: 10, height: 7, borderRadius: 999, background: 'rgba(245,130,32,0.12)', overflow: 'hidden' }}>
+                <div style={{
+                  width: `${(setupDone / setupTotal) * 100}%`,
+                  height: '100%',
+                  background: 'var(--brand-gradient)',
+                  borderRadius: 999,
+                }} />
               </div>
               <ul style={{ margin: '10px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>
                 {!setupSteps[0] && <li>Adicione o logo da empresa no perfil</li>}
@@ -573,7 +571,7 @@ export default function CompanyDashboard() {
                 type="button"
                 onClick={() => {
                   if (!setupSteps[0] || !setupSteps[1]) openProfileSettings();
-                  else if (!setupSteps[2]) setTab('listings');
+                  else if (!setupSteps[2]) openPublishChooser();
                   else setTab('representatives');
                 }}
                 style={{
@@ -618,13 +616,12 @@ export default function CompanyDashboard() {
           )}
 
           {/* Company header */}
-          <div style={{
+          <div className="tessy-panel" style={{
             marginBottom: 12,
-            padding: 12,
-            borderRadius: 22,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,247,240,0.88))',
-            border: '1px solid rgba(245,130,32,0.12)',
-            boxShadow: '0 12px 34px rgba(85,96,130,0.06)',
+            padding: 14,
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.98), rgba(255,247,240,0.9))',
+            borderColor: 'rgba(245,130,32,0.12)',
+            boxShadow: 'var(--shadow-md)',
           }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <CompanyAvatar
@@ -634,7 +631,13 @@ export default function CompanyDashboard() {
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span className="tessy-profile-eyebrow">Perfil comercial</span>
-                <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: 0, lineHeight: 1.08 }}>
+                <h1 style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 22,
+                  fontWeight: 550,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.1,
+                }}>
                   {user?.company ?? user?.name}<span style={{ color: 'var(--accent)' }}>.</span>
                 </h1>
                 <p style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
@@ -918,6 +921,7 @@ export default function CompanyDashboard() {
           leads={companyLeads}
           deletingId={deletingId}
           onCreate={openCreate}
+          onStartPublish={openPublishChooser}
           onOpenEvent={setOpenEventId}
           onOpenProduct={setOpenProductId}
           onOpenCourse={setOpenCourseId}
@@ -1056,21 +1060,25 @@ export default function CompanyDashboard() {
     </Layout>
 
     {deleteError && (
-      <div style={{
-        position: 'fixed',
-        left: '50%',
-        bottom: 96,
-        transform: 'translateX(-50%)',
-        zIndex: 130,
-        width: 'min(440px, calc(100vw - 28px))',
-        padding: '11px 14px',
-        borderRadius: 14,
-        background: 'rgba(242,92,84,0.96)',
-        color: '#fff',
-        fontSize: 12.5,
-        lineHeight: 1.4,
-        boxShadow: '0 14px 36px rgba(80,40,40,0.22)',
-      }}>
+      <div
+        role="status"
+        onClick={() => setDeleteError('')}
+        style={{
+          position: 'fixed',
+          left: '50%',
+          bottom: 'calc(118px + env(safe-area-inset-bottom, 0px))',
+          transform: 'translateX(-50%)',
+          zIndex: 130,
+          width: 'min(440px, calc(100vw - 28px))',
+          padding: '11px 14px',
+          borderRadius: 14,
+          background: 'rgba(242,92,84,0.96)',
+          color: '#fff',
+          fontSize: 12.5,
+          lineHeight: 1.4,
+          boxShadow: '0 14px 36px rgba(80,40,40,0.22)',
+        }}
+      >
         {deleteError}
       </div>
     )}
@@ -1587,6 +1595,7 @@ function MyListings({
   leads,
   deletingId,
   onCreate,
+  onStartPublish,
   onOpenEvent,
   onOpenProduct,
   onOpenCourse,
@@ -1603,6 +1612,7 @@ function MyListings({
   leads: Lead[];
   deletingId: string | null;
   onCreate: (target: 'event' | 'product' | 'course' | 'location' | 'representative') => void;
+  onStartPublish: () => void;
   onOpenEvent: (id: string) => void;
   onOpenProduct: (id: string) => void;
   onOpenCourse: (id: string) => void;
@@ -1613,80 +1623,114 @@ function MyListings({
 }) {
   const total = events.length + products.length + courses.length + locations.length + representatives.length;
   const quickCreates: { target: 'event' | 'product' | 'course' | 'location' | 'representative'; label: string }[] = [
-    { target: 'event', label: 'Evento' },
     { target: 'product', label: 'Produto' },
+    { target: 'event', label: 'Evento' },
     { target: 'course', label: 'Workshop' },
     { target: 'location', label: 'Local' },
     { target: 'representative', label: 'Representante' },
+  ];
+  const firstChoices: { target: 'product' | 'event' | 'course'; label: string; hint: string }[] = [
+    { target: 'product', label: 'Produto', hint: 'Solução ou tecnologia' },
+    { target: 'event', label: 'Evento', hint: 'Congresso ou encontro' },
+    { target: 'course', label: 'Workshop', hint: 'Capacitação prática' },
   ];
 
   return (
     <div>
       <Breadcrumb items={['início', 'meus anúncios']} />
-      <div style={{ marginBottom: 18 }}>
-        <Mono style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-          Vitrine da empresa
-        </Mono>
-        <h1 style={{ marginTop: 8, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
+      <div style={{ marginBottom: total === 0 ? 14 : 18 }}>
+        <h1 style={{ marginTop: 4, fontSize: 26, fontWeight: 560, letterSpacing: 0 }}>
           Meus anúncios<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
-          Veja tudo que sua empresa publicou e acesse as ações de gerenciamento.
+          {total === 0
+            ? 'Publique em menos de 2 minutos e apareça para médicos.'
+            : 'Gerencie o que sua empresa publicou na vitrine.'}
         </p>
-      </div>
-
-      <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
-        <CompanyStatCard value={events.length} label="Eventos" accent={events.length > 0} />
-        <CompanyStatCard value={products.length} label="Produtos" accent={products.length > 0} />
-        <CompanyStatCard value={courses.length} label="Workshops" accent={courses.length > 0} />
-      </div>
-
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 3, marginBottom: 18 }}>
-        {quickCreates.map(item => (
-          <button key={item.target} onClick={() => onCreate(item.target)} style={{
-            flexShrink: 0,
-            padding: '9px 12px',
-            borderRadius: 999,
-            border: '1px solid rgba(245,130,32,0.22)',
-            background: item.target === 'event' ? 'var(--accent)' : 'rgba(255,255,255,0.92)',
-            color: item.target === 'event' ? '#fff' : 'var(--accent-ink)',
-            fontSize: 12,
-            fontWeight: 620,
-            cursor: 'pointer',
-          }}>
-            + {item.label}
-          </button>
-        ))}
       </div>
 
       {total === 0 ? (
         <div style={{
-          padding: 24,
-          borderRadius: 18,
-          background: 'linear-gradient(135deg, rgba(245,130,32,0.08), rgba(255,255,255,0.96))',
-          border: '1px solid rgba(245,130,32,0.16)',
+          padding: 20,
+          borderRadius: 20,
+          background: '#fff',
+          border: '1px solid var(--line)',
+          boxShadow: 'var(--shadow-sm)',
         }}>
-          <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 560 }}>Nenhum anúncio publicado ainda.</div>
+          <div style={{ fontSize: 16, color: 'var(--accent-ink)', fontWeight: 620 }}>
+            O que você quer publicar?
+          </div>
           <p style={{ marginTop: 6, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-            Comece por um evento, produto ou workshop para aparecer na vitrine médica.
+            Escolha um tipo. Você pode adicionar os outros depois.
           </p>
-          <button onClick={() => onCreate('event')} style={{
-            marginTop: 14,
-            padding: '10px 16px',
-            borderRadius: 12,
-            border: 'none',
-            background: 'var(--accent)',
-            color: '#fff',
-            fontSize: 13,
-            fontWeight: 620,
-            cursor: 'pointer',
-            boxShadow: '0 8px 22px rgba(245,130,32,0.24)',
-          }}>
-            Publicar primeiro anúncio →
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {firstChoices.map(item => (
+              <button
+                key={item.target}
+                type="button"
+                onClick={() => onCreate(item.target)}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '14px 14px',
+                  borderRadius: 14,
+                  border: '1.5px solid rgba(245,130,32,0.22)',
+                  background: 'linear-gradient(180deg, #FFFFFF 0%, #FFF8F2 100%)',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--accent-ink)' }}>{item.label}</div>
+                <div style={{ marginTop: 2, fontSize: 12, color: 'var(--ink-2)' }}>{item.hint}</div>
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onStartPublish}
+            style={{
+              marginTop: 12,
+              width: '100%',
+              minHeight: 44,
+              borderRadius: 12,
+              border: 'none',
+              background: 'var(--brand-gradient)',
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 650,
+              cursor: 'pointer',
+              boxShadow: '0 10px 22px rgba(245,130,32,0.24)',
+            }}
+          >
+            Ver todas as opções →
           </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+        <>
+          <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
+            <CompanyStatCard value={events.length} label="Eventos" accent={events.length > 0} />
+            <CompanyStatCard value={products.length} label="Produtos" accent={products.length > 0} />
+            <CompanyStatCard value={courses.length} label="Workshops" accent={courses.length > 0} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 3, marginBottom: 18 }}>
+            {quickCreates.map(item => (
+              <button key={item.target} onClick={() => onCreate(item.target)} style={{
+                flexShrink: 0,
+                padding: '9px 12px',
+                borderRadius: 999,
+                border: '1px solid rgba(245,130,32,0.22)',
+                background: 'rgba(255,255,255,0.92)',
+                color: 'var(--accent-ink)',
+                fontSize: 12,
+                fontWeight: 620,
+                cursor: 'pointer',
+              }}>
+                + {item.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
           <ListingsSection
             title="Eventos"
             emptyText="Nenhum evento publicado."
@@ -1774,6 +1818,7 @@ function MyListings({
             </div>
           </ListingsSection>
         </div>
+        </>
       )}
     </div>
   );
