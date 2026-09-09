@@ -43,7 +43,7 @@ export default function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const roleParam = searchParams.get('perfil');
-  const initialRole: UserRole | null = roleParam === 'medico' || roleParam === 'empresa' ? roleParam : null;
+  const initialRole: UserRole | null = roleParam === 'representante' ? 'empresa' : roleParam === 'medico' || roleParam === 'empresa' ? roleParam : null;
   const [step, setStep] = useState(initialRole ? 1 : 0);
   const [data, setData] = useState<FormData>({ ...INITIAL, role: initialRole });
   const [error, setError] = useState('');
@@ -107,7 +107,7 @@ export default function Register() {
 
   const stepLabels = [
     'Quem é você?',
-    data.role === 'empresa' ? 'Sua empresa' : 'Seus dados',
+    data.role === 'empresa' ? 'Sua marca ou empresa' : 'Seus dados',
     'Acesso',
   ];
 
@@ -222,7 +222,7 @@ export default function Register() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {([
               { role: 'medico' as UserRole, code: 'M', title: 'Sou médico', desc: 'Veja produtos, eventos e representantes da sua área' },
-              { role: 'empresa' as UserRole, code: 'E', title: 'Sou empresa', desc: 'Publique anúncios e receba médicos interessados' },
+              { role: 'empresa' as UserRole, code: 'E', title: 'Sou representante', desc: 'Cadastre suas marcas e regiões de atendimento' },
             ]).map(opt => {
               const active = data.role === opt.role;
               return (

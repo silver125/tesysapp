@@ -11,8 +11,8 @@ type Step = {
 
 const COMPANY_STEPS: Step[] = [
   {
-    title: 'Publique seu primeiro anúncio.',
-    body: 'Produto, evento ou workshop — médicos da sua área veem na plataforma.',
+    title: 'Cadastre seu perfil de representante.',
+    body: 'Informe suas marcas, área de atuação e regiões atendidas para aparecer na busca dos médicos.',
   },
   {
     title: 'Médicos interessados aparecem na aba Médicos.',
@@ -55,7 +55,7 @@ const overlayStyle: CSSProperties = {
 
 const panelStyle: CSSProperties = {
   width: 'min(440px, 100%)',
-  maxHeight: 'calc(100vh - 36px)',
+  maxHeight: 'calc(100dvh - 36px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
   overflowY: 'auto',
   borderRadius: 24,
   background: 'rgba(255,255,255,0.97)',

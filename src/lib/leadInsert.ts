@@ -29,9 +29,7 @@ const LEAD_OPTIONAL_COLUMNS = [
   'doctor_name',
   'doctor_specialty',
   'message',
-  'item_id',
   'created_at',
-  'id',
 ] as const;
 
 async function tryInsert(
@@ -63,23 +61,10 @@ async function tryInsert(
       continue;
     }
 
-    const anyMissing = extractMissingColumnFromError(error.message);
-    if (anyMissing && anyMissing in current && !omitted.has(anyMissing)) {
-      omitted.add(anyMissing);
-      current = omitDbColumns(current, [anyMissing]);
-      console.warn(`Coluna ${anyMissing} ausente em leads. Inserindo sem ela.`);
-      continue;
-    }
-
     break;
   }
 
   return { error: lastError, omittedColumns: [...omitted] };
-}
-
-function extractMissingColumnFromError(message: string): string | null {
-  const match = message.match(/'([a-z_]+)' column of 'leads'/i);
-  return match?.[1] ?? null;
 }
 
 export async function insertLeadResilient(

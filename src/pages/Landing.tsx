@@ -46,12 +46,12 @@ const steps = [
   {
     n: '01',
     title: 'Crie sua conta',
-    text: 'Cadastro exclusivo para médicos, com CRM e especialidade.',
+    text: 'Escolha seu perfil: médico ou representante comercial.',
   },
   {
     n: '02',
     title: 'Explore oportunidades',
-    text: 'Veja representantes, eventos, cursos e produtos relevantes.',
+    text: 'Busque skincare, tecnologias e parcerias por região.',
   },
   {
     n: '03',
@@ -67,7 +67,7 @@ const faqs = [
   ],
   [
     'Quem pode se cadastrar?',
-    'O cadastro é exclusivo para médicos. Empresas e marcas entram por atendimento dedicado: agendamos uma reunião para entender o perfil e liberar o acesso.',
+    'Médicos e representantes comerciais podem se cadastrar. Médicos informam CRM e especialidade; representantes cadastram suas marcas e regiões de atendimento.',
   ],
   [
     'O médico precisa pagar para usar?',
@@ -75,7 +75,7 @@ const faqs = [
   ],
   [
     'Como empresas e marcas entram na Tessy?',
-    'Não há auto-cadastro para empresas. O onboarding é feito por reunião com nosso time. Conheça a página Para Empresas ou escreva para contato@tessybr.com.',
+    'Escolha “Sou representante” no cadastro. Depois de criar sua conta, complete o perfil do representante com área de atuação e regiões atendidas.',
   ],
   [
     'Quando vou ter acesso?',
@@ -200,22 +200,22 @@ export default function Landing() {
           <div className="lv-hero__glow" aria-hidden="true" />
           <div className="lv-container lv-hero__grid">
             <div className="lv-hero__copy">
-              <p className="lv-badge">Exclusivo para médicos</p>
+              <p className="lv-badge">Médicos e representantes por região</p>
               <h1>
                 Médico, crie sua conta
                 <span> na Tessy.</span>
               </h1>
               <p className="lv-lead">
-                Encontre representantes, eventos e cursos em um ambiente simples,
-                feito para a rotina de quem vive medicina.
+                Encontre representantes de skincare, tecnologias e parcerias
+                que atendem à sua região.
               </p>
               <div className="lv-hero__cta">
-                <Link to="/cadastro" className="lv-btn lv-btn--primary lv-btn--lg">
-                  Criar conta gratuita
+                <Link to="/cadastro?perfil=medico" className="lv-btn lv-btn--primary lv-btn--lg">
+                  Sou médico
                 </Link>
-                <a href={waitlistHref} className="lv-btn lv-btn--soft lv-btn--lg">
-                  Entrar na lista
-                </a>
+                <Link to="/cadastro?perfil=representante" className="lv-btn lv-btn--soft lv-btn--lg">
+                  Sou representante
+                </Link>
               </div>
               <ul className="lv-hero__pills">
                 <li>Sem grupos</li>
@@ -349,7 +349,7 @@ export default function Landing() {
           <div className="lv-container lv-cta-band__copy">
             <p className="lv-eyebrow lv-eyebrow--light">Exclusividade</p>
             <h2>Waitlist selecionada.</h2>
-            <p>Convites limitados por fase. Cadastro exclusivo para médicos.</p>
+            <p>Cadastre-se como médico ou representante e encontre oportunidades por região.</p>
             <div className="lv-hero__cta">
               <Link
                 to="/cadastro"

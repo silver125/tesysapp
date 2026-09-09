@@ -30,13 +30,36 @@ type CompanyBucket = {
 };
 
 function normalizeRegion(value?: string | null) {
-  return (value ?? '').trim().toLowerCase();
+  return (value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 }
 
-function eventRegionKeys(event: Event): string[] {
-  return [event.location]
-    .map(normalizeRegion)
-    .filter(Boolean);
+export const BRAZIL_STATES: Record<string, string> = {
+  AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará',
+  DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão',
+  MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Pará',
+  PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro',
+  RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima',
+  SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins',
+};
+
+function statesInRegion(value: string): string[] {
+  const normalized = normalizeRegion(value);
+  const tokens = normalized.split(/[^a-z0-9]+/);
+  // Match longer state names first: Mato Grosso do Sul must not also become MT.
+  let remaining = ` ${normalized} `;
+  const states = new Set(tokens.filter(token => token.toUpperCase() in BRAZIL_STATES));
+  for (const [uf, name] of Object.entries(BRAZIL_STATES).sort((a, b) => b[1].length - a[1].length)) {
+    const pattern = new RegExp(`(^|[^a-z])${normalizeRegion(name)}(?=$|[^a-z])`, 'g');
+    if (pattern.test(remaining)) {
+      states.add(uf.toLowerCase());
+      remaining = remaining.replace(pattern, ' ');
+    }
+  }
+  return [...states];
+}
+
+function isNational(keys: string[]): boolean {
+  return keys.some(key => /^(brasil|nacional|todo o brasil|todo brasil|atendimento nacional)$/.test(normalizeRegion(key)));
 }
 
 export function doctorRegionKeys(user?: User | null): string[] {
@@ -57,11 +80,11 @@ function locationRegionKeys(loc: Location): string[] {
 
 export function regionLabelFromLocations(locations: Location[]): string {
   const first = locations.find(l => l.city?.trim() || l.state?.trim());
-  if (!first) return 'Brasil';
+  if (!first) return 'Região não informada';
   const city = first.city?.trim();
   const state = first.state?.trim();
   if (city && state) return `${city} · ${state}`;
-  return city || state || 'Brasil';
+  return city || state || 'Região não informada';
 }
 
 /** Logo da empresa (perfil) — nunca imagem de produto, evento ou curso. */
@@ -83,20 +106,17 @@ function repLabel(companyName: string): string {
 
 function regionScore(regionKeys: string[], doctorKeys: string[]): number {
   if (doctorKeys.length === 0 || regionKeys.length === 0) return 0;
-  let score = 0;
-  for (const doctorKey of doctorKeys) {
-    if (regionKeys.some(key => key.includes(doctorKey) || doctorKey.includes(key))) {
-      score += 2;
-    }
-  }
-  return score;
+  const states = regionKeys.flatMap(statesInRegion);
+  return doctorKeys.reduce((score, key) => score + (
+    regionKeys.includes(key) || statesInRegion(key).some(state => states.includes(state)) ? 2 : 0
+  ), isNational(regionKeys) ? 1 : 0);
 }
 
 function repRegionLabel(rep: Representative, fallback: string): string {
   const city = rep.city?.trim();
   const state = rep.state?.trim();
-  if (city && state) return `${city} · ${state}`;
   if (rep.region?.trim()) return rep.region.trim();
+  if (city && state) return `${city} · ${state}`;
   return city || state || fallback;
 }
 
@@ -140,8 +160,6 @@ export function buildRepresentativeProfiles(
     const bucketLocations = bucket?.locations ?? [];
     const regionKeys = [...new Set([
       ...[rep.city, rep.state, rep.region].map(normalizeRegion).filter(Boolean),
-      ...bucketLocations.flatMap(locationRegionKeys),
-      ...events.flatMap(eventRegionKeys),
     ])];
     const repSpecialty = rep.specialty?.trim() || topSpecialty(products, events, courses);
     scored.push({
@@ -172,7 +190,6 @@ export function buildRepresentativeProfiles(
     if (!hasOfferings) continue;
     const regionKeys = [...new Set([
       ...co.locations.flatMap(locationRegionKeys),
-      ...co.events.flatMap(eventRegionKeys),
     ])];
     const repSpecialty = topSpecialty(co.products, co.events, co.courses);
     scored.push({
@@ -198,8 +215,8 @@ export function buildRepresentativeProfiles(
   return scored
     .sort((a, b) => (
       Number(b.registered) - Number(a.registered)
-      || b._specialtyScore - a._specialtyScore
       || b._regionScore - a._regionScore
+      || b._specialtyScore - a._specialtyScore
       || b.events.length - a.events.length
       || b.products.length - a.products.length
     ))
@@ -210,23 +227,41 @@ export function buildRepresentativeProfiles(
     });
 }
 
-export function representativeRegionFilters(profiles: RepresentativeProfile[]): [string, string][] {
-  const states = new Set<string>();
-  for (const profile of profiles) {
-    for (const key of profile.regionKeys) {
-      if (key.length <= 3) states.add(key.toUpperCase());
-    }
-    const state = profile.regionLabel.split('·').pop()?.trim();
-    if (state) states.add(state);
-  }
-  return [['all', 'Todas regiões'], ...[...states].slice(0, 8).map(s => [s.toLowerCase(), s] as [string, string])];
+export function representativeRegionFilters(): [string, string][] {
+  return [['all', 'Todas as regiões'], ...Object.entries(BRAZIL_STATES)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([uf, name]) => [uf.toLowerCase(), `${uf} · ${name}`] as [string, string])];
 }
 
 export function matchesRepresentativeRegion(profile: RepresentativeProfile, filter: string) {
   if (filter === 'all') return true;
-  const q = filter.toLowerCase();
-  return profile.regionKeys.some(key => key.includes(q))
-    || profile.regionLabel.toLowerCase().includes(q);
+  const keys = profile.regionKeys.map(normalizeRegion);
+  if (isNational(keys)) return true;
+  const q = normalizeRegion(filter);
+  if (q.toUpperCase() in BRAZIL_STATES) {
+    return keys.some(key => statesInRegion(key).includes(q));
+  }
+  return keys.some(key => key === q);
+}
+
+export function matchesRepresentativeCategory(profile: RepresentativeProfile, category: string): boolean {
+  if (category === 'all') return true;
+  const text = normalizeRegion([profile.specialty, profile.bio,
+    ...profile.products.flatMap(product => [product.name, product.category, product.description]),
+  ].filter(Boolean).join(' '));
+  if (category === 'skincare') return /skincare|dermocosm|cosmet|cuidados com a pele/.test(text);
+  if (category === 'tecnologias') return /tecnolog|equipamento|laser|ultrassom|radiofrequencia/.test(text);
+  if (category === 'parcerias') return /parceria/.test(text) || profile.products.some(product => product.listingType === 'partnership');
+  return false;
+}
+
+export function matchesRepresentativeSearch(profile: RepresentativeProfile, query: string): boolean {
+  const q = normalizeRegion(query);
+  return !q || normalizeRegion([profile.companyName, profile.repLabel, profile.specialty,
+    profile.bio, ...profile.regionKeys,
+    ...profile.products.flatMap(product => [product.name, product.category]),
+    ...profile.events.flatMap(event => [event.title, event.category]),
+  ].filter(Boolean).join(' ')).includes(q);
 }
 
 export function representativeInitials(name: string) {

@@ -4,7 +4,6 @@ import type { User, Event, Product, Course, Lead, LeadInput, Location, Represent
 import { assertSupabaseConfigured, isSupabaseConfigured, supabase, upsertProfileWithToken } from '../lib/supabase';
 import { AuthContext } from './authContextValue';
 import type { AuthContextType, RegisterInput } from './authContextValue';
-import { POINTS_PER_CONNECTION, POINTS_PER_INTEREST } from '../lib/gamification';
 import { normalizeUserRole } from '../lib/authRoutes';
 import { isMissingDbColumnError, isMissingRpcError, omitDbColumns } from '../lib/dbSchema';
 import { insertLeadResilient } from '../lib/leadInsert';
@@ -399,15 +398,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? plainQuery.eq('company_id', userId)
         : plainQuery.eq('doctor_id', userId)));
       if (error) {
-        setLeads(local);
+        console.error('[Tessy] Não foi possível atualizar conexões:', error.message);
         return;
       }
     }
 
     const remote = (data ?? []).map(r => dbToLead(r as Record<string, unknown>));
-    const remoteIds = new Set(remote.map(l => l.id));
-    const merged = [...remote, ...local.filter(l => !remoteIds.has(l.id))];
-    setLeads(merged.filter((lead, index, arr) => arr.findIndex(other => isSameLead(other, lead)) === index));
+    setLeads(remote.filter((lead, index, arr) => arr.findIndex(other => isSameLead(other, lead)) === index));
   }, [userId, user?.role]);
 
   // Relê o perfil do usuário logado (pontos, whatsapp) para manter o saldo em dia.
@@ -522,7 +519,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }));
     });
 
-    setProducts(mergeLocalProducts(mappedProducts, user ? { role: user.role, companyId: user.id } : undefined));
+    setProducts(mergeLocalProducts(mappedProducts, { role: user?.role, companyId: user?.id }));
     setCourses(mappedCourses);
     setLocations(mappedLocations);
     setRepresentatives(mappedReps);
@@ -798,7 +795,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (profileError) {
         const message = profileError instanceof Error ? profileError.message : 'Tente novamente.';
         if (/privacy_accepted_at|privacy_policy_version/i.test(message)) {
-          const { privacy_accepted_at: _a, privacy_policy_version: _v, ...legacyPayload } = profilePayload;
+          const legacyPayload = omitDbColumns(profilePayload, ['privacy_accepted_at', 'privacy_policy_version']);
           await withTimeout(
             upsertProfileWithToken(authData.session.access_token, legacyPayload),
             12000,
@@ -1428,7 +1425,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const addLead = async (input: LeadInput): Promise<AddLeadResult> => {
-    if (!user) throw new Error('Você precisa estar logado.');
+    if (!user || user.role !== 'medico') throw new Error('Entre com seu perfil médico para registrar interesse.');
+    if (!isSupabaseConfigured) throw new Error('Conexões indisponíveis. Tente novamente mais tarde.');
     const lead: Lead = {
       id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}`,
       ...input,
@@ -1478,23 +1476,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn('Não foi possível registrar pontos de interesse:', pointsError.message);
       return 0;
     };
-
-    const local = readLocalLeads(lead.companyId);
-    const localMatch = local.find(existing => isSameLead(existing, lead));
-    if (localMatch) {
-      mergeLeadInState(localMatch);
-      return existingResult(localMatch.id);
-    }
-
-    if (!isSupabaseConfigured) {
-      writeLocalLead(lead);
-      mergeLeadInState(lead);
-      const pointsAwarded = user.role === 'medico' ? POINTS_PER_INTEREST : 0;
-      if (pointsAwarded > 0) {
-        setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + pointsAwarded } : prev);
-      }
-      return { created: true, leadId: lead.id, pointsAwarded };
-    }
 
     const findExistingLeadId = async (): Promise<string | null> => {
       const base = () => supabase
@@ -1548,7 +1529,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         || /duplicate key|unique constraint/i.test(insertError.message);
       if (duplicate) {
         const dupId = await findExistingLeadId();
-        const leadId = dupId ?? lead.id;
+        if (!dupId) throw new Error('Não foi possível confirmar o contato. Atualize a página e tente novamente.');
+        const leadId = dupId;
         const persisted = { ...lead, id: leadId };
         writeLocalLead(persisted);
         mergeLeadInState(persisted);
@@ -1570,50 +1552,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const requestConnection = async (leadId: string) => {
     if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem solicitar conexão.');
-    const now = new Date().toISOString();
-    setLeads(prev => prev.map(lead => lead.id === leadId
-      ? { ...lead, connectionStatus: 'requested', connectionRequestedAt: now }
-      : lead,
-    ));
-
-    if (!isSupabaseConfigured) return;
-
+    if (!isSupabaseConfigured) throw new Error('Conexões indisponíveis. Tente novamente mais tarde.');
+    const target = leads.find(lead => lead.id === leadId && lead.companyId === user.id);
+    if (!target) throw new Error('Contato não encontrado. Atualize a página.');
+    if (target.connectionStatus === 'approved' || target.connectionStatus === 'requested') return;
     const { error } = await supabase.rpc('request_lead_connection', { p_lead_id: leadId });
-    if (error) {
-      await refreshLeads();
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
+    setLeads(prev => prev.map(lead => lead.id === leadId
+      ? { ...lead, connectionStatus: 'requested', connectionRequestedAt: new Date().toISOString() }
+      : lead));
     await refreshLeads();
   };
 
   const approveConnection = async (leadId: string) => {
     if (!user || user.role !== 'medico') throw new Error('Apenas médicos podem aprovar conexão.');
-    const target = leads.find(lead => lead.id === leadId);
-    // Só premia pontos na primeira vez que a conexão é concretizada.
-    const awardsPoints = Boolean(target) && target?.connectionStatus !== 'approved';
-    const now = new Date().toISOString();
-    setLeads(prev => prev.map(lead => lead.id === leadId
-      ? { ...lead, connectionStatus: 'approved', connectionApprovedAt: now, doctorWhatsapp: user.whatsapp }
-      : lead,
-    ));
-    if (awardsPoints) {
-      setUser(prev => prev ? { ...prev, points: (prev.points ?? 0) + POINTS_PER_CONNECTION } : prev);
-    }
-
-    if (!isSupabaseConfigured) return;
-
+    if (!isSupabaseConfigured) throw new Error('Conexões indisponíveis. Tente novamente mais tarde.');
+    const target = leads.find(lead => lead.id === leadId && lead.doctorId === user.id);
+    if (target?.connectionStatus === 'approved') return;
+    if (target?.connectionStatus !== 'requested') throw new Error('Solicitação não encontrada. Atualize a página.');
+    if (!user.whatsapp) throw new Error('Adicione seu WhatsApp no perfil antes de aprovar.');
     const { error } = await supabase.rpc('approve_lead_connection', { p_lead_id: leadId });
-    if (error) {
-      if (awardsPoints) {
-        setUser(prev => prev ? { ...prev, points: Math.max(0, (prev.points ?? 0) - POINTS_PER_CONNECTION) } : prev);
-      }
-      await refreshLeads();
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
+    setLeads(prev => prev.map(lead => lead.id === leadId
+      ? { ...lead, connectionStatus: 'approved', connectionApprovedAt: new Date().toISOString(), doctorWhatsapp: user.whatsapp }
+      : lead));
     await refreshLeads();
-    // Recarrega o total autoritativo de pontos do perfil.
-    const fresh = await fetchProfile(user.id, user.email);
-    if (fresh) setUser(prev => prev ? { ...prev, points: fresh.points ?? prev.points } : prev);
+    await refreshProfile();
   };
 
   return (

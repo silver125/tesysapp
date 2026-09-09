@@ -1,3 +1,5 @@
+import { groupCompanyContacts } from '../../lib/leadConnections';
+import { BRAZIL_STATES } from '../../lib/representatives';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useDashboardTab } from '../../hooks/useDashboardTab';
 import { companyNavActiveKey } from '../../lib/companyNavActiveKey';
@@ -315,39 +317,6 @@ function fmtPhone(raw: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
-const CONNECTION_RANK: Record<NonNullable<Lead['connectionStatus']>, number> = {
-  none: 0,
-  requested: 1,
-  approved: 2,
-};
-
-function latestLeadByDoctor(leads: Lead[]) {
-  const ordered = [...leads].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const byDoctor = new Map<string, Lead>();
-
-  // Mantém o lead mais recente por médico, mas preserva o status de conexão
-  // mais forte (e o WhatsApp liberado) que ele já tenha em qualquer interesse.
-  for (const lead of ordered) {
-    const doctorKey = leadDoctorKey(lead);
-    const current = byDoctor.get(doctorKey);
-    if (!current) {
-      byDoctor.set(doctorKey, lead);
-      continue;
-    }
-    const bestStatus = CONNECTION_RANK[lead.connectionStatus ?? 'none'] > CONNECTION_RANK[current.connectionStatus ?? 'none']
-      ? lead.connectionStatus
-      : current.connectionStatus;
-    byDoctor.set(doctorKey, {
-      ...current,
-      connectionStatus: bestStatus,
-      doctorWhatsapp: current.doctorWhatsapp || lead.doctorWhatsapp,
-      doctorAvatarUrl: current.doctorAvatarUrl || lead.doctorAvatarUrl,
-    });
-  }
-
-  return [...byDoctor.values()];
-}
-
 function eventLeadDoctorCount(event: Event, leads: Lead[]) {
   const doctors = new Set<string>();
 
@@ -393,7 +362,7 @@ function CompanyStatCard({
 
 export default function CompanyDashboard() {
   const { user, events, products, courses, leads, locations, representatives, addEvent, addProduct, addCourse, addLocation, deleteLocation, addRepresentative, updateRepresentative, deleteRepresentative, deleteEvent, deleteProduct, deleteCourse, updateEvent, requestConnection } = useAuth();
-  const [tab, setTab] = useDashboardTab<Tab>('home', [
+  const [tab, setTab] = useDashboardTab<Tab>('representatives', [
     'home', 'listings', 'events', 'create', 'products', 'courses', 'leads', 'locations', 'representatives',
   ] as const);
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
@@ -424,7 +393,7 @@ export default function CompanyDashboard() {
     const event = (lead.itemId ? eventById.get(lead.itemId) : undefined) ?? eventByName.get(lead.itemName);
     return Boolean(event);
   });
-  const myLeads = latestLeadByDoctor(activeLeads);
+  const myLeads = groupCompanyContacts(activeLeads);
   const [createSkipType, setCreateSkipType] = useState(false);
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
   const activeOpportunities = myEvents.length + myProducts.length + myCourses.length;
@@ -3037,7 +3006,11 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
   }
 
   async function handleSave() {
+    if (saving) return;
     if (!name.trim()) { setError('Informe o nome do representante.'); return; }
+    if (!specialty.trim()) { setError('Informe a área: skincare, tecnologias ou parcerias.'); return; }
+    if (!stateUf.trim() && !region.trim()) { setError('Informe a UF ou a região de atendimento.'); return; }
+    if (stateUf && !(stateUf in BRAZIL_STATES)) { setError('Selecione uma UF válida.'); return; }
     setError('');
     setSaving(true);
     try {
@@ -3088,15 +3061,15 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
       }}>
         <ProfilePhotoField label="FOTO DO REPRESENTANTE" preview={photo.preview} onChange={setPhotoDraft} />
         <WField label="NOME DO REPRESENTANTE" value={name} onChange={setName} placeholder="Ex: Ana Souza" />
-        <WField label="ESPECIALIDADE / ÁREA (opcional)" value={specialty} onChange={setSpecialty} placeholder="Dermatologia, Cardiologia..." />
+        <WField label="ÁREA DE ATUAÇÃO" value={specialty} onChange={setSpecialty} placeholder="Skincare, tecnologias, parcerias..." />
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-          <WField label="CIDADE (opcional)" value={city} onChange={setCity} placeholder="São Paulo" />
+          <WField label="CIDADE ATENDIDA (opcional)" value={city} onChange={setCity} placeholder="São Paulo" />
           <WField label="UF" value={stateUf} onChange={v => setStateUf(v.toUpperCase().slice(0, 2))} placeholder="SP" />
         </div>
-        <WField label="REGIÃO DE ATUAÇÃO (opcional)" value={region} onChange={setRegion} placeholder="Ex: Grande SP, Sul de MG" />
+        <WField label="REGIÃO DE ATENDIMENTO" value={region} onChange={setRegion} placeholder="Ex: SP, RJ; Sul de MG; Nacional" />
         <WField label="WHATSAPP (opcional)" value={whatsapp} onChange={v => setWhatsapp(fmtPhone(v))} placeholder="(11) 99999-9999" type="tel" />
         <WField label="E-MAIL (opcional)" value={email} onChange={setEmail} placeholder="representante@empresa.com" type="email" />
-        <WField label="BIO (opcional)" value={bio} onChange={setBio} placeholder="Breve apresentação do representante." as="textarea" />
+        <WField label="BIO (opcional)" value={bio} onChange={setBio} placeholder="Marcas representadas e tipos de parceria oferecidos." as="textarea" />
 
         {error && (
           <div style={{

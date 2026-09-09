@@ -372,9 +372,10 @@ export default function ForCompanies() {
               Quer descobrir como sua empresa pode fazer parte da Tessy? Agende uma conversa com
               nosso time.
             </p>
-            <MeetingLink className="fc-btn fc-btn--primary fc-btn--lg">
-              Agendar uma reunião
-            </MeetingLink>
+            <Link to="/cadastro?perfil=representante" className="fc-btn fc-btn--primary fc-btn--lg">
+              Cadastrar representante
+            </Link>
+            <MeetingLink className="fc-btn fc-btn--ghost">Agendar uma conversa</MeetingLink>
           </div>
         </section>
       </main>

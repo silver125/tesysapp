@@ -1,13 +1,14 @@
 import type { AddLeadResult, LeadInput } from '../types';
 
-export function representativeLeadInput(companyId: string, companyName: string): LeadInput {
+export function representativeLeadInput(companyId: string, companyName: string, representative?: { id: string; name: string }): LeadInput {
   return {
     companyId,
     companyName,
     itemType: 'company',
-    itemName: companyName,
+    itemId: representative?.id,
+    itemName: representative?.name || companyName,
     intent: 'representative_contact',
-    message: 'Médico pediu contato do representante regional.',
+    message: representative ? `Médico pediu contato de ${representative.name}.` : 'Médico pediu contato do representante regional.',
   };
 }
 
@@ -27,8 +28,9 @@ export async function connectWithRepresentative(
   companyName: string,
   _whatsapp: string | undefined,
   addLead: (input: LeadInput) => Promise<AddLeadResult>,
+  representative?: { id: string; name: string },
 ): Promise<RepresentativeConnectResult> {
-  const lead = await addLead(representativeLeadInput(companyId, companyName));
+  const lead = await addLead(representativeLeadInput(companyId, companyName, representative));
 
   let message: string;
   if (lead.pointsAwarded > 0) {

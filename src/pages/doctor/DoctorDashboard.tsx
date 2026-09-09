@@ -17,6 +17,8 @@ import {
   representativeDisplayImageUrl,
   representativeCompanyBadgeUrl,
   representativeRegionFilters,
+  matchesRepresentativeCategory,
+  matchesRepresentativeSearch,
   representativeOfferSummary,
   type RepresentativeProfile,
 } from '../../lib/representatives';
@@ -71,7 +73,7 @@ function IcoCompanies(a: boolean) {
   );
 }
 
-function IcoSearch(_active: boolean) {
+function IcoSearch() {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#fff" strokeWidth="2">
       <circle cx="10" cy="10" r="6.5" />
@@ -83,7 +85,7 @@ function IcoSearch(_active: boolean) {
 const NAV_ITEMS: NavItem[] = [
   { key: 'home',             label: 'Início',   icon: IcoHome },
   { key: 'products',         label: 'Produtos', icon: IcoBox },
-  { key: 'search',           label: 'Buscar',   icon: IcoSearch, big: true, variant: 'search' },
+  { key: 'representatives',  label: 'Buscar reps', icon: IcoSearch, big: true, variant: 'search' },
   { key: 'events',           label: 'Eventos',  icon: IcoCalendar },
   { key: 'companies',        label: 'Empresas', icon: IcoCompanies },
 ];
@@ -252,12 +254,13 @@ function doctorMetaLine(user: User | null | undefined) {
 
 export default function DoctorDashboard() {
   const { user, events, products, courses, leads, locations, representatives: registeredReps, refreshData } = useAuth();
-  const [tab, setTab] = useDashboardTab<Tab>('home', [
+  const [tab, setTab] = useDashboardTab<Tab>('representatives', [
     'home', 'products', 'events', 'representatives', 'companies',
   ] as const);
   const [search, setSearch] = useState('');
   const [evFilter, setEvFilter] = useState('all');
   const [regionFilter, setRegionFilter] = useState('all');
+  const [repCategory, setRepCategory] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
   const [openProduct, setOpenProduct] = useState<Product | null>(null);
   const [openEvent, setOpenEvent] = useState<Event | null>(null);
@@ -280,10 +283,6 @@ export default function DoctorDashboard() {
       ...locations.map(l => l.companyId),
       ...registeredReps.map(r => r.companyId),
     ].filter(Boolean))];
-    if (ids.length === 0) {
-      setCompanyLogos({});
-      return;
-    }
     let cancelled = false;
     void fetchCompanyLogos(ids).then(logos => {
       if (!cancelled) setCompanyLogos(logos);
@@ -341,12 +340,11 @@ export default function DoctorDashboard() {
       ...rep.events.map(e => e.category),
     ],
   );
-  const regionChips = representativeRegionFilters(representatives);
+  const regionChips = representativeRegionFilters();
   const filtRepresentatives = representatives.filter(rep => {
-    const matchQ = !q || includesQ(rep.companyName, q) || includesQ(rep.repLabel, q) || includesQ(rep.specialty, q)
-      || rep.events.some(e => includesQ(e.title, q) || includesQ(e.category, q));
-    const matchRegion = matchesRepresentativeRegion(rep, regionFilter);
-    return matchQ && matchRegion;
+    return matchesRepresentativeSearch(rep, search)
+      && matchesRepresentativeRegion(rep, regionFilter)
+      && matchesRepresentativeCategory(rep, repCategory);
   });
   const companyMatches = buildCompanyMatches(events, products, courses, locations);
   const filtCompanies = companyMatches.filter(co => {
@@ -422,6 +420,8 @@ export default function DoctorDashboard() {
       onNotificationClick={scrollToPendingConnections}
     >
 
+      <PendingConnectionsInbox leads={pendingConnections} />
+
       {/* ── HOME ── */}
       {tab === 'home' && (
         <div>
@@ -443,7 +443,7 @@ export default function DoctorDashboard() {
             </button>
           )}
 
-          <PendingConnectionsInbox leads={pendingConnections} />
+
 
           {!user?.whatsapp && (
             <SlimProfileBanner onFix={openProfileSettings} />
@@ -547,6 +547,8 @@ export default function DoctorDashboard() {
       {tab === 'representatives' && (
         <RepresentativesView
           representatives={filtRepresentatives}
+          category={repCategory}
+          onCategoryChange={setRepCategory}
           regionChips={regionChips}
           regionFilter={regionFilter}
           onRegionChange={setRegionFilter}
@@ -948,7 +950,7 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
     setError('');
     setFeedback('');
     try {
-      const result = await connectWithRepresentative(rep.companyId, rep.companyName, rep.whatsapp, addLead);
+      const result = await connectWithRepresentative(rep.companyId, rep.companyName, rep.whatsapp, addLead, rep.registered ? { id: rep.id, name: rep.repLabel } : undefined);
       setFeedback(result.message);
       if (!result.whatsappOpened) onConnect();
     } catch (err) {
@@ -1315,6 +1317,8 @@ function CourseMarketCard({ course, onOpen }: { course: Course; onOpen: () => vo
 
 /* ─── Representatives view ─── */
 function RepresentativesView({
+  category,
+  onCategoryChange,
   representatives,
   regionChips,
   regionFilter,
@@ -1324,6 +1328,8 @@ function RepresentativesView({
   doctorRegion,
 }: {
   representatives: RepresentativeProfile[];
+  category: string;
+  onCategoryChange: (value: string) => void;
   regionChips: [string, string][];
   regionFilter: string;
   onRegionChange: (value: string) => void;
@@ -1331,7 +1337,7 @@ function RepresentativesView({
   onSearchChange: (value: string) => void;
   doctorRegion: string;
 }) {
-  const { addLead } = useAuth();
+  const { addLead, leads } = useAuth();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [successId, setSuccessId] = useState<string | null>(null);
@@ -1344,7 +1350,7 @@ function RepresentativesView({
     setSuccessId(null);
     setSuccessMsg('');
     try {
-      const result = await connectWithRepresentative(rep.companyId, rep.companyName, rep.whatsapp, addLead);
+      const result = await connectWithRepresentative(rep.companyId, rep.companyName, rep.whatsapp, addLead, rep.registered ? { id: rep.id, name: rep.repLabel } : undefined);
       setSuccessId(rep.id);
       setSuccessMsg(result.message);
     } catch (err) {
@@ -1357,8 +1363,22 @@ function RepresentativesView({
   return (
     <div>
       <MarketHead title="Representantes" subtitle={`Encontre representantes por região · ${doctorRegion}`} count={representatives.length} countWord="representante" />
-      <SearchBar value={search} onChange={onSearchChange} placeholder="Buscar representante, empresa ou especialidade..." />
-      <FilterBar chips={regionChips} active={regionFilter} onChange={onRegionChange} />
+      <SearchBar value={search} onChange={onSearchChange} placeholder="Nome, marca, produto ou cidade..." />
+      <div className="tessy-representative-filters">
+        <label>Região de atendimento
+          <select value={regionFilter} onChange={event => onRegionChange(event.target.value)}>
+            {regionChips.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </label>
+        <label>O que você procura?
+          <select value={category} onChange={event => onCategoryChange(event.target.value)}>
+            <option value="all">Todas as categorias</option>
+            <option value="skincare">Skincare</option>
+            <option value="tecnologias">Tecnologias</option>
+            <option value="parcerias">Parcerias</option>
+          </select>
+        </label>
+      </div>
       {error && (
         <div style={{
           marginBottom: 12,
@@ -1374,11 +1394,17 @@ function RepresentativesView({
         </div>
       )}
       {representatives.length === 0 ? (
-        <Empty text="Nenhum representante na sua região ainda." hint="Empresas com eventos, produtos ou representantes cadastrados aparecem aqui." />
+        <Empty text="Nenhum representante encontrado." hint="Tente outra região, categoria ou termo de busca." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {representatives.map(rep => (
-            <article key={rep.id} style={{
+          {representatives.map(rep => {
+            const contact = leads.find(lead => lead.companyId === rep.companyId
+              && lead.intent === 'representative_contact' && lead.itemType === 'company'
+              && (lead.itemId ?? '') === (rep.registered ? rep.id : ''));
+            const contactLabel = contact?.connectionStatus === 'approved' ? 'Conexão aprovada'
+              : contact?.connectionStatus === 'requested' ? 'Pedido de contato recebido'
+              : contact ? 'Interesse enviado' : 'Solicitar contato';
+            return <article key={rep.id} style={{
               padding: 16,
               borderRadius: 20,
               background: '#fff',
@@ -1402,7 +1428,7 @@ function RepresentativesView({
                   </div>
                 </div>
               </div>
-              <button type="button" disabled={busyId === rep.id} onClick={() => { void connectRep(rep); }} style={{
+              <button type="button" disabled={busyId !== null || Boolean(contact)} onClick={() => { void connectRep(rep); }} style={{
                 marginTop: 14,
                 width: '100%',
                 padding: '11px 12px',
@@ -1414,13 +1440,13 @@ function RepresentativesView({
                 fontWeight: 650,
                 cursor: busyId === rep.id ? 'not-allowed' : 'pointer',
               }}>
-                {busyId === rep.id ? 'Enviando...' : successId === rep.id ? 'Interesse enviado ✓' : 'Avisar interesse'}
+                {busyId === rep.id ? 'Enviando...' : contactLabel}
               </button>
               {successId === rep.id && successMsg && (
                 <div style={{ marginTop: 8, fontSize: 11.5, color: '#1EA97C', lineHeight: 1.35 }}>{successMsg}</div>
               )}
-            </article>
-          ))}
+            </article>;
+          })}
         </div>
       )}
     </div>
