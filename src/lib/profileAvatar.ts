@@ -1,18 +1,17 @@
 import { assertSupabaseConfigured, isSupabaseConfigured, supabase } from './supabase';
+import {
+  formatImageUploadError,
+  validateImageFile,
+} from './imageUpload';
 
 const PROFILE_IMAGE_BUCKET = 'opportunity-images';
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 export async function uploadProfileAvatar(file: File, userId: string): Promise<string> {
   if (!isSupabaseConfigured) {
     throw new Error('Supabase não configurado para upload de foto.');
   }
-  if (!file.type.startsWith('image/') && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) {
-    throw new Error('Envie uma imagem em PNG, JPG, WebP ou HEIC.');
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    throw new Error('A foto deve ter até 5 MB.');
-  }
+  const validationError = validateImageFile(file);
+  if (validationError) throw new Error(validationError);
 
   assertSupabaseConfigured();
 
@@ -32,9 +31,12 @@ export async function uploadProfileAvatar(file: File, userId: string): Promise<s
     });
 
   if (error) {
-    throw new Error(`Erro ao enviar foto: ${error.message}`);
+    throw new Error(formatImageUploadError(error));
   }
 
   const { data } = supabase.storage.from(PROFILE_IMAGE_BUCKET).getPublicUrl(path);
+  if (!data.publicUrl?.trim()) {
+    throw new Error('A foto não foi enviada. Tente novamente.');
+  }
   return data.publicUrl;
 }

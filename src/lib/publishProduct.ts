@@ -1,5 +1,5 @@
 import { assertSupabaseConfigured, isSupabaseConfigured, supabase } from './supabase';
-import { isMissingRpcError } from './dbSchema';
+import { isMissingDbColumnError, isMissingRpcError } from './dbSchema';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? '';
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
@@ -150,6 +150,10 @@ async function insertDirect(data: PublishProductInput): Promise<string | null> {
     'Publicar produto',
   );
   if (!firstResult.error) return null;
+
+  if (isMissingDbColumnError(firstResult.error, ['image_url']) && data.imageUrl?.trim()) {
+    throw new Error('A imagem foi enviada, mas não foi salva. Rode supabase/fix_course_images.sql no Supabase.');
+  }
 
   if (!isComplianceBlock(firstResult.error.message) || data.listingType === 'partnership') {
     return firstResult.error.message;

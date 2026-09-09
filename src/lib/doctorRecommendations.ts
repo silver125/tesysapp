@@ -165,7 +165,7 @@ export function pickDoctorOpportunities(
     const reasons = collectReasons(
       user,
       interests,
-      [rep.companyName, rep.specialty, rep.repLabel, ...rep.products.map(p => p.name)],
+      [rep.companyName, rep.specialty, rep.repLabel, ...rep.brands, ...rep.categories],
       [rep.regionLabel, ...rep.regionKeys],
     );
     return {

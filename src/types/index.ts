@@ -53,8 +53,19 @@ export interface Representative {
   name: string;
   specialty?: string;
   region?: string;
+  /** Cidade onde mora (residência). */
   city?: string;
+  /** UF onde mora (residência). */
   state?: string;
+  homeCity?: string;
+  homeState?: string;
+  /** Categorias: skincare | tecnologias | parcerias */
+  categories?: string[];
+  /** Marcas representadas (texto livre, separado por vírgula). */
+  brands?: string;
+  coverageStates?: string[];
+  coverageCities?: string[];
+  coversNationally?: boolean;
   whatsapp?: string;
   email?: string;
   bio?: string;

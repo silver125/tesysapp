@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { Sheet } from './market';
 import { Mono, WaIcon } from './ui';
 import ProfilePhotoField from './ProfilePhotoField';
 import { uploadProfileAvatar } from '../lib/profileAvatar';
+import { revokeBlobPreview } from '../lib/imageUpload';
 import { OPEN_DELETE_ACCOUNT_EVENT, OPEN_PROFILE_SETTINGS_EVENT, openHelp } from '../lib/profileSettingsEvents';
 
 const SPECIALTIES = [
@@ -57,6 +58,8 @@ export default function ProfileSettingsSheet() {
   const [photoPreview, setPhotoPreview] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const previewRef = useRef('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -73,8 +76,10 @@ export default function ProfileSettingsSheet() {
       setPhone(displayPhone(user.whatsapp));
       setPrivateOnly(user.whatsappConnectionOnly !== false);
       setPhotoPreview(user.avatarUrl ?? '');
+      previewRef.current = user.avatarUrl ?? '';
       setPhotoFile(null);
       setRemovePhoto(false);
+      setPhotoError('');
       setMode('edit');
     }
     function openDelete() {
@@ -89,6 +94,10 @@ export default function ProfileSettingsSheet() {
     };
   }, [user]);
 
+  useEffect(() => () => {
+    revokeBlobPreview(previewRef.current);
+  }, []);
+
   function close() {
     if (saving || deleting) return;
     setMode(null);
@@ -96,19 +105,27 @@ export default function ProfileSettingsSheet() {
   }
 
   function handlePhotoChange(file: File | null) {
+    revokeBlobPreview(previewRef.current);
     if (!file) {
       setPhotoFile(null);
       setPhotoPreview('');
+      previewRef.current = '';
       setRemovePhoto(true);
       return;
     }
     setPhotoFile(file);
     setRemovePhoto(false);
-    setPhotoPreview(URL.createObjectURL(file));
+    const nextPreview = URL.createObjectURL(file);
+    previewRef.current = nextPreview;
+    setPhotoPreview(nextPreview);
   }
 
   async function handleSave() {
     if (!user) return;
+    if (photoError) {
+      setError(photoError);
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -210,6 +227,8 @@ export default function ProfileSettingsSheet() {
                 label={user.role === 'empresa' ? 'Logo ou foto da empresa' : 'Foto de perfil'}
                 preview={photoPreview}
                 onChange={handlePhotoChange}
+                onValidationError={msg => setPhotoError(msg ?? '')}
+                error={photoError || undefined}
               />
 
               {user.role === 'empresa' ? (

@@ -1,13 +1,14 @@
-import type { AddLeadResult, LeadInput } from '../types';
+import type { AddLeadResult, LeadInput, Representative } from '../types';
 
-export function representativeLeadInput(companyId: string, companyName: string): LeadInput {
+export function representativeLeadInput(rep: Pick<Representative, 'id' | 'companyId' | 'companyName' | 'name'>): LeadInput {
   return {
-    companyId,
-    companyName,
+    companyId: rep.companyId,
+    companyName: rep.companyName,
     itemType: 'company',
-    itemName: companyName,
+    itemId: rep.id,
+    itemName: rep.name.trim() || 'Representante',
     intent: 'representative_contact',
-    message: 'Médico pediu contato do representante regional.',
+    message: `Médico pediu contato de ${rep.name.trim() || 'representante'}.`,
   };
 }
 
@@ -19,24 +20,20 @@ export type RepresentativeConnectResult = {
 };
 
 /**
- * Registra interesse no representante/empresa — fluxo unificado sem abrir WhatsApp direto.
- * A empresa vê o sinal em Médicos e pode pedir permissão para WhatsApp.
+ * Registra interesse em um representante específico — sem abrir WhatsApp.
+ * A empresa responsável vê o sinal e pode pedir permissão.
  */
 export async function connectWithRepresentative(
-  companyId: string,
-  companyName: string,
-  _whatsapp: string | undefined,
+  rep: Pick<Representative, 'id' | 'companyId' | 'companyName' | 'name'>,
   addLead: (input: LeadInput) => Promise<AddLeadResult>,
 ): Promise<RepresentativeConnectResult> {
-  const lead = await addLead(representativeLeadInput(companyId, companyName));
+  const lead = await addLead(representativeLeadInput(rep));
 
   let message: string;
-  if (lead.pointsAwarded > 0) {
-    message = `Interesse enviado · +${lead.pointsAwarded} pts. A empresa pode pedir permissão para WhatsApp.`;
-  } else if (lead.created) {
-    message = 'Interesse enviado. A empresa pode pedir permissão para WhatsApp.';
+  if (lead.created) {
+    message = 'Interesse enviado. Aguarde a autorização para conversar.';
   } else {
-    message = 'Interesse já registrado. Aguarde a empresa pedir permissão para WhatsApp.';
+    message = 'Interesse já registrado. Aguarde a autorização para conversar.';
   }
 
   return {

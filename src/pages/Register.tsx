@@ -183,9 +183,9 @@ export default function Register() {
             {step === 2 && <>Crie seu acesso<span style={{ color: 'var(--accent)' }}>.</span></>}
           </h1>
           <p style={{ marginTop: 12, fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.55 }}>
-            {step === 0 && 'Médicos e empresas. O cadastro de empresa está liberado para testes agora.'}
-            {step === 1 && data.role === 'medico' && 'Esses dados ajudam empresas a entenderem seu perfil profissional.'}
-            {step === 1 && data.role === 'empresa' && 'Configure o contato que médicos usarão para falar com seu representante.'}
+            {step === 0 && 'Escolha seu perfil para começar.'}
+            {step === 1 && data.role === 'medico' && 'Esses dados ajudam representantes a entenderem seu perfil profissional.'}
+            {step === 1 && data.role === 'empresa' && 'Depois do cadastro, complete o perfil do representante para aparecer na busca.'}
             {step === 2 && 'Use um e-mail profissional para acessar sua conta com segurança.'}
           </p>
         </div>
@@ -221,8 +221,8 @@ export default function Register() {
         {step === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {([
-              { role: 'medico' as UserRole, code: 'M', title: 'Sou médico', desc: 'Veja produtos, eventos e representantes da sua área' },
-              { role: 'empresa' as UserRole, code: 'E', title: 'Sou empresa', desc: 'Publique anúncios e receba médicos interessados' },
+              { role: 'medico' as UserRole, code: 'M', title: 'Sou médico', desc: 'Encontre representantes de skincare, tecnologias e parcerias na sua região' },
+              { role: 'empresa' as UserRole, code: 'E', title: 'Sou representante', desc: 'Cadastre seu perfil e receba médicos interessados' },
             ]).map(opt => {
               const active = data.role === opt.role;
               return (

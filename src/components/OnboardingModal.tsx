@@ -11,26 +11,24 @@ type Step = {
 
 const COMPANY_STEPS: Step[] = [
   {
-    title: 'Publique seu primeiro anúncio.',
-    body: 'Produto, evento ou workshop — médicos da sua área veem na plataforma.',
+    title: 'Complete seu perfil de representante.',
+    body: 'Foto, categorias, marcas, regiões de atendimento e WhatsApp profissional. Sem cadastro de produto ou evento.',
   },
   {
-    title: 'Médicos interessados aparecem na aba Médicos.',
-    body: 'Quando clicam em interesse, você recebe o sinal com especialidade e contexto.',
+    title: 'Médicos interessados aparecem em Interessados.',
+    body: 'Quando solicitam contato, você vê o pedido com o representante escolhido.',
   },
   {
-    title: 'Peça permissão para WhatsApp.',
-    body: 'O médico aprova antes de liberar o número. A conversa acontece no WhatsApp, fora do app.',
+    title: 'Peça autorização para conversar.',
+    body: 'O médico aprova antes de liberar o WhatsApp. A conversa acontece fora do app.',
   },
 ];
 
 const DOCTOR_INTERESTS = [
-  { label: 'Produtos', hint: 'novidades para sua prática' },
-  { label: 'Eventos', hint: 'aulas, workshops e imersões' },
-  { label: 'Representantes', hint: 'contato direto por região' },
-  { label: 'Amostras', hint: 'testes e materiais' },
-  { label: 'Serviços', hint: 'parceiros para clínica' },
-  { label: 'Workshops', hint: 'capacitações médicas' },
+  { label: 'Skincare', hint: 'dermocosméticos e cuidados' },
+  { label: 'Tecnologias', hint: 'equipamentos e soluções' },
+  { label: 'Parcerias', hint: 'ações comerciais' },
+  { label: 'Representantes', hint: 'contato por região' },
 ];
 
 const DOCTOR_STEPS = [
@@ -359,7 +357,7 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
             />
           </div>
           <p style={{ marginTop: 9, color: 'var(--muted)', fontSize: 12, lineHeight: 1.45 }}>
-            Use um número que possa receber contatos comerciais, convites, eventos e oportunidades da Tessy.
+            Use um número que possa receber contatos comerciais da Tessy.
           </p>
         </div>
       )}
@@ -424,8 +422,8 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
       {current === 'como-funciona' && (
         <div style={{ marginTop: 20, display: 'grid', gap: 10 }}>
           {[
-            ['Avisar interesse', 'Notifica a empresa. Seu WhatsApp continua privado.'],
-            ['Empresa pede permissão', 'Você recebe um aviso na home para aprovar ou ignorar.'],
+            ['Solicitar contato', 'Notifica o representante. Seu WhatsApp continua privado.'],
+            ['Pedido de autorização', 'Você recebe o aviso em Conexões para aprovar ou ignorar.'],
             ['Aprovar contato', 'Libera seu WhatsApp — a conversa segue fora do app.'],
           ].map(([title, body]) => (
             <div key={title} style={{
@@ -453,10 +451,10 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
             próxima ação
           </Mono>
           <h3 style={{ marginTop: 10, color: 'var(--accent-ink)', fontSize: 22, lineHeight: 1.12, fontWeight: 560 }}>
-            Veja quem combina com sua prática.
+            Veja quem atende à sua região.
           </h3>
           <p style={{ marginTop: 10, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.48 }}>
-            No dashboard, comece por empresas sugeridas, representantes disponíveis e eventos próximos.
+            Na busca, filtre por estado, categoria e marca — e solicite contato em poucos toques.
           </p>
           <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {interests.slice(0, 4).map(item => (

@@ -1,42 +1,37 @@
-import type { Event, Product, Course, Location, Representative, User } from '../types';
+import type { Representative, User } from '../types';
 import { companyInitials } from './uiHelpers';
+import {
+  categoryLabel,
+  coverageLabel,
+  isRepresentativeSearchable,
+  matchesCoverage,
+  parseBrands,
+} from './repProfile';
 
 export type RepresentativeProfile = {
   id: string;
   companyId: string;
   companyName: string;
   repLabel: string;
+  /** WhatsApp profissional — só use após conexão aprovada no fluxo de leads. */
   whatsapp?: string;
   specialty: string;
+  categories: string[];
+  brands: string[];
   regionLabel: string;
   regionKeys: string[];
+  coversNationally: boolean;
+  coverageStates: string[];
+  coverageCities: string[];
   companyLogoUrl: string;
   photoUrl?: string;
   bio?: string;
   registered: boolean;
-  products: Product[];
-  events: Event[];
-  locations: Location[];
-};
-
-type CompanyBucket = {
-  id: string;
-  name: string;
-  whatsapp?: string;
-  products: Product[];
-  events: Event[];
-  courses: Course[];
-  locations: Location[];
+  searchable: boolean;
 };
 
 function normalizeRegion(value?: string | null) {
   return (value ?? '').trim().toLowerCase();
-}
-
-function eventRegionKeys(event: Event): string[] {
-  return [event.location]
-    .map(normalizeRegion)
-    .filter(Boolean);
 }
 
 export function doctorRegionKeys(user?: User | null): string[] {
@@ -49,39 +44,8 @@ export function doctorRegionKeys(user?: User | null): string[] {
   return [...new Set(keys)];
 }
 
-function locationRegionKeys(loc: Location): string[] {
-  return [loc.state, loc.city, loc.address]
-    .map(normalizeRegion)
-    .filter(Boolean);
-}
-
-export function regionLabelFromLocations(locations: Location[]): string {
-  const first = locations.find(l => l.city?.trim() || l.state?.trim());
-  if (!first) return 'Brasil';
-  const city = first.city?.trim();
-  const state = first.state?.trim();
-  if (city && state) return `${city} · ${state}`;
-  return city || state || 'Brasil';
-}
-
-/** Logo da empresa (perfil) — nunca imagem de produto, evento ou curso. */
-function resolveCompanyLogo(companyId: string, companyLogos: Record<string, string>): string {
-  return companyLogos[companyId]?.trim() || '';
-}
-
-function topSpecialty(products: Product[], events: Event[], courses: Course[]): string {
-  return products[0]?.category?.trim()
-    || events[0]?.category?.trim()
-    || courses[0]?.category?.trim()
-    || 'Saúde';
-}
-
-function repLabel(companyName: string): string {
-  const short = companyName.trim().split(/\s+/)[0];
-  return short ? `Representante ${short}` : 'Representante comercial';
-}
-
-function regionScore(regionKeys: string[], doctorKeys: string[]): number {
+function regionScore(regionKeys: string[], doctorKeys: string[], national: boolean): number {
+  if (national) return 1;
   if (doctorKeys.length === 0 || regionKeys.length === 0) return 0;
   let score = 0;
   for (const doctorKey of doctorKeys) {
@@ -92,120 +56,90 @@ function regionScore(regionKeys: string[], doctorKeys: string[]): number {
   return score;
 }
 
-function repRegionLabel(rep: Representative, fallback: string): string {
-  const city = rep.city?.trim();
-  const state = rep.state?.trim();
-  if (city && state) return `${city} · ${state}`;
-  if (rep.region?.trim()) return rep.region.trim();
-  return city || state || fallback;
+function repRegionKeys(rep: Representative): string[] {
+  if (rep.coversNationally) return ['nacional', 'brasil', 'br'];
+  return [...new Set([
+    ...(rep.coverageStates ?? []).map(normalizeRegion),
+    ...(rep.coverageCities ?? []).map(normalizeRegion),
+    normalizeRegion(rep.region),
+    normalizeRegion(rep.state),
+    normalizeRegion(rep.city),
+  ].filter(Boolean))];
 }
 
+function resolveCategories(rep: Representative): string[] {
+  if (rep.categories?.length) return rep.categories;
+  if (rep.specialty?.trim()) {
+    const s = rep.specialty.toLowerCase();
+    if (s.includes('derma') || s.includes('skin')) return ['skincare'];
+    if (s.includes('tecnolog') || s.includes('equip') || s.includes('laser')) return ['tecnologias'];
+    if (s.includes('parcer')) return ['parcerias'];
+  }
+  return [];
+}
+
+/**
+ * Monta perfis para a busca médica.
+ * Apenas representantes cadastrados e com perfil completo entram na vitrine.
+ * Não gera perfis fictícios a partir de produtos/eventos.
+ */
 export function buildRepresentativeProfiles(
-  events: Event[],
-  products: Product[],
-  courses: Course[],
-  locations: Location[],
+  _events: unknown[],
+  _products: unknown[],
+  _courses: unknown[],
+  _locations: unknown[],
   user?: User | null,
   representatives: Representative[] = [],
   companyLogos: Record<string, string> = {},
 ): RepresentativeProfile[] {
-  const map = new Map<string, CompanyBucket>();
-
-  const ensure = (id: string, name: string, whatsapp?: string) => {
-    const existing = map.get(id) ?? {
-      id, name, whatsapp, products: [], events: [], courses: [], locations: [],
-    };
-    map.set(id, { ...existing, whatsapp: existing.whatsapp ?? whatsapp });
-    return map.get(id)!;
-  };
-
-  events.forEach(e => ensure(e.companyId, e.companyName, e.companyWhatsapp).events.push(e));
-  products.forEach(p => ensure(p.companyId, p.companyName, p.companyWhatsapp).products.push(p));
-  courses.forEach(c => ensure(c.companyId, c.companyName, c.companyWhatsapp).courses.push(c));
-  locations.forEach(l => ensure(l.companyId, l.companyName, l.whatsapp).locations.push(l));
-
   const doctorKeys = doctorRegionKeys(user);
-  const specialty = normalizeRegion(user?.specialty);
-  const companiesWithRegistered = new Set(representatives.map(r => r.companyId));
 
-  type Scored = RepresentativeProfile & { _regionScore: number; _specialtyScore: number };
+  type Scored = RepresentativeProfile & { _regionScore: number };
   const scored: Scored[] = [];
 
-  // 1) Representantes cadastrados pela empresa (com foto, região e especialidade próprias).
   for (const rep of representatives) {
-    const bucket = map.get(rep.companyId);
-    const products = bucket?.products ?? [];
-    const events = bucket?.events ?? [];
-    const courses = bucket?.courses ?? [];
-    const bucketLocations = bucket?.locations ?? [];
-    const regionKeys = [...new Set([
-      ...[rep.city, rep.state, rep.region].map(normalizeRegion).filter(Boolean),
-      ...bucketLocations.flatMap(locationRegionKeys),
-      ...events.flatMap(eventRegionKeys),
-    ])];
-    const repSpecialty = rep.specialty?.trim() || topSpecialty(products, events, courses);
+    if (!rep.name?.trim()) continue;
+    const categories = resolveCategories(rep);
+    const searchable = isRepresentativeSearchable({
+      ...rep,
+      categories,
+    });
+    if (!searchable) continue;
+
+    const coversNationally = Boolean(rep.coversNationally);
+    const coverageStates = (rep.coverageStates ?? []).map(s => s.trim().toUpperCase()).filter(Boolean);
+    const coverageCities = (rep.coverageCities ?? []).map(c => c.trim()).filter(Boolean);
+    const regionKeys = repRegionKeys({ ...rep, categories, coversNationally, coverageStates, coverageCities });
+    const brands = parseBrands(rep.brands);
+    const specialty = categories.map(categoryLabel).join(' · ') || rep.specialty?.trim() || 'Comercial';
+
     scored.push({
       id: rep.id,
       companyId: rep.companyId,
       companyName: rep.companyName,
-      repLabel: rep.name?.trim() || repLabel(rep.companyName),
-      whatsapp: rep.whatsapp?.trim() || bucket?.whatsapp,
-      specialty: repSpecialty,
-      regionLabel: repRegionLabel(rep, regionLabelFromLocations(bucketLocations)),
+      repLabel: rep.name.trim(),
+      whatsapp: undefined,
+      specialty,
+      categories,
+      brands,
+      regionLabel: coverageLabel({ coversNationally, coverageStates, coverageCities }),
       regionKeys,
-      companyLogoUrl: resolveCompanyLogo(rep.companyId, companyLogos),
+      coversNationally,
+      coverageStates,
+      coverageCities,
+      companyLogoUrl: companyLogos[rep.companyId]?.trim() || '',
       photoUrl: rep.photoUrl?.trim() || undefined,
       bio: rep.bio?.trim() || undefined,
       registered: true,
-      products,
-      events,
-      locations: bucketLocations,
-      _regionScore: regionScore(regionKeys, doctorKeys),
-      _specialtyScore: specialty && repSpecialty.toLowerCase().includes(specialty) ? 1 : 0,
-    });
-  }
-
-  // 2) Empresas sem representante cadastrado — perfil derivado quando há ofertas publicadas.
-  for (const co of map.values()) {
-    if (companiesWithRegistered.has(co.id)) continue;
-    const hasOfferings = co.products.length > 0 || co.events.length > 0 || co.courses.length > 0;
-    if (!hasOfferings) continue;
-    const regionKeys = [...new Set([
-      ...co.locations.flatMap(locationRegionKeys),
-      ...co.events.flatMap(eventRegionKeys),
-    ])];
-    const repSpecialty = topSpecialty(co.products, co.events, co.courses);
-    scored.push({
-      id: co.id,
-      companyId: co.id,
-      companyName: co.name,
-      repLabel: repLabel(co.name),
-      whatsapp: co.whatsapp,
-      specialty: repSpecialty,
-      regionLabel: regionLabelFromLocations(co.locations),
-      regionKeys,
-      companyLogoUrl: resolveCompanyLogo(co.id, companyLogos),
-      photoUrl: undefined,
-      registered: false,
-      products: co.products,
-      events: co.events,
-      locations: co.locations,
-      _regionScore: regionScore(regionKeys, doctorKeys),
-      _specialtyScore: specialty && repSpecialty.toLowerCase().includes(specialty) ? 1 : 0,
+      searchable: true,
+      _regionScore: regionScore(regionKeys, doctorKeys, coversNationally),
     });
   }
 
   return scored
-    .sort((a, b) => (
-      Number(b.registered) - Number(a.registered)
-      || b._specialtyScore - a._specialtyScore
-      || b._regionScore - a._regionScore
-      || b.events.length - a.events.length
-      || b.products.length - a.products.length
-    ))
-    .map(({ _regionScore, _specialtyScore, ...rest }) => {
+    .sort((a, b) => b._regionScore - a._regionScore || a.repLabel.localeCompare(b.repLabel, 'pt-BR'))
+    .map(({ _regionScore, ...rest }) => {
       void _regionScore;
-      void _specialtyScore;
       return rest;
     });
 }
@@ -213,95 +147,66 @@ export function buildRepresentativeProfiles(
 export function representativeRegionFilters(profiles: RepresentativeProfile[]): [string, string][] {
   const states = new Set<string>();
   for (const profile of profiles) {
-    for (const key of profile.regionKeys) {
-      if (key.length <= 3) states.add(key.toUpperCase());
+    if (profile.coversNationally) {
+      states.add('Nacional');
+      continue;
     }
-    const state = profile.regionLabel.split('·').pop()?.trim();
-    if (state) states.add(state);
+    for (const state of profile.coverageStates) {
+      states.add(state.toUpperCase());
+    }
   }
-  return [['all', 'Todas regiões'], ...[...states].slice(0, 8).map(s => [s.toLowerCase(), s] as [string, string])];
+  return [['all', 'Todas regiões'], ...[...states].sort().map(s => [s.toLowerCase(), s] as [string, string])];
 }
 
 export function matchesRepresentativeRegion(profile: RepresentativeProfile, filter: string) {
   if (filter === 'all') return true;
-  const q = filter.toLowerCase();
-  return profile.regionKeys.some(key => key.includes(q))
-    || profile.regionLabel.toLowerCase().includes(q);
+  return matchesCoverage(profile, filter, '');
+}
+
+export function matchesRepresentativeCategory(profile: RepresentativeProfile, filter: string) {
+  if (filter === 'all') return true;
+  return profile.categories.includes(filter);
+}
+
+export function matchesRepresentativeQuery(profile: RepresentativeProfile, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [
+    profile.repLabel,
+    profile.companyName,
+    ...profile.brands,
+    ...profile.categories.map(categoryLabel),
+    profile.regionLabel,
+    profile.bio ?? '',
+  ].some(value => value.toLowerCase().includes(q));
 }
 
 export function representativeInitials(name: string) {
   return companyInitials(name, 'RC');
 }
 
-/** Resumo do que a empresa/representante oferece na plataforma. */
 export function representativeOfferSummary(profile: RepresentativeProfile): string {
   const bits: string[] = [];
-  const nProducts = profile.products.length;
-  const nEvents = profile.events.length;
-  if (nProducts > 0) bits.push(`${nProducts} produto${nProducts === 1 ? '' : 's'}`);
-  if (nEvents > 0) bits.push(`${nEvents} evento${nEvents === 1 ? '' : 's'}`);
-  const nextEvent = profile.events[0]?.title?.trim();
-  if (nextEvent) bits.push(nextEvent);
-  else if (bits.length === 0 && profile.products[0]?.category?.trim()) {
-    bits.push(profile.products[0].category.trim());
-  }
+  if (profile.categories.length) bits.push(profile.categories.map(categoryLabel).join(' · '));
+  if (profile.brands.length) bits.push(profile.brands.slice(0, 3).join(', '));
   return bits.join(' · ');
 }
 
-/** Nome exibido no card — cadastrado usa o nome; derivado usa a empresa (sem "Representante X"). */
 export function representativeDisplayName(profile: RepresentativeProfile): string {
-  if (profile.registered) {
-    return profile.repLabel.trim() || profile.companyName.trim() || 'Representante';
-  }
-  return profile.companyName.trim() || profile.repLabel.replace(/^Representante\s+/i, '').trim() || 'Representante';
+  return profile.repLabel.trim() || profile.companyName.trim() || 'Representante';
 }
 
-function normalizeImageUrl(url?: string | null): string {
-  return (url ?? '').trim().toLowerCase();
-}
-
-/** URLs de imagem de produto da mesma empresa — nunca devem aparecer no card de representante. */
-function productImageUrls(products: Product[]): Set<string> {
-  const urls = new Set<string>();
-  for (const product of products) {
-    const image = normalizeImageUrl(product.imageUrl);
-    if (image) urls.add(image);
-  }
-  return urls;
-}
-
-function isProductImageUrl(url: string | undefined, products: Product[]): boolean {
-  const normalized = normalizeImageUrl(url);
-  return normalized.length > 0 && productImageUrls(products).has(normalized);
-}
-
-/** Foto pessoal do representante — nunca imagem de produto ou logo da empresa. */
 export function representativeAvatarUrl(profile: RepresentativeProfile): string | undefined {
-  const photo = profile.photoUrl?.trim();
-  if (!photo || isProductImageUrl(photo, profile.products)) return undefined;
-  return photo;
+  return profile.photoUrl?.trim() || undefined;
 }
 
-/**
- * Imagem principal do card de representante: foto do rep ou logo da empresa.
- * Sem foto nem logo → undefined (UI usa iniciais).
- */
 export function representativeDisplayImageUrl(profile: RepresentativeProfile): string | undefined {
-  const photo = profile.photoUrl?.trim();
-  if (photo && !isProductImageUrl(photo, profile.products)) return photo;
-
-  const logo = profile.companyLogoUrl?.trim();
-  if (logo && !isProductImageUrl(logo, profile.products)) return logo;
-
-  return undefined;
+  return profile.photoUrl?.trim() || profile.companyLogoUrl?.trim() || undefined;
 }
 
-/** Selo da empresa no canto — só quando há foto pessoal do representante. */
 export function representativeCompanyBadgeUrl(profile: RepresentativeProfile): string | undefined {
   const photo = representativeAvatarUrl(profile);
   const logo = profile.companyLogoUrl?.trim();
-  if (photo && logo && !isProductImageUrl(logo, profile.products)) {
-    return logo;
-  }
+  if (photo && logo) return logo;
   return undefined;
 }

@@ -17,28 +17,28 @@ const clients = [
 
 const features = [
   {
-    title: 'Representantes',
-    text: 'Contatos comerciais da sua região em um ambiente simples.',
+    title: 'Busca por região',
+    text: 'Encontre representantes que atendem ao seu estado e cidade.',
     icon: 'representantes',
     tone: 'blue',
   },
   {
-    title: 'Eventos',
-    text: 'Congressos, aulas e imersões alinhadas à sua especialidade.',
+    title: 'Skincare e tecnologias',
+    text: 'Filtre por skincare, tecnologias e parcerias comerciais.',
+    icon: 'produtos',
+    tone: 'orange',
+  },
+  {
+    title: 'Contato com consentimento',
+    text: 'Seu WhatsApp só é liberado quando você autoriza.',
     icon: 'eventos',
     tone: 'coral',
   },
   {
-    title: 'Cursos',
-    text: 'Formações práticas para evoluir sua rotina clínica.',
+    title: 'Conexões claras',
+    text: 'Acompanhe interesse enviado, autorização e conexão aprovada.',
     icon: 'cursos',
     tone: 'mauve',
-  },
-  {
-    title: 'Produtos',
-    text: 'Tecnologias e soluções curadas para a prática médica.',
-    icon: 'produtos',
-    tone: 'orange',
   },
 ];
 
@@ -46,40 +46,40 @@ const steps = [
   {
     n: '01',
     title: 'Crie sua conta',
-    text: 'Cadastro exclusivo para médicos, com CRM e especialidade.',
+    text: 'Cadastro aberto para médicos e representantes.',
   },
   {
     n: '02',
-    title: 'Explore oportunidades',
-    text: 'Veja representantes, eventos, cursos e produtos relevantes.',
+    title: 'Busque por região',
+    text: 'Encontre representantes de skincare, tecnologias e parcerias.',
   },
   {
     n: '03',
-    title: 'Converse quando fizer sentido',
-    text: 'Avise interesse e converse quando fizer sentido para você.',
+    title: 'Solicite contato',
+    text: 'Autorize o WhatsApp só quando fizer sentido para você.',
   },
 ];
 
 const faqs = [
   [
     'A Tessy é só para estética?',
-    'Não. A Tessy conecta médicos de diversas especialidades, como estética, dermatologia, cirurgia e outras áreas estratégicas. O foco é reunir oportunidades comerciais e de atualização com qualidade para a rotina médica, independentemente da especialidade.',
+    'Não. A Tessy conecta médicos a representantes de skincare, tecnologias e parcerias em diversas especialidades.',
   ],
   [
     'Quem pode se cadastrar?',
-    'O cadastro é exclusivo para médicos. Empresas e marcas entram por atendimento dedicado: agendamos uma reunião para entender o perfil e liberar o acesso.',
+    'Médicos e representantes comerciais. Use “Sou médico” ou “Sou representante” no cadastro.',
   ],
   [
     'O médico precisa pagar para usar?',
     'O acesso inicial pode ser gratuito para perfis aprovados. Conforme a plataforma evolui, algumas funcionalidades poderão ter planos, sempre com transparência antes de qualquer cobrança.',
   ],
   [
-    'Como empresas e marcas entram na Tessy?',
-    'Não há auto-cadastro para empresas. O onboarding é feito por reunião com nosso time. Conheça a página Para Empresas ou escreva para contato@tessybr.com.',
+    'Como representantes entram na Tessy?',
+    'Pelo cadastro aberto: complete o perfil com categorias, marcas, regiões de atendimento e WhatsApp profissional.',
   ],
   [
-    'Quando vou ter acesso?',
-    'Liberamos por fases, conforme perfil profissional e ordem da waitlist. Quem se cadastra agora entra na fila de convites com prioridade para as próximas aberturas.',
+    'Meu WhatsApp fica público?',
+    'Não. O WhatsApp do médico só é compartilhado após autorização explícita em cada conexão.',
   ],
 ];
 
@@ -200,27 +200,26 @@ export default function Landing() {
           <div className="lv-hero__glow" aria-hidden="true" />
           <div className="lv-container lv-hero__grid">
             <div className="lv-hero__copy">
-              <p className="lv-badge">Exclusivo para médicos</p>
+              <p className="lv-badge">Médicos e representantes</p>
               <h1>
-                Médico, crie sua conta
-                <span> na Tessy.</span>
+                Tessy
+                <span> conecta.</span>
               </h1>
               <p className="lv-lead">
-                Encontre representantes, eventos e cursos em um ambiente simples,
-                feito para a rotina de quem vive medicina.
+                Encontre representantes de skincare, tecnologias e parcerias que atendem à sua região.
               </p>
               <div className="lv-hero__cta">
-                <Link to="/cadastro" className="lv-btn lv-btn--primary lv-btn--lg">
-                  Criar conta gratuita
+                <Link to="/cadastro?perfil=medico" className="lv-btn lv-btn--primary lv-btn--lg">
+                  Sou médico
                 </Link>
-                <a href={waitlistHref} className="lv-btn lv-btn--soft lv-btn--lg">
-                  Entrar na lista
-                </a>
+                <Link to="/cadastro?perfil=empresa" className="lv-btn lv-btn--soft lv-btn--lg">
+                  Sou representante
+                </Link>
               </div>
               <ul className="lv-hero__pills">
-                <li>Sem grupos</li>
-                <li>Curadoria por especialidade</li>
-                <li>Contato no momento certo</li>
+                <li>Busca por região</li>
+                <li>WhatsApp com consentimento</li>
+                <li>Perfil comercial simples</li>
               </ul>
             </div>
 

@@ -4,11 +4,11 @@ import type { UserRole } from '../types';
 const TIPS: Record<UserRole, { title: string; body: string }> = {
   medico: {
     title: 'Como a Tessy funciona',
-    body: 'Veja oportunidades e use "Avisar interesse". A empresa pede permissão para WhatsApp — você aprova na home antes de liberar seu número.',
+    body: 'Busque representantes por região e toque em Solicitar contato. Quando pedirem autorização, aprove em Conexões para liberar seu WhatsApp.',
   },
   empresa: {
     title: 'Como a Tessy funciona',
-    body: 'Publique em Meus anúncios (produto, evento ou workshop). Médicos interessados aparecem em Médicos. Clique em "Pedir permissão para WhatsApp" — após aprovação, a conversa segue no WhatsApp.',
+    body: 'Complete Meu perfil (sem precisar cadastrar produto ou evento). Médicos interessados aparecem em Interessados — peça autorização e converse no WhatsApp após a aprovação.',
   },
 };
 
@@ -39,48 +39,23 @@ export default function FirstVisitTip({ userId, role }: { userId: string; role: 
   }
 
   return (
-    <div style={{
-      marginBottom: 14,
-      padding: '14px 16px',
-      borderRadius: 18,
-      background: 'linear-gradient(135deg, rgba(74,168,255,0.10), rgba(255,255,255,0.96))',
-      border: '1px solid rgba(74,168,255,0.22)',
-      boxShadow: '0 10px 24px rgba(85,96,130,0.05)',
+    <div className="tessy-panel" style={{
+      marginBottom: 12,
+      padding: '12px 14px',
+      borderColor: 'rgba(245,130,32,0.2)',
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--accent-ink)' }}>{tip.title}</div>
-          <p style={{ marginTop: 6, fontSize: 12.5, lineHeight: 1.45, color: 'var(--ink-2)' }}>{tip.body}</p>
-        </div>
-        <button
-          type="button"
-          onClick={dismiss}
-          aria-label="Fechar dica"
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            border: '1px solid var(--line)',
-            background: '#fff',
-            color: 'var(--muted)',
-            cursor: 'pointer',
-            fontSize: 16,
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-        >
-          ×
-        </button>
-      </div>
+      <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--accent-ink)' }}>{tip.title}</div>
+      <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>{tip.body}</p>
       <button
         type="button"
         onClick={dismiss}
         style={{
           marginTop: 10,
-          padding: 0,
+          padding: '8px 12px',
+          borderRadius: 10,
           border: 'none',
-          background: 'none',
-          color: 'var(--accent)',
+          background: 'var(--accent)',
+          color: '#fff',
           fontSize: 12,
           fontWeight: 600,
           cursor: 'pointer',

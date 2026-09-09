@@ -1,16 +1,37 @@
+import { useRef } from 'react';
 import { humanizeFieldLabel } from '../lib/uiHelpers';
+import { validateImageFile } from '../lib/imageUpload';
 
 export default function ProfilePhotoField({
   label,
   preview,
   onChange,
   showRemove = true,
+  error,
+  onValidationError,
 }: {
   label: string;
   preview: string;
   onChange: (file: File | null) => void;
   showRemove?: boolean;
+  error?: string;
+  onValidationError?: (message: string | null) => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handlePick(file: File | null) {
+    if (file) {
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        if (inputRef.current) inputRef.current.value = '';
+        onValidationError?.(validationError);
+        return;
+      }
+    }
+    onValidationError?.(null);
+    onChange(file);
+  }
+
   return (
     <div>
       <label style={{ fontSize: 13, fontWeight: 560, color: 'var(--ink)', letterSpacing: '-0.01em', display: 'block', marginBottom: 8 }}>
@@ -33,9 +54,10 @@ export default function ProfilePhotoField({
         boxShadow: '0 8px 24px rgba(90,80,130,0.08)',
       }}>
         <input
+          ref={inputRef}
           type="file"
           accept="image/*"
-          onChange={event => onChange(event.target.files?.[0] ?? null)}
+          onChange={event => handlePick(event.target.files?.[0] ?? null)}
           style={{ display: 'none' }}
         />
         <div style={{
@@ -74,10 +96,16 @@ export default function ProfilePhotoField({
           </span>
         </div>
       </label>
+      {error && (
+        <div style={{ marginTop: 8, fontSize: 12, color: '#F25C54', lineHeight: 1.35 }}>{error}</div>
+      )}
       {preview && showRemove && (
         <button
           type="button"
-          onClick={() => onChange(null)}
+          onClick={() => {
+            if (inputRef.current) inputRef.current.value = '';
+            onChange(null);
+          }}
           style={{
             marginTop: 8,
             padding: '7px 10px',

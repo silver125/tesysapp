@@ -121,28 +121,6 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                 )}
               </button>
             )}
-            {user?.role === 'medico' && (
-              <div
-                title="Pontos Tessy: ganhe ao avisar interesse. Conexões aprovadas valem +50."
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '5px 10px',
-                  borderRadius: 999,
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,130,32,0.10))',
-                  border: '1px solid rgba(245,130,32,0.18)',
-                  fontSize: 11.5,
-                  fontWeight: 650,
-                  color: 'var(--accent-ink)',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 4px 12px rgba(245,130,32,0.10)',
-                }}
-              >
-                <span style={{ fontSize: 11, lineHeight: 1 }}>★</span>
-                <span>{user.points ?? 0}</span>
-              </div>
-            )}
             <button
               type="button"
               aria-label="Abrir menu do perfil"
@@ -185,7 +163,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                   {user?.role === 'empresa' ? (user.company ?? user.name) : (user?.name ?? 'Perfil')}
                 </div>
                 <div style={{ marginTop: 2, fontSize: 10.5, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                  {user?.role === 'medico' ? 'médico' : 'empresa'}
+                  {user?.role === 'medico' ? 'médico' : 'representante'}
                 </div>
                 <button
                   type="button"

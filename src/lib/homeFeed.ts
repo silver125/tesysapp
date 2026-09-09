@@ -47,7 +47,7 @@ export function buildHomeFeed(
 
   for (const rep of representatives) {
     if (!take(rep.companyId)) continue;
-    if (!rep.registered && rep.products.length === 0 && rep.events.length === 0) {
+    if (!rep.registered || !rep.searchable) {
       companyShown.delete(rep.companyId);
       continue;
     }

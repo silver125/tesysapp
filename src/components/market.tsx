@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 /* ──────────────────────────────────────────────────────────────
    Componentes de marketplace (estilo vitrine, photo-first)
@@ -128,6 +128,35 @@ export function MarketGrid({ children }: { children: ReactNode }) {
 }
 
 /* ── Card de vitrine (foto grande + selos + preço/título) ── */
+/* ── Card de vitrine (foto grande + título + subtítulo) ── */
+function MarketCardImage({ image, aspect }: { image?: string; aspect: string }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const failed = Boolean(image && failedUrl === image);
+
+  const frameStyle = {
+    position: 'relative' as const,
+    width: '100%',
+    aspectRatio: aspect,
+    overflow: 'hidden' as const,
+    background: 'linear-gradient(145deg, rgba(245,130,32,0.16), rgba(91,143,232,0.22))',
+  };
+
+  if (!image || failed) {
+    return <div style={frameStyle} />;
+  }
+
+  return (
+    <div style={frameStyle}>
+      <img
+        src={image}
+        alt=""
+        onError={() => setFailedUrl(image)}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+      />
+    </div>
+  );
+}
+
 export function MarketCard({
   image,
   topLeft,
@@ -157,14 +186,8 @@ export function MarketCard({
       onClick={onClick}
       className="tessy-market-card lift"
     >
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        aspectRatio: aspect,
-        background: image
-          ? `url(${image}) center/cover`
-          : 'linear-gradient(145deg, rgba(245,130,32,0.16), rgba(91,143,232,0.22))',
-      }}>
+      <div style={{ position: 'relative' }}>
+        <MarketCardImage image={image} aspect={aspect} />
         {topLeft && (
           <div style={{ position: 'absolute', left: 8, bottom: 8, display: 'flex', gap: 5 }}>{topLeft}</div>
         )}

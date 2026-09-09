@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CompanyMark } from './ui';
 import { companyInitials, companyTint } from '../lib/uiHelpers';
 
@@ -12,12 +13,15 @@ export default function CompanyAvatar({
 }) {
   const url = avatarUrl?.trim();
   const radius = Math.round(size / 3.8);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const failed = Boolean(url && failedUrl === url);
 
-  if (url) {
+  if (url && !failed) {
     return (
       <img
         src={url}
         alt=""
+        onError={() => setFailedUrl(url)}
         style={{
           width: size,
           height: size,

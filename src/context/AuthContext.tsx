@@ -126,7 +126,19 @@ function dbToLocation(row: Record<string, unknown>): Location {
   };
 }
 
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(v => String(v).trim()).filter(Boolean);
+  }
+  if (typeof value === 'string' && value.trim()) {
+    return value.split(/[,;|]+/).map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 function dbToRepresentative(row: Record<string, unknown>): Representative {
+  const homeCity = (row.home_city as string | undefined) || (row.city as string | undefined);
+  const homeState = (row.home_state as string | undefined) || (row.state as string | undefined);
   return {
     id:          row.id           as string,
     companyId:   row.company_id   as string,
@@ -134,8 +146,15 @@ function dbToRepresentative(row: Record<string, unknown>): Representative {
     name:        dbText(row.name, 'Representante'),
     specialty:   row.specialty    as string | undefined,
     region:      row.region       as string | undefined,
-    city:        row.city         as string | undefined,
-    state:       row.state        as string | undefined,
+    city:        homeCity,
+    state:       homeState,
+    homeCity,
+    homeState,
+    categories:  asStringArray(row.categories),
+    brands:      (row.brands as string | undefined) || undefined,
+    coverageStates: asStringArray(row.coverage_states).map(s => s.toUpperCase()),
+    coverageCities: asStringArray(row.coverage_cities),
+    coversNationally: row.covers_nationally === true,
     whatsapp:    row.whatsapp     as string | undefined,
     email:       row.email        as string | undefined,
     bio:         row.bio          as string | undefined,
@@ -798,7 +817,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (profileError) {
         const message = profileError instanceof Error ? profileError.message : 'Tente novamente.';
         if (/privacy_accepted_at|privacy_policy_version/i.test(message)) {
-          const { privacy_accepted_at: _a, privacy_policy_version: _v, ...legacyPayload } = profilePayload;
+          const { privacy_accepted_at: _privacyAcceptedAt, privacy_policy_version: _privacyVersion, ...legacyPayload } = profilePayload;
+          void _privacyAcceptedAt;
+          void _privacyVersion;
           await withTimeout(
             upsertProfileWithToken(authData.session.access_token, legacyPayload),
             12000,
@@ -901,7 +922,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error && isMissingDbColumnError(error, ['avatar_url'])) {
       ({ error } = await supabase.from('profiles').update(omitDbColumns(updates, ['avatar_url'])).eq('id', user.id));
       if (data.avatarUrl !== undefined && data.avatarUrl) {
-        console.warn('Coluna avatar_url ausente em profiles. Foto salva localmente até rodar a migração SQL.');
+        throw new Error('A foto foi enviada, mas não foi salva no perfil. Rode supabase/add_profile_avatar.sql no Supabase.');
       }
     }
 
@@ -1013,7 +1034,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       'Publicar evento',
     );
     if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
-      console.warn('Coluna image_url ausente em events. Publicando evento sem imagem.', result.error.message);
+      if (data.imageUrl?.trim()) {
+        throw new Error('A imagem foi enviada, mas não foi salva. Rode supabase/fix_course_images.sql no Supabase.');
+      }
       result = await withTimeout(
         supabase.from('events').insert(omitDbColumns(payload, ['image_url'])),
         12000,
@@ -1054,12 +1077,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let result = await supabase.from('events').update(dbPatch).eq('id', id).eq('company_id', user.id);
     if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
+      if (patch.imageUrl?.trim()) {
+        throw new Error('A imagem foi enviada, mas não foi salva. Rode supabase/fix_course_images.sql no Supabase.');
+      }
       const fallbackPatch = omitDbColumns(dbPatch, ['image_url']);
       if (Object.keys(fallbackPatch).length > 0) {
-        console.warn('Coluna image_url ausente em events. Salvando edição sem imagem.', result.error.message);
         result = await supabase.from('events').update(fallbackPatch).eq('id', id).eq('company_id', user.id);
       } else {
-        console.warn('Coluna image_url ausente em events. Ignorando atualização isolada de imagem.', result.error.message);
         setEvents(prev => prev.map(e => e.id === id ? { ...e, ...patch, imageUrl: e.imageUrl } as Event : e));
         return;
       }
@@ -1289,6 +1313,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
     }
     if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
+      if (data.imageUrl?.trim()) {
+        throw new Error('A imagem foi enviada, mas não foi salva. Rode supabase/fix_course_images.sql no Supabase.');
+      }
       const withoutImage = omitDbColumns(schedulePayload, ['image_url']);
       result = await withTimeout(
         supabase.from('courses').insert(withoutImage),
@@ -1360,60 +1387,112 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Representantes comerciais ──
   const addRepresentative = async (data: Omit<Representative, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
-    const payload = {
+    const fullPayload: Record<string, unknown> = {
       company_id:   data.companyId,
       company_name: data.companyName,
       name:         data.name,
-      specialty:    data.specialty ?? null,
+      specialty:    data.specialty ?? (data.categories?.map(c => c).join(', ') || null),
       region:       data.region ?? null,
-      city:         data.city ?? null,
-      state:        data.state ?? null,
+      city:         data.homeCity ?? data.city ?? null,
+      state:        data.homeState ?? data.state ?? null,
+      home_city:    data.homeCity ?? data.city ?? null,
+      home_state:   data.homeState ?? data.state ?? null,
+      categories:   data.categories ?? [],
+      brands:       data.brands ?? null,
+      coverage_states: data.coverageStates ?? [],
+      coverage_cities: data.coverageCities ?? [],
+      covers_nationally: data.coversNationally ?? false,
       whatsapp:     data.whatsapp ?? null,
       email:        data.email ?? null,
       bio:          data.bio ?? null,
       photo_url:    data.photoUrl ?? null,
     };
 
-    const { error } = await withTimeout(
-      supabase.from('representatives').insert(payload),
+    const enrichedColumns = [
+      'categories', 'brands', 'coverage_states', 'coverage_cities',
+      'covers_nationally', 'home_city', 'home_state',
+    ];
+
+    let result = await withTimeout(
+      supabase.from('representatives').insert(fullPayload),
       12000,
       'Cadastrar representante',
     );
-    if (error) {
-      if (/representatives.*(does not exist|schema cache)/i.test(error.message)) {
+    if (result.error && isMissingDbColumnError(result.error, enrichedColumns)) {
+      result = await withTimeout(
+        supabase.from('representatives').insert(omitDbColumns(fullPayload, enrichedColumns)),
+        12000,
+        'Cadastrar representante',
+      );
+      if (!result.error) {
+        console.warn('Colunas novas de representante ausentes. Rode supabase/simplify_rep_profiles.sql.');
+      }
+    }
+    if (result.error) {
+      if (/representatives.*(does not exist|schema cache)/i.test(result.error.message)) {
         throw new Error('Tabela de representantes ainda não criada. Rode supabase/create_representatives_table.sql no Supabase.');
       }
-      throw new Error(error.message);
+      throw new Error(result.error.message);
     }
-    refreshData(); // background, não bloqueia
+    refreshData();
   };
 
   const updateRepresentative = async (
     id: string,
-    patch: Partial<Pick<Representative, 'name' | 'specialty' | 'region' | 'city' | 'state' | 'whatsapp' | 'email' | 'bio' | 'photoUrl'>>,
+    patch: Partial<Omit<Representative, 'id' | 'createdAt' | 'companyId'>>,
   ) => {
     if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem editar representantes.');
     assertSupabaseConfigured();
 
-    const payload: Record<string, string | null> = {};
+    const payload: Record<string, unknown> = {};
     if (patch.name !== undefined) payload.name = patch.name;
     if (patch.specialty !== undefined) payload.specialty = patch.specialty ?? null;
     if (patch.region !== undefined) payload.region = patch.region ?? null;
     if (patch.city !== undefined) payload.city = patch.city ?? null;
     if (patch.state !== undefined) payload.state = patch.state ?? null;
+    if (patch.homeCity !== undefined) {
+      payload.home_city = patch.homeCity ?? null;
+      payload.city = patch.homeCity ?? null;
+    }
+    if (patch.homeState !== undefined) {
+      payload.home_state = patch.homeState ?? null;
+      payload.state = patch.homeState ?? null;
+    }
+    if (patch.categories !== undefined) payload.categories = patch.categories ?? [];
+    if (patch.brands !== undefined) payload.brands = patch.brands ?? null;
+    if (patch.coverageStates !== undefined) payload.coverage_states = patch.coverageStates ?? [];
+    if (patch.coverageCities !== undefined) payload.coverage_cities = patch.coverageCities ?? [];
+    if (patch.coversNationally !== undefined) payload.covers_nationally = patch.coversNationally ?? false;
     if (patch.whatsapp !== undefined) payload.whatsapp = patch.whatsapp ?? null;
     if (patch.email !== undefined) payload.email = patch.email ?? null;
     if (patch.bio !== undefined) payload.bio = patch.bio ?? null;
     if (patch.photoUrl !== undefined) payload.photo_url = patch.photoUrl ?? null;
+    if (patch.companyName !== undefined) payload.company_name = patch.companyName;
 
     if (Object.keys(payload).length === 0) return;
 
-    const { error } = await withTimeout(
+    const enrichedColumns = [
+      'categories', 'brands', 'coverage_states', 'coverage_cities',
+      'covers_nationally', 'home_city', 'home_state',
+    ];
+
+    let result = await withTimeout(
       supabase.from('representatives').update(payload).eq('id', id).eq('company_id', user.id),
       12000,
       'Atualizar representante',
     );
-    if (error) throw new Error(error.message);
+    if (result.error && isMissingDbColumnError(result.error, enrichedColumns)) {
+      const fallback = omitDbColumns(payload, enrichedColumns);
+      if (Object.keys(fallback).length === 0) {
+        throw new Error('Rode supabase/simplify_rep_profiles.sql no Supabase para salvar categorias e regiões.');
+      }
+      result = await withTimeout(
+        supabase.from('representatives').update(fallback).eq('id', id).eq('company_id', user.id),
+        12000,
+        'Atualizar representante',
+      );
+    }
+    if (result.error) throw new Error(result.error.message);
 
     setRepresentatives(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
     await refreshData();
