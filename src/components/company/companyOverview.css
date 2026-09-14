@@ -1,4 +1,4 @@
-.company-overview { --co-accent: #FF4F00; --co-line: #dedee2; color: #19191b; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 22px; border: 1px solid var(--co-line); }
+.company-overview { --co-accent: #FF4F00; --co-line: #dedee2; color: #19191b; background: #fff; font-family: var(--font-sans); padding: 22px; border: 1px solid var(--co-line); }
 .company-overview * { box-sizing: border-box; }
 .company-overview button, .company-overview select, .company-overview a { font: inherit; }
 .company-overview button { cursor: pointer; }

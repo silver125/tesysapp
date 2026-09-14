@@ -31,9 +31,10 @@
   --danger:      var(--rh-color-status-danger-on-light);
   --whats:       #25D366;
 
-  --font-sans:   var(--rh-font-family-body-text), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: var(--rh-font-family-heading), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono:   var(--rh-font-family-code), "JetBrains Mono", ui-monospace, monospace;
+  /* One sans-serif family for headings, body text and interface labels. */
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: var(--font-sans);
 
   --text-xs:     var(--rh-font-size-body-text-xs);
   --text-sm:     var(--rh-font-size-body-text-sm);
