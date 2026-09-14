@@ -1,0 +1,33 @@
+.doctor-overview .co-header h1 { font-size: clamp(32px, 5vw, 46px); }
+.doctor-overview .co-section { min-width: 0; }
+.doctor-overview .co-caption { margin-bottom: 14px; }
+.doctor-overview #pending-connections { margin-top: 18px; scroll-margin-top: 90px; }
+.do-approved { margin-top: 24px; scroll-margin-top: 90px; }
+.do-approved h3 { font-size: 15px; margin-bottom: 12px; }
+.do-approved .co-event { grid-template-columns: minmax(0, 1fr) 16px; }
+.do-opportunity { display: block; width: 100%; text-align: left; color: #19191b; background: #F7F7F8; padding: 18px; margin: 14px 0; border: 1px solid var(--co-line); }
+.do-opportunity > span { font-size: 11px; color: #a83200; }
+.do-opportunity h3 { font-size: 19px; margin: 10px 0; overflow-wrap: anywhere; }
+.do-opportunity p { font-size: 13px; line-height: 1.6; color: #62626b; margin-bottom: 16px; }
+.doctor-overview .tessy-explore-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.doctor-overview .tessy-explore-tile { border-radius: 0; box-shadow: none; background: #fff; border: 1px solid var(--co-line); }
+.doctor-overview .tessy-section-eyebrow { margin: 22px 0 12px; }
+.doctor-overview .tessy-pending-quiet { font-family: var(--font-sans); font-size: 13px; color: #62626b; }
+.doctor-overview .tessy-panel { box-shadow: none; border-radius: 0; }
+@media (min-width: 900px) {
+  .doctor-overview .do-network { grid-column: 1 / -1; }
+  .doctor-overview .do-requests { grid-column: 1; }
+  .doctor-overview .do-opportunities { grid-column: 2; }
+  .doctor-overview .do-discover { grid-column: 1; }
+  .doctor-overview .do-profile { grid-column: 2; }
+}
+.do-request-card { background: #F7F7F8; border: 1px solid #dedee2; border-left: 3px solid #FF4F00; padding: 18px; color: #19191b; font-family: var(--font-sans); }
+.do-request-card h3 { font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.do-request-card p { font-size: 13px; line-height: 1.6; color: #62626b; margin: 10px 0; }
+.do-request-card button { font: inherit; font-size: 12px; font-weight: 600; border: 0; background: #FF4F00; color: #fff; padding: 12px 14px; min-height: 44px; cursor: pointer; }
+.do-request-card button:disabled { opacity: .6; cursor: wait; }
+.do-request-card button:focus-visible { outline: 3px solid #002FA7; outline-offset: 3px; }
+.do-points h3 { font-size: 15px; }
+.do-points progress { margin: 10px 0; }
+.do-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.do-badges span { border: 1px solid var(--co-line); padding: 6px 8px; font-size: 11px; }

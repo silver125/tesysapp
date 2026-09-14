@@ -1,3 +1,5 @@
+import '../../components/company/companyOverview.css';
+import './doctorOverview.css';
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardTab } from '../../hooks/useDashboardTab';
@@ -254,7 +256,7 @@ function doctorMetaLine(user: User | null | undefined) {
 
 export default function DoctorDashboard() {
   const { user, events, products, courses, leads, locations, representatives: registeredReps, refreshData } = useAuth();
-  const [tab, setTab] = useDashboardTab<Tab>('representatives', [
+  const [tab, setTab] = useDashboardTab<Tab>('home', [
     'home', 'products', 'events', 'representatives', 'companies',
   ] as const);
   const [search, setSearch] = useState('');
@@ -376,7 +378,8 @@ export default function DoctorDashboard() {
   const platformEmpty = products.length === 0 && events.length === 0 && courses.length === 0;
   const homeQuiet = homeFeed.length === 0 && !bestOpportunity;
 
-  const pendingConnections = leads.filter(lead => lead.connectionStatus === 'requested');
+  const doctorLeads = leads.filter(lead => lead.doctorId === user?.id);
+  const pendingConnections = doctorLeads.filter(lead => lead.connectionStatus === 'requested');
 
   function scrollToPendingConnections() {
     document.getElementById('pending-connections')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -413,6 +416,7 @@ export default function DoctorDashboard() {
 
   return (
     <Layout
+      wide={tab === 'home'}
       navItems={NAV_ITEMS}
       activeKey={tab}
       onNavChange={goTab}
@@ -420,88 +424,63 @@ export default function DoctorDashboard() {
       onNotificationClick={scrollToPendingConnections}
     >
 
-      <PendingConnectionsInbox leads={pendingConnections} />
+      {tab !== 'home' && <PendingConnectionsInbox leads={pendingConnections} />}
 
       {/* ── HOME ── */}
       {tab === 'home' && (
-        <div>
-          <HomeGreeting user={user} />
+        <div className="company-overview doctor-overview">
+          <header className="co-header">
+            <HomeGreeting user={user} />
+            <div className="co-actions">
+              <button className="co-primary" onClick={() => openTab('representatives')}>Encontrar representantes ↗</button>
+              <button onClick={() => openTab('companies')}>Explorar empresas</button>
+            </div>
+          </header>
 
-          {user?.id && <FirstVisitTip userId={user.id} role="medico" />}
+          <section className="co-section do-network" aria-labelledby="do-network-title">
+            <div className="co-section-heading"><h2 id="do-network-title">Sua rede, no seu ritmo</h2><button className="co-text-button" onClick={openProfileSettings}>Editar perfil →</button></div>
+            <p className="co-caption">Você escolhe com quais empresas quer conversar.</p>
+            <div className="co-stages">
+              <button className="co-stage" onClick={scrollToPendingConnections}><span className="co-stage-index" aria-hidden="true">01</span><strong>{pendingConnections.length}</strong><span className="co-stage-label">Solicitações pendentes</span><small>Revise antes de liberar contato</small></button>
+              <button className="co-stage" onClick={() => document.getElementById('doctor-connections')?.scrollIntoView({ behavior: 'smooth' })}><span className="co-stage-index" aria-hidden="true">02</span><strong>{countApprovedConnections(doctorLeads)}</strong><span className="co-stage-label">Conexões aprovadas</span><small>Empresas que você autorizou</small></button>
+              <button className="co-stage" onClick={() => openTab('events')}><span className="co-stage-index" aria-hidden="true">03</span><strong>{upcomingEvents.length}</strong><span className="co-stage-label">Próximos eventos</span><small>Explore encontros disponíveis</small></button>
+            </div>
+          </section>
 
-          <DoctorPointsBar
-            points={user?.points ?? 0}
-            connections={countApprovedConnections(leads)}
-          />
+          <section className="co-section do-requests" aria-labelledby="do-requests-title">
+            <div className="co-section-heading"><h2 id="do-requests-title">Empresas querem se conectar</h2></div>
+            <p className="co-caption">Ao aprovar uma solicitação, você permite que a empresa entre em contato pelo WhatsApp.</p>
+            <PendingConnectionsInbox leads={pendingConnections} />
+            {!user?.whatsapp && <SlimProfileBanner onFix={openProfileSettings} />}
+            <div id="doctor-connections" className="do-approved">
+              <h3>Conexões aprovadas</h3>
+              {doctorLeads.some(lead => lead.connectionStatus === 'approved') ? doctorLeads.filter(lead => lead.connectionStatus === 'approved').map(lead => (
+                <button className="co-event" key={lead.id} onClick={() => openTab('companies', lead.companyName)}><span><strong>{lead.companyName}</strong><small>{lead.itemName}</small></span><span aria-hidden="true">↗</span></button>
+              )) : <p className="co-caption">As empresas que você autorizar aparecerão aqui.</p>}
+            </div>
+          </section>
 
-          {bestOpportunity && (
-            <button type="button" className="tessy-opp-card" onClick={() => openOpportunity(bestOpportunity)}>
-              <div className="tessy-opp-card__kicker">Sua melhor oportunidade hoje</div>
-              <div className="tessy-opp-card__title">{bestOpportunity.companyName}</div>
-              <p className="tessy-opp-card__reason">{bestOpportunity.sentence}</p>
-              <div className="tessy-opp-card__cta">Ver oportunidade</div>
-            </button>
-          )}
-
-
-
-          {!user?.whatsapp && (
-            <SlimProfileBanner onFix={openProfileSettings} />
-          )}
-
-          {!platformEmpty && (
+          <section className="co-section do-opportunities" aria-labelledby="do-opportunities-title">
+            <div className="co-section-heading"><h2 id="do-opportunities-title">Oportunidades para você</h2><button className="co-text-button" onClick={() => openTab('products')}>Ver produtos →</button></div>
+            <p className="co-caption">Sugestões a partir da sua especialidade e dos interesses do seu perfil.</p>
+            {[bestOpportunity, nextOpportunity].filter((item): item is DoctorOpportunity => Boolean(item)).map(item => (
+              <button key={item.id} className="do-opportunity" onClick={() => openOpportunity(item)}><span>{item.kind === 'event' ? 'Evento' : item.kind === 'product' ? 'Produto' : item.kind === 'rep' ? 'Representante' : 'Empresa'}</span><h3>{item.companyName}</h3><p>{item.sentence}</p><span>Ver oportunidade →</span></button>
+            ))}
+            {homeQuiet && <div className="co-empty"><h3>{platformEmpty ? 'Novas oportunidades aparecerão aqui.' : 'Explore novas conexões.'}</h3><p>{platformEmpty ? 'Complete seu perfil para receber sugestões quando as empresas publicarem.' : 'Ajuste seus interesses ou explore as empresas da Tessy.'}</p><button onClick={openProfileSettings}>Ajustar interesses</button></div>}
             <HomeExploreNav counts={marketplaceCounts} onNavigate={openTab} />
-          )}
+          </section>
 
-          {nextOpportunity && (
-            <button type="button" className="tessy-opp-card tessy-opp-card--secondary" onClick={() => openOpportunity(nextOpportunity)}>
-              <div className="tessy-opp-card__kicker">Também pode interessar</div>
-              <div className="tessy-opp-card__title">{nextOpportunity.companyName}</div>
-              <p className="tessy-opp-card__reason">{nextOpportunity.sentence}</p>
-            </button>
-          )}
+          <section className="co-section do-discover" aria-labelledby="do-discover-title">
+            <div className="co-section-heading"><h2 id="do-discover-title">Destaques da vitrine</h2><button className="co-text-button" onClick={() => openTab('products')}>Explorar →</button></div>
+            {homeFeed.length > 0 ? <HomeCarousel>{homeFeed.map(item => <HomeFeedCard key={homeFeedKey(item)} item={item} onOpenProduct={setOpenProduct} onOpenEvent={setOpenEvent} onOpenCourse={setOpenCourse} onOpenRepresentatives={name => openTab('representatives', name)} />)}</HomeCarousel> : <p className="co-caption">Ainda não há destaques disponíveis. Volte para acompanhar novas publicações.</p>}
+          </section>
 
-          {homeFeed.length > 0 && (
-            <section style={{ marginBottom: 22 }}>
-              <SectionHeader
-                title="Destaques"
-                onSeeAll={() => openTab(homeFeed[0]?.kind === 'event' || homeFeed[0]?.kind === 'course' ? 'events' : 'products')}
-              />
-              <HomeCarousel>
-                {homeFeed.map(item => (
-                  <HomeFeedCard
-                    key={homeFeedKey(item)}
-                    item={item}
-                    onOpenProduct={setOpenProduct}
-                    onOpenEvent={setOpenEvent}
-                    onOpenCourse={setOpenCourse}
-                    onOpenRepresentatives={(name) => openTab('representatives', name)}
-                  />
-                ))}
-              </HomeCarousel>
-            </section>
-          )}
-
-          {homeQuiet && (
-            platformEmpty ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Empty
-                  text="A vitrine ainda está sendo montada"
-                  hint="Empresas estão entrando na Tessy. Complete seu perfil para receber sugestões melhores quando novos anúncios chegarem."
-                  actionLabel="Completar perfil"
-                  onAction={openProfileSettings}
-                />
-                <InviteShareCard target="empresa" />
-              </div>
-            ) : (
-              <Empty
-                text="Nenhuma sugestão para seu perfil agora"
-                hint="Explore Produtos, Eventos ou Representantes — ou ajuste seus interesses."
-                actionLabel="Ajustar interesses"
-                onAction={openProfileSettings}
-              />
-            )
-          )}
+          <section className="co-section do-profile" aria-labelledby="do-profile-title">
+            <div className="co-section-heading"><h2 id="do-profile-title">Seu perfil na Tessy</h2><button className="co-text-button" onClick={openProfileSettings}>Atualizar →</button></div>
+            <DoctorPointsBar points={user?.points ?? 0} connections={countApprovedConnections(doctorLeads)} />
+            {user?.id && <FirstVisitTip userId={user.id} role="medico" />}
+            <InviteShareCard target="empresa" />
+          </section>
         </div>
       )}
 
@@ -629,13 +608,11 @@ function productCategoryChips(products: Product[]): [string, string][] {
 }
 
 function HomeGreeting({ user }: { user: User | null | undefined }) {
-  return (
-    <section className="tessy-home-hero tessy-home-hero--soft">
-      <div className="tessy-home-hero__eyebrow">Vitrine médica</div>
-      <h1 className="tessy-home-hero__title">{doctorGreeting(user)}</h1>
-      <p className="tessy-home-hero__sub">{doctorMetaLine(user)}</p>
-    </section>
-  );
+  return <>
+    <span className="co-eyebrow">{doctorGreeting(user)} / Painel do médico</span>
+    <h1>Boas oportunidades.<br /><span>Conexões que importam.</span></h1>
+    <p>{doctorMetaLine(user)}. Encontre empresas, conheça novidades e escolha com quem conversar.</p>
+  </>;
 }
 
 function DoctorPointsBar({
@@ -649,94 +626,13 @@ function DoctorPointsBar({
   const badges = getBadges(connections, points);
   const unlockedBadges = badges.filter(b => b.unlocked);
 
-  return (
-    <section style={{ marginBottom: 16 }}>
-      <div className="tessy-panel" style={{ padding: '14px 14px 13px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            background: 'linear-gradient(145deg, rgba(245,130,32,0.18), rgba(255,176,96,0.28))',
-            border: '1px solid rgba(245,130,32,0.18)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: 'var(--font-heading)',
-            fontSize: 18,
-            fontWeight: 600,
-            color: 'var(--accent)',
-            flexShrink: 0,
-            boxShadow: '0 8px 18px rgba(245,130,32,0.12)',
-          }}>
-            {progress.level.index + 1}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--accent-ink)' }}>
-                Nível {progress.level.index + 1} · {progress.level.name}
-              </div>
-              <button
-                type="button"
-                onClick={openHelp}
-                aria-label="Como funcionam os pontos"
-                style={{
-                  border: 'none',
-                  background: 'rgba(74,168,255,0.10)',
-                  color: 'var(--accent-ink)',
-                  borderRadius: 8,
-                  width: 26,
-                  height: 26,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              >
-                ?
-              </button>
-            </div>
-            <div style={{ marginTop: 3, display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)' }}>
-              <span>{connections} {connections === 1 ? 'conexão aprovada' : 'conexões aprovadas'}</span>
-              <span>{progress.points} pts</span>
-            </div>
-            <p style={{ marginTop: 6, fontSize: 11.5, lineHeight: 1.35, color: 'var(--muted)' }}>
-              Ganhe pontos ao avisar interesse. Conexões aprovadas valem +{POINTS_PER_CONNECTION}.
-            </p>
-          </div>
-        </div>
-        {unlockedBadges.length > 0 && (
-          <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {unlockedBadges.map(badge => (
-              <span
-                key={badge.id}
-                title={badge.description}
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: 999,
-                  background: 'rgba(245,130,32,0.08)',
-                  border: '1px solid rgba(245,130,32,0.14)',
-                  fontSize: 11,
-                  color: 'var(--accent-ink)',
-                }}
-              >
-                {badge.icon} {badge.label}
-              </span>
-            ))}
-          </div>
-        )}
-        <div style={{ marginTop: 12, height: 6, borderRadius: 999, background: 'var(--chip)', overflow: 'hidden' }}>
-          <div style={{
-            height: '100%',
-            borderRadius: 999,
-            width: `${progress.percent}%`,
-            background: 'var(--brand-gradient)',
-            boxShadow: '0 0 12px rgba(245,130,32,0.35)',
-          }} />
-        </div>
-      </div>
-    </section>
-  );
+  return <div className="do-points">
+    <div className="co-section-heading"><h3>Nível {progress.level.index + 1} · {progress.level.name}</h3><button className="co-text-button" onClick={openHelp} aria-label="Como funcionam os pontos">Sobre os pontos →</button></div>
+    <div className="co-metrics"><div><strong>{progress.points}</strong><span>Pontos acumulados</span></div><div><strong>{connections}</strong><span>Conexões aprovadas</span></div></div>
+    <progress aria-label="Progresso para o próximo nível" value={progress.percent} max={100} />
+    <p className="co-caption">{progress.isMax ? 'Você alcançou o último nível.' : `${progress.pointsForNextLevel} pontos para o próximo nível.`} Conexões aprovadas valem +{POINTS_PER_CONNECTION} pontos.</p>
+    {unlockedBadges.length > 0 && <div className="do-badges">{unlockedBadges.map(badge => <span key={badge.id} title={badge.description}>{badge.label}</span>)}</div>}
+  </div>;
 }
 
 function HomeCarousel({ children }: { children: ReactNode }) {
@@ -1178,67 +1074,13 @@ function PendingInboxBanner({
     }
   }
 
-  return (
-    <div style={{
-      padding: 14,
-      borderRadius: 18,
-      background: 'linear-gradient(135deg, #F58220 0%, #FF9A4D 100%)',
-      color: '#fff',
-      boxShadow: '0 14px 34px rgba(245,130,32,0.28)',
-      outline: '3px solid rgba(245,130,32,0.22)',
-    }}>
-        <Mono style={{ fontSize: 9, color: 'rgba(255,255,255,0.82)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-          Ação rápida
-        </Mono>
-        <div style={{ marginTop: 6, fontSize: 16, fontWeight: 620, lineHeight: 1.2 }}>
-          {lead.companyName} quer falar com você
-        </div>
-        <p style={{ marginTop: 4, fontSize: 12.5, lineHeight: 1.35, color: 'rgba(255,255,255,0.92)' }}>
-          Sobre: {lead.itemName || 'oportunidade comercial'}. Ao aprovar, a empresa poderá falar com você no WhatsApp.
-        </p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => { void approveNow(); }}
-            style={{
-              flex: 1,
-              minHeight: 42,
-              borderRadius: 12,
-              border: 'none',
-              background: '#fff',
-              color: 'var(--accent)',
-              fontSize: 13,
-              fontWeight: 650,
-              cursor: busy ? 'not-allowed' : 'pointer',
-              opacity: busy ? 0.75 : 1,
-            }}
-          >
-            {busy ? 'Aprovando…' : user?.whatsapp ? 'Aprovar e liberar WhatsApp' : 'Cadastrar WhatsApp'}
-          </button>
-          {total > 1 && onSeeAll && (
-            <button
-              type="button"
-              onClick={onSeeAll}
-              style={{
-                minHeight: 42,
-                padding: '0 12px',
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.35)',
-                background: 'rgba(255,255,255,0.12)',
-                color: '#fff',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              +{total - 1}
-            </button>
-          )}
-        </div>
-        {error && <p style={{ marginTop: 8, fontSize: 11.5, color: '#fff' }}>{error}</p>}
-      </div>
-  );
+  return <article className="do-request-card">
+    <h3>{lead.companyName} quer falar com você</h3>
+    <p>Sobre: {lead.itemName || 'oportunidade comercial'}. Ao aprovar, a empresa poderá falar com você no WhatsApp.</p>
+    <button type="button" disabled={busy} onClick={() => void approveNow()}>{busy ? 'Aprovando…' : user?.whatsapp ? 'Aprovar e liberar WhatsApp' : 'Cadastrar WhatsApp'}</button>
+    {total > 1 && <button type="button" onClick={onSeeAll}>Ver outras {total - 1} solicitações</button>}
+    {error && <p role="alert">{error}</p>}
+  </article>;
 }
 
 function SlimProfileBanner({ onFix }: { onFix: () => void }) {
@@ -2021,27 +1863,6 @@ function CourseCard({ course }: { course: Course }) {
 }
 
 /* ─── Shared ─── */
-function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-      <span style={{
-        fontFamily: 'var(--font-heading)',
-        fontSize: 18,
-        fontWeight: 600,
-        color: 'var(--accent-ink)',
-        letterSpacing: '-0.02em',
-      }}>
-        {title}
-      </span>
-      {onSeeAll && (
-        <button type="button" className="tessy-section-link" onClick={onSeeAll}>
-          Ver todas
-        </button>
-      )}
-    </div>
-  );
-}
-
 function GlobalSearchSheet({
   open,
   query,
