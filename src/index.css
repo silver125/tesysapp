@@ -55,9 +55,9 @@
 
   --ease:        cubic-bezier(0.22, 1, 0.36, 1);
 
-  --app-gutter:        clamp(12px, 3.2vw, var(--rh-space-lg));
+  --app-gutter:        clamp(12px, 3.2vw, var(--rh-space-lg, 16px));
   --app-header-pad-y:  var(--rh-space-sm);
-  --app-main-pad-top:  var(--rh-space-lg);
+  --app-main-pad-top:  var(--rh-space-lg, 16px);
   /* Nav ~64px + home indicator + safe area — evita conteúdo cortado no iPhone */
   --app-main-pad-bottom: calc(118px + env(safe-area-inset-bottom, 0px));
   --app-title-size:    var(--rh-font-size-heading-xs);
@@ -1357,3 +1357,11 @@ button.tessy-stat-card:active {
   .tessy-representative-filters { grid-template-columns: minmax(0, 1fr); }
   .tessy-app-brand__dot { display: none; }
 }
+
+/* Keep publication controls above the mobile navigation, even on long forms. */
+.tessy-publish-wizard { padding-bottom: 92px; scroll-margin-top: 80px; }
+.tessy-publish-actions { position: fixed; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: min(480px, 100%); padding: 12px; display: flex; gap: 10px; z-index: 21; background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -4px 16px rgba(30,36,51,.06); }
+.tessy-publish-error { scroll-margin-block: 100px 180px; }
+.tessy-publish-actions button:focus-visible { outline: 3px solid #002FA7; outline-offset: 2px; }
+.tessy-publish-success { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; margin-bottom: 16px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--accent); font-size: 14px; }
+.tessy-publish-success button { background: none; border: 0; padding: 8px; cursor: pointer; font-size: 20px; }

@@ -1,6 +1,7 @@
+import { createPortal } from 'react-dom';
 import { groupCompanyContacts } from '../../lib/leadConnections';
 import { BRAZIL_STATES } from '../../lib/representatives';
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, useId, type Dispatch, type SetStateAction } from 'react';
 import { useDashboardTab } from '../../hooks/useDashboardTab';
 import { companyNavActiveKey } from '../../lib/companyNavActiveKey';
 import Layout, { type NavItem } from '../../components/Layout';
@@ -370,6 +371,7 @@ export default function CompanyDashboard() {
   const [openProductId, setOpenProductId] = useState<string | null>(null);
   const [openCourseId, setOpenCourseId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
+  const [publishNotice, setPublishNotice] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const companyLeads = (leads ?? []).filter(l => l.companyId === user?.id);
@@ -420,12 +422,14 @@ export default function CompanyDashboard() {
   }
 
   function openPublishChooser() {
+    setPublishNotice('');
     setCreateSkipType(false);
     setCreateAsPartnership(false);
     setTab('create');
   }
 
   function openCreate(target: 'event' | 'product' | 'course' | 'location' | 'representative' | 'partnership') {
+    setPublishNotice('');
     if (target === 'location') { setTab('locations'); return; }
     if (target === 'representative') { setTab('representatives'); return; }
     if (target === 'partnership') {
@@ -487,6 +491,8 @@ export default function CompanyDashboard() {
       notificationCount={newLeadsCount}
       onNotificationClick={goToLeadsTab}
     >
+
+      {publishNotice && <div role="status" className="tessy-publish-success"><span>{publishNotice}</span><button type="button" aria-label="Fechar confirmação" onClick={() => setPublishNotice('')}>×</button></div>}
 
       {/* ── HOME ── */}
       {tab === 'home' && (
@@ -555,6 +561,7 @@ export default function CompanyDashboard() {
         <Breadcrumb items={['início', 'eventos']} />
         <ListTab
           title="Meus eventos"
+          createLabel="Publicar evento"
           onAdd={() => openCreate('event')}
           empty={myEvents.length === 0}
           emptyText="Nenhum evento publicado"
@@ -580,6 +587,7 @@ export default function CompanyDashboard() {
         <Breadcrumb items={['início', 'produtos']} />
         <ListTab
           title="Produtos e parcerias"
+          createLabel="Publicar produto"
           onAdd={() => openCreate('product')}
           empty={myProducts.length === 0}
           emptyText="Nenhum produto ou parceria publicado"
@@ -598,6 +606,7 @@ export default function CompanyDashboard() {
         <Breadcrumb items={['início', 'workshops']} />
         <ListTab
           title="Minhas capacitações"
+          createLabel="Publicar workshop"
           onAdd={() => openCreate('course')}
           empty={myCourses.length === 0}
           emptyText="Nenhum workshop publicado"
@@ -645,15 +654,15 @@ export default function CompanyDashboard() {
       {/* ── CREATE WIZARD ── */}
       {tab === 'create' && (
         <CreateWizard
-          key={`${createKind}-${createAsPartnership ? 'partnership' : 'standard'}-${createSkipType ? 'direct' : 'menu'}`}
+          key={createSkipType ? `${createKind}-${createAsPartnership ? 'partnership' : 'standard'}-direct` : 'menu'}
           kind={createKind}
           setKind={setCreateKind}
           skipTypeStep={createSkipType}
           initialPartnership={createAsPartnership}
           company={companyInfo}
-          onSaveEvent={async data => { await addEvent(data); setCreateSkipType(false); setCreateAsPartnership(false); setTab('listings'); }}
-          onSaveProduct={async data => { await addProduct(data); setCreateSkipType(false); setCreateAsPartnership(false); setTab('listings'); }}
-          onSaveCourse={async data => { await addCourse(data); setCreateSkipType(false); setCreateAsPartnership(false); setTab('listings'); }}
+          onSaveEvent={async data => { await addEvent(data); setPublishNotice('Evento publicado com sucesso.'); setCreateSkipType(false); setCreateAsPartnership(false); setTab('listings'); }}
+          onSaveProduct={async data => { await addProduct(data); setPublishNotice('Anúncio publicado com sucesso.'); setCreateSkipType(false); setCreateAsPartnership(false); setTab('listings'); }}
+          onSaveCourse={async data => { await addCourse(data); setPublishNotice('Workshop publicado com sucesso.'); setCreateSkipType(false); setCreateAsPartnership(false); setTab('listings'); }}
           onCancel={() => { setCreateSkipType(false); setCreateAsPartnership(false); setTab('home'); }}
         />
       )}
@@ -767,6 +776,8 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
     initialPartnership ? 'partnership' : kind,
   );
   const [saving, setSaving] = useState(false);
+  const wizardRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const [saveError, setSaveError] = useState('');
 
   // Event state
@@ -800,6 +811,14 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
   });
   const [coImage, setCoImage] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' });
 
+  useEffect(() => {
+    wizardRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+  }, [step]);
+
+  useEffect(() => {
+    if (saveError) errorRef.current?.focus();
+  }, [saveError]);
+
   const isPartnership = selectedChoice === 'partnership';
 
   const totalSteps = skipTypeStep ? 1 : 2;
@@ -813,6 +832,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
       if (!ev.title.trim()) return 'Informe o título do evento.';
       if (!ev.date) return 'Selecione a data do evento.';
       if (!isEventDateInAllowedRange(ev.date)) return 'Selecione uma data entre 2026 e 2030.';
+      if (!Number.isInteger(Number(ev.maxParticipants)) || Number(ev.maxParticipants) < 1) return 'Informe um número inteiro de vagas maior que zero.';
       if (!ev.location.trim()) return 'Informe o local do evento.';
     }
     if (kind === 'product') {
@@ -832,17 +852,11 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
       if (!co.title.trim()) return 'Informe o título da capacitação.';
       if (!co.instructor.trim()) return 'Informe o nome do instrutor.';
       if (!co.date) return 'Selecione a data.';
+      if (!isEventDateInAllowedRange(co.date)) return 'Selecione uma data entre 2026 e 2030.';
       if (!co.location.trim()) return 'Informe o local ou cidade.';
       if (!co.duration.trim()) return 'Informe a duração da capacitação.';
     }
     return '';
-  }
-
-  function handleNext() {
-    const err = validate();
-    if (err) { setSaveError(err); return; }
-    setSaveError('');
-    setStep(s => s + 1);
   }
 
   function setImageDraft(
@@ -867,8 +881,9 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
   }
 
   async function handleFinish() {
+    if (saving || step !== 1) return;
     const err = validate();
-    if (err) { setSaveError(err); return; }
+    if (err) { setSaveError(err); errorRef.current?.focus(); return; }
     setSaveError('');
     setSaving(true);
     try {
@@ -876,7 +891,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
         const imageUrl = await uploadOpportunityImageRequired(evImage.file, company.id, 'events');
         await onSaveEvent({
           ...ev,
-          maxParticipants: Number(ev.maxParticipants) || 100,
+          maxParticipants: Number(ev.maxParticipants),
           website: normalizeUrl(ev.website),
           imageUrl,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
@@ -910,10 +925,10 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
   }
 
   return (
-    <div>
+    <div ref={wizardRef} className="tessy-publish-wizard">
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <button onClick={onCancel} style={{
+        <button aria-label="Cancelar publicação" disabled={saving} onClick={onCancel} style={{
           width: 40, height: 40, borderRadius: 12, border: '1px solid var(--line)',
           background: 'var(--card)', cursor: 'pointer', color: 'var(--ink)', fontSize: 18,
         }}>×</button>
@@ -939,7 +954,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
             O que você quer criar<span style={{ color: 'var(--accent)' }}>?</span>
           </h2>
           <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24 }}>
-            Médicos verão no app deles imediatamente.
+            Escolha o tipo de oportunidade que deseja publicar.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
@@ -996,7 +1011,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
             Publicar evento<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
-            Foto + dados essenciais. Médicos veem na vitrine em segundos.
+            Adicione uma foto de capa e preencha os dados do evento para publicar.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <ImageUploadField
@@ -1098,7 +1113,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
 
       {/* Validation / save error */}
       {saveError && (
-        <div style={{
+        <div ref={errorRef} role="alert" tabIndex={-1} className="tessy-publish-error" style={{
           marginTop: 16, padding: '12px 14px', borderRadius: 10,
           background: 'rgba(242,92,84,0.1)', border: '1px solid rgba(242,92,84,0.3)',
           color: '#F25C54', fontSize: 13,
@@ -1108,24 +1123,14 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
       )}
 
       {/* Nav buttons */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+      {step === 1 && createPortal(<div className="tessy-publish-actions">
         {step > 0 && !skipTypeStep && (
-          <button onClick={() => { setSaveError(''); setStep(s => s - 1); }} disabled={saving} style={{
+          <button aria-label="Voltar para tipos de anúncio" onClick={() => { setSaveError(''); setStep(s => s - 1); }} disabled={saving} style={{
             width: 52, height: 52, borderRadius: 14, border: '1px solid var(--line)',
             background: 'var(--card)', cursor: saving ? 'not-allowed' : 'pointer',
             color: 'var(--ink)', fontSize: 20, opacity: saving ? 0.5 : 1,
           }}>←</button>
         )}
-        {step < totalSteps - 1 ? (
-          <button onClick={handleNext} style={{
-            flex: 1, height: 52, borderRadius: 14, border: 'none',
-            background: 'var(--accent)', color: '#fff', cursor: 'pointer',
-            fontSize: 15, fontWeight: 560,
-            boxShadow: '0 6px 24px rgba(245,130,32,0.32)',
-          }}>
-            Continuar →
-          </button>
-        ) : (
           <button onClick={handleFinish} disabled={saving} style={{
             flex: 1, height: 52, borderRadius: 14, border: 'none',
             background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
@@ -1135,17 +1140,17 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
           }}>
             {saving
               ? 'Publicando...'
-              : `Publicar ${isPartnership ? 'parceria' : kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'capacitação'} ✓`}
+              : `Publicar ${isPartnership ? 'parceria' : kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'} ✓`}
           </button>
-        )}
-      </div>
+      </div>, document.body)}
     </div>
   );
 }
 
 /* ─── List tab wrapper ─── */
-function ListTab({ title, onAdd, empty, emptyText, emptyHint, emptyActionLabel, grid = false, children }: {
+function ListTab({ title, createLabel = '+ Novo', onAdd, empty, emptyText, emptyHint, emptyActionLabel, grid = false, children }: {
   title: string;
+  createLabel?: string;
   onAdd: () => void;
   empty: boolean;
   emptyText: string;
@@ -1156,14 +1161,14 @@ function ListTab({ title, onAdd, empty, emptyText, emptyHint, emptyActionLabel, 
 }) {
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
         <h1 style={{ fontSize: 22, fontWeight: 560, letterSpacing: 0 }}>
           {title}<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <button onClick={onAdd} style={{
           padding: '8px 16px', borderRadius: 10, border: 'none',
           background: 'var(--accent)', color: '#fff', fontWeight: 560, fontSize: 13, cursor: 'pointer',
-        }}>+ Novo</button>
+        }}>{createLabel}</button>
       </div>
       {empty
         ? (
@@ -2768,6 +2773,7 @@ function WField({ label, value, onChange, type = 'text', placeholder, as = 'inpu
   min?: string; max?: string;
   inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
 }) {
+  const fieldId = useId();
   const base = {
     width: '100%',
     padding: 'var(--rh-space-md) var(--rh-space-lg)',
@@ -2785,7 +2791,7 @@ function WField({ label, value, onChange, type = 'text', placeholder, as = 'inpu
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--rh-space-md)' }}>
-      <label style={{
+      <label htmlFor={fieldId} style={{
         fontFamily: 'var(--font-heading)',
         fontSize: 'var(--text-sm)',
         fontWeight: 'var(--rh-font-weight-heading-medium, 500)',
@@ -2795,10 +2801,10 @@ function WField({ label, value, onChange, type = 'text', placeholder, as = 'inpu
         {humanizeFieldLabel(label)}
       </label>
       {as === 'textarea'
-        ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...base, resize: 'vertical', minHeight: 96 }} onFocus={fieldFocus} onBlur={fieldBlur} />
+        ? <textarea id={fieldId} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...base, resize: 'vertical', minHeight: 96 }} onFocus={fieldFocus} onBlur={fieldBlur} />
         : as === 'select'
-          ? <select value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }} onFocus={fieldFocus} onBlur={fieldBlur}>{options?.map(o => <option key={o} value={o}>{o}</option>)}</select>
-          : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} min={min} max={max} inputMode={inputMode} style={base} onFocus={fieldFocus} onBlur={fieldBlur} />
+          ? <select id={fieldId} value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }} onFocus={fieldFocus} onBlur={fieldBlur}>{options?.map(o => <option key={o} value={o}>{o}</option>)}</select>
+          : <input id={fieldId} type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} min={min} max={max} inputMode={inputMode} style={base} onFocus={fieldFocus} onBlur={fieldBlur} />
       }
     </div>
   );
