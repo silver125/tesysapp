@@ -17,6 +17,7 @@ export interface NavItem {
 }
 
 interface LayoutProps {
+  wide?: boolean;
   children: ReactNode;
   navItems: NavItem[];
   activeKey: string;
@@ -25,7 +26,7 @@ interface LayoutProps {
   onNotificationClick?: () => void;
 }
 
-export default function Layout({ children, navItems, activeKey, onNavChange, notificationCount = 0, onNotificationClick }: LayoutProps) {
+export default function Layout({ children, navItems, activeKey, onNavChange, notificationCount = 0, onNotificationClick, wide = false }: LayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -60,7 +61,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
   } as const;
 
   return (
-    <div className="tessy-app-shell" style={{ color: 'var(--ink)' }}>
+    <div className={`tessy-app-shell${wide ? ' tessy-app-shell--wide' : ''}`} style={{ color: 'var(--ink)' }}>
       <header className="tessy-app-header">
         <div className="tessy-app-header-inner">
           <div className="tessy-app-brand">

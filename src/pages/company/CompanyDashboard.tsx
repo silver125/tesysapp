@@ -4,10 +4,8 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import { useDashboardTab } from '../../hooks/useDashboardTab';
 import { companyNavActiveKey } from '../../lib/companyNavActiveKey';
 import Layout, { type NavItem } from '../../components/Layout';
-import { openProfileSettings } from '../../lib/profileSettingsEvents';
-import CompanyAvatar from '../../components/CompanyAvatar';
-import FirstVisitTip from '../../components/FirstVisitTip';
-import InviteShareCard from '../../components/InviteShareCard';
+import CompanyOverview from '../../components/company/CompanyOverview';
+import { connectionStages, type ConnectionFilter } from '../../lib/companyConnections';
 import { useAuth } from '../../context/useAuth';
 import {
   Mono, Chip, ModalityBadge, WaIcon,
@@ -362,7 +360,7 @@ function CompanyStatCard({
 
 export default function CompanyDashboard() {
   const { user, events, products, courses, leads, locations, representatives, addEvent, addProduct, addCourse, addLocation, deleteLocation, addRepresentative, updateRepresentative, deleteRepresentative, deleteEvent, deleteProduct, deleteCourse, updateEvent, requestConnection } = useAuth();
-  const [tab, setTab] = useDashboardTab<Tab>('representatives', [
+  const [tab, setTab] = useDashboardTab<Tab>('home', [
     'home', 'listings', 'events', 'create', 'products', 'courses', 'leads', 'locations', 'representatives',
   ] as const);
   const [createKind, setCreateKind] = useState<'event' | 'product' | 'course'>('event');
@@ -396,20 +394,8 @@ export default function CompanyDashboard() {
   const myLeads = groupCompanyContacts(activeLeads);
   const [createSkipType, setCreateSkipType] = useState(false);
   const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
-  const activeOpportunities = myEvents.length + myProducts.length + myCourses.length;
-  const publishedItems = activeOpportunities + myLocations.length + myReps.length;
-  const conversationsStarted = myLeads.filter(lead => lead.connectionStatus === 'requested' || lead.connectionStatus === 'approved').length;
-  const suggestedDoctors = myLeads.slice(0, 4);
-  const newLeadsCount = myLeads.filter(lead => lead.connectionStatus === 'none').length;
-  const setupSteps = [
-    Boolean(user?.avatarUrl?.trim()),
-    Boolean(user?.whatsapp?.trim()),
-    activeOpportunities > 0,
-    myReps.length > 0 || myLocations.length > 0,
-  ];
-  const setupDone = setupSteps.filter(Boolean).length;
-  const setupTotal = setupSteps.length;
-  const setupComplete = setupDone === setupTotal;
+  const newLeadsCount = myLeads.filter(lead => (lead.connectionStatus ?? 'none') === 'none').length;
+  const [connectionFilter, setConnectionFilter] = useState<ConnectionFilter>('all');
 
   useEffect(() => {
     if (!deleteError) return;
@@ -418,10 +404,12 @@ export default function CompanyDashboard() {
   }, [deleteError]);
 
   function goToLeadsTab() {
+    setConnectionFilter('none');
     setTab('leads');
   }
 
   function goTab(k: string) {
+    if (k === 'leads') setConnectionFilter('all');
     if (k === 'create') {
       setCreateSkipType(false);
       setCreateAsPartnership(false);
@@ -492,6 +480,7 @@ export default function CompanyDashboard() {
   return (
     <>
     <Layout
+      wide={tab === 'home'}
       navItems={NAV_ITEMS}
       activeKey={companyNavActiveKey(tab)}
       onNavChange={goTab}
@@ -501,385 +490,21 @@ export default function CompanyDashboard() {
 
       {/* ── HOME ── */}
       {tab === 'home' && (
-        <div>
-          {/* Welcome hero */}
-          <div className="tessy-home-hero tessy-home-hero--soft">
-            <div className="tessy-home-hero__eyebrow">Vitrine comercial</div>
-            <div className="tessy-home-hero__title">
-              Sua marca na mão de médicos
-            </div>
-            <p className="tessy-home-hero__sub">
-              {activeOpportunities === 0
-                ? 'Publique um produto, parceria, evento ou workshop para começar.'
-                : `${activeOpportunities} oportunidade${activeOpportunities === 1 ? '' : 's'} ativa${activeOpportunities === 1 ? '' : 's'} · ${myLeads.length} médico${myLeads.length === 1 ? '' : 's'} interessado${myLeads.length === 1 ? '' : 's'}`}
-            </p>
-            <button
-              type="button"
-              onClick={() => (publishedItems === 0 ? openPublishChooser() : setTab('listings'))}
-              className="tessy-home-hero__cta"
-              style={{ background: 'var(--accent)', color: '#fff', boxShadow: '0 8px 18px rgba(245,130,32,0.22)' }}
-            >
-              {publishedItems === 0 ? 'Publicar primeiro anúncio →' : 'Ver Meus anúncios →'}
-            </button>
-          </div>
-
-          {user?.id && <FirstVisitTip userId={user.id} role="empresa" />}
-
-          {!setupComplete && (
-            <div className="tessy-panel" style={{
-              marginBottom: 12,
-              padding: '13px 14px',
-              borderColor: 'rgba(245,130,32,0.18)',
-            }}>
-              <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>
-                Perfil comercial · {setupDone}/{setupTotal}
-              </div>
-              <div style={{ marginTop: 10, height: 7, borderRadius: 999, background: 'rgba(245,130,32,0.12)', overflow: 'hidden' }}>
-                <div style={{
-                  width: `${(setupDone / setupTotal) * 100}%`,
-                  height: '100%',
-                  background: 'var(--accent)',
-                  borderRadius: 999,
-                }} />
-              </div>
-              <ul style={{ margin: '10px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>
-                {!setupSteps[0] && <li>Adicione o logo da empresa no perfil</li>}
-                {!setupSteps[1] && <li>Configure o WhatsApp de contato</li>}
-                {!setupSteps[2] && <li>Publique o primeiro anúncio (produto, parceria, evento ou workshop)</li>}
-                {!setupSteps[3] && <li>Cadastre um representante ou local de atendimento</li>}
-              </ul>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!setupSteps[0] || !setupSteps[1]) openProfileSettings();
-                  else if (!setupSteps[2]) openPublishChooser();
-                  else setTab('representatives');
-                }}
-                style={{
-                  marginTop: 10,
-                  padding: '8px 12px',
-                  borderRadius: 10,
-                  border: 'none',
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Continuar configuração
-              </button>
-            </div>
-          )}
-
-          {newLeadsCount > 0 && (
-            <button
-              type="button"
-              onClick={goToLeadsTab}
-              className="tessy-panel"
-              style={{
-                width: '100%',
-                marginBottom: 12,
-                padding: '12px 14px',
-                textAlign: 'left',
-                cursor: 'pointer',
-                borderColor: 'rgba(245,130,32,0.18)',
-              }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--accent-ink)' }}>
-                {newLeadsCount} médico{newLeadsCount === 1 ? '' : 's'} interessado{newLeadsCount === 1 ? '' : 's'}
-              </div>
-              <div style={{ marginTop: 3, fontSize: 12, color: 'var(--ink-2)' }}>
-                Toque para ver e solicitar conexão
-              </div>
-            </button>
-          )}
-
-          {/* Company header */}
-          <div className="tessy-panel" style={{
-            marginBottom: 12,
-            padding: 14,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <CompanyAvatar
-                name={user?.company ?? user?.name ?? 'Empresa'}
-                avatarUrl={user?.avatarUrl}
-                size={60}
-              />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span className="tessy-profile-eyebrow">Perfil comercial</span>
-                <h1 style={{
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 22,
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  lineHeight: 1.1,
-                }}>
-                  {user?.company ?? user?.name}<span style={{ color: 'var(--accent)' }}>.</span>
-                </h1>
-                <p style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.35 }}>
-                  Perfil visível para médicos na vitrine Tessy
-                </p>
-                {user?.whatsapp ? (
-                  <a
-                    href={buildWhatsappLink(user.whatsapp)}
-                    target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, color: '#25D366', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
-                  >
-                    <WaIcon size={14} /> {user.whatsapp}
-                  </a>
-                ) : (
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>WhatsApp não configurado</div>
-                )}
-              </div>
-              <button
-                onClick={() => openProfileSettings()}
-                title="Editar perfil"
-                style={{
-                  width: 38, height: 38, borderRadius: 13, flexShrink: 0,
-                  background: '#fff', border: '1px solid var(--line)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'var(--muted)',
-                  boxShadow: '0 8px 18px rgba(80,90,120,0.07)',
-                }}
-              >
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M10.5 1.5L13.5 4.5L5 13H2V10L10.5 1.5Z" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="tessy-stat-grid" style={{ marginBottom: 14 }}>
-            <CompanyStatCard
-              value={publishedItems}
-              label="Anúncios"
-              accent={publishedItems > 0}
-              onClick={() => setTab('listings')}
-            />
-            <CompanyStatCard
-              value={myLeads.length}
-              label="Interesses"
-              accent={myLeads.length > 0}
-              onClick={() => setTab('leads')}
-            />
-            <CompanyStatCard
-              value={conversationsStarted}
-              label="Conexões"
-              accent={conversationsStarted > 0}
-              onClick={() => setTab('leads')}
-            />
-          </div>
-
-          {/* Leads access */}
-          <button
-            onClick={() => setTab('leads')}
-            className="tessy-panel"
-            style={{
-              width: '100%',
-              marginBottom: 24,
-              padding: 15,
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <div style={{ minWidth: 0, display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 0 }}>
-                <Mono style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                  Médicos interessados
-                </Mono>
-                <div style={{ marginTop: 8, fontSize: 19, color: 'var(--ink)', fontWeight: 600, lineHeight: 1.16 }}>
-                  {myLeads.length} {myLeads.length === 1 ? 'médico interessado' : 'médicos interessados'}
-                </div>
-                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.4 }}>
-                  Peça permissão para WhatsApp — o médico aprova antes da conversa.
-                </div>
-              </div>
-              <div style={{
-                minWidth: 40,
-                height: 40,
-                borderRadius: 13,
-                background: 'var(--card)',
-                color: 'var(--accent)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 20,
-                fontWeight: 560,
-                boxShadow: '0 8px 22px rgba(80,100,150,0.08)',
-              }}>
-                {myLeads.length}
-              </div>
-            </div>
-            <span style={{
-              marginTop: 12,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '9px 14px',
-              borderRadius: 12,
-              background: myLeads.length > 0 ? 'var(--ink)' : 'var(--accent)',
-              color: '#fff',
-              fontSize: 12.5,
-              fontWeight: 560,
-            }}>
-              {myLeads.length > 0 ? 'Ver médicos →' : 'Aguardando interesses'}
-            </span>
-          </button>
-
-          {/* Suggested doctors */}
-          <div style={{ marginBottom: 24 }}>
-            <SectionTitle title="Médicos para sua empresa conhecer" />
-            {suggestedDoctors.length === 0 ? (
-              <div style={{
-                padding: 16,
-                borderRadius: 18,
-                background: 'var(--card)',
-                border: '1px solid var(--line)',
-              }}>
-                <div style={{ fontSize: 15, color: 'var(--ink)', fontWeight: 560 }}>Ainda sem médicos sugeridos.</div>
-                <p style={{ margin: '5px 0 0', fontSize: 12.5, lineHeight: 1.45, color: 'var(--ink-2)' }}>
-                  Publique uma oportunidade para a Tessy aproximar médicos com interesse real.
-                </p>
-                <button
-                  onClick={() => setTab('listings')}
-                  style={{
-                    marginTop: 12,
-                    padding: '9px 14px',
-                    borderRadius: 10,
-                    border: 'none',
-                    background: 'var(--accent)',
-                    color: '#fff',
-                    fontSize: 12.5,
-                    fontWeight: 620,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Criar primeiro anúncio →
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 }}>
-                {suggestedDoctors.map(lead => (
-                  <DoctorSuggestionCard key={lead.id} lead={lead} onRequestConnection={requestConnection} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Tessy suggestions */}
-          <div style={{ marginBottom: 24 }}>
-            <SectionTitle title="Sugestões da Tessy" />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[
-                { text: 'Publique um produto para aumentar sua visibilidade na vitrine.', cta: 'Meus anúncios', action: () => setTab('listings') },
-                { text: 'Complete seu perfil com WhatsApp para receber pedidos de contato.', cta: 'Editar perfil', action: () => openProfileSettings() },
-                { text: 'Convide médicos interessados para o seu próximo evento.', cta: 'Meus anúncios', action: () => setTab('listings') },
-              ].map(item => (
-                <button key={item.text} onClick={item.action} style={{
-                  padding: '12px 14px',
-                  borderRadius: 14,
-                  background: 'var(--card)',
-                  border: '1px solid var(--line)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                }}>
-                  <span style={{ color: 'var(--ink-2)', fontSize: 12.5, lineHeight: 1.35 }}>{item.text}</span>
-                  <span style={{
-                    flexShrink: 0,
-                    fontSize: 11,
-                    fontWeight: 620,
-                    color: 'var(--accent)',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {item.cta} →
-                  </span>
-                </button>
-              ))}
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <InviteShareCard target="medico" />
-            </div>
-          </div>
-
-          {/* Recent events timeline */}
-          {myEvents.length > 0 && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: 16, fontWeight: 560 }}>Meus eventos</span>
-                <button onClick={() => setTab('events')} style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontFamily: "var(--font-mono)", fontSize: 10,
-                  color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
-                }}>ver todos →</button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {myEvents.slice(0, 3).map(e => (
-                  <EventRowCompany
-                    key={e.id}
-                    ev={e}
-                    interestedCount={eventLeadDoctorCount(e, companyLeads)}
-                    onViewInterested={() => setTab('leads')}
-                    onShare={() => shareEvent(e)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Workshops list access */}
-          {myCourses.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: 16, fontWeight: 560 }}>Meus workshops</span>
-                <button onClick={() => setTab('courses')} style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontFamily: "var(--font-mono)", fontSize: 10,
-                  color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
-                }}>ver todos →</button>
-              </div>
-              <MarketGrid>
-                {myCourses.slice(0, 4).map(c => (
-                  <CourseCompactCard key={c.id} course={c} onOpen={() => setOpenCourseId(c.id)} />
-                ))}
-              </MarketGrid>
-            </div>
-          )}
-
-          {/* Representatives access */}
-          <div style={{ marginTop: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: 16, fontWeight: 560 }}>Meus representantes</span>
-              <button onClick={() => setTab('representatives')} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: "var(--font-mono)", fontSize: 10,
-                color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
-              }}>{myReps.length > 0 ? 'gerenciar →' : 'cadastrar →'}</button>
-            </div>
-            {myReps.length === 0 ? (
-              <button onClick={() => setTab('representatives')} className="tessy-panel" style={{
-                width: '100%', textAlign: 'left', cursor: 'pointer',
-                padding: 16,
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 620, color: 'var(--ink)' }}>Cadastre seu representante</div>
-                <p style={{ margin: '5px 0 0', fontSize: 12.5, lineHeight: 1.4, color: 'var(--ink-2)' }}>
-                  Com foto, região e especialidade, os médicos encontram quem fala pela sua empresa.
-                </p>
-              </button>
-            ) : (
-              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 }}>
-                {myReps.slice(0, 6).map(rep => (
-                  <RepMiniCard key={rep.id} rep={rep} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <CompanyOverview
+          user={user}
+          contacts={myLeads}
+          interests={activeLeads}
+          events={myEvents}
+          products={myProducts}
+          courses={myCourses}
+          representativeCount={myReps.length}
+          locationCount={myLocations.length}
+          onConnections={filter => { setConnectionFilter(filter); setTab('leads'); }}
+          onPublish={openPublishChooser}
+          onManage={setTab}
+          onEvent={setOpenEventId}
+          onRequestConnection={requestConnection}
+        />
       )}
 
       {/* ── LISTINGS ── */}
@@ -988,6 +613,8 @@ export default function CompanyDashboard() {
       {/* ── LEADS ── */}
       {tab === 'leads' && (
         <LeadInbox
+          statusFilter={connectionFilter}
+          onStatusFilterChange={setConnectionFilter}
           leads={myLeads}
           onRequestConnection={requestConnection}
           onStartPublishing={() => openCreate('product')}
@@ -2008,107 +1635,6 @@ function RepresentativeListingCard({ rep, deleting, onManage, onDelete }: {
 }
 
 /* ─── Company view cards ─── */
-function SectionTitle({ title }: { title: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-      <h2 style={{ fontSize: 16, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>
-        {title}<span style={{ color: 'var(--accent)' }}>.</span>
-      </h2>
-    </div>
-  );
-}
-
-function EventRowCompany({ ev, interestedCount, onViewInterested, onShare }: {
-  ev: Event;
-  interestedCount: number;
-  onViewInterested: () => void;
-  onShare: () => void;
-}) {
-  const [tint1, tint2] = categoryTint(ev.category);
-  const dateParts = eventDateParts(ev.date);
-  const status = eventStatusLabel(ev);
-  return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '82px minmax(0, 1fr)',
-      gap: 12,
-      padding: 10,
-      background: 'rgba(255,255,255,0.88)',
-      borderRadius: 18,
-      border: '1px solid var(--line)',
-      boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
-    }}>
-      <div style={{
-        minHeight: 92,
-        position: 'relative',
-        flexShrink: 0,
-        borderRadius: 15,
-        overflow: 'hidden',
-        background: cardPhotoBackground(ev.imageUrl),
-      }}>
-        <div style={{
-          position: 'absolute',
-          left: 8,
-          bottom: 8,
-          width: 40,
-          height: 44,
-          borderRadius: 12,
-          background: `linear-gradient(135deg, ${tint1}, ${tint2})`,
-          color: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 10px 22px rgba(15,22,38,0.18)',
-        }}>
-          <div style={{ fontSize: 8, fontWeight: 560 }}>{dateParts.month}</div>
-          <div style={{ fontSize: 17, fontWeight: 600, lineHeight: 1 }}>{dateParts.day}</div>
-        </div>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
-          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.18 }}>{ev.title}</div>
-          <Mono style={{ fontSize: 9, color: status === 'ATIVO' ? '#1EA97C' : 'var(--muted)', fontWeight: 560, flexShrink: 0 }}>✓ {status}</Mono>
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-          {eventCity(ev.location)} · {eventSchedule(ev)}
-        </div>
-        <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Chip color="var(--accent)">{formatEventOccupancy(ev.registeredCount, ev.maxParticipants)}</Chip>
-          <Chip color="#1EA97C">{availableSpots(ev)} disponíveis</Chip>
-        </div>
-        <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={onViewInterested} style={{
-            padding: '7px 9px',
-            borderRadius: 10,
-            background: 'var(--chip)',
-            border: '1px solid var(--line)',
-            color: 'var(--ink)',
-            fontSize: 11.5,
-            fontWeight: 560,
-            cursor: 'pointer',
-          }}>
-            {interestedCount} interessados
-          </button>
-          <button onClick={onShare} style={{
-            padding: '7px 9px',
-            borderRadius: 10,
-            background: 'transparent',
-            border: '1px solid var(--line)',
-            color: 'var(--ink-2)',
-            fontSize: 11.5,
-            fontWeight: 560,
-            cursor: 'pointer',
-          }}>
-            Compartilhar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Compact vitrine cards (grid) ─── */
 function EventCompactCard({ ev, interestedCount, onOpen }: {
   ev: Event; interestedCount: number; onOpen: () => void;
 }) {
@@ -2259,118 +1785,9 @@ function EventCardCompany({ ev, interestedCount, onDelete, onEdit, onViewInteres
   );
 }
 
-function DoctorSuggestionCard({ lead, onRequestConnection }: {
-  lead: Lead;
-  onRequestConnection: (leadId: string) => Promise<void>;
-}) {
-  const [requesting, setRequesting] = useState(false);
-  const [requestError, setRequestError] = useState('');
-  const connectionStatus = lead.connectionStatus ?? 'none';
-  const isApproved = connectionStatus === 'approved';
-  const isRequested = connectionStatus === 'requested';
-  const waLink = isApproved
-    ? buildWhatsappLink(
-      lead.doctorWhatsapp,
-      `Olá ${safeDoctorName(lead.doctorName)}, vi seu interesse no Tessy sobre "${lead.itemName ?? 'sua solicitação'}". Posso te passar mais detalhes?`,
-    )
-    : '';
-
-  async function handleConnect() {
-    if (waLink) return;
-    setRequesting(true);
-    setRequestError('');
-    try {
-      await onRequestConnection(lead.id);
-    } catch (err) {
-      setRequestError(err instanceof Error ? err.message : 'Erro ao solicitar conexão.');
-    } finally {
-      setRequesting(false);
-    }
-  }
-
-  const buttonText = waLink
-    ? 'Abrir WhatsApp'
-    : isRequested
-      ? 'Aguardando o médico liberar WhatsApp'
-      : requesting
-        ? 'Enviando pedido...'
-        : 'Pedir permissão para WhatsApp';
-
-  const buttonStyle = {
-    marginTop: 12,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: 12,
-    border: waLink ? '1px solid rgba(37,211,102,0.32)' : '1px solid var(--ink)',
-    background: waLink ? 'rgba(37,211,102,0.12)' : 'var(--ink)',
-    color: waLink ? '#25D366' : '#fff',
-    fontSize: 12.5,
-    fontWeight: 560,
-    textDecoration: 'none',
-    cursor: isRequested || requesting ? 'not-allowed' : 'pointer',
-    opacity: isRequested || requesting ? 0.72 : 1,
-    boxSizing: 'border-box',
-  } as const;
-
-  return (
-    <div className="tessy-panel" style={{
-      minWidth: 226,
-      maxWidth: 248,
-      padding: 13,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 42,
-          height: 42,
-          borderRadius: 15,
-          background: 'var(--accent)',
-          color: '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 14,
-          fontWeight: 560,
-          flexShrink: 0,
-        }}>
-          {safeDoctorName(lead.doctorName).slice(0, 1).toUpperCase()}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 560, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {safeDoctorName(lead.doctorName)}
-          </div>
-          <div style={{ marginTop: 2, color: 'var(--muted)', fontSize: 11.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {lead.doctorSpecialty || 'Especialidade não informada'}
-          </div>
-        </div>
-      </div>
-      <div style={{ marginTop: 11, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <Chip color="var(--accent)">Perfil médico</Chip>
-        <Chip color="var(--ink-2)">{lead.itemType === 'event' ? 'Evento' : lead.itemType === 'product' ? 'Produto' : lead.itemType === 'course' ? 'Workshop' : 'Empresa'}</Chip>
-      </div>
-      <p style={{ margin: '10px 0 0', color: 'var(--ink-2)', fontSize: 12, lineHeight: 1.38 }}>
-        Interesse em {lead.itemName || 'sua solicitação'}.
-      </p>
-      {requestError && (
-        <div style={{ marginTop: 8, fontSize: 11.5, color: '#F25C54', lineHeight: 1.35 }}>{requestError}</div>
-      )}
-      {waLink ? (
-        <a href={waLink} target="_blank" rel="noopener noreferrer" style={buttonStyle}>
-          <WaIcon size={14} /> {buttonText}
-        </a>
-      ) : (
-        <button type="button" onClick={handleConnect} disabled={isRequested || requesting} style={buttonStyle}>
-          <WaIcon size={14} /> {buttonText}
-        </button>
-      )}
-    </div>
-  );
-}
-
-function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
+function LeadInbox({ leads, onRequestConnection, onStartPublishing, statusFilter, onStatusFilterChange }: {
+  statusFilter: ConnectionFilter;
+  onStatusFilterChange: (filter: ConnectionFilter) => void;
   leads: Lead[];
   onRequestConnection: (leadId: string) => Promise<void>;
   onStartPublishing?: () => void;
@@ -2383,11 +1800,12 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
 
   const q = search.trim().toLowerCase();
   const specialties = [...new Set(leads.map(l => l.doctorSpecialty?.trim()).filter(Boolean))] as string[];
-  const specialtyChips: [string, string][] = [['all', 'Todas'], ...specialties.slice(0, 6).map(s => [s.toLowerCase(), s] as [string, string])];
+  const specialtyChips: [string, string][] = [['all', 'Todas'], ...specialties.sort((a, b) => a.localeCompare(b)).map(s => [s.toLowerCase(), s] as [string, string])];
   const intentChips: [string, string][] = [
     ['all', 'Todos'],
     ['representative_contact', 'Representante'],
     ['sample_request', 'Amostra'],
+    ['instagram_partnership', 'Parceria'],
     ['event_interest', 'Evento'],
     ['course_interest', 'Workshop'],
   ];
@@ -2399,7 +1817,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
       || (lead.itemName ?? '').toLowerCase().includes(q);
     const matchIntent = intentFilter === 'all' || lead.intent === intentFilter;
     const matchSpec = specialtyFilter === 'all' || (lead.doctorSpecialty ?? '').toLowerCase() === specialtyFilter;
-    return matchQ && matchIntent && matchSpec;
+    return matchQ && matchIntent && matchSpec && (statusFilter === 'all' || (lead.connectionStatus ?? 'none') === statusFilter);
   });
 
   async function requestDoctorConnection(leadId: string) {
@@ -2428,6 +1846,16 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
         </p>
       </div>
 
+      <div aria-label="Etapa da conexão" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+        {[{ key: 'all', label: 'Todos' }, ...connectionStages].map(stage => (
+          <button type="button" key={stage.key} aria-pressed={statusFilter === stage.key}
+            onClick={() => onStatusFilterChange(stage.key as ConnectionFilter)}
+            style={{ padding: '10px 12px', border: '1px solid var(--line)', borderRadius: 8, cursor: 'pointer', background: statusFilter === stage.key ? 'var(--ink)' : 'var(--card)', color: statusFilter === stage.key ? '#fff' : 'var(--ink)', fontSize: 12 }}>
+            {stage.label} ({stage.key === 'all' ? leads.length : leads.filter(lead => (lead.connectionStatus ?? 'none') === stage.key).length})
+          </button>
+        ))}
+      </div>
+
       <div style={{ position: 'relative', marginBottom: 12 }}>
         <svg style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}
           width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -2435,6 +1863,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
         </svg>
         <input
           type="search"
+          aria-label="Buscar médico, especialidade ou oportunidade"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar médico, especialidade ou oportunidade..."
@@ -2508,6 +1937,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing }: {
       ) : filteredLeads.length === 0 ? (
         <div style={{ padding: 20, borderRadius: 18, background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--muted)', fontSize: 13 }}>
           Nenhum médico encontrado com esses filtros.
+          <button type="button" onClick={() => { setSearch(''); setIntentFilter('all'); setSpecialtyFilter('all'); onStatusFilterChange('all'); }} style={{ display: 'block', marginTop: 12, padding: 10, cursor: 'pointer' }}>Limpar filtros</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -2838,38 +2268,6 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
 }
 
 /* ─── Representatives ─── */
-function RepMiniCard({ rep }: { rep: Representative }) {
-  return (
-    <div style={{
-      minWidth: 150, maxWidth: 168, padding: 12, borderRadius: 16,
-      background: 'var(--card)', border: '1px solid var(--line)',
-      boxShadow: '0 8px 22px rgba(85,96,130,0.05)',
-    }}>
-      <div style={{
-        width: 44, height: 44, borderRadius: 14, marginBottom: 8,
-        background: rep.photoUrl
-          ? `url(${rep.photoUrl}) center/cover`
-          : 'var(--accent)',
-        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 15, fontWeight: 620, overflow: 'hidden',
-      }}>
-        {!rep.photoUrl && (rep.name?.trim()?.[0] ?? 'R').toUpperCase()}
-      </div>
-      <div style={{ fontSize: 13.5, fontWeight: 620, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {rep.name}
-      </div>
-      <div style={{ marginTop: 2, fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {rep.specialty || 'Representante'}
-      </div>
-      {(rep.city || rep.state || rep.region) && (
-        <div style={{ marginTop: 6 }}>
-          <Chip color="#F58220">{[rep.city, rep.state].filter(Boolean).join(' · ') || rep.region}</Chip>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function RepresentativeAvatarEditor({
   rep,
   companyId,
