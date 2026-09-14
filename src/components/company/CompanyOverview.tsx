@@ -75,8 +75,7 @@ export default function CompanyOverview(props: Props) {
 
   return <div className="company-overview">
     <header className="co-header">
-      <span className="co-eyebrow">{user?.company || user?.name || 'Sua empresa'} / Painel da empresa</span>
-      <h1>Interesse vira<br /><span>conexão.</span></h1>
+      <h1>Painel da empresa</h1>
       <p>Acompanhe médicos interessados e dê o próximo passo em cada relacionamento.</p>
       <div className="co-actions">
         <button className="co-primary" onClick={onPublish}>Publicar oportunidade <span aria-hidden="true">↗</span></button>

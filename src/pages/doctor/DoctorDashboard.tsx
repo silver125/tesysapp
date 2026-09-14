@@ -233,26 +233,10 @@ function visualUrl(src?: string | null) {
   return src?.trim() || '';
 }
 
-function doctorGreeting(user: User | null | undefined) {
-  const firstName = user?.name?.trim().split(/\s+/)[0];
-  return firstName ? `Olá, ${firstName}` : 'Olá';
-}
-
-function doctorProfileLabel(user: User | null | undefined) {
-  return user?.specialty?.trim() || 'Perfil médico';
-}
-
 function doctorCityLabel(user: User | null | undefined) {
   const profile = user as (User & { city?: string; cidade?: string; location?: string }) | null | undefined;
   return profile?.city?.trim() || profile?.cidade?.trim() || profile?.location?.trim() || profile?.crmState?.trim() || '';
 }
-
-function doctorMetaLine(user: User | null | undefined) {
-  const specialty = doctorProfileLabel(user);
-  const city = doctorCityLabel(user);
-  return city ? `${specialty} • ${city}` : specialty;
-}
-
 
 export default function DoctorDashboard() {
   const { user, events, products, courses, leads, locations, representatives: registeredReps, refreshData } = useAuth();
@@ -260,6 +244,7 @@ export default function DoctorDashboard() {
     'home', 'products', 'events', 'representatives', 'companies',
   ] as const);
   const [search, setSearch] = useState('');
+  const [connectionView, setConnectionView] = useState<'requested' | 'approved'>('requested');
   const [evFilter, setEvFilter] = useState('all');
   const [regionFilter, setRegionFilter] = useState('all');
   const [repCategory, setRepCategory] = useState('all');
@@ -382,7 +367,8 @@ export default function DoctorDashboard() {
   const pendingConnections = doctorLeads.filter(lead => lead.connectionStatus === 'requested');
 
   function scrollToPendingConnections() {
-    document.getElementById('pending-connections')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setConnectionView('requested');
+    window.requestAnimationFrame(() => document.getElementById('pending-connections')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
   function openTab(k: Tab, nextSearch = '') {
@@ -430,56 +416,59 @@ export default function DoctorDashboard() {
       {tab === 'home' && (
         <div className="company-overview doctor-overview">
           <header className="co-header">
-            <HomeGreeting user={user} />
+            <HomeGreeting />
             <div className="co-actions">
-              <button className="co-primary" onClick={() => openTab('representatives')}>Encontrar representantes ↗</button>
-              <button onClick={() => openTab('companies')}>Explorar empresas</button>
+              <button className="co-primary" onClick={() => openTab('representatives')}>Buscar representantes ↗</button>
+              <button onClick={() => openTab('companies')}>Ver empresas</button>
             </div>
           </header>
 
+          <div className="do-score-top"><DoctorPointsBar points={user?.points ?? 0} connections={countApprovedConnections(doctorLeads)} /></div>
+
           <section className="co-section do-network" aria-labelledby="do-network-title">
-            <div className="co-section-heading"><h2 id="do-network-title">Sua rede, no seu ritmo</h2><button className="co-text-button" onClick={openProfileSettings}>Editar perfil →</button></div>
-            <p className="co-caption">Você escolhe com quais empresas quer conversar.</p>
+            <div className="co-section-heading"><h2 id="do-network-title">Sua rede</h2><button className="co-text-button" onClick={openProfileSettings}>Editar perfil →</button></div>
             <div className="co-stages">
-              <button className="co-stage" onClick={scrollToPendingConnections}><span className="co-stage-index" aria-hidden="true">01</span><strong>{pendingConnections.length}</strong><span className="co-stage-label">Solicitações pendentes</span><small>Revise antes de liberar contato</small></button>
-              <button className="co-stage" onClick={() => document.getElementById('doctor-connections')?.scrollIntoView({ behavior: 'smooth' })}><span className="co-stage-index" aria-hidden="true">02</span><strong>{countApprovedConnections(doctorLeads)}</strong><span className="co-stage-label">Conexões aprovadas</span><small>Empresas que você autorizou</small></button>
-              <button className="co-stage" onClick={() => openTab('events')}><span className="co-stage-index" aria-hidden="true">03</span><strong>{upcomingEvents.length}</strong><span className="co-stage-label">Próximos eventos</span><small>Explore encontros disponíveis</small></button>
+              <button className="co-stage" aria-pressed={connectionView === 'requested'} onClick={scrollToPendingConnections}><span className="co-stage-index" aria-hidden="true">01</span><strong>{pendingConnections.length}</strong><span className="co-stage-label">Convites</span></button>
+              <button className="co-stage" aria-pressed={connectionView === 'approved'} onClick={() => { setConnectionView('approved'); document.getElementById('do-requests-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}><span className="co-stage-index" aria-hidden="true">02</span><strong>{countApprovedConnections(doctorLeads)}</strong><span className="co-stage-label">Conexões</span></button>
+              <button className="co-stage" onClick={() => openTab('events')}><span className="co-stage-index" aria-hidden="true">03</span><strong>{upcomingEvents.length}</strong><span className="co-stage-label">Eventos</span></button>
             </div>
           </section>
 
           <section className="co-section do-requests" aria-labelledby="do-requests-title">
-            <div className="co-section-heading"><h2 id="do-requests-title">Empresas querem se conectar</h2></div>
-            <p className="co-caption">Ao aprovar uma solicitação, você permite que a empresa entre em contato pelo WhatsApp.</p>
-            <PendingConnectionsInbox leads={pendingConnections} />
-            {!user?.whatsapp && <SlimProfileBanner onFix={openProfileSettings} />}
-            <div id="doctor-connections" className="do-approved">
-              <h3>Conexões aprovadas</h3>
+            <div className="co-section-heading"><h2 id="do-requests-title">{connectionView === 'requested' ? 'Convites para você' : 'Suas conexões'}</h2></div>
+            {connectionView === 'requested' ? <>
+              <PendingConnectionsInbox leads={pendingConnections} />
+              {!user?.whatsapp && <SlimProfileBanner onFix={openProfileSettings} />}
+            </> : <div id="doctor-connections" className="do-approved">
               {doctorLeads.some(lead => lead.connectionStatus === 'approved') ? doctorLeads.filter(lead => lead.connectionStatus === 'approved').map(lead => (
                 <button className="co-event" key={lead.id} onClick={() => openTab('companies', lead.companyName)}><span><strong>{lead.companyName}</strong><small>{lead.itemName}</small></span><span aria-hidden="true">↗</span></button>
-              )) : <p className="co-caption">As empresas que você autorizar aparecerão aqui.</p>}
-            </div>
+              )) : <div className="co-empty"><p>Suas conexões aprovadas aparecerão aqui.</p><button onClick={() => openTab('representatives')}>Buscar representantes</button></div>}
+            </div>}
           </section>
 
           <section className="co-section do-opportunities" aria-labelledby="do-opportunities-title">
-            <div className="co-section-heading"><h2 id="do-opportunities-title">Oportunidades para você</h2><button className="co-text-button" onClick={() => openTab('products')}>Ver produtos →</button></div>
-            <p className="co-caption">Sugestões a partir da sua especialidade e dos interesses do seu perfil.</p>
+            <div className="co-section-heading"><h2 id="do-opportunities-title">Para você</h2><button className="co-text-button" onClick={() => openTab('products')}>Ver produtos →</button></div>
             {[bestOpportunity, nextOpportunity].filter((item): item is DoctorOpportunity => Boolean(item)).map(item => (
-              <button key={item.id} className="do-opportunity" onClick={() => openOpportunity(item)}><span>{item.kind === 'event' ? 'Evento' : item.kind === 'product' ? 'Produto' : item.kind === 'rep' ? 'Representante' : 'Empresa'}</span><h3>{item.companyName}</h3><p>{item.sentence}</p><span>Ver oportunidade →</span></button>
+              <QuickDoctorOpportunity key={item.id} item={item} onOpen={() => openOpportunity(item)} />
             ))}
             {homeQuiet && <div className="co-empty"><h3>{platformEmpty ? 'Novas oportunidades aparecerão aqui.' : 'Explore novas conexões.'}</h3><p>{platformEmpty ? 'Complete seu perfil para receber sugestões quando as empresas publicarem.' : 'Ajuste seus interesses ou explore as empresas da Tessy.'}</p><button onClick={openProfileSettings}>Ajustar interesses</button></div>}
-            <HomeExploreNav counts={marketplaceCounts} onNavigate={openTab} />
+
           </section>
 
           <section className="co-section do-discover" aria-labelledby="do-discover-title">
-            <div className="co-section-heading"><h2 id="do-discover-title">Destaques da vitrine</h2><button className="co-text-button" onClick={() => openTab('products')}>Explorar →</button></div>
-            {homeFeed.length > 0 ? <HomeCarousel>{homeFeed.map(item => <HomeFeedCard key={homeFeedKey(item)} item={item} onOpenProduct={setOpenProduct} onOpenEvent={setOpenEvent} onOpenCourse={setOpenCourse} onOpenRepresentatives={name => openTab('representatives', name)} />)}</HomeCarousel> : <p className="co-caption">Ainda não há destaques disponíveis. Volte para acompanhar novas publicações.</p>}
+            <div className="co-section-heading"><h2 id="do-discover-title">Explore sua rede</h2></div>
+            <HomeExploreNav counts={marketplaceCounts} onNavigate={openTab} />
+            <details className="do-details"><summary>Destaques da vitrine</summary>
+            {homeFeed.length > 0 ? <HomeCarousel>{homeFeed.map(item => <HomeFeedCard key={homeFeedKey(item)} item={item} onOpenProduct={setOpenProduct} onOpenEvent={setOpenEvent} onOpenCourse={setOpenCourse} onOpenRepresentatives={name => openTab('representatives', name)} />)}</HomeCarousel> : <p className="co-caption">Ainda não há destaques disponíveis.</p>}
+            </details>
           </section>
 
           <section className="co-section do-profile" aria-labelledby="do-profile-title">
             <div className="co-section-heading"><h2 id="do-profile-title">Seu perfil na Tessy</h2><button className="co-text-button" onClick={openProfileSettings}>Atualizar →</button></div>
-            <DoctorPointsBar points={user?.points ?? 0} connections={countApprovedConnections(doctorLeads)} />
-            {user?.id && <FirstVisitTip userId={user.id} role="medico" />}
-            <InviteShareCard target="empresa" />
+            <details className="do-details"><summary>Perfil e convites</summary>
+              {user?.id && <FirstVisitTip userId={user.id} role="medico" />}
+              <InviteShareCard target="empresa" />
+            </details>
           </section>
         </div>
       )}
@@ -607,12 +596,8 @@ function productCategoryChips(products: Product[]): [string, string][] {
   return [['all', 'Todos'], ...cats.slice(0, 8).map(c => [c, c] as [string, string])];
 }
 
-function HomeGreeting({ user }: { user: User | null | undefined }) {
-  return <>
-    <span className="co-eyebrow">{doctorGreeting(user)} / Painel do médico</span>
-    <h1>Boas oportunidades.<br /><span>Conexões que importam.</span></h1>
-    <p>{doctorMetaLine(user)}. Encontre empresas, conheça novidades e escolha com quem conversar.</p>
-  </>;
+function HomeGreeting() {
+  return <><h1>Painel do médico</h1><p>Conecte-se. Descubra. Amplie sua rede.</p></>;
 }
 
 function DoctorPointsBar({
@@ -626,13 +611,42 @@ function DoctorPointsBar({
   const badges = getBadges(connections, points);
   const unlockedBadges = badges.filter(b => b.unlocked);
 
-  return <div className="do-points">
-    <div className="co-section-heading"><h3>Nível {progress.level.index + 1} · {progress.level.name}</h3><button className="co-text-button" onClick={openHelp} aria-label="Como funcionam os pontos">Sobre os pontos →</button></div>
-    <div className="co-metrics"><div><strong>{progress.points}</strong><span>Pontos acumulados</span></div><div><strong>{connections}</strong><span>Conexões aprovadas</span></div></div>
+  return <div className="do-points" aria-label="Sua pontuação">
+    <div className="do-score-line"><div><strong key={progress.points} className="do-score-number" aria-live="polite">{progress.points}<small> pts</small></strong><span>Nível {progress.level.index + 1} · {progress.level.name}</span></div><span className="do-score-target">{progress.isMax ? 'Nível máximo' : `Faltam ${progress.pointsForNextLevel} pts`}</span></div>
     <progress aria-label="Progresso para o próximo nível" value={progress.percent} max={100} />
-    <p className="co-caption">{progress.isMax ? 'Você alcançou o último nível.' : `${progress.pointsForNextLevel} pontos para o próximo nível.`} Conexões aprovadas valem +{POINTS_PER_CONNECTION} pontos.</p>
-    {unlockedBadges.length > 0 && <div className="do-badges">{unlockedBadges.map(badge => <span key={badge.id} title={badge.description}>{badge.label}</span>)}</div>}
+    <details className="do-details"><summary>Como somar pontos</summary><p>Novo interesse: +{POINTS_PER_INTEREST} pts. Conexão aprovada: +{POINTS_PER_CONNECTION} pts.</p><p>Ações repetidas não somam novamente.</p>
+      {unlockedBadges.length > 0 && <div className="do-badges">{unlockedBadges.map(badge => <span key={badge.id} title={badge.description}>{badge.label}</span>)}</div>}
+      <button className="co-text-button" onClick={openHelp}>Ver regras →</button>
+    </details>
   </div>;
+}
+
+function QuickDoctorOpportunity({ item, onOpen }: { item: DoctorOpportunity; onOpen: () => void }) {
+  const { user, leads, addLead } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [error, setError] = useState('');
+  const target = item.product || item.event;
+  const itemType = item.product ? 'product' : 'event';
+  const intent = item.product ? (item.product.listingType === 'partnership' ? 'instagram_partnership' : 'sample_request') : 'event_interest';
+  const interested = sent || Boolean(target && leads.some(lead => lead.doctorId === user?.id && lead.itemType === itemType && lead.itemId === target.id && lead.intent === intent));
+  async function expressInterest() {
+    if (!target || busy || interested) return;
+    setBusy(true); setError('');
+    try {
+      const result = await addLead({companyId:item.companyId, companyName:item.companyName, itemType, itemId:target.id, itemName:item.title, intent});
+      setSent(true);
+      setFeedback(result.pointsAwarded > 0 ? `+${result.pointsAwarded} pontos · Interesse enviado` : 'Interesse registrado');
+    } catch { setError('Não foi possível enviar. Tente novamente.'); }
+    finally { setBusy(false); }
+  }
+  return <article className="do-opportunity do-quick-card">
+    <span>{item.kind === 'event' ? 'Evento' : item.kind === 'product' ? 'Produto' : item.kind === 'rep' ? 'Representante' : 'Empresa'}</span>
+    <h3>{item.title}</h3><p>{item.companyName}</p>
+    <div className="do-quick-actions"><button className="co-text-button" onClick={onOpen}>Ver detalhes</button>{target ? <button className="do-interest-button" disabled={busy || interested} onClick={() => void expressInterest()}>{busy ? 'Enviando…' : interested ? 'Interesse enviado' : `Tenho interesse · +${POINTS_PER_INTEREST} pts`}</button> : <button className="do-interest-button" onClick={onOpen}>Conhecer →</button>}</div>
+    {feedback && <p role="status" className="do-action-feedback">{feedback}</p>}{error && <p role="alert">{error}</p>}
+  </article>;
 }
 
 function HomeCarousel({ children }: { children: ReactNode }) {
@@ -1023,6 +1037,7 @@ function HomeEventRow({ ev, onOpen }: { ev: Event; onOpen: () => void }) {
 }
 
 function PendingConnectionsInbox({ leads }: { leads: Lead[] }) {
+  const [showAll, setShowAll] = useState(false);
   if (leads.length === 0) {
     return (
       <p id="pending-connections" className="tessy-pending-quiet">
@@ -1037,10 +1052,11 @@ function PendingConnectionsInbox({ leads }: { leads: Lead[] }) {
         {leads.length} {leads.length === 1 ? 'solicitação pendente' : 'solicitações pendentes'}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {leads.map(lead => (
+        {(showAll ? leads : leads.slice(0, 2)).map(lead => (
           <PendingInboxBanner key={lead.id} lead={lead} total={1} onSeeAll={() => undefined} />
         ))}
       </div>
+      {leads.length > 2 && <button type="button" className="co-text-button" onClick={() => setShowAll(value => !value)}>{showAll ? 'Mostrar menos' : `Ver mais ${leads.length - 2} convites`}</button>}
     </section>
   );
 }
@@ -1076,8 +1092,8 @@ function PendingInboxBanner({
 
   return <article className="do-request-card">
     <h3>{lead.companyName} quer falar com você</h3>
-    <p>Sobre: {lead.itemName || 'oportunidade comercial'}. Ao aprovar, a empresa poderá falar com você no WhatsApp.</p>
-    <button type="button" disabled={busy} onClick={() => void approveNow()}>{busy ? 'Aprovando…' : user?.whatsapp ? 'Aprovar e liberar WhatsApp' : 'Cadastrar WhatsApp'}</button>
+    <p>{lead.itemName || 'Oportunidade comercial'}</p><p className="do-consent-note">Ao aceitar, você libera seu WhatsApp para esta empresa.</p>
+    <button type="button" disabled={busy} onClick={() => void approveNow()}>{busy ? 'Aprovando…' : user?.whatsapp ? 'Aceitar conexão' : 'Cadastrar WhatsApp'}</button>
     {total > 1 && <button type="button" onClick={onSeeAll}>Ver outras {total - 1} solicitações</button>}
     {error && <p role="alert">{error}</p>}
   </article>;
