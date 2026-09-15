@@ -10,4 +10,6 @@ O cron executa às 12:00 UTC diariamente. Esta primeira versão tem limite opera
 
 Reservas atômicas no banco impedem dois processos de enviar o mesmo resumo. Como SMTP não garante idempotência, uma tentativa com resultado incerto não é repetida automaticamente; revisar `private.doctor_email_dispatches`. `accepted` significa aceito pelo servidor SMTP, não entregue na caixa de entrada. A autenticação SMTP é verificada antes de reservar destinatários.
 
-Validação local: `node --test tests/doctor-digest.test.mjs tests/email-endpoints.test.mjs` e `npm run build`. O teste SQL `tests/doctor-email-preferences.sql` exige transação com ROLLBACK e ambiente sem outras assinaturas ativas; usa somente registros sintéticos. Não é teste de entrega real.
+Validação local: `npm run test:email` e `npm run build`. O teste SQL `tests/doctor-email-preferences.sql` exige transação com ROLLBACK e ambiente sem outras assinaturas ativas; usa somente registros sintéticos. Não é teste de entrega real.
+
+Use `npm run email:verify` em um ambiente protegido com SMTP_PASSWORD configurada para testar a autenticação sem enviar e-mails. Falhas não imprimem credenciais nem respostas do servidor. Médicos já inscritos podem cancelar pelo perfil mesmo se os envios forem pausados ou a consulta de disponibilidade falhar.

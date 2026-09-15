@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "fix:db:products": "node scripts/apply-product-publish-sql.mjs",
     "launch:checklist": "node scripts/launch-checklist.mjs",
-    "reset:platform": "node scripts/reset-platform.mjs"
+    "reset:platform": "node scripts/reset-platform.mjs",
+    "email:verify": "node scripts/verify-email.mjs",
+    "test:email": "node --test tests/doctor-digest.test.mjs tests/email-endpoints.test.mjs tests/process-digests.test.mjs"
   },
   "dependencies": {
     "@lit-labs/react": "^2.1.3",
