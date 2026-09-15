@@ -1197,7 +1197,6 @@ function MyListings({
   events,
   products,
   courses,
-  locations,
   representatives,
   leads,
   deletingId,
@@ -1206,9 +1205,7 @@ function MyListings({
   onOpenEvent,
   onOpenProduct,
   onOpenCourse,
-  onManageLocations,
   onManageRepresentatives,
-  onDeleteLocation,
   onDeleteRepresentative,
 }: {
   events: Event[];
@@ -1228,16 +1225,16 @@ function MyListings({
   onDeleteLocation: (id: string) => Promise<void>;
   onDeleteRepresentative: (id: string) => Promise<void>;
 }) {
-  const total = events.length + products.length + courses.length + locations.length + representatives.length;
+  const total = events.length + products.length + courses.length + representatives.length;
   const quickCreates: { target: 'event' | 'product' | 'course' | 'location' | 'representative' | 'partnership'; label: string }[] = [
+    { target: 'representative', label: 'Cadastrar representante' },
     { target: 'product', label: 'Produto' },
     { target: 'partnership', label: 'Parceria' },
     { target: 'event', label: 'Evento' },
     { target: 'course', label: 'Workshop' },
-    { target: 'location', label: 'Local' },
-    { target: 'representative', label: 'Representante' },
   ];
-  const firstChoices: { target: 'product' | 'event' | 'course' | 'partnership'; label: string; hint: string }[] = [
+  const firstChoices: { target: 'representative' | 'product' | 'event' | 'course' | 'partnership'; label: string; hint: string }[] = [
+    { target: 'representative', label: 'Cadastrar representante', hint: 'Conecte sua equipe aos médicos' },
     { target: 'product', label: 'Produto', hint: 'Solução ou tecnologia' },
     { target: 'partnership', label: 'Parceria', hint: 'Divulgação ou ação comercial' },
     { target: 'event', label: 'Evento', hint: 'Congresso ou encontro' },
@@ -1321,25 +1318,45 @@ function MyListings({
             <CompanyStatCard value={courses.length} label="Workshops" accent={courses.length > 0} />
           </div>
 
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 3, marginBottom: 18 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 3, marginBottom: 18 }}>
             {quickCreates.map(item => (
               <button key={item.target} onClick={() => onCreate(item.target)} style={{
                 flexShrink: 0,
                 padding: '9px 12px',
                 borderRadius: 999,
                 border: '1px solid var(--line)',
-                background: 'var(--card)',
-                color: 'var(--ink)',
+                background: item.target === 'representative' ? 'var(--accent)' : 'var(--card)',
+                color: item.target === 'representative' ? '#fff' : 'var(--ink)',
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
               }}>
-                + {item.label}
+                {item.target === 'representative' ? item.label : `+ ${item.label}`}
               </button>
             ))}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <ListingsSection
+            title="Representantes"
+            emptyText="Nenhum representante cadastrado."
+            actionLabel={representatives.length > 0 ? 'Gerenciar' : 'Cadastrar representante'}
+            onAction={onManageRepresentatives}
+            isEmpty={representatives.length === 0}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {representatives.map(rep => (
+                <RepresentativeListingCard
+                  key={rep.id}
+                  rep={rep}
+                  deleting={deletingId === rep.id}
+                  onManage={onManageRepresentatives}
+                  onDelete={() => { void onDeleteRepresentative(rep.id); }}
+                />
+              ))}
+            </div>
+          </ListingsSection>
+
           <ListingsSection
             title="Eventos"
             emptyText="Nenhum evento publicado."
@@ -1393,45 +1410,7 @@ function MyListings({
             </MarketGrid>
           </ListingsSection>
 
-          <ListingsSection
-            title="Locais"
-            emptyText="Nenhum local cadastrado."
-            actionLabel={locations.length > 0 ? 'Gerenciar' : '+ Local'}
-            onAction={onManageLocations}
-            isEmpty={locations.length === 0}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {locations.map(location => (
-                <LocationListingCard
-                  key={location.id}
-                  location={location}
-                  deleting={deletingId === location.id}
-                  onManage={onManageLocations}
-                  onDelete={() => { void onDeleteLocation(location.id); }}
-                />
-              ))}
-            </div>
-          </ListingsSection>
 
-          <ListingsSection
-            title="Representantes"
-            emptyText="Nenhum representante cadastrado."
-            actionLabel={representatives.length > 0 ? 'Gerenciar' : '+ Representante'}
-            onAction={onManageRepresentatives}
-            isEmpty={representatives.length === 0}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {representatives.map(rep => (
-                <RepresentativeListingCard
-                  key={rep.id}
-                  rep={rep}
-                  deleting={deletingId === rep.id}
-                  onManage={onManageRepresentatives}
-                  onDelete={() => { void onDeleteRepresentative(rep.id); }}
-                />
-              ))}
-            </div>
-          </ListingsSection>
         </div>
         </>
       )}
@@ -1501,59 +1480,6 @@ function ListingsSection({ title, emptyText, actionLabel, onAction, secondaryAct
         </div>
       ) : children}
     </section>
-  );
-}
-
-function LocationListingCard({ location, deleting, onManage, onDelete }: {
-  location: Location;
-  deleting: boolean;
-  onManage: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <div style={{
-      padding: 14,
-      borderRadius: 16,
-      background: 'var(--card)',
-      border: '1px solid var(--line)',
-      display: 'flex',
-      justifyContent: 'space-between',
-      gap: 12,
-      alignItems: 'flex-start',
-    }}>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Chip color="#F58220">{locationTypeLabel(location.type)}</Chip>
-          {location.whatsapp && <Chip color="#25D366">WhatsApp</Chip>}
-        </div>
-        <div style={{ marginTop: 8, fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{location.name}</div>
-        <div style={{ marginTop: 3, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
-          {[location.address, location.city, location.state].filter(Boolean).join(' · ') || 'Sem endereço'}
-        </div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, alignItems: 'flex-end' }}>
-        <button onClick={onManage} style={{
-          background: 'transparent',
-          border: '1px solid var(--line)',
-          borderRadius: 10,
-          color: 'var(--ink-2)',
-          fontSize: 12,
-          fontWeight: 600,
-          padding: '6px 9px',
-          cursor: 'pointer',
-        }}>Gerenciar</button>
-        <button onClick={onDelete} disabled={deleting} style={{
-          background: 'none',
-          border: 'none',
-          cursor: deleting ? 'not-allowed' : 'pointer',
-          color: '#F25C54',
-          fontSize: 12,
-          fontWeight: 600,
-          padding: 0,
-          opacity: deleting ? 0.6 : 1,
-        }}>{deleting ? 'Excluindo...' : 'Excluir'}</button>
-      </div>
-    </div>
   );
 }
 

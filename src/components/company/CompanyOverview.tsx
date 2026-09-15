@@ -119,14 +119,16 @@ export default function CompanyOverview(props: Props) {
       {publications.length ? <ol className="co-ranking">{publications.slice(0, 5).map(item => <li key={`${item.type}-${item.id}`}><div><span>{item.label}</span><h3>{item.name}</h3><div className="co-bar" aria-hidden="true"><i style={{ width: `${item.count / Math.max(1, publications[0].count) * 100}%` }} /></div></div><strong aria-label={`${item.count} médicos interessados`}>{item.count}</strong></li>)}</ol> : <div className="co-empty"><p>Os resultados aparecerão depois que você publicar sua primeira oportunidade.</p><button onClick={onPublish}>Publicar oportunidade</button></div>}
     </section>
 
+    <section className="co-section" aria-labelledby="co-company"><div className="co-section-heading"><h2 id="co-company">Prepare sua empresa para conectar</h2><span>{done}/{checklist.length}</span></div><progress aria-label="Configuração da empresa" value={done} max={checklist.length} />
+      <div className="co-checklist">{checklist.map(step => <button key={step.label} onClick={step.action}><span>{step.label}</span><span>{step.done ? 'Concluído · Editar' : 'Completar →'}</span></button>)}</div>
+      <div className="co-actions"><button className="co-primary" onClick={() => onManage('representatives')}>Cadastrar representante</button></div>
+    </section>
+
     <section className="co-section" aria-labelledby="co-agenda"><div className="co-section-heading"><h2 id="co-agenda">Próximos eventos</h2><span className="co-caption">Em ordem de data</span></div>
       {upcoming.length ? upcoming.map(event => <button className="co-event" key={event.id} onClick={() => props.onEvent(event.id)}><span className="co-event-date">{dateLabel(event.date)}</span><span><strong>{event.title}</strong><small>{event.time || 'Horário a confirmar'} · {event.location}</small><small>{event.registeredCount} de {event.maxParticipants} vagas preenchidas</small></span><span aria-hidden="true">↗</span></button>) : <p className="co-caption">Nenhum evento futuro publicado. Crie uma oportunidade para reunir médicos.</p>}
     </section>
 
-    <section className="co-section" aria-labelledby="co-company"><div className="co-section-heading"><h2 id="co-company">Prepare sua empresa para conectar</h2><span>{done}/{checklist.length}</span></div><progress aria-label="Configuração da empresa" value={done} max={checklist.length} />
-      <div className="co-checklist">{checklist.map(step => <button key={step.label} onClick={step.action}><span>{step.label}</span><span>{step.done ? 'Concluído · Editar' : 'Completar →'}</span></button>)}</div>
-      <div className="co-actions"><button onClick={() => onManage('representatives')}>Representantes ({props.representativeCount})</button><button onClick={() => onManage('locations')}>Locais ({props.locationCount})</button></div>
-    </section>
+
     <InviteShareCard target="medico" />
   </div>;
 }
