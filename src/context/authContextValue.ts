@@ -38,7 +38,7 @@ export interface AuthContextType {
   updateRepresentative: (id: string, patch: Partial<Pick<Representative, 'name' | 'specialty' | 'region' | 'city' | 'state' | 'whatsapp' | 'email' | 'bio' | 'photoUrl'>>) => Promise<void>;
   deleteRepresentative: (id: string) => Promise<void>;
   addLead: (lead: LeadInput) => Promise<AddLeadResult>;
-  requestConnection: (leadId: string) => Promise<void>;
+  requestConnection: (leadId: string) => Promise<string | void>;
   approveConnection: (leadId: string) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;

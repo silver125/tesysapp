@@ -11,7 +11,8 @@ export function groupCompanyContacts(leads: Lead[]): Lead[] {
       ? lead.itemId ?? 'company' : 'other';
     const key = `${lead.companyId}:${lead.doctorId}:${representative}`;
     const current = groups.get(key);
-    if (!current || CONNECTION_RANK[lead.connectionStatus ?? 'none'] > CONNECTION_RANK[current.connectionStatus ?? 'none']) {
+    if (!current || CONNECTION_RANK[lead.connectionStatus ?? 'none'] > CONNECTION_RANK[current.connectionStatus ?? 'none']
+      || (lead.connectionStatus === current.connectionStatus && Boolean(lead.contactConsentAt) && !current.contactConsentAt)) {
       groups.set(key, lead);
     }
   }

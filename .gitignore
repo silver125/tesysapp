@@ -37,3 +37,6 @@ tesysapp/
 *.sw?
 .vercel
 .env*
+
+# Supabase CLI local cache
+supabase/.temp/

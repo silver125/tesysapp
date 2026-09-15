@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { runCompanyContactAction } from '../../lib/companyContactAction';
 import type { Course, Event, Lead, Product, User } from '../../types';
 import { buildWhatsappLink } from '../../lib/uiHelpers';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
@@ -20,7 +21,7 @@ type Props = {
   onPublish: () => void;
   onManage: (tab: 'listings' | 'representatives' | 'locations') => void;
   onEvent: (id: string) => void;
-  onRequestConnection: (id: string) => Promise<void>;
+  onRequestConnection: (id: string) => Promise<string | void>;
 };
 
 function dateLabel(value: string) {
@@ -64,8 +65,8 @@ export default function CompanyOverview(props: Props) {
     setError('');
     setNotice('');
     try {
-      await props.onRequestConnection(lead.id);
-      setNotice(`Pedido enviado para ${lead.doctorName || 'o médico'}. Aguarde a aprovação.`);
+      await runCompanyContactAction(lead, props.onRequestConnection);
+      setNotice(lead.contactConsentAt ? 'Conexão aceita. O WhatsApp está disponível.' : `Pedido enviado para ${lead.doctorName || 'o médico'}. Aguarde a aprovação.`);
     } catch {
       setError('Não foi possível enviar o pedido. Tente novamente.');
     } finally {
@@ -97,7 +98,7 @@ export default function CompanyOverview(props: Props) {
 
     <section className="co-section" aria-labelledby="co-priority">
       <div className="co-section-heading"><h2 id="co-priority">Próximas conversas</h2><button className="co-text-button" onClick={() => onConnections('none')}>Ver novos →</button></div>
-      <p className="co-caption">Novos interesses primeiro. O WhatsApp é liberado após a aprovação do médico.</p>
+      <p className="co-caption">Aceite os interesses com contato autorizado e converse pelo WhatsApp.</p>
       {error && <p role="alert" className="co-feedback">{error}</p>}
       {notice && <p role="status" className="co-feedback">{notice}</p>}
       {priority.length ? <div className="co-contact-list">{priority.map(lead => {
@@ -105,8 +106,8 @@ export default function CompanyOverview(props: Props) {
         const whatsapp = approved ? buildWhatsappLink(lead.doctorWhatsapp, `Olá ${lead.doctorName}, vi seu interesse em ${lead.itemName} na Tessy. Podemos conversar?`) : '';
         return <article className="co-contact" key={lead.id}>
           <div className="co-avatar" aria-hidden="true">{(lead.doctorName || 'M').slice(0, 1)}</div>
-          <div className="co-contact-info"><span className="co-status">{approved ? 'Conexão aprovada' : 'Novo interesse'} · {dateLabel(lead.createdAt)}</span><h3>{lead.doctorName || 'Médico'}</h3><p>{lead.doctorSpecialty || 'Especialidade não informada'}</p><p className="co-contact-item">{lead.itemName}</p></div>
-          {whatsapp ? <a className="co-contact-action" href={whatsapp} target="_blank" rel="noopener noreferrer">Abrir WhatsApp ↗</a> : approved ? <span className="co-contact-action">WhatsApp não informado</span> : <button className="co-contact-action" disabled={pendingIds.includes(lead.id)} onClick={() => void request(lead)}>{pendingIds.includes(lead.id) ? 'Enviando…' : 'Solicitar conexão →'}</button>}
+          <div className="co-contact-info"><span className="co-status">{approved ? 'Conexão aceita' : lead.contactConsentAt ? 'Contato autorizado' : 'Novo interesse'} · {dateLabel(lead.createdAt)}</span><h3>{lead.doctorName || 'Médico'}</h3><p>{lead.doctorSpecialty || 'Especialidade não informada'}</p><p className="co-contact-item">{lead.itemName}</p></div>
+          {whatsapp ? <a className="co-contact-action" href={whatsapp} target="_blank" rel="noopener noreferrer">Abrir WhatsApp ↗</a> : approved ? <span className="co-contact-action">WhatsApp não informado</span> : <button className="co-contact-action" disabled={pendingIds.includes(lead.id)} onClick={() => void request(lead)}>{pendingIds.includes(lead.id) ? 'Confirmando…' : lead.contactConsentAt ? 'Aceitar e conversar →' : 'Solicitar conexão →'}</button>}
         </article>;
       })}</div> : <div className="co-empty"><h3>{contacts.length ? 'Pedidos enviados. Próximo passo: aprovação.' : 'Sua próxima conexão começa com uma oportunidade.'}</h3><p>{contacts.length ? 'Acompanhe os pedidos enquanto os médicos avaliam suas solicitações.' : 'Publique um produto, parceria, evento ou workshop. Os médicos interessados aparecerão aqui.'}</p><button onClick={() => contacts.length ? onConnections('requested') : onPublish()}>{contacts.length ? 'Acompanhar pedidos' : 'Criar oportunidade'}</button></div>}
     </section>

@@ -230,6 +230,8 @@ function dbToLead(row: Record<string, unknown>): Lead {
     intent,
     message:         row.message          as string | undefined,
     connectionStatus: (row.connection_status as Lead['connectionStatus'] | undefined) ?? 'none',
+    contactConsentAt: row.contact_consent_at as string | undefined,
+    contactConsentVersion: row.contact_consent_version as string | undefined,
     connectionRequestedAt: row.connection_requested_at as string | undefined,
     connectionApprovedAt:  row.connection_approved_at  as string | undefined,
     createdAt:       (row.created_at as string | null) || new Date().toISOString(),
@@ -1427,6 +1429,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const addLead = async (input: LeadInput): Promise<AddLeadResult> => {
     if (!user || user.role !== 'medico') throw new Error('Entre com seu perfil médico para registrar interesse.');
     if (!isSupabaseConfigured) throw new Error('Conexões indisponíveis. Tente novamente mais tarde.');
+    if (input.contactConsentVersion) {
+      if (input.itemType !== 'product' || !input.itemId) throw new Error('Produto não encontrado.');
+      const { data, error } = await supabase.rpc('register_product_interest', {
+        p_product_id: input.itemId, p_consent_version: input.contactConsentVersion,
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.lead?.id) throw new Error('Não foi possível confirmar o interesse.');
+      const persisted = dbToLead(data.lead);
+      setLeads(prev => [persisted, ...prev.filter(l => l.id !== persisted.id)]);
+      await refreshProfile();
+      return {created: data.created === true, leadId: persisted.id, pointsAwarded: Number(data.pointsAwarded) || 0};
+    }
     const lead: Lead = {
       id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}`,
       ...input,
@@ -1555,6 +1569,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured) throw new Error('Conexões indisponíveis. Tente novamente mais tarde.');
     const target = leads.find(lead => lead.id === leadId && lead.companyId === user.id);
     if (!target) throw new Error('Contato não encontrado. Atualize a página.');
+    if (target.contactConsentAt) {
+      const { data, error } = await supabase.rpc('accept_product_interest', { p_lead_id: leadId });
+      if (error) throw new Error(error.message);
+      if (!data?.id || data.connection_status !== 'approved') throw new Error('Não foi possível confirmar a conexão.');
+      const accepted = dbToLead(data);
+      setLeads(prev => prev.map(lead => lead.id === leadId ? accepted : lead));
+      void refreshLeads();
+      return accepted.doctorWhatsapp;
+    }
     if (target.connectionStatus === 'approved' || target.connectionStatus === 'requested') return;
     const { error } = await supabase.rpc('request_lead_connection', { p_lead_id: leadId });
     if (error) throw new Error(error.message);

@@ -630,12 +630,14 @@ function QuickDoctorOpportunity({ item, onOpen }: { item: DoctorOpportunity; onO
   const target = item.product || item.event;
   const itemType = item.product ? 'product' : 'event';
   const intent = item.product ? (item.product.listingType === 'partnership' ? 'instagram_partnership' : 'sample_request') : 'event_interest';
-  const interested = sent || Boolean(target && leads.some(lead => lead.doctorId === user?.id && lead.itemType === itemType && lead.itemId === target.id && lead.intent === intent));
+  const existingInterest = target && leads.find(lead => lead.doctorId === user?.id && lead.itemType === itemType && lead.itemId === target.id && lead.intent === intent);
+  const interested = sent || Boolean(existingInterest);
   async function expressInterest() {
     if (!target || busy || interested) return;
+    if (item.product && !user?.whatsapp) { openProfileSettings(); return; }
     setBusy(true); setError('');
     try {
-      const result = await addLead({companyId:item.companyId, companyName:item.companyName, itemType, itemId:target.id, itemName:item.title, intent});
+      const result = await addLead({companyId:item.companyId, companyName:item.companyName, itemType, itemId:target.id, itemName:item.title, intent, ...(item.product ? {contactConsentVersion: 'product-contact-v1' as const} : {})});
       setSent(true);
       setFeedback(result.pointsAwarded > 0 ? `+${result.pointsAwarded} pontos · Interesse enviado` : 'Interesse registrado');
     } catch { setError('Não foi possível enviar. Tente novamente.'); }
@@ -644,7 +646,8 @@ function QuickDoctorOpportunity({ item, onOpen }: { item: DoctorOpportunity; onO
   return <article className="do-opportunity do-quick-card">
     <span>{item.kind === 'event' ? 'Evento' : item.kind === 'product' ? 'Produto' : item.kind === 'rep' ? 'Representante' : 'Empresa'}</span>
     <h3>{item.title}</h3><p>{item.companyName}</p>
-    <div className="do-quick-actions"><button className="co-text-button" onClick={onOpen}>Ver detalhes</button>{target ? <button className="do-interest-button" disabled={busy || interested} onClick={() => void expressInterest()}>{busy ? 'Enviando…' : interested ? 'Interesse enviado' : `Tenho interesse · +${POINTS_PER_INTEREST} pts`}</button> : <button className="do-interest-button" onClick={onOpen}>Conhecer →</button>}</div>
+    <div className="do-quick-actions"><button className="co-text-button" onClick={onOpen}>Ver detalhes</button>{target ? <button className="do-interest-button" disabled={busy || interested} onClick={() => void expressInterest()}>{busy ? 'Enviando…' : interested ? (existingInterest?.connectionStatus === 'approved' ? 'Conexão aceita' : 'Interesse enviado') : item.product ? (user?.whatsapp ? 'Quero conhecer' : 'Cadastrar WhatsApp') : `Tenho interesse · +${POINTS_PER_INTEREST} pts`}</button> : <button className="do-interest-button" onClick={onOpen}>Conhecer →</button>}</div>
+    {item.product && !interested && <p className="do-consent-note">Ao continuar, você autoriza a {item.companyName} a falar com você pelo WhatsApp sobre este produto.</p>}
     {feedback && <p role="status" className="do-action-feedback">{feedback}</p>}{error && <p role="alert">{error}</p>}
   </article>;
 }
@@ -1634,16 +1637,19 @@ function EventCard({ ev }: { ev: Event }) {
 
 /* ─── ProductCard ─── */
 function ProductCard({ product }: { product: Product }) {
-  const { addLead, leads } = useAuth();
+  const { user, addLead, leads } = useAuth();
   const [leadSent, setLeadSent] = useState(false);
   const [tint1] = categoryTint(product.category);
   const code = companyInitials(product.companyName);
-  const interestSent = leadSent || hasLeadInterest(leads, 'product', product.id, 'sample_request');
+  const intent = product.listingType === 'partnership' ? 'instagram_partnership' : 'sample_request';
+  const existingInterest = leads.find(lead => lead.itemType === 'product' && lead.itemId === product.id && lead.intent === intent);
+  const interestSent = leadSent || Boolean(existingInterest);
 
   const [leadError, setLeadError] = useState('');
 
   async function sendProductInterest() {
     if (interestSent) return;
+    if (!user?.whatsapp) { openProfileSettings(); return; }
     setLeadError('');
     setLeadSent(true);
     try {
@@ -1653,7 +1659,8 @@ function ProductCard({ product }: { product: Product }) {
         itemType: 'product',
         itemId: product.id,
         itemName: product.name,
-        intent: 'sample_request',
+        intent,
+        contactConsentVersion: 'product-contact-v1',
         message: 'Médico pediu amostra, material científico e condições comerciais.',
       });
       if (result.pointsAwarded > 0) {
@@ -1754,10 +1761,10 @@ function ProductCard({ product }: { product: Product }) {
               fontSize: 14, fontWeight: 650,
               cursor: interestSent ? 'default' : 'pointer',
             }}>
-            {interestSent ? 'Interesse enviado' : `Avisar empresa (+${POINTS_PER_INTEREST} pts)`}
+            {interestSent ? (existingInterest?.connectionStatus === 'approved' ? 'Conexão aceita' : 'Interesse enviado') : user?.whatsapp ? 'Quero conhecer' : 'Cadastrar WhatsApp'}
           </button>
           <p style={{ marginTop: 8, fontSize: 11.5, lineHeight: 1.35, color: 'var(--muted)' }}>
-            A empresa recebe seu interesse e pode pedir permissão para WhatsApp.
+            {interestSent ? (existingInterest?.connectionStatus === 'approved' ? 'A empresa já pode conversar com você.' : 'Aguarde o retorno da empresa.') : `Ao continuar, você autoriza a ${product.companyName} a falar com você pelo WhatsApp sobre este produto.`}
           </p>
         </div>
         {leadError && (

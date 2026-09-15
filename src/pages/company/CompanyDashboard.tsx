@@ -1,3 +1,4 @@
+import { runCompanyContactAction } from '../../lib/companyContactAction';
 import { createPortal } from 'react-dom';
 import { groupCompanyContacts } from '../../lib/leadConnections';
 import { BRAZIL_STATES } from '../../lib/representatives';
@@ -1794,7 +1795,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing, statusFilter
   statusFilter: ConnectionFilter;
   onStatusFilterChange: (filter: ConnectionFilter) => void;
   leads: Lead[];
-  onRequestConnection: (leadId: string) => Promise<void>;
+  onRequestConnection: (leadId: string) => Promise<string | void>;
   onStartPublishing?: () => void;
 }) {
   const [requestingId, setRequestingId] = useState<string | null>(null);
@@ -1829,7 +1830,9 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing, statusFilter
     setRequestingId(leadId);
     setRequestError('');
     try {
-      await onRequestConnection(leadId);
+      const lead = leads.find(item => item.id === leadId);
+      if (!lead) throw new Error('Contato não encontrado.');
+      await runCompanyContactAction(lead, onRequestConnection);
     } catch (err) {
       setRequestError(err instanceof Error ? err.message : 'Erro ao solicitar conexão.');
     } finally {
@@ -1847,7 +1850,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing, statusFilter
           Quem demonstrou interesse<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p style={{ marginTop: 6, color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.45 }}>
-          Médicos que clicaram em interesse nos seus anúncios. Peça permissão para WhatsApp — o médico precisa aprovar.
+          Aceite os interesses com contato autorizado. Nos demais, solicite a autorização do médico.
         </p>
       </div>
 
@@ -2085,7 +2088,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing, statusFilter
                       opacity: requestingId === lead.id ? 0.72 : 1,
                     }}
                   >
-                    {requestingId === lead.id ? 'Enviando pedido...' : 'Pedir permissão para WhatsApp'}
+                    {requestingId === lead.id ? 'Confirmando…' : lead.contactConsentAt ? 'Aceitar e conversar' : 'Pedir permissão para WhatsApp'}
                   </button>
                 )}
               </div>

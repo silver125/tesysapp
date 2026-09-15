@@ -122,12 +122,15 @@ export interface Lead {
   intent: LeadIntent;
   message?: string;
   connectionStatus?: 'none' | 'requested' | 'approved';
+  contactConsentAt?: string;
+  contactConsentVersion?: string;
   connectionRequestedAt?: string;
   connectionApprovedAt?: string;
   createdAt: string;
 }
 
 export interface LeadInput {
+  contactConsentVersion?: 'product-contact-v1';
   companyId: string;
   companyName: string;
   itemType: LeadItemType;
