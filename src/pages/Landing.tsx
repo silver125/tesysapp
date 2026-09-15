@@ -305,7 +305,7 @@ export default function Landing() {
             </div>
             <div className="lv-showcase__copy">
               <p className="lv-eyebrow">Para médicos</p>
-              <h2>Menos ruído. Mais relevância.</h2>
+              <h2>Conexões que fazem sentido.</h2>
               <p>
                 Veja conexões alinhadas à sua especialidade, região e rotina.
               </p>
