@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { useAuth } from '../context/useAuth';
 import { readDoctorPreferences, writeDoctorPreferencesLocal } from '../lib/doctorPreferences';
@@ -19,8 +20,8 @@ const COMPANY_STEPS: Step[] = [
     body: 'Quando clicam em interesse, você recebe o sinal com especialidade e contexto.',
   },
   {
-    title: 'Peça permissão para WhatsApp.',
-    body: 'O médico aprova antes de liberar o número. A conversa acontece no WhatsApp, fora do app.',
+    title: 'Aceite e converse.',
+    body: 'Aceite interesses com contato autorizado. Nos demais, solicite a autorização do médico.',
   },
 ];
 
@@ -57,7 +58,7 @@ const panelStyle: CSSProperties = {
   width: 'min(440px, 100%)',
   maxHeight: 'calc(100dvh - 36px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
   overflowY: 'auto',
-  borderRadius: 24,
+  borderRadius: 0,
   background: 'rgba(255,255,255,0.97)',
   border: '1px solid rgba(227,231,242,0.95)',
   boxShadow: '0 28px 90px rgba(52,57,73,0.22)',
@@ -67,19 +68,19 @@ const panelStyle: CSSProperties = {
 
 const primaryButton: CSSProperties = {
   height: 48,
-  borderRadius: 14,
+  borderRadius: 0,
   border: 'none',
-  background: 'linear-gradient(135deg, #4A86F7 0%, #8F83C8 52%, #FF7254 100%)',
+  background: 'var(--accent)',
   color: '#fff',
   fontSize: 15,
   fontWeight: 560,
   cursor: 'pointer',
-  boxShadow: '0 14px 34px rgba(74,134,247,0.22)',
+  boxShadow: 'none',
 };
 
 const secondaryButton: CSSProperties = {
   height: 48,
-  borderRadius: 14,
+  borderRadius: 0,
   border: '1px solid var(--line)',
   background: 'var(--chip)',
   color: 'var(--ink-2)',
@@ -129,8 +130,9 @@ function toggleValue(values: string[], value: string) {
 }
 
 function OnboardingShell({ children, onClose }: { children: ReactNode; onClose: () => void | Promise<void> }) {
-  return (
+  return createPortal(
     <div
+      className="tessy-onboarding"
       role="dialog"
       aria-modal="true"
       aria-labelledby="tessy-onboarding-title"
@@ -156,7 +158,7 @@ function OnboardingShell({ children, onClose }: { children: ReactNode; onClose: 
             style={{
               width: 34,
               height: 34,
-              borderRadius: 10,
+              borderRadius: 0,
               border: '1px solid var(--line)',
               background: 'var(--chip)',
               color: 'var(--ink-2)',
@@ -170,7 +172,7 @@ function OnboardingShell({ children, onClose }: { children: ReactNode; onClose: 
         </div>
         {children}
       </div>
-    </div>
+    </div>, document.body,
   );
 }
 
@@ -235,16 +237,16 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
           letterSpacing: 0,
           fontWeight: 560,
         }}>
-          {current === 'interesses' && 'Ajuste suas oportunidades.'}
+          {current === 'interesses' && 'O que interessa a você?'}
           {current === 'contato' && 'Seu canal profissional.'}
           {current === 'privacidade' && 'Você controla o contato.'}
           {current === 'como-funciona' && 'Como a Tessy conecta você.'}
           {current === 'pronto' && 'Pronto para usar a Tessy.'}
         </h2>
         <p style={{ marginTop: 10, color: 'var(--ink-2)', fontSize: 14, lineHeight: 1.48 }}>
-          {current === 'interesses' && 'Escolha o que você quer ver primeiro. A experiência fica mais direta para sua rotina.'}
-          {current === 'contato' && 'Empresas aprovadas podem falar com você por WhatsApp, sem chat interno complicado.'}
-          {current === 'privacidade' && 'Seu número não fica aberto publicamente. A empresa precisa pedir permissão e você aprova.'}
+          {current === 'interesses' && 'Escolha seus interesses. Você pode mudar depois.'}
+          {current === 'contato' && 'Cadastre o número que você usa para contatos profissionais.'}
+          {current === 'privacidade' && 'Seu WhatsApp só é liberado com sua autorização.'}
           {current === 'como-funciona' && 'Três ações, três resultados — tudo pelo WhatsApp, sem chat interno.'}
           {current === 'pronto' && 'Comece por Produtos, Eventos ou Representantes. Avise interesse quando fizer sentido.'}
         </p>
@@ -254,7 +256,7 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
         <div style={{
           marginTop: 16,
           padding: '11px 12px',
-          borderRadius: 14,
+          borderRadius: 0,
           border: '1px solid rgba(232,69,69,0.22)',
           background: 'rgba(232,69,69,0.08)',
           color: 'var(--danger)',
@@ -277,18 +279,19 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
               return (
                 <button
                   key={item.label}
+                  aria-pressed={selected}
                   type="button"
                   onClick={() => setInterests(prev => toggleValue(prev, item.label))}
                   style={{
                     minHeight: 78,
                     padding: '13px 12px',
                     textAlign: 'left',
-                    borderRadius: 16,
-                    border: selected ? '1px solid rgba(74,168,255,0.45)' : '1px solid var(--line)',
-                    background: selected ? 'linear-gradient(135deg, rgba(74,168,255,0.12), rgba(255,114,84,0.08))' : '#fff',
+                    borderRadius: 0,
+                    border: selected ? '1px solid var(--accent)' : '1px solid var(--line)',
+                    background: selected ? 'rgba(245,130,32,0.08)' : '#fff',
                     color: selected ? 'var(--accent-ink)' : 'var(--ink-2)',
                     cursor: 'pointer',
-                    boxShadow: selected ? '0 10px 26px rgba(74,168,255,0.10)' : 'none',
+                    boxShadow: 'none',
                   }}
                 >
                   <span style={{ display: 'block', fontSize: 15, fontWeight: 560 }}>{item.label}</span>
@@ -302,14 +305,14 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
           <div style={{
             marginTop: 14,
             padding: '12px 14px',
-            borderRadius: 16,
+            borderRadius: 0,
             background: 'rgba(246,248,255,0.94)',
             border: '1px solid var(--line)',
             color: 'var(--ink-2)',
             fontSize: 12.5,
             lineHeight: 1.45,
           }}>
-            {user.specialty ? `Perfil atual: ${user.specialty}.` : 'Complete sua especialidade no perfil para melhorar os matches.'}
+            {user.specialty ? `Especialidade: ${user.specialty}.` : 'Complete sua especialidade no perfil para melhorar os matches.'}
           </div>
         </div>
       )}
@@ -318,7 +321,7 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
         <div style={{
           marginTop: 20,
           padding: 16,
-          borderRadius: 18,
+          borderRadius: 0,
           background: '#fff',
           border: '1px solid var(--line)',
           boxShadow: '0 12px 36px rgba(52,57,73,0.08)',
@@ -348,7 +351,7 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
                 width: '100%',
                 height: 48,
                 padding: '0 14px 0 44px',
-                borderRadius: 14,
+                borderRadius: 0,
                 border: '1.5px solid var(--line)',
                 background: 'var(--bg)',
                 color: 'var(--ink)',
@@ -371,9 +374,9 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
             gap: 12,
             alignItems: 'flex-start',
             padding: 15,
-            borderRadius: 18,
+            borderRadius: 0,
             border: '1px solid rgba(74,168,255,0.28)',
-            background: 'linear-gradient(135deg, rgba(74,168,255,0.10), rgba(255,255,255,0.92))',
+            background: '#fff',
             cursor: 'pointer',
           }}>
             <input
@@ -393,16 +396,16 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
           </label>
 
           {[
-            'Empresas veem "Pedir permissão para WhatsApp" antes do contato.',
+            'Nos produtos, a autorização aparece junto ao botão de interesse.',
             'Você decide quando liberar seu número.',
-            'O WhatsApp abre direto quando você aprovar.',
+            'Após o aceite da empresa, a conversa segue no WhatsApp.',
           ].map(item => (
             <div key={item} style={{
               display: 'flex',
               gap: 9,
               alignItems: 'center',
               padding: '11px 13px',
-              borderRadius: 14,
+              borderRadius: 0,
               background: '#fff',
               border: '1px solid var(--line)',
               color: 'var(--ink-2)',
@@ -411,7 +414,7 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
               <span style={{
                 width: 7,
                 height: 7,
-                borderRadius: '50%',
+                borderRadius: 0,
                 background: 'var(--accent)',
                 flexShrink: 0,
               }} />
@@ -424,13 +427,13 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
       {current === 'como-funciona' && (
         <div style={{ marginTop: 20, display: 'grid', gap: 10 }}>
           {[
-            ['Avisar interesse', 'Notifica a empresa. Seu WhatsApp continua privado.'],
-            ['Empresa pede permissão', 'Você recebe um aviso na home para aprovar ou ignorar.'],
-            ['Aprovar contato', 'Libera seu WhatsApp — a conversa segue fora do app.'],
+            ['Escolha um produto', 'Toque em Quero conhecer e autorize o contato.'],
+            ['A empresa aceita', 'Seu WhatsApp é liberado para aquela empresa.'],
+            ['Conversem pelo WhatsApp', 'Você não precisa aprovar outro pedido.'],
           ].map(([title, body]) => (
             <div key={title} style={{
               padding: '14px 15px',
-              borderRadius: 16,
+              borderRadius: 0,
               background: '#fff',
               border: '1px solid var(--line)',
             }}>
@@ -444,9 +447,9 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
       {current === 'pronto' && (
         <div style={{
           marginTop: 20,
-          borderRadius: 20,
+          borderRadius: 0,
           padding: 18,
-          background: 'linear-gradient(135deg, rgba(74,134,247,0.13), rgba(255,114,84,0.12))',
+          background: 'rgba(245,130,32,0.06)',
           border: '1px solid rgba(74,168,255,0.24)',
         }}>
           <Mono style={{ color: 'var(--accent)', fontSize: 10, textTransform: 'uppercase' }}>
@@ -462,7 +465,7 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
             {interests.slice(0, 4).map(item => (
               <span key={item} style={{
                 padding: '7px 10px',
-                borderRadius: 999,
+                borderRadius: 0,
                 border: '1px solid rgba(255,255,255,0.70)',
                 background: 'rgba(255,255,255,0.72)',
                 color: 'var(--accent-ink)',
@@ -478,7 +481,7 @@ function DoctorOnboarding({ user, onComplete }: { user: User; onComplete: () => 
 
       <ProgressDots total={DOCTOR_STEPS.length} active={step} onClick={setStep} />
 
-      <div style={{
+      <div className="tessy-onboarding-actions" style={{
         marginTop: 22,
         display: 'grid',
         gridTemplateColumns: step === 0 ? '1fr 1.45fr' : '0.95fr 1.45fr',
@@ -538,7 +541,7 @@ function CompanyOnboarding({ onComplete }: { onComplete: () => Promise<void> }) 
 
       <ProgressDots total={COMPANY_STEPS.length} active={step} onClick={setStep} />
 
-      <div style={{
+      <div className="tessy-onboarding-actions" style={{
         marginTop: 24,
         display: 'grid',
         gridTemplateColumns: step === 0 ? '1fr 1.5fr' : '0.9fr 1.5fr',
@@ -554,7 +557,7 @@ function CompanyOnboarding({ onComplete }: { onComplete: () => Promise<void> }) 
         <button
           type="button"
           onClick={last ? onComplete : () => setStep(prev => Math.min(COMPANY_STEPS.length - 1, prev + 1))}
-          style={{ ...primaryButton, background: 'var(--accent-ink)', boxShadow: '0 12px 30px rgba(52,57,73,0.22)' }}
+          style={primaryButton}
         >
           {last ? 'Ir para o dashboard' : 'Continuar'}
         </button>
@@ -574,7 +577,7 @@ function ProgressDots({ total, active, onClick }: { total: number; active: numbe
           aria-label={`Ir para passo ${index + 1}`}
           style={{
             height: 5,
-            borderRadius: 999,
+            borderRadius: 0,
             border: 'none',
             cursor: 'pointer',
             background: index <= active ? 'var(--accent)' : 'rgba(146,153,168,0.20)',
