@@ -1,3 +1,4 @@
+import DoctorEmailPreferences from './DoctorEmailPreferences';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
@@ -305,6 +306,8 @@ export default function ProfileSettingsSheet() {
             {error}
           </div>
         )}
+
+        {mode === 'edit' && user?.role === 'medico' && <DoctorEmailPreferences userId={user.id} />}
 
         <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
           <button

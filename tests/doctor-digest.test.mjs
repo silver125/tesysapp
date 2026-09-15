@@ -1,0 +1,10 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { shouldSendDigest, selectDigestItems, renderDoctorDigest } from '../server/email/doctorDigest.mjs';
+const now = new Date('2026-09-15T12:00:00Z');
+const prefs = {optedInAt:'2026-09-01T12:00:00Z',frequency:'weekly'};
+const item = {id:'1',type:'product',title:'Novidade',companyName:'Empresa',createdAt:'2026-09-14T12:00:00Z',relevant:true};
+test('opt-in and chosen frequency are required',()=>{assert.equal(shouldSendDigest({},now),false);assert.equal(shouldSendDigest(prefs,now),true);assert.equal(shouldSendDigest({...prefs,lastSentAt:'2026-09-14T12:00:00Z'},now),false);});
+test('skip repeated, irrelevant, expired and pre-consent updates',()=>{assert.deepEqual(selectDigestItems([item,item,{...item,id:'old',createdAt:'2026-08-01'},{...item,id:'irrelevant',relevant:false},{...item,id:'expired',expiresAt:'2026-09-10'}],prefs,now),[item]);assert.deepEqual(selectDigestItems([item],{...prefs,deliveredKeys:['product:1']},now),[]);});
+test('at most three items; empty digest is never rendered',()=>{assert.equal(selectDigestItems([1,2,3,4].map(id=>({...item,id:String(id)})),prefs,now).length,3);assert.equal(renderDoctorDigest({items:[],unsubscribeUrl:'https://www.tessybr.com/'}),null);});
+test('escape publication content and use fixed Tessy destinations',()=>{const mail=renderDoctorDigest({items:[{...item,title:'<script>alert(1)</script>'}],unsubscribeUrl:'https://www.tessybr.com/email/unsubscribe?token=example'});assert.ok(!mail.html.includes('<script>'));assert.ok(mail.html.includes('&lt;script&gt;'));assert.equal(mail.from,'Tessy <contato@tessybr.com>');assert.ok(mail.text.includes('Cancelar avisos:'));assert.throws(()=>renderDoctorDigest({items:[item],unsubscribeUrl:'https://evil.example'}));});

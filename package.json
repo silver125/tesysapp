@@ -19,6 +19,7 @@
     "@rhds/tokens": "^3.1.0",
     "@supabase/supabase-js": "^2.103.3",
     "@tailwindcss/postcss": "^4.2.2",
+    "nodemailer": "10.0.10",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.14.1"
