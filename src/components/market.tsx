@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 /* ──────────────────────────────────────────────────────────────
    Componentes de marketplace (estilo vitrine, photo-first)
@@ -272,7 +273,7 @@ export function Sheet({ open, onClose, children }: {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -300,6 +301,7 @@ export function Sheet({ open, onClose, children }: {
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
