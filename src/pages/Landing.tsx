@@ -206,7 +206,7 @@ export default function Landing() {
                 <span> na Tessy.</span>
               </h1>
               <p className="lv-lead">
-                Encontre representantes de skincare, tecnologias e parcerias
+                Encontre representantes de farmacêuticas, produtos, tecnologias e parcerias
                 que atendem à sua região.
               </p>
               <div className="lv-hero__cta">
