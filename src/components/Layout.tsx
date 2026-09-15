@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
@@ -30,6 +31,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
+  const profileContentRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const displayName = displayUserLabel(user);
@@ -43,6 +45,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
   useEffect(() => {
     if (!profileOpen) return;
     function handleOutside(event: MouseEvent) {
+      if ((event.target as Element)?.closest('.tessy-app-bottom-nav') || profileContentRef.current?.contains(event.target as Node)) return;
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setProfileOpen(false);
       }
@@ -61,7 +64,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
   } as const;
 
   return (
-    <div className={`tessy-app-shell${wide ? ' tessy-app-shell--wide' : ''}${user?.role === 'empresa' ? ' tessy-app-shell--company' : ''}`} style={{ color: 'var(--ink)' }}>
+    <div className={`tessy-app-shell${wide ? ' tessy-app-shell--wide' : ''}${user?.role === 'empresa' ? ' tessy-app-shell--company' : ' tessy-app-shell--doctor'}`} style={{ color: 'var(--ink)' }}>
       <header className="tessy-app-header">
         <div className="tessy-app-header-inner">
           <div className="tessy-app-brand">
@@ -146,6 +149,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
             )}
             <button
               type="button"
+              className="tessy-header-profile"
               aria-label="Abrir menu do perfil"
               aria-expanded={profileOpen}
               onClick={() => setProfileOpen(open => !open)}
@@ -168,8 +172,8 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
             >
               {!user?.avatarUrl && <CompanyMark code={code} tint={tint} size={32} radius={999} />}
             </button>
-            {profileOpen && (
-              <div style={{
+            {profileOpen && createPortal(
+              <div ref={profileContentRef} className={`tessy-profile-menu${user?.role === 'medico' ? ' tessy-profile-menu--doctor' : ''}`} style={{
                 position: 'absolute',
                 top: 44,
                 right: 0,
@@ -256,7 +260,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                   Sair
                 </button>
               </div>
-            )}
+            , user?.role === 'medico' ? document.body : (profileMenuRef.current ?? document.body))}
           </div>
         </div>
       </header>
@@ -269,7 +273,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
         <div className="tessy-app-bottom-nav__inner">
           <div className="tessy-app-nav-inner">
             {navItems.map(item => {
-              const active = item.key === activeKey;
+              const active = item.key === 'profile' ? profileOpen : item.key === activeKey;
               const accent = 'var(--accent)';
               const muted = 'var(--muted)';
 
@@ -341,7 +345,10 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
               return (
                 <button
                   key={item.key}
-                  onClick={() => onNavChange(item.key)}
+                  onClick={() => { if(item.key === 'profile')setProfileOpen(open=>!open); else {setProfileOpen(false);onNavChange(item.key);} }}
+                  aria-label={item.label}
+                  aria-expanded={item.key === 'profile' ? profileOpen : undefined}
+                  aria-current={active && item.key !== 'profile' ? 'page' : undefined}
                   className="tessy-nav-btn"
                   style={{
                     background: active ? 'rgba(245,130,32,0.08)' : 'transparent',

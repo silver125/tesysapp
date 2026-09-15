@@ -1167,7 +1167,7 @@ button.tessy-stat-card:active {
 
 @media (max-width: 390px) {
   .tessy-nav-label {
-    font-size: 9px !important;
+    font-size: 9px !important; text-overflow: clip; overflow: visible;
   }
 
   .tessy-nav-btn {
@@ -1381,4 +1381,23 @@ body:has(.tessy-app-shell--company) *::after {
   .tessy-onboarding > div { padding: 16px !important; }
   .tessy-onboarding h2 { font-size: 25px !important; }
   .tessy-onboarding-actions { bottom: -16px; padding-bottom: 16px; }
+}
+
+/* Doctor workspace: equal navigation targets and compact mobile catalog. */
+.tessy-app-shell--doctor { background: #f7f7f8; }
+.tessy-app-shell--doctor .tessy-header-profile { display: none !important; }
+.tessy-app-shell--doctor .tessy-app-nav-inner { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 0; padding: 6px 8px; }
+.tessy-app-shell--doctor .tessy-nav-btn { min-height: 54px; border-radius: 0 !important; }
+.tessy-app-shell--doctor .tessy-app-bottom-nav__inner { background: #fff; border-top: 1px solid #dedee2; box-shadow: none; }
+.tessy-profile-menu--doctor { position: fixed !important; top: auto !important; bottom: calc(82px + env(safe-area-inset-bottom)) !important; right: max(16px,calc((100vw - 480px)/2 + 16px)) !important; width: min(320px,calc(100vw - 32px)) !important; border-radius: 0 !important; }
+.tessy-profile-menu--doctor button { min-height: 44px; border-radius: 0 !important; }
+.tessy-app-shell--doctor .tessy-market-card { border-radius: 0; box-shadow: none; }
+@media (max-width: 600px) {
+ .tessy-app-shell--doctor .tessy-market-grid { grid-template-columns: minmax(0,1fr); }
+ .tessy-app-shell--doctor .tessy-app-main { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 600px) {
+ .tessy-app-shell--doctor .tessy-market-card > div:first-child { aspect-ratio: 16 / 9 !important; }
+ .tessy-app-shell--doctor .tessy-nav-btn > span { font-size: 9px !important; text-overflow: clip; overflow: visible; }
 }

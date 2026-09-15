@@ -62,20 +62,16 @@ function IcoBox(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
 }
-function IcoSearch() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#fff" strokeWidth="2">
-      <circle cx="10" cy="10" r="6.5" />
-      <path d="M15 15l4 4" strokeLinecap="round" />
-    </svg>
-  );
+function IcoRepresentative(active: boolean) {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? 'var(--accent)' : '#6F7A90'} strokeWidth="1.7"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0116 0v2M12 15v6" strokeLinecap="round"/></svg>;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'home',             label: 'Início',   icon: IcoHome },
   { key: 'products',         label: 'Produtos', icon: IcoBox },
-  { key: 'representatives',  label: 'Buscar reps', icon: IcoSearch, big: true, variant: 'search' },
+  { key: 'representatives',  label: 'Representantes', icon: IcoRepresentative },
   { key: 'events',           label: 'Eventos',  icon: IcoCalendar },
+  { key: 'profile', label: 'Perfil', icon: (active: boolean) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? 'var(--accent)' : '#6F7A90'} strokeWidth="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0116 0v3"/></svg> },
 ];
 
 const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
