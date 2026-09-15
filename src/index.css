@@ -1167,7 +1167,7 @@ button.tessy-stat-card:active {
 
 @media (max-width: 390px) {
   .tessy-nav-label {
-    font-size: 9px !important; text-overflow: clip; overflow: visible;
+    font-size: 9px !important;
   }
 
   .tessy-nav-btn {
@@ -1401,3 +1401,8 @@ body:has(.tessy-app-shell--company) *::after {
  .tessy-app-shell--doctor .tessy-market-card > div:first-child { aspect-ratio: 16 / 9 !important; }
  .tessy-app-shell--doctor .tessy-nav-btn > span { font-size: 9px !important; text-overflow: clip; overflow: visible; }
 }
+
+.tessy-app-shell--doctor .tessy-app-nav-inner { width: 100%; box-sizing: border-box; }
+.tessy-app-shell--doctor .tessy-nav-btn { width: 100%; max-width: none; height: 60px; gap: 5px !important; padding: 6px 0 !important; }
+.tessy-app-shell--doctor .tessy-nav-btn > svg { display: block; width: 24px; height: 24px; flex: 0 0 24px; }
+.tessy-app-shell--doctor .tessy-nav-btn:focus-visible { outline: 2px solid #ff4f00; outline-offset: -2px; }

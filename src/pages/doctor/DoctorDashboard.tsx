@@ -50,28 +50,15 @@ function includesQ(value: string | undefined | null, q: string) {
   return (value ?? '').toLowerCase().includes(q);
 }
 
-function IcoHome(a: boolean) {
-  const c = a ? 'var(--accent)' : '#6F7A90';
-  return <svg width="20" height="19" viewBox="0 0 20 19" fill="none" stroke={c} strokeWidth="1.6"><path d="M2 9l8-7 8 7v9H13v-5H7v5H2z" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+function DoctorNavIcon({ active, children }: { active: boolean; children: ReactNode }) {
+  return <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? 'var(--accent)' : '#6F7A90'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{children}</svg>;
 }
-function IcoCalendar(a: boolean) {
-  const c = a ? 'var(--accent)' : '#6F7A90';
-  return <svg width="19" height="19" viewBox="0 0 19 19" fill="none" stroke={c} strokeWidth="1.6"><rect x="1.5" y="3.5" width="16" height="14" rx="2"/><path d="M13.5 2v3M5.5 2v3M1.5 8.5h16" strokeLinecap="round"/></svg>;
-}
-function IcoBox(a: boolean) {
-  const c = a ? 'var(--accent)' : '#6F7A90';
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
-}
-function IcoRepresentative(active: boolean) {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? 'var(--accent)' : '#6F7A90'} strokeWidth="1.7"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0116 0v2M12 15v6" strokeLinecap="round"/></svg>;
-}
-
 const NAV_ITEMS: NavItem[] = [
-  { key: 'home',             label: 'Início',   icon: IcoHome },
-  { key: 'products',         label: 'Produtos', icon: IcoBox },
-  { key: 'representatives',  label: 'Representantes', icon: IcoRepresentative },
-  { key: 'events',           label: 'Eventos',  icon: IcoCalendar },
-  { key: 'profile', label: 'Perfil', icon: (active: boolean) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? 'var(--accent)' : '#6F7A90'} strokeWidth="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0116 0v3"/></svg> },
+  { key: 'home', label: 'Início', icon: active => <DoctorNavIcon active={active}><path d="m3 10 9-7 9 7v11h-6v-7H9v7H3z"/></DoctorNavIcon> },
+  { key: 'products', label: 'Produtos', icon: active => <DoctorNavIcon active={active}><path d="m12 3 9 5v9l-9 5-9-5V8zM3 8l9 5 9-5M12 13v9M7.5 5.5l9 5"/></DoctorNavIcon> },
+  { key: 'representatives', label: 'Representantes', icon: active => <DoctorNavIcon active={active}><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0116 0v2M12 15v6"/></DoctorNavIcon> },
+  { key: 'events', label: 'Eventos', icon: active => <DoctorNavIcon active={active}><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h2M15 15h2"/></DoctorNavIcon> },
+  { key: 'profile', label: 'Perfil', icon: active => <DoctorNavIcon active={active}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M5.5 18a7 7 0 0113 0"/></DoctorNavIcon> },
 ];
 
 const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
