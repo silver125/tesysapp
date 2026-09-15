@@ -158,14 +158,12 @@ function isMissingImageBucketError(error: unknown) {
     || message.toLowerCase().includes('bucket de imagens');
 }
 
-async function uploadOpportunityImageRequired(
+async function uploadOpportunityImageOptional(
   file: File | null,
   companyId: string,
   folder: 'events' | 'products' | 'courses',
 ) {
-  if (!file) {
-    throw new Error('Adicione uma foto — anúncios com imagem recebem muito mais contatos.');
-  }
+  if (!file) return undefined;
   try {
     const url = await uploadOpportunityImage(file, companyId, folder);
     if (!url?.trim()) {
@@ -175,7 +173,7 @@ async function uploadOpportunityImageRequired(
   } catch (error) {
     if (isMissingImageBucketError(error)) {
       throw new Error(
-        'Upload de imagens indisponível. Rode supabase/fix_course_images.sql no Supabase e tente de novo.',
+        'Não foi possível enviar a foto. Tente novamente ou remova a imagem para publicar sem ela.',
       );
     }
     throw error instanceof Error ? error : new Error('Erro ao enviar imagem.');
@@ -829,7 +827,6 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
     if (step === 0) return '';
     if (kind === 'event') {
       if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
-      if (!evImage.file) return 'Adicione uma foto de capa — anúncios com foto recebem muito mais contatos.';
       if (!ev.title.trim()) return 'Informe o título do evento.';
       if (!ev.date) return 'Selecione a data do evento.';
       if (!isEventDateInAllowedRange(ev.date)) return 'Selecione uma data entre 2026 e 2030.';
@@ -838,18 +835,12 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
     }
     if (kind === 'product') {
       if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
-      if (!prImage.file) {
-        return isPartnership
-          ? 'Adicione uma foto da parceria — anúncios com foto recebem muito mais contatos.'
-          : 'Adicione uma foto do produto — anúncios com foto recebem muito mais contatos.';
-      }
       if (!pr.name.trim()) {
         return isPartnership ? 'Informe o nome da parceria.' : 'Informe o nome do produto.';
       }
     }
     if (kind === 'course') {
       if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
-      if (!coImage.file) return 'Adicione uma imagem — anúncios com foto recebem muito mais contatos.';
       if (!co.title.trim()) return 'Informe o título da capacitação.';
       if (!co.instructor.trim()) return 'Informe o nome do instrutor.';
       if (!co.date) return 'Selecione a data.';
@@ -889,7 +880,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
     setSaving(true);
     try {
       if (kind === 'event') {
-        const imageUrl = await uploadOpportunityImageRequired(evImage.file, company.id, 'events');
+        const imageUrl = await uploadOpportunityImageOptional(evImage.file, company.id, 'events');
         await onSaveEvent({
           ...ev,
           maxParticipants: Number(ev.maxParticipants),
@@ -898,7 +889,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else if (kind === 'product') {
-        const imageUrl = await uploadOpportunityImageRequired(prImage.file, company.id, 'products');
+        const imageUrl = await uploadOpportunityImageOptional(prImage.file, company.id, 'products');
         await onSaveProduct({
           ...pr,
           website: normalizeUrl(pr.website),
@@ -909,7 +900,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
         });
       } else {
-        const imageUrl = await uploadOpportunityImageRequired(coImage.file, company.id, 'courses');
+        const imageUrl = await uploadOpportunityImageOptional(coImage.file, company.id, 'courses');
         await onSaveCourse({
           ...co,
           website: normalizeUrl(co.website),
@@ -968,7 +959,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
               const target = option.target as 'event' | 'product' | 'course';
               const selected = selectedChoice === id;
               return (
-                <button key={id} onClick={() => {
+                <button key={id} type="button" aria-pressed={selected} onClick={() => {
                   setSelectedChoice(id);
                   setKind(target);
                   if (id === 'partnership') {
@@ -979,7 +970,6 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
                     }));
                   }
                   setSaveError('');
-                  setStep(1);
                 }} style={{
                   padding: '16px', borderRadius: 16, cursor: 'pointer', textAlign: 'left',
                   background: selected ? 'rgba(245,130,32,0.10)' : 'var(--card)',
@@ -1012,11 +1002,11 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
             Publicar evento<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
-            Adicione uma foto de capa e preencha os dados do evento para publicar.
+            Preencha os dados do evento. A foto é opcional.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <ImageUploadField
-              label="FOTO DE CAPA"
+              label="FOTO DE CAPA (opcional)"
               preview={evImage.preview}
               onChange={file => setImageDraft(setEvImage, file)}
             />
@@ -1044,12 +1034,12 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
           </h2>
           <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, marginBottom: 16 }}>
             {isPartnership
-              ? 'Foto + proposta clara. Um toque para publicar.'
-              : 'Foto + resumo. Médicos entram em contato direto.'}
+              ? 'Descreva sua proposta. A foto é opcional.'
+              : 'Apresente o produto. A foto é opcional.'}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <ImageUploadField
-              label={isPartnership ? 'FOTO DA PARCERIA' : 'FOTO DO PRODUTO'}
+              label={isPartnership ? 'FOTO DA PARCERIA (opcional)' : 'FOTO DO PRODUTO (opcional)'}
               preview={prImage.preview}
               onChange={file => setImageDraft(setPrImage, file)}
             />
@@ -1070,11 +1060,11 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
             Publicar workshop<span style={{ color: 'var(--accent)' }}>.</span>
           </h2>
           <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
-            Foto + agenda. Tudo em uma tela.
+            Preencha a agenda do workshop. A foto é opcional.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <ImageUploadField
-              label="FOTO DO WORKSHOP"
+              label="FOTO DO WORKSHOP (opcional)"
               preview={coImage.preview}
               onChange={file => setImageDraft(setCoImage, file)}
             />
@@ -1124,7 +1114,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
       )}
 
       {/* Nav buttons */}
-      {step === 1 && createPortal(<div className="tessy-publish-actions">
+      {createPortal(<div className="tessy-publish-actions">
         {step > 0 && !skipTypeStep && (
           <button aria-label="Voltar para tipos de anúncio" onClick={() => { setSaveError(''); setStep(s => s - 1); }} disabled={saving} style={{
             width: 52, height: 52, borderRadius: 14, border: '1px solid var(--line)',
@@ -1132,14 +1122,14 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
             color: 'var(--ink)', fontSize: 20, opacity: saving ? 0.5 : 1,
           }}>←</button>
         )}
-          <button onClick={handleFinish} disabled={saving} style={{
+          <button type="button" onClick={() => step === 0 ? setStep(1) : void handleFinish()} disabled={saving} style={{
             flex: 1, height: 52, borderRadius: 14, border: 'none',
             background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
             cursor: saving ? 'not-allowed' : 'pointer',
             fontSize: 15, fontWeight: 560, opacity: saving ? 0.8 : 1,
             boxShadow: '0 6px 24px rgba(245,130,32,0.32)',
           }}>
-            {saving
+            {step === 0 ? 'Continuar →' : saving
               ? 'Publicando...'
               : `Publicar ${isPartnership ? 'parceria' : kind === 'event' ? 'evento' : kind === 'product' ? 'produto' : 'workshop'} ✓`}
           </button>
