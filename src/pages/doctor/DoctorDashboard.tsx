@@ -1,7 +1,6 @@
 import '../../components/company/companyOverview.css';
 import './doctorOverview.css';
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useDashboardTab } from '../../hooks/useDashboardTab';
 import Layout, { type NavItem } from '../../components/Layout';
 import { openProfileSettings, openHelp } from '../../lib/profileSettingsEvents';
@@ -31,13 +30,11 @@ import { formatLeadError } from '../../lib/leadErrors';
 import { getLevelProgress, getBadges, POINTS_PER_INTEREST, POINTS_PER_CONNECTION, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import { fetchCompanyLogos } from '../../lib/companyBranding';
-import CompanyAvatar from '../../components/CompanyAvatar';
 import FirstVisitTip from '../../components/FirstVisitTip';
-import InviteShareCard from '../../components/InviteShareCard';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
-type Tab = 'home' | 'products' | 'events' | 'representatives' | 'companies';
+type Tab = 'home' | 'products' | 'events' | 'representatives';
 type ScheduleLike = { date?: string | null; time?: string | null; start_date?: string | null; event_date?: string | null };
 type CompanyMatch = {
   id: string;
@@ -65,16 +62,6 @@ function IcoBox(a: boolean) {
   const c = a ? 'var(--accent)' : '#6F7A90';
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6"><path d="M17.5 13.5V6.5a1.5 1.5 0 00-.8-1.3l-6-3.3a1.5 1.5 0 00-1.4 0l-6 3.3A1.5 1.5 0 002.5 6.5v7a1.5 1.5 0 00.8 1.3l6 3.3a1.5 1.5 0 001.4 0l6-3.3a1.5 1.5 0 00.8-1.3z"/><path d="M2.8 5.8L10 10l7.2-4.2M10 18V10" strokeLinecap="round"/></svg>;
 }
-function IcoCompanies(a: boolean) {
-  const c = a ? 'var(--accent)' : '#6F7A90';
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.6">
-      <path d="M4 17V4.5A1.5 1.5 0 015.5 3h9A1.5 1.5 0 0116 4.5V17" strokeLinejoin="round" />
-      <path d="M7 7h2M11 7h2M7 10h2M11 10h2M8 17v-4h4v4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function IcoSearch() {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#fff" strokeWidth="2">
@@ -89,7 +76,6 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'products',         label: 'Produtos', icon: IcoBox },
   { key: 'representatives',  label: 'Buscar reps', icon: IcoSearch, big: true, variant: 'search' },
   { key: 'events',           label: 'Eventos',  icon: IcoCalendar },
-  { key: 'companies',        label: 'Empresas', icon: IcoCompanies },
 ];
 
 const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
@@ -241,7 +227,7 @@ function doctorCityLabel(user: User | null | undefined) {
 export default function DoctorDashboard() {
   const { user, events, products, courses, leads, locations, representatives: registeredReps, refreshData } = useAuth();
   const [tab, setTab] = useDashboardTab<Tab>('home', [
-    'home', 'products', 'events', 'representatives', 'companies',
+    'home', 'products', 'events', 'representatives',
   ] as const);
   const [search, setSearch] = useState('');
   const [connectionView, setConnectionView] = useState<'requested' | 'approved'>('requested');
@@ -334,20 +320,12 @@ export default function DoctorDashboard() {
       && matchesRepresentativeCategory(rep, repCategory);
   });
   const companyMatches = buildCompanyMatches(events, products, courses, locations);
-  const filtCompanies = companyMatches.filter(co => {
-    return !q
-      || includesQ(co.name, q)
-      || co.products.some(p => includesQ(p.name, q))
-      || co.events.some(e => includesQ(e.title, q))
-      || co.courses.some(c => includesQ(c.title, q));
-  });
   const homeFeed = buildHomeFeed(homeProductPool, homeEvents, homeWorkshops, representatives);
   const marketplaceCounts = {
     products: products.length,
     events: upcomingEvents.length + courses.length,
     workshops: courses.length,
     reps: representatives.length,
-    companies: filtCompanies.length,
   };
   const opportunities = pickDoctorOpportunities(
     companyMatches,
@@ -389,7 +367,7 @@ export default function DoctorDashboard() {
       openTab('representatives', item.companyName);
       return;
     }
-    openTab('companies', item.companyName);
+    openTab('representatives', item.companyName);
   }
 
   function goTab(k: string) {
@@ -419,7 +397,7 @@ export default function DoctorDashboard() {
             <HomeGreeting />
             <div className="co-actions">
               <button className="co-primary" onClick={() => openTab('representatives')}>Buscar representantes ↗</button>
-              <button onClick={() => openTab('companies')}>Ver empresas</button>
+              <button onClick={() => openTab('representatives')}>Ver representantes</button>
             </div>
           </header>
 
@@ -441,7 +419,7 @@ export default function DoctorDashboard() {
               {!user?.whatsapp && <SlimProfileBanner onFix={openProfileSettings} />}
             </> : <div id="doctor-connections" className="do-approved">
               {doctorLeads.some(lead => lead.connectionStatus === 'approved') ? doctorLeads.filter(lead => lead.connectionStatus === 'approved').map(lead => (
-                <button className="co-event" key={lead.id} onClick={() => openTab('companies', lead.companyName)}><span><strong>{lead.companyName}</strong><small>{lead.itemName}</small></span><span aria-hidden="true">↗</span></button>
+                <button className="co-event" key={lead.id} onClick={() => openTab('representatives', lead.companyName)}><span><strong>{lead.companyName}</strong><small>{lead.itemName}</small></span><span aria-hidden="true">↗</span></button>
               )) : <div className="co-empty"><p>Suas conexões aprovadas aparecerão aqui.</p><button onClick={() => openTab('representatives')}>Buscar representantes</button></div>}
             </div>}
           </section>
@@ -465,9 +443,8 @@ export default function DoctorDashboard() {
 
           <section className="co-section do-profile" aria-labelledby="do-profile-title">
             <div className="co-section-heading"><h2 id="do-profile-title">Seu perfil na Tessy</h2><button className="co-text-button" onClick={openProfileSettings}>Atualizar →</button></div>
-            <details className="do-details"><summary>Perfil e convites</summary>
+            <details className="do-details"><summary>Sobre seu perfil</summary>
               {user?.id && <FirstVisitTip userId={user.id} role="medico" />}
-              <InviteShareCard target="empresa" />
             </details>
           </section>
         </div>
@@ -526,17 +503,6 @@ export default function DoctorDashboard() {
         />
       )}
 
-      {tab === 'companies' && (
-        <CompaniesView
-          companies={filtCompanies}
-          companyLogos={companyLogos}
-          search={search}
-          onSearchChange={setSearch}
-          onOpenProducts={company => openTab('products', company)}
-          onOpenEvents={company => openTab('events', company)}
-        />
-      )}
-
       <Sheet open={openProduct !== null} onClose={() => setOpenProduct(null)}>
         <div style={{ padding: '4px 14px 14px' }}>
           {openProduct && <ProductCard product={openProduct} />}
@@ -561,7 +527,7 @@ export default function DoctorDashboard() {
         events={events}
         products={rankedProducts}
         representatives={representatives}
-        onOpenCompany={name => { setSearchOpen(false); openTab('companies', name); }}
+        onOpenCompany={name => { setSearchOpen(false); openTab('representatives', name); }}
         onOpenEvent={ev => { setSearchOpen(false); setOpenEvent(ev); }}
         onOpenProduct={p => { setSearchOpen(false); setOpenProduct(p); }}
         onOpenRep={name => { setSearchOpen(false); openTab('representatives', name); }}
@@ -792,12 +758,11 @@ function HomeExploreNav({
   counts,
   onNavigate,
 }: {
-  counts: { products: number; events: number; workshops: number; reps: number; companies: number };
+  counts: { products: number; events: number; workshops: number; reps: number };
   onNavigate: (tab: Tab) => void;
 }) {
   const items: { tab: Tab; label: string; count: number }[] = [
     { tab: 'events', label: 'Eventos', count: counts.events },
-    { tab: 'companies', label: 'Empresas', count: counts.companies },
     { tab: 'products', label: 'Produtos', count: counts.products },
     { tab: 'representatives', label: 'Representantes', count: counts.reps },
   ];
@@ -1313,167 +1278,6 @@ function RepresentativesView({
     </div>
   );
 }
-
-/* ─── Companies view ─── */
-function CompaniesView({
-  companies,
-  companyLogos,
-  search,
-  onSearchChange,
-  onOpenProducts,
-  onOpenEvents,
-}: {
-  companies: CompanyMatch[];
-  companyLogos: Record<string, string>;
-  search: string;
-  onSearchChange: (value: string) => void;
-  onOpenProducts: (company: string) => void;
-  onOpenEvents: (company: string) => void;
-}) {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-  const [saved, setSaved] = useState<Set<string>>(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('tessy-saved-companies') ?? '[]'));
-    } catch {
-      return new Set();
-    }
-  });
-
-  function toggleSaved(id: string) {
-    setSaved(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      localStorage.setItem('tessy-saved-companies', JSON.stringify([...next]));
-      return next;
-    });
-  }
-
-  async function goCompanyTestSignup() {
-    await logout();
-    navigate('/cadastro?perfil=empresa', { replace: true });
-  }
-
-  return (
-    <div className="tessy-companies">
-      <MarketHead title="Empresas" subtitle="Perfis comerciais e vitrine completa." count={companies.length} countWord="empresa" />
-
-      <div style={{
-        marginBottom: 14,
-        padding: 14,
-        borderRadius: 16,
-        border: '1px solid rgba(245,130,32,0.22)',
-        background: 'linear-gradient(135deg, rgba(245,130,32,0.10), rgba(255,255,255,0.96))',
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--accent-ink)' }}>
-          Cadastro de empresa (teste)
-        </div>
-        <p style={{ marginTop: 4, fontSize: 12, lineHeight: 1.45, color: 'var(--ink-2)' }}>
-          Crie uma conta empresa para publicar produtos/eventos e testar a vitrine do médico.
-        </p>
-        <button
-          type="button"
-          onClick={() => { void goCompanyTestSignup(); }}
-          style={{
-            marginTop: 10,
-            width: '100%',
-            minHeight: 44,
-            borderRadius: 12,
-            border: 'none',
-            background: 'var(--brand-gradient)',
-            color: '#fff',
-            fontSize: 14,
-            fontWeight: 650,
-            cursor: 'pointer',
-            boxShadow: '0 10px 22px rgba(245,130,32,0.22)',
-          }}
-        >
-          Cadastrar empresa de teste
-        </button>
-      </div>
-
-      <SearchBar value={search} onChange={onSearchChange} placeholder="Buscar empresa, produto, evento ou workshop..." />
-      {companies.length === 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Empty
-            text="Nenhuma empresa na vitrine ainda"
-            hint="Use o botão laranja acima para cadastrar uma empresa de teste."
-          />
-          <InviteShareCard target="empresa" />
-        </div>
-      ) : (
-        <div className="tessy-companies__list">
-          {companies.map(co => {
-            const workshopCount = co.courses.length;
-            const eventCount = co.events.length;
-            const agendaCount = eventCount + workshopCount;
-            return (
-              <article key={co.id} className="tessy-company-card">
-                <div className="tessy-company-card__head">
-                  <CompanyAvatar name={co.name} avatarUrl={companyLogos[co.id]} size={48} />
-                  <div className="tessy-company-card__meta">
-                    <div className="tessy-company-card__name" title={co.name}>{co.name}</div>
-                    <div className="tessy-company-card__chips">
-                      {co.products.length > 0 && (
-                        <Chip color="#1EA97C">{co.products.length} produto{co.products.length > 1 ? 's' : ''}</Chip>
-                      )}
-                      {eventCount > 0 && (
-                        <Chip color="var(--accent)">{eventCount} evento{eventCount > 1 ? 's' : ''}</Chip>
-                      )}
-                      {workshopCount > 0 && (
-                        <Chip color="#F58220">{workshopCount} workshop{workshopCount > 1 ? 's' : ''}</Chip>
-                      )}
-                      {co.products.length === 0 && agendaCount === 0 && (
-                        <span className="tessy-company-card__empty-meta">Sem anúncios ainda</span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    aria-label={saved.has(co.id) ? 'Remover dos salvos' : 'Salvar empresa'}
-                    onClick={() => toggleSaved(co.id)}
-                    className="tessy-company-card__save"
-                    style={{ color: saved.has(co.id) ? 'var(--accent)' : 'var(--muted)' }}
-                  >
-                    {saved.has(co.id) ? '★' : '☆'}
-                  </button>
-                </div>
-                <div className="tessy-company-card__actions">
-                  <button
-                    type="button"
-                    onClick={() => onOpenProducts(co.name)}
-                    className="tessy-company-card__btn"
-                    disabled={co.products.length === 0}
-                  >
-                    Produtos
-                    {co.products.length > 0 ? ` (${co.products.length})` : ''}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onOpenEvents(co.name)}
-                    className="tessy-company-card__btn"
-                    disabled={agendaCount === 0}
-                  >
-                    {workshopCount > 0 && eventCount === 0
-                      ? `Workshops (${workshopCount})`
-                      : workshopCount > 0
-                        ? `Eventos e workshops`
-                        : `Eventos${eventCount > 0 ? ` (${eventCount})` : ''}`}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-      <div style={{ marginTop: 16 }}>
-        <InviteShareCard target="empresa" />
-      </div>
-    </div>
-  );
-}
-
 
 /* ─── WebsiteLink (link para site da empresa, exibido nos cards) ─── */
 function WebsiteLink({ url }: { url?: string }) {
