@@ -61,7 +61,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
   } as const;
 
   return (
-    <div className={`tessy-app-shell${wide ? ' tessy-app-shell--wide' : ''}`} style={{ color: 'var(--ink)' }}>
+    <div className={`tessy-app-shell${wide ? ' tessy-app-shell--wide' : ''}${user?.role === 'empresa' ? ' tessy-app-shell--company' : ''}`} style={{ color: 'var(--ink)' }}>
       <header className="tessy-app-header">
         <div className="tessy-app-header-inner">
           <div className="tessy-app-brand">

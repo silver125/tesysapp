@@ -1365,3 +1365,11 @@ button.tessy-stat-card:active {
 .tessy-publish-actions button:focus-visible { outline: 3px solid #002FA7; outline-offset: 2px; }
 .tessy-publish-success { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; margin-bottom: 16px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--accent); font-size: 14px; }
 .tessy-publish-success button { background: none; border: 0; padding: 8px; cursor: pointer; font-size: 20px; }
+
+/* Company workspace uses square corners, including body-level sheets and action bars.
+   Override legacy inline radii while keeping other roles and the landing unchanged. */
+body:has(.tessy-app-shell--company) *,
+body:has(.tessy-app-shell--company) *::before,
+body:has(.tessy-app-shell--company) *::after {
+  border-radius: 0 !important;
+}
