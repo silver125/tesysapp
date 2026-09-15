@@ -656,6 +656,7 @@ export default function CompanyDashboard() {
           key={createSkipType ? `${createKind}-${createAsPartnership ? 'partnership' : 'standard'}-direct` : 'menu'}
           kind={createKind}
           setKind={setCreateKind}
+          onRegisterRepresentative={() => setTab('representatives')}
           skipTypeStep={createSkipType}
           initialPartnership={createAsPartnership}
           company={companyInfo}
@@ -759,7 +760,7 @@ export default function CompanyDashboard() {
 }
 
 /* ─── Create wizard ─── */
-function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company, onSaveEvent, onSaveProduct, onSaveCourse, onCancel }: {
+function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, initialPartnership, company, onSaveEvent, onSaveProduct, onSaveCourse, onCancel }: {
   kind: 'event' | 'product' | 'course';
   setKind: (k: 'event' | 'product' | 'course') => void;
   skipTypeStep?: boolean;
@@ -768,6 +769,7 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
   onSaveEvent: (e: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => Promise<void>;
   onSaveProduct: (p: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
   onSaveCourse: (c: Omit<Course, 'id' | 'createdAt'>) => Promise<void>;
+  onRegisterRepresentative: () => void;
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(skipTypeStep ? 1 : 0);
@@ -949,7 +951,12 @@ function CreateWizard({ kind, setKind, skipTypeStep, initialPartnership, company
             Escolha o tipo de oportunidade que deseja publicar.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[
+            <button type="button" onClick={onRegisterRepresentative} style={{display:'flex',alignItems:'center',gap:16,padding:20,border:'1px solid var(--accent)',background:'#fff',textAlign:'left',cursor:'pointer',color:'var(--ink)'}}>
+              <OpportunityIcon type="representative" />
+              <span style={{flex:1}}><strong style={{display:'block',fontSize:16}}>Cadastrar representante</strong><span style={{display:'block',marginTop:5,fontSize:13,color:'var(--ink-2)'}}>Adicione sua equipe e as regiões de atendimento.</span></span>
+              <span aria-hidden="true">→</span>
+            </button>
+            {[ 
               { id: 'event', target: 'event', title: 'Evento', desc: 'Congresso, workshop, webinar' },
               { id: 'product', target: 'product', title: 'Produto', desc: 'Produto, tecnologia ou material científico' },
               { id: 'course', target: 'course', title: 'Workshop', desc: 'Eventos e capacitações médicas' },

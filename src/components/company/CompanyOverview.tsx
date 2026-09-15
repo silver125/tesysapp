@@ -79,7 +79,8 @@ export default function CompanyOverview(props: Props) {
       <h1>Painel da empresa</h1>
       <p>Acompanhe médicos interessados e dê o próximo passo em cada relacionamento.</p>
       <div className="co-actions">
-        <button className="co-primary" onClick={onPublish}>Publicar oportunidade <span aria-hidden="true">↗</span></button>
+        <button className="co-primary" onClick={() => onManage('representatives')}>Cadastrar representante</button>
+        <button onClick={onPublish}>Publicar oportunidade <span aria-hidden="true">↗</span></button>
         <button onClick={() => onManage('listings')}>Gerenciar anúncios</button>
       </div>
     </header>
