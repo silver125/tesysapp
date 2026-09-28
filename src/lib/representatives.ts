@@ -1,3 +1,5 @@
+import { BRAZIL_STATES, statesInRegion, isNational, matchesGeography, BRAZIL_REGIONS } from './geography';
+export { BRAZIL_STATES } from './geography';
 import type { Event, Product, Course, Location, Representative, User } from '../types';
 import { companyInitials } from './uiHelpers';
 
@@ -8,6 +10,7 @@ export type RepresentativeProfile = {
   repLabel: string;
   whatsapp?: string;
   specialty: string;
+  segment?: string;
   regionLabel: string;
   regionKeys: string[];
   companyLogoUrl: string;
@@ -31,35 +34,6 @@ type CompanyBucket = {
 
 function normalizeRegion(value?: string | null) {
   return (value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
-}
-
-export const BRAZIL_STATES: Record<string, string> = {
-  AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará',
-  DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão',
-  MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Pará',
-  PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro',
-  RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima',
-  SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins',
-};
-
-function statesInRegion(value: string): string[] {
-  const normalized = normalizeRegion(value);
-  const tokens = normalized.split(/[^a-z0-9]+/);
-  // Match longer state names first: Mato Grosso do Sul must not also become MT.
-  let remaining = ` ${normalized} `;
-  const states = new Set(tokens.filter(token => token.toUpperCase() in BRAZIL_STATES));
-  for (const [uf, name] of Object.entries(BRAZIL_STATES).sort((a, b) => b[1].length - a[1].length)) {
-    const pattern = new RegExp(`(^|[^a-z])${normalizeRegion(name)}(?=$|[^a-z])`, 'g');
-    if (pattern.test(remaining)) {
-      states.add(uf.toLowerCase());
-      remaining = remaining.replace(pattern, ' ');
-    }
-  }
-  return [...states];
-}
-
-function isNational(keys: string[]): boolean {
-  return keys.some(key => /^(brasil|nacional|todo o brasil|todo brasil|atendimento nacional)$/.test(normalizeRegion(key)));
 }
 
 export function doctorRegionKeys(user?: User | null): string[] {
@@ -169,6 +143,7 @@ export function buildRepresentativeProfiles(
       repLabel: rep.name?.trim() || repLabel(rep.companyName),
       whatsapp: rep.whatsapp?.trim() || bucket?.whatsapp,
       specialty: repSpecialty,
+      segment: rep.segment ?? rep.specialty,
       regionLabel: repRegionLabel(rep, regionLabelFromLocations(bucketLocations)),
       regionKeys,
       companyLogoUrl: resolveCompanyLogo(rep.companyId, companyLogos),
@@ -238,6 +213,8 @@ export function matchesRepresentativeRegion(profile: RepresentativeProfile, filt
   const keys = profile.regionKeys.map(normalizeRegion);
   if (isNational(keys)) return true;
   const q = normalizeRegion(filter);
+  const macroRegion = Object.keys(BRAZIL_REGIONS).find(name => normalizeRegion(name) === q);
+  if (macroRegion) return matchesGeography(keys, macroRegion);
   if (q.toUpperCase() in BRAZIL_STATES) {
     return keys.some(key => statesInRegion(key).includes(q));
   }

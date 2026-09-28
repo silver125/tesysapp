@@ -11,12 +11,13 @@
   --card:        #FFFFFF;
   --ink:         #3A4258;
   --ink-2:       #5A647C;
-  --muted:       #8B93A8;
+  --muted:       #717B95;
   --line:        rgba(58, 66, 88, 0.10);
   --chip:        #EEF1F8;
 
   --accent:      #F58220;
-  --accent-blue: #3D7FE8;
+  --accent-blue: #CC510C;
+  --accent-action: #CC510C;
   --accent-ink:  #1E2433;
   --accent-soft: color-mix(in srgb, var(--accent) 12%, #FFFFFF);
   --brand-gradient: linear-gradient(118deg, #F58220 0%, #FF9A4D 100%);
@@ -1406,3 +1407,14 @@ body:has(.tessy-app-shell--company) *::after {
 .tessy-app-shell--doctor .tessy-nav-btn { width: 100%; max-width: none; height: 60px; gap: 5px !important; padding: 6px 0 !important; }
 .tessy-app-shell--doctor .tessy-nav-btn > svg { display: block; width: 24px; height: 24px; flex: 0 0 24px; }
 .tessy-app-shell--doctor .tessy-nav-btn:focus-visible { outline: 2px solid #ff4f00; outline-offset: -2px; }
+
+/* Shared medical scope, forms and non-interactive empty states. */
+.market-scope{margin:0 0 24px;padding:20px 0;border-bottom:1px solid var(--line);color:var(--ink)}
+.market-scope__intro strong{font-size:20px;letter-spacing:-.4px}.market-scope p{font-size:13px;line-height:1.5;color:var(--ink-2);margin:6px 0 16px}
+.market-scope__fields{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:14px}
+.market-scope label,.segment-field{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:600;color:var(--ink)}
+.market-scope select,.segment-field select{width:100%;min-height:46px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--card);color:var(--ink);font:inherit}
+.segment-field small{font-weight:400;font-size:12px;color:var(--ink-2);line-height:1.5}.segment-notice{padding:14px 0;color:var(--ink-2);font-size:14px}.segment-notice button{color:var(--accent-action);text-decoration:underline;background:none;border:0;cursor:pointer}
+.listings-section{padding-bottom:28px;border-bottom:1px solid var(--line)}.listings-section h2{font-size:22px;font-weight:650;margin-bottom:20px}.listings-section h2 span{color:var(--accent)}.listings-empty{color:var(--ink-2);font-size:15px;line-height:1.6;margin:8px 0 20px;cursor:default}.listings-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}.listings-action{border:1px solid var(--accent-action);background:var(--accent-action);color:white;min-height:44px;border-radius:7px;padding:11px 18px;font-size:14px;font-weight:600;cursor:pointer}.listings-action.secondary{color:var(--accent-action);background:transparent}.listings-action:hover{filter:brightness(.93)}
+:is(.market-scope,.segment-field,.listings-section) :is(button,select):focus-visible{outline:3px solid var(--accent-action);outline-offset:3px}
+@media(max-width:640px){.market-scope__fields{grid-template-columns:1fr}.market-scope{padding:14px 0}.listings-section h2{font-size:20px}}

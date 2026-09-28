@@ -5,6 +5,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? '';
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
 
 export type PublishProductInput = {
+  segment: string;
   name: string;
   description: string;
   category: string;
@@ -36,6 +37,7 @@ function rpcPayload(data: PublishProductInput) {
     name: data.name,
     description: data.description,
     category: data.category,
+    segment: data.segment,
     price: data.price ?? '',
     company_name: data.companyName,
     company_whatsapp: data.companyWhatsapp ?? '',
@@ -132,6 +134,7 @@ async function insertDirect(data: PublishProductInput): Promise<string | null> {
     name: data.name,
     description: data.description,
     category: data.category,
+    segment: data.segment,
     price: data.price ?? null,
     company_id: data.companyId,
     company_name: data.companyName,

@@ -1,3 +1,5 @@
+import { openProfileSettings } from '../../lib/profileSettingsEvents';
+import { medicalSegment } from '../../lib/segments';
 import { runCompanyContactAction } from '../../lib/companyContactAction';
 import { createPortal } from 'react-dom';
 import { groupCompanyContacts } from '../../lib/leadConnections';
@@ -264,13 +266,6 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const EVENT_CATS   = ['Congresso', 'Workshop', 'Simpósio', 'Webinar', 'Treinamento'];
-const PRODUCT_CATS = ['Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria', 'Dermatologia', 'Endocrinologia', 'Outros'];
-const COURSE_CATS  = [
-  'Nutrologia', 'Endocrinologia', 'Dermatologia', 'Cirurgia Plástica',
-  'Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia', 'Pediatria',
-  'Gastroenterologia', 'Ginecologia', 'Oftalmologia', 'Psiquiatria',
-  'Reumatologia', 'Urologia', 'Pneumologia', 'Clínica Médica', 'Outros',
-];
 const MODALITIES: { value: CourseModality; label: string; icon: string }[] = [
   { value: 'online',     label: 'Online',     icon: '◎' },
   { value: 'presencial', label: 'Presencial', icon: '📍' },
@@ -394,7 +389,7 @@ export default function CompanyDashboard() {
   });
   const myLeads = groupCompanyContacts(activeLeads);
   const [createSkipType, setCreateSkipType] = useState(false);
-  const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp };
+  const companyInfo = { id: user?.id ?? '', name: user?.company ?? user?.name ?? '', whatsapp: user?.whatsapp, segment: medicalSegment(user?.specialty) };
   const newLeadsCount = myLeads.filter(lead => (lead.connectionStatus ?? 'none') === 'none').length;
   const [connectionFilter, setConnectionFilter] = useState<ConnectionFilter>('all');
 
@@ -765,7 +760,7 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
   setKind: (k: 'event' | 'product' | 'course') => void;
   skipTypeStep?: boolean;
   initialPartnership?: boolean;
-  company: { id: string; name: string; whatsapp?: string };
+  company: { id: string; name: string; whatsapp?: string; segment?: string };
   onSaveEvent: (e: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => Promise<void>;
   onSaveProduct: (p: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
   onSaveCourse: (c: Omit<Course, 'id' | 'createdAt'>) => Promise<void>;
@@ -788,7 +783,7 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
   const [pr, setPr] = useState({
     name: '',
     description: '',
-    category: PRODUCT_CATS[0],
+    category: company.segment ?? '',
     availableFor: initialPartnership
       ? 'Representante apresenta briefing, condições e proposta de parceria.'
       : 'Representante envia amostra, materiais e condições comerciais para médicos interessados.',
@@ -801,7 +796,7 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
     title: '',
     description: '',
     instructor: '',
-    category: COURSE_CATS[0],
+    category: company.segment ?? '',
     modality: 'presencial' as CourseModality,
     date: dateInDays(30),
     time: '19:00',
@@ -826,6 +821,7 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
 
   // Validate required fields before advancing / finishing
   function validate(): string {
+    if (!company.segment) return 'Defina o segmento médico da empresa em Editar perfil antes de publicar.';
     if (step === 0) return '';
     if (kind === 'event') {
       if (!company.name.trim()) return 'Complete o nome da empresa no perfil antes de publicar.';
@@ -885,6 +881,7 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
         const imageUrl = await uploadOpportunityImageOptional(evImage.file, company.id, 'events');
         await onSaveEvent({
           ...ev,
+          segment: company.segment,
           maxParticipants: Number(ev.maxParticipants),
           website: normalizeUrl(ev.website),
           imageUrl,
@@ -894,6 +891,8 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
         const imageUrl = await uploadOpportunityImageOptional(prImage.file, company.id, 'products');
         await onSaveProduct({
           ...pr,
+          category: company.segment!,
+          segment: company.segment,
           website: normalizeUrl(pr.website),
           imageUrl,
           listingType: isPartnership ? 'partnership' : 'product',
@@ -905,6 +904,8 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
         const imageUrl = await uploadOpportunityImageOptional(coImage.file, company.id, 'courses');
         await onSaveCourse({
           ...co,
+          category: company.segment!,
+          segment: company.segment,
           website: normalizeUrl(co.website),
           imageUrl,
           companyId: company.id, companyName: company.name, companyWhatsapp: company.whatsapp,
@@ -934,6 +935,7 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
         <div style={{ width: 40 }} />
       </div>
 
+      <div className="segment-notice">{company.segment ? <>Segmento: <strong>{company.segment}</strong></> : <>Defina o segmento em <button type="button" onClick={openProfileSettings}>Editar perfil</button> para publicar.</>}</div>
       {/* Progress */}
       <div className="tessy-wizard-progress">
         {Array.from({ length: totalSteps }, (_, i) => (
@@ -1052,7 +1054,7 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
             />
             <WField label={isPartnership ? 'NOME DA PARCERIA' : 'NOME DO PRODUTO'} value={pr.name} onChange={v => setPr(p => ({ ...p, name: v }))} placeholder={isPartnership ? 'Ex: Parceria de divulgação científica' : 'Ex: SkinBiome Serum'} />
             <WField label="RESUMO (opcional)" value={pr.description} onChange={v => setPr(p => ({ ...p, description: v }))} placeholder="O que é, para quem é e por que vale uma conversa." as="textarea" />
-            <WField label="CATEGORIA" value={pr.category} onChange={v => setPr(p => ({ ...p, category: v }))} as="select" options={PRODUCT_CATS} />
+            <WField label="CATEGORIA" value={company.segment ?? ''} onChange={v => setPr(p => ({ ...p, category: v }))} as="select" options={company.segment ? [company.segment] : []} />
             <WField label="PRÓXIMO PASSO PARA O MÉDICO" value={pr.availableFor} onChange={v => setPr(p => ({ ...p, availableFor: v }))} placeholder="Ex: Solicitar amostra, falar com representante..." as="textarea" />
             <WField label="CONDIÇÕES (opcional)" value={pr.price} onChange={v => setPr(p => ({ ...p, price: v }))} placeholder="Ex: Sob consulta, parceria regional..." />
             <WField label="SITE (opcional)" value={pr.website} onChange={v => setPr(p => ({ ...p, website: v }))} placeholder="www.empresa.com.br/produto" type="url" />
@@ -1102,7 +1104,7 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
               <WField label="DURAÇÃO" value={co.duration} onChange={v => setCo(p => ({ ...p, duration: v }))} placeholder="Ex: 4 horas" />
               <WField label="PREÇO (opcional)" value={co.price} onChange={v => setCo(p => ({ ...p, price: v }))} placeholder="R$ 490" />
             </div>
-            <WField label="CATEGORIA" value={co.category} onChange={v => setCo(p => ({ ...p, category: v }))} as="select" options={COURSE_CATS} />
+            <WField label="CATEGORIA" value={company.segment ?? ''} onChange={v => setCo(p => ({ ...p, category: v }))} as="select" options={company.segment ? [company.segment] : []} />
             <WField label="DESCRIÇÃO (opcional)" value={co.description} onChange={v => setCo(p => ({ ...p, description: v }))} placeholder="Descreva o workshop..." as="textarea" />
             <WField label="WEBSITE (opcional)" value={co.website} onChange={v => setCo(p => ({ ...p, website: v }))} placeholder="www.seusite.com.br" type="url" />
           </div>
@@ -1131,7 +1133,7 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
         )}
           <button type="button" onClick={() => step === 0 ? setStep(1) : void handleFinish()} disabled={saving} style={{
             flex: 1, height: 52, borderRadius: 14, border: 'none',
-            background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
+            background: saving ? 'var(--accent-action)' : 'var(--accent)', color: '#fff',
             cursor: saving ? 'not-allowed' : 'pointer',
             fontSize: 15, fontWeight: 560, opacity: saving ? 0.8 : 1,
             boxShadow: '0 6px 24px rgba(245,130,32,0.32)',
@@ -1435,59 +1437,14 @@ function ListingsSection({ title, emptyText, actionLabel, onAction, secondaryAct
   isEmpty: boolean;
   children: React.ReactNode;
 }) {
-  return (
-    <section>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 560, color: 'var(--ink)', letterSpacing: 0 }}>
-          {title}<span style={{ color: 'var(--accent)' }}>.</span>
-        </h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {secondaryActionLabel && onSecondaryAction && (
-            <button type="button" onClick={onSecondaryAction} style={{
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--accent)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10,
-              fontWeight: 620,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}>
-              {secondaryActionLabel}
-            </button>
-          )}
-          <button type="button" onClick={onAction} style={{
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--accent)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 10,
-            fontWeight: 620,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}>
-            {actionLabel}
-          </button>
-        </div>
-      </div>
-      {isEmpty ? (
-        <div style={{
-          padding: '18px 16px',
-          borderRadius: 16,
-          background: 'var(--card)',
-          border: '1px solid var(--line)',
-          color: 'var(--muted)',
-          fontSize: 13,
-        }}>
-          {emptyText}
-        </div>
-      ) : children}
-    </section>
-  );
+  return <section className="listings-section">
+    <h2>{title}<span>.</span></h2>
+    {isEmpty ? <p className="listings-empty">{emptyText}</p> : children}
+    <div className="listings-actions">
+      <button type="button" className="listings-action" onClick={onAction}>{actionLabel}</button>
+      {secondaryActionLabel && onSecondaryAction && <button type="button" className="listings-action secondary" onClick={onSecondaryAction}>{secondaryActionLabel}</button>}
+    </div>
+  </section>;
 }
 
 function RepresentativeListingCard({ rep, deleting, onManage, onDelete }: {
@@ -1528,7 +1485,7 @@ function RepresentativeListingCard({ rep, deleting, onManage, onDelete }: {
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-            {rep.specialty && <Chip color="#B9C1EA">{rep.specialty}</Chip>}
+            {rep.specialty && <Chip color="var(--accent)">{rep.specialty}</Chip>}
             {rep.whatsapp && <Chip color="#25D366">WhatsApp</Chip>}
           </div>
           <div style={{ marginTop: 8, fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{rep.name}</div>
@@ -2026,7 +1983,7 @@ function LeadInbox({ leads, onRequestConnection, onStartPublishing, statusFilter
 /* ─── Locations manager ─── */
 function LocationsManager({ locations, company, onAdd, onDelete }: {
   locations: Location[];
-  company: { id: string; name: string; whatsapp?: string };
+  company: { id: string; name: string; whatsapp?: string; segment?: string };
   onAdd: (location: Omit<Location, 'id' | 'createdAt'>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
@@ -2128,7 +2085,7 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
         <WField label="ENDEREÇO (opcional)" value={address} onChange={setAddress} placeholder="Rua, número, bairro" />
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
           <WField label="CIDADE" value={city} onChange={setCity} placeholder="São Paulo" />
-          <WField label="UF" value={stateUf} onChange={v => setStateUf(v.toUpperCase().slice(0, 2))} placeholder="SP" />
+          <WField label="UF" value={stateUf} onChange={setStateUf} as="select" options={['', ...Object.keys(BRAZIL_STATES)]} />
         </div>
         <WField label="WHATSAPP (opcional)" value={whatsapp} onChange={v => setWhatsapp(fmtPhone(v))} placeholder="(11) 99999-9999" type="tel" />
         <WField label="WEBSITE (opcional)" value={website} onChange={setWebsite} placeholder="www.local.com.br" type="url" />
@@ -2146,7 +2103,7 @@ function LocationsManager({ locations, company, onAdd, onDelete }: {
 
         <button onClick={handleSave} disabled={saving} style={{
           width: '100%', padding: '13px', borderRadius: 12, border: 'none',
-          background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
+          background: saving ? 'var(--accent-action)' : 'var(--accent)', color: '#fff',
           fontSize: 14, fontWeight: 560, cursor: saving ? 'not-allowed' : 'pointer',
           boxShadow: '0 6px 20px rgba(245,130,32,0.32)',
         }}>
@@ -2290,9 +2247,9 @@ function RepresentativeAvatarEditor({
 
 function RepresentativesManager({ representatives, company, onAdd, onUpdate, onDelete }: {
   representatives: Representative[];
-  company: { id: string; name: string; whatsapp?: string };
+  company: { id: string; name: string; whatsapp?: string; segment?: string };
   onAdd: (rep: Omit<Representative, 'id' | 'createdAt'>) => Promise<void>;
-  onUpdate: (id: string, patch: Partial<Pick<Representative, 'name' | 'specialty' | 'region' | 'city' | 'state' | 'whatsapp' | 'email' | 'bio' | 'photoUrl'>>) => Promise<void>;
+  onUpdate: (id: string, patch: Partial<Pick<Representative, 'name' | 'segment' | 'specialty' | 'region' | 'city' | 'state' | 'whatsapp' | 'email' | 'bio' | 'photoUrl'>>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const [name, setName] = useState('');
@@ -2308,6 +2265,7 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
   const [error, setError] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [classifyingId, setClassifyingId] = useState<string | null>(null);
 
   function setPhotoDraft(file: File | null) {
     setPhoto(prev => {
@@ -2334,9 +2292,23 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
     }
   }
 
+  async function classifyRepresentative(id: string) {
+    if (!company.segment || classifyingId) return;
+    setClassifyingId(id);
+    setDeleteError('');
+    try {
+      await onUpdate(id, { segment: company.segment });
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Erro ao classificar representante.');
+    } finally {
+      setClassifyingId(null);
+    }
+  }
+
   async function handleSave() {
     if (saving) return;
     if (!name.trim()) { setError('Informe o nome do representante.'); return; }
+    if (!company.segment) { setError('Defina o segmento médico da empresa em Editar perfil.'); return; }
     if (!specialty.trim()) { setError('Informe a área: skincare, tecnologias ou parcerias.'); return; }
     if (!stateUf.trim() && !region.trim()) { setError('Informe a UF ou a região de atendimento.'); return; }
     if (stateUf && !(stateUf in BRAZIL_STATES)) { setError('Selecione uma UF válida.'); return; }
@@ -2351,6 +2323,7 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
         companyName: company.name,
         name: name.trim(),
         specialty: specialty.trim() || undefined,
+        segment: company.segment,
         region: region.trim() || undefined,
         city: city.trim() || undefined,
         state: stateUf.trim() || undefined,
@@ -2390,12 +2363,13 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
       }}>
         <ProfilePhotoField label="FOTO DO REPRESENTANTE" preview={photo.preview} onChange={setPhotoDraft} />
         <WField label="NOME DO REPRESENTANTE" value={name} onChange={setName} placeholder="Ex: Ana Souza" />
-        <WField label="ÁREA DE ATUAÇÃO" value={specialty} onChange={setSpecialty} placeholder="Skincare, tecnologias, parcerias..." />
+        <div className="segment-notice">{company.segment ? <>Segmento médico: <strong>{company.segment}</strong></> : <>Selecione o segmento da empresa em <button type="button" onClick={openProfileSettings}>Editar perfil</button>.</>}</div>
+        <WField label="TIPO DE ATUAÇÃO COMERCIAL" value={specialty} onChange={setSpecialty} placeholder="Skincare, tecnologias, parcerias..." />
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
           <WField label="CIDADE ATENDIDA (opcional)" value={city} onChange={setCity} placeholder="São Paulo" />
-          <WField label="UF" value={stateUf} onChange={v => setStateUf(v.toUpperCase().slice(0, 2))} placeholder="SP" />
+          <WField label="ESTADO ATENDIDO" value={stateUf} onChange={value => { setStateUf(value); setRegion(''); }} as="select" options={['', ...Object.keys(BRAZIL_STATES)]} />
         </div>
-        <WField label="REGIÃO DE ATENDIMENTO" value={region} onChange={setRegion} placeholder="Ex: SP, RJ; Sul de MG; Nacional" />
+        <WField label="OU ATENDIMENTO EM TODA A REGIÃO" value={region} onChange={value => { setRegion(value); setStateUf(''); }} as="select" options={['','Nacional','Norte','Nordeste','Centro-Oeste','Sudeste','Sul']} />
         <WField label="WHATSAPP (opcional)" value={whatsapp} onChange={v => setWhatsapp(fmtPhone(v))} placeholder="(11) 99999-9999" type="tel" />
         <WField label="E-MAIL (opcional)" value={email} onChange={setEmail} placeholder="representante@empresa.com" type="email" />
         <WField label="BIO (opcional)" value={bio} onChange={setBio} placeholder="Marcas representadas e tipos de parceria oferecidos." as="textarea" />
@@ -2412,7 +2386,7 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
 
         <button onClick={handleSave} disabled={saving} style={{
           width: '100%', padding: '13px', borderRadius: 12, border: 'none',
-          background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
+          background: saving ? 'var(--accent-action)' : 'var(--accent)', color: '#fff',
           fontSize: 14, fontWeight: 560, cursor: saving ? 'not-allowed' : 'pointer',
           boxShadow: '0 6px 20px rgba(245,130,32,0.32)',
         }}>
@@ -2446,13 +2420,20 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
                 />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                    {rep.specialty && <Chip color="#B9C1EA">{rep.specialty}</Chip>}
+                    {rep.specialty && <Chip color="var(--accent)">{rep.specialty}</Chip>}
+                    <Chip color="var(--accent)">{rep.segment || medicalSegment(rep.specialty) || 'Sem segmento'}</Chip>
                     {rep.whatsapp && <Chip color="#25D366">WhatsApp</Chip>}
                   </div>
                   <div style={{ marginTop: 8, fontSize: 15, fontWeight: 560, color: 'var(--ink)' }}>{rep.name}</div>
                   <div style={{ marginTop: 3, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
                     {[rep.city, rep.state].filter(Boolean).join(' · ') || rep.region || 'Região não informada'}
                   </div>
+                  {company.segment && (rep.segment || medicalSegment(rep.specialty)) !== company.segment && (
+                    <button type="button" className="listings-action secondary" disabled={classifyingId !== null}
+                      onClick={() => { void classifyRepresentative(rep.id); }} style={{ marginTop: 10 }}>
+                      {classifyingId === rep.id ? 'Salvando…' : `Classificar em ${company.segment}`}
+                    </button>
+                  )}
                   {rep.bio && (
                     <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>{rep.bio}</div>
                   )}
@@ -2742,6 +2723,8 @@ function EditEventModal({ event, onSave, onClose }: {
   onSave: (patch: Partial<Omit<Event, 'id' | 'createdAt' | 'companyId' | 'companyName' | 'registeredCount'>>) => Promise<void>;
   onClose: () => void;
 }) {
+  const { user } = useAuth();
+  const [segment, setSegment] = useState(event.segment ?? '');
   const [title,           setTitle]           = useState(event.title);
   const [description,     setDescription]     = useState(event.description);
   const [date,            setDate]            = useState(event.date);
@@ -2788,6 +2771,7 @@ function EditEventModal({ event, onSave, onClose }: {
         time,
         location:        location.trim(),
         category,
+        ...(segment && segment !== event.segment ? { segment } : {}),
         maxParticipants: max,
         website:         normalizeUrl(website),
         imageUrl:        nextImageUrl,
@@ -2835,6 +2819,7 @@ function EditEventModal({ event, onSave, onClose }: {
           </div>
           <WField label="LOCAL" value={location} onChange={setLocation} placeholder="São Paulo, SP" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <WField label="SEGMENTO MÉDICO" value={segment} onChange={setSegment} as="select" options={[...(event.segment ? [event.segment] : ['']), ...(!event.segment || event.segment !== medicalSegment(user?.specialty) ? [medicalSegment(user?.specialty) ?? ''] : [])]} />
             <WField label="CATEGORIA" value={category} onChange={setCategory} as="select" options={EVENT_CATS} />
             <WField label="VAGAS" value={maxParticipants} onChange={setMaxParticipants} type="number" min="1" inputMode="numeric" />
           </div>
@@ -2881,7 +2866,7 @@ function EditEventModal({ event, onSave, onClose }: {
           </button>
           <button onClick={handleSave} disabled={saving} style={{
             flex: 2, padding: '12px', borderRadius: 12, border: 'none',
-            background: saving ? '#1a5cbf' : 'var(--accent)', color: '#fff',
+            background: saving ? 'var(--accent-action)' : 'var(--accent)', color: '#fff',
             fontSize: 14, fontWeight: 560,
             cursor: saving ? 'not-allowed' : 'pointer',
             boxShadow: '0 6px 20px rgba(245,130,32,0.32)',

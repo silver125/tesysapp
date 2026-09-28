@@ -8,7 +8,7 @@ import ts from 'typescript';
 
 // Compile just the pure modules into an isolated CommonJS directory; no database is contacted.
 const output = mkdtempSync(join(tmpdir(), 'tessy-regressions-'));
-for (const file of ['representatives', 'uiHelpers', 'commercialConnect', 'leadConnections', 'leadInsert', 'dbSchema']) {
+for (const file of ['segments', 'geography', 'representatives', 'uiHelpers', 'commercialConnect', 'leadConnections', 'leadInsert', 'dbSchema']) {
   const source = readFileSync(new URL(`../src/lib/${file}.ts`, import.meta.url), 'utf8');
   const target = join(output, 'lib', `${file}.js`);
   mkdirSync(dirname(target), { recursive: true });

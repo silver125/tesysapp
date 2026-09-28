@@ -1,3 +1,4 @@
+import { MEDICAL_SEGMENTS, medicalSegment } from '../lib/segments';
 import DoctorEmailPreferences from './DoctorEmailPreferences';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,13 +9,7 @@ import ProfilePhotoField from './ProfilePhotoField';
 import { uploadProfileAvatar } from '../lib/profileAvatar';
 import { OPEN_DELETE_ACCOUNT_EVENT, OPEN_PROFILE_SETTINGS_EVENT, openHelp } from '../lib/profileSettingsEvents';
 
-const SPECIALTIES = [
-  'Nutrologia', 'Endocrinologia', 'Dermatologia', 'Cirurgia Plástica',
-  'Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia',
-  'Pediatria', 'Gastroenterologia', 'Ginecologia', 'Oftalmologia',
-  'Psiquiatria', 'Reumatologia', 'Urologia', 'Pneumologia',
-  'Clínica Médica', 'Outra',
-];
+const SPECIALTIES = MEDICAL_SEGMENTS;
 
 const BR_STATES = [
   'SP', 'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO',
@@ -118,6 +113,7 @@ export default function ProfileSettingsSheet() {
         throw new Error('Informe um WhatsApp brasileiro com DDD.');
       }
 
+      if (!medicalSegment(specialty)) throw new Error('Selecione o segmento médico.');
       if (user.role === 'empresa') {
         const trimCompany = company.trim();
         if (trimCompany.length < 2) throw new Error('Informe o nome da empresa.');
@@ -127,6 +123,7 @@ export default function ProfileSettingsSheet() {
         await updateProfile({
           name: trimCompany,
           company: trimCompany,
+          specialty: medicalSegment(specialty),
           whatsapp: normalized || undefined,
           ...(avatarUrl !== undefined ? { avatarUrl } : {}),
         });
@@ -215,6 +212,7 @@ export default function ProfileSettingsSheet() {
 
               {user.role === 'empresa' ? (
                 <div>
+                  <label className="segment-field">Segmento médico<select value={specialty} onChange={e=>setSpecialty(e.target.value)}><option value="">Selecione</option>{SPECIALTIES.map(item=><option key={item}>{item}</option>)}</select><small>Novas publicações usarão este segmento. Os anúncios antigos mantêm sua classificação.</small></label>
                   <div style={fieldLabel}>Nome da empresa</div>
                   <input value={company} onChange={e => setCompany(e.target.value)} style={fieldInput} placeholder="Nome da empresa" />
                 </div>

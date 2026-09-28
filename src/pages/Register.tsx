@@ -1,3 +1,4 @@
+import { MEDICAL_SEGMENTS, medicalSegment } from '../lib/segments';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
@@ -30,13 +31,7 @@ const BR_STATES = [
   'RN','RS','RO','RR','SC','SE','TO',
 ];
 
-const SPECIALTIES = [
-  'Nutrologia', 'Endocrinologia', 'Dermatologia', 'Cirurgia Plástica',
-  'Cardiologia', 'Oncologia', 'Neurologia', 'Ortopedia',
-  'Pediatria', 'Gastroenterologia', 'Ginecologia', 'Oftalmologia',
-  'Psiquiatria', 'Reumatologia', 'Urologia', 'Pneumologia',
-  'Clínica Médica', 'Outra',
-];
+const SPECIALTIES = MEDICAL_SEGMENTS;
 
 export default function Register() {
   const { register, isLoading } = useAuth();
@@ -58,9 +53,9 @@ export default function Register() {
     if (step === 1) {
       if (data.role === 'medico') {
         const hasValidWhatsapp = data.whatsapp.trim() === '' || normalizePhone(data.whatsapp).length >= 12;
-        return data.name.trim().length > 2 && data.crm.trim().length >= 4 && data.crmState !== '' && hasValidWhatsapp;
+        return data.name.trim().length > 2 && data.crm.trim().length >= 4 && data.crmState !== '' && Boolean(medicalSegment(data.specialty)) && hasValidWhatsapp;
       }
-      return data.company.trim().length > 2 && normalizePhone(data.whatsapp).length >= 12;
+      return Boolean(medicalSegment(data.specialty)) && data.company.trim().length > 2 && normalizePhone(data.whatsapp).length >= 12;
     }
     if (step === 2) {
       return /^\S+@\S+\.\S+$/.test(data.email) && data.password.length >= 6 && data.privacyAccepted;
@@ -73,6 +68,7 @@ export default function Register() {
 
   const pickRole = (r: UserRole) => {
     update('role', r);
+    update('specialty', '');
     setError('');
     setTimeout(() => setStep(1), 120);
   };
@@ -85,7 +81,7 @@ export default function Register() {
         email: data.email,
         password: data.password,
         role: data.role!,
-        specialty: data.role === 'medico' ? data.specialty || undefined : undefined,
+        specialty: medicalSegment(data.specialty),
         crm: data.role === 'medico' ? data.crm.trim() : undefined,
         crmState: data.role === 'medico' ? data.crmState : undefined,
         company: data.role === 'empresa' ? data.company : undefined,
@@ -331,7 +327,7 @@ export default function Register() {
 
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 12 }}>
-                Especialidade <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(opcional)</span>
+                Especialidade
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {SPECIALTIES.map(s => {
@@ -420,6 +416,7 @@ export default function Register() {
         {/* ── STEP 1: Empresa ── */}
         {step === 1 && data.role === 'empresa' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            <label className="segment-field">Segmento médico da empresa<select value={data.specialty} onChange={e=>update('specialty', e.target.value)} required><option value="">Selecione</option>{SPECIALTIES.map(item=><option key={item}>{item}</option>)}</select><small>Representantes e publicações serão direcionados a este segmento.</small></label>
             <BigField
               label="Nome da empresa"
               type="text"

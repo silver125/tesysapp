@@ -47,6 +47,7 @@ export interface Location {
 }
 
 export interface Representative {
+  segment?: string;
   id: string;
   companyId: string;
   companyName: string;
@@ -63,6 +64,7 @@ export interface Representative {
 }
 
 export interface Event {
+  segment?: string;
   id: string;
   title: string;
   description: string;
@@ -81,6 +83,7 @@ export interface Event {
 }
 
 export interface Product {
+  segment?: string;
   id: string;
   name: string;
   description: string;
@@ -150,6 +153,7 @@ export interface AddLeadResult {
 export type CourseModality = 'online' | 'presencial' | 'hibrido';
 
 export interface Course {
+  segment?: string;
   id: string;
   title: string;
   description: string;

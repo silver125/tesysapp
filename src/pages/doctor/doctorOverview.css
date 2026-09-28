@@ -5,14 +5,14 @@
 .do-approved { margin-top: 24px; scroll-margin-top: 90px; }
 .do-approved h3 { font-size: 15px; margin-bottom: 12px; }
 .do-approved .co-event { grid-template-columns: minmax(0, 1fr) 16px; }
-.do-opportunity { display: block; width: 100%; text-align: left; color: #19191b; background: #F7F7F8; padding: 18px; margin: 14px 0; border: 1px solid var(--co-line); }
-.do-opportunity > span { font-size: 11px; color: #a83200; }
+.do-opportunity { display: block; width: 100%; text-align: left; color: var(--ink); background: var(--bg); padding: 18px; margin: 14px 0; border: 1px solid var(--co-line); }
+.do-opportunity > span { font-size: 11px; color: var(--accent-action); }
 .do-opportunity h3 { font-size: 19px; margin: 10px 0; overflow-wrap: anywhere; }
-.do-opportunity p { font-size: 13px; line-height: 1.6; color: #62626b; margin-bottom: 16px; }
+.do-opportunity p { font-size: 13px; line-height: 1.6; color: var(--ink-2); margin-bottom: 16px; }
 .doctor-overview .tessy-explore-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .doctor-overview .tessy-explore-tile { border-radius: 0; box-shadow: none; background: #fff; border: 1px solid var(--co-line); }
 .doctor-overview .tessy-section-eyebrow { margin: 22px 0 12px; }
-.doctor-overview .tessy-pending-quiet { font-family: var(--font-sans); font-size: 13px; color: #62626b; }
+.doctor-overview .tessy-pending-quiet { font-family: var(--font-sans); font-size: 13px; color: var(--ink-2); }
 .doctor-overview .tessy-panel { box-shadow: none; border-radius: 0; }
 @media (min-width: 900px) {
   .doctor-overview .do-network { grid-column: 1 / -1; }
@@ -21,10 +21,10 @@
   .doctor-overview .do-discover { grid-column: 1; }
   .doctor-overview .do-profile { grid-column: 2; }
 }
-.do-request-card { background: #F7F7F8; border: 1px solid #dedee2; border-left: 3px solid #FF4F00; padding: 18px; color: #19191b; font-family: var(--font-sans); }
+.do-request-card { background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--accent-action); padding: 18px; color: var(--ink); font-family: var(--font-sans); }
 .do-request-card h3 { font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
-.do-request-card p { font-size: 13px; line-height: 1.6; color: #62626b; margin: 10px 0; }
-.do-request-card button { font: inherit; font-size: 12px; font-weight: 600; border: 0; background: #FF4F00; color: #fff; padding: 12px 14px; min-height: 44px; cursor: pointer; }
+.do-request-card p { font-size: 13px; line-height: 1.6; color: var(--ink-2); margin: 10px 0; }
+.do-request-card button { font: inherit; font-size: 12px; font-weight: 600; border: 0; background: var(--accent-action); color: #fff; padding: 12px 14px; min-height: 44px; cursor: pointer; }
 .do-request-card button:disabled { opacity: .6; cursor: wait; }
 .do-request-card button:focus-visible { outline: 3px solid #002FA7; outline-offset: 3px; }
 .do-points h3 { font-size: 15px; }
@@ -35,31 +35,31 @@
 .doctor-overview .co-header h1 { font-size: clamp(27px, 3.5vw, 36px); margin: 0 0 8px; letter-spacing: -.04em; }
 .doctor-overview .co-header p { font-size: 13px; }
 .doctor-overview .co-header .co-actions { margin-top: 14px; }
-.do-score-top { grid-column: 1 / -1; margin-top: 20px; padding: 16px; border: 1px solid var(--co-line); background: #F7F7F8; }
+.do-score-top { grid-column: 1 / -1; margin-top: 20px; padding: 16px; border: 1px solid var(--co-line); background: var(--bg); }
 .do-score-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.do-score-line strong { font-size: 30px; font-weight: 600; color: #19191b; font-variant-numeric: tabular-nums; }
+.do-score-line strong { font-size: 30px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .do-score-line small { font-size: 12px; font-weight: 400; }
-.do-score-line > div > span { margin-left: 12px; font-size: 12px; color: #62626b; }
-.do-score-target { font-size: 11px; color: #62626b; }
-.do-details { font-size: 12px; color: #62626b; line-height: 1.5; }
-.do-details summary { cursor: pointer; padding: 8px 0; color: #19191b; }
+.do-score-line > div > span { margin-left: 12px; font-size: 12px; color: var(--ink-2); }
+.do-score-target { font-size: 11px; color: var(--ink-2); }
+.do-details { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+.do-details summary { cursor: pointer; padding: 8px 0; color: var(--ink); }
 .do-details p { margin: 8px 0; }
 .doctor-overview .do-network { margin-top: 18px; padding-top: 16px; }
 .doctor-overview .co-stages { margin-top: 8px; }
 .doctor-overview .co-stage { gap: 5px; padding: 12px; }
 .doctor-overview .co-stage-index { display: none; }
 .doctor-overview .co-stage strong { font-size: 28px; }
-.doctor-overview .co-stage[aria-pressed="true"] { box-shadow: inset 0 -3px #FF4F00; }
+.doctor-overview .co-stage[aria-pressed="true"] { box-shadow: inset 0 -3px var(--accent-action); }
 .doctor-overview .co-section { margin-top: 18px; padding-top: 16px; }
 .doctor-overview .co-section h2 { font-size: 18px; }
 .do-quick-card h3 { font-size: 16px; margin: 8px 0 4px; }
 .do-quick-card p { margin-bottom: 10px; }
 .do-quick-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
-.do-interest-button { border: 0; background: #FF4F00; color: #fff; padding: 11px 12px; font-size: 12px !important; cursor: pointer; min-height: 44px; }
+.do-interest-button { border: 0; background: var(--accent-action); color: #fff; padding: 11px 12px; font-size: 12px !important; cursor: pointer; min-height: 44px; }
 .do-interest-button:disabled { background: #e7e7ea; color: #44444d; opacity: 1; }
-.do-action-feedback { color: #19191b !important; padding-top: 10px; }
+.do-action-feedback { color: var(--ink) !important; padding-top: 10px; }
 .do-consent-note { font-size: 11px !important; }
 @media (max-width: 480px) { .do-score-line > div > span { display: block; margin-left: 0; margin-top: 4px; } }
 @media (prefers-reduced-motion: reduce) { .doctor-overview *, .doctor-overview { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
-@keyframes do-score-earned { from { color: #FF4F00; } to { color: #19191b; } }
+@keyframes do-score-earned { from { color: var(--accent-action); } to { color: var(--ink); } }
 .do-score-number { animation: do-score-earned 900ms ease-out; }

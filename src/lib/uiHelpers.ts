@@ -1,7 +1,4 @@
-const TINTS = [
-  '#4AA8FF', '#7FA7B8', '#B9C1EA', '#777F95',
-  '#8FA6D8', '#AAB1C4', '#6F829F', '#343949',
-];
+const TINTS = ['#CC510C', '#E97828', '#717B95', '#A8B4CE'];
 
 export function companyTint(name: string): string {
   let h = 0;
@@ -32,33 +29,8 @@ export function displayUserLabel(user: { role?: string; company?: string; name?:
 }
 
 export function categoryTint(cat: string): [string, string] {
-  const key = (cat || 'Outros').trim() || 'Outros';
-  const map: Record<string, [string, string]> = {
-    Congresso: ['#7FA7B8', '#343949'],
-    Workshop: ['#8FA6D8', '#343949'],
-    Simpósio: ['#AAB1C4', '#343949'],
-    Webinar: ['#B9C1EA', '#343949'],
-    Treinamento: ['#777F95', '#343949'],
-    Nutrologia: ['#AAB1C4', '#343949'],
-    Endocrinologia: ['#7FA7B8', '#343949'],
-    Dermatologia: ['#B9C1EA', '#343949'],
-    'Cirurgia Plástica': ['#8FA6D8', '#343949'],
-    Cardiologia: ['#AAB1C4', '#343949'],
-    Oncologia: ['#777F95', '#343949'],
-    Neurologia: ['#4AA8FF', '#343949'],
-    Ortopedia: ['#7FA7B8', '#343949'],
-    Pediatria: ['#B9C1EA', '#343949'],
-    Gastroenterologia: ['#8FA6D8', '#343949'],
-    Ginecologia: ['#B9C1EA', '#343949'],
-    Oftalmologia: ['#4AA8FF', '#343949'],
-    Psiquiatria: ['#777F95', '#343949'],
-    Reumatologia: ['#AAB1C4', '#343949'],
-    Urologia: ['#4AA8FF', '#343949'],
-    Pneumologia: ['#7FA7B8', '#343949'],
-    'Clínica Médica': ['#8FA6D8', '#343949'],
-    Outros: ['#777F95', '#343949'],
-  };
-  return map[key] ?? ['#4AA8FF', '#343949'];
+  void cat;
+  return ['#E97828', '#3A4258'];
 }
 
 export function buildWhatsappLink(phone: string | undefined, message?: string) {

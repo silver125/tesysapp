@@ -1,3 +1,4 @@
+import { medicalSegment, requireCompanySegment } from '../lib/segments';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { User, Event, Product, Course, Lead, LeadInput, Location, Representative, AddLeadResult } from '../types';
@@ -127,6 +128,7 @@ function dbToLocation(row: Record<string, unknown>): Location {
 
 function dbToRepresentative(row: Record<string, unknown>): Representative {
   return {
+    segment: row.segment as string | undefined,
     id:          row.id           as string,
     companyId:   row.company_id   as string,
     companyName: dbText(row.company_name, 'Empresa'),
@@ -145,6 +147,7 @@ function dbToRepresentative(row: Record<string, unknown>): Representative {
 
 function dbToEvent(row: Record<string, unknown>): Event {
   return {
+    segment: row.segment as string | undefined,
     id:               row.id               as string,
     title:            dbText(row.title, 'Evento'),
     description:      dbText(row.description),
@@ -167,6 +170,7 @@ function dbToProduct(row: Record<string, unknown>): Product {
   const listingRaw = dbText(row.listing_type, 'product').toLowerCase();
   const listingType = listingRaw === 'partnership' ? 'partnership' : 'product';
   return {
+    segment: row.segment as string | undefined,
     id:              row.id              as string,
     name:            dbText(row.name, listingType === 'partnership' ? 'Parceria' : 'Produto'),
     description:     dbText(row.description),
@@ -187,6 +191,7 @@ function dbToProduct(row: Record<string, unknown>): Product {
 
 function dbToCourse(row: Record<string, unknown>): Course {
   return {
+    segment: row.segment as string | undefined,
     id:              row.id               as string,
     title:           dbText(row.title, 'Workshop'),
     description:     dbText(row.description),
@@ -735,6 +740,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!input.privacyAccepted) {
       throw new Error('É necessário aceitar a Política de Privacidade e os Termos de Uso.');
     }
+    if (!medicalSegment(input.specialty)) throw new Error('Selecione o segmento médico.');
     isRegistering.current = true;
     setIsLoading(true);
     try {
@@ -889,7 +895,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (data.whatsapp !== undefined) { updates.whatsapp = data.whatsapp; }
     if (data.whatsappConnectionOnly !== undefined) { updates.whatsapp_connection_only = data.whatsappConnectionOnly; }
-    if (data.specialty !== undefined) { updates.specialty = data.specialty; }
+    if (data.specialty !== undefined) {
+      if (!medicalSegment(data.specialty)) throw new Error('Selecione um segmento médico válido.');
+      updates.specialty = medicalSegment(data.specialty);
+    }
     if (data.crm !== undefined) { updates.crm = data.crm; }
     if (data.crmState !== undefined) { updates.crm_state = data.crmState; }
     if (data.avatarUrl !== undefined) { updates.avatar_url = data.avatarUrl || null; }
@@ -963,7 +972,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Eventos ──
   const addEvent = async (data: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
     assertSupabaseConfigured();
+    const segment = requireCompanySegment(user, data.segment);
     const rpcPayload = {
+      segment,
       title: data.title,
       description: data.description ?? '',
       date: data.date,
@@ -991,6 +1002,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const payload = {
+      segment,
       title:            data.title,
       description:      data.description,
       date:             data.date,
@@ -1040,6 +1052,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     assertSupabaseConfigured();
     // Mapeia camelCase do app → snake_case do banco
     const dbPatch: Record<string, unknown> = {};
+    if (patch.segment !== undefined) dbPatch.segment = requireCompanySegment(user, patch.segment);
     if (patch.title           !== undefined) dbPatch.title             = patch.title;
     if (patch.description     !== undefined) dbPatch.description       = patch.description;
     if (patch.date            !== undefined) dbPatch.date              = patch.date;
@@ -1188,9 +1201,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Produtos ──
   const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
+    const segment = requireCompanySegment(user, data.segment);
     const listingType = data.listingType ?? 'product';
 
     await publishProduct({
+      segment,
       name: data.name,
       description: data.description,
       category: data.category,
@@ -1224,7 +1239,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Cursos ──
   const addCourse = async (data: Omit<Course, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
+    const segment = requireCompanySegment(user, data.segment);
     const rpcPayload = {
+      segment,
       title: data.title,
       description: data.description ?? '',
       category: data.category ?? '',
@@ -1255,6 +1272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const basePayload: Record<string, unknown> = {
+      segment,
       title:            data.title,
       description:      data.description,
       category:         data.category,
@@ -1359,7 +1377,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Representantes comerciais ──
   const addRepresentative = async (data: Omit<Representative, 'id' | 'createdAt'>) => {
     assertSupabaseConfigured();
+    const segment = requireCompanySegment(user, data.segment);
     const payload = {
+      segment,
       company_id:   data.companyId,
       company_name: data.companyName,
       name:         data.name,
@@ -1389,13 +1409,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateRepresentative = async (
     id: string,
-    patch: Partial<Pick<Representative, 'name' | 'specialty' | 'region' | 'city' | 'state' | 'whatsapp' | 'email' | 'bio' | 'photoUrl'>>,
+    patch: Partial<Pick<Representative, 'name' | 'segment' | 'specialty' | 'region' | 'city' | 'state' | 'whatsapp' | 'email' | 'bio' | 'photoUrl'>>,
   ) => {
     if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem editar representantes.');
     assertSupabaseConfigured();
 
     const payload: Record<string, string | null> = {};
     if (patch.name !== undefined) payload.name = patch.name;
+    if (patch.segment !== undefined) payload.segment = requireCompanySegment(user, patch.segment);
     if (patch.specialty !== undefined) payload.specialty = patch.specialty ?? null;
     if (patch.region !== undefined) payload.region = patch.region ?? null;
     if (patch.city !== undefined) payload.city = patch.city ?? null;

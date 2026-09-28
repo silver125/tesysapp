@@ -1,3 +1,6 @@
+import MarketScope from '../../components/MarketScope';
+import { medicalSegment, matchesSegment } from '../../lib/segments';
+import { matchesGeography, stateAfterRegionChange } from '../../lib/geography';
 import '../../components/company/companyOverview.css';
 import './doctorOverview.css';
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
@@ -12,12 +15,10 @@ import {
 import { categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
 import {
   buildRepresentativeProfiles,
-  matchesRepresentativeRegion,
   representativeInitials,
   representativeDisplayName,
   representativeDisplayImageUrl,
   representativeCompanyBadgeUrl,
-  representativeRegionFilters,
   matchesRepresentativeCategory,
   matchesRepresentativeSearch,
   representativeOfferSummary,
@@ -202,20 +203,21 @@ function visualUrl(src?: string | null) {
   return src?.trim() || '';
 }
 
-function doctorCityLabel(user: User | null | undefined) {
-  const profile = user as (User & { city?: string; cidade?: string; location?: string }) | null | undefined;
-  return profile?.city?.trim() || profile?.cidade?.trim() || profile?.location?.trim() || profile?.crmState?.trim() || '';
-}
-
 export default function DoctorDashboard() {
-  const { user, events, products, courses, leads, locations, representatives: registeredReps, refreshData } = useAuth();
+  const { user, events: allEvents, products: allProducts, courses: allCourses, leads, locations, representatives: registeredReps, refreshData } = useAuth();
+  const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
+  const segment = selectedSegment ?? medicalSegment(user?.specialty) ?? '';
+  const [macroRegion, setMacroRegion] = useState('all');
+  const [stateFilter, setStateFilter] = useState('all');
+  const events = allEvents.filter(e => matchesSegment(e, segment) && matchesGeography([e.location, eventFormat(e)], macroRegion, stateFilter));
+  const courses = allCourses.filter(c => matchesSegment(c, segment) && matchesGeography([c.location ?? '', c.modality === 'online' ? 'online' : ''], macroRegion, stateFilter));
+  const products = allProducts.filter(p => matchesSegment(p, segment) && matchesGeography(locations.filter(l => l.companyId === p.companyId).flatMap(l => [l.state ?? '', l.city ?? '']), macroRegion, stateFilter));
   const [tab, setTab] = useDashboardTab<Tab>('home', [
     'home', 'products', 'events', 'representatives',
   ] as const);
   const [search, setSearch] = useState('');
   const [connectionView, setConnectionView] = useState<'requested' | 'approved'>('requested');
   const [evFilter, setEvFilter] = useState('all');
-  const [regionFilter, setRegionFilter] = useState('all');
   const [repCategory, setRepCategory] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
   const [openProduct, setOpenProduct] = useState<Product | null>(null);
@@ -233,9 +235,9 @@ export default function DoctorDashboard() {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     const ids = [...new Set([
-      ...products.map(p => p.companyId),
-      ...events.map(e => e.companyId),
-      ...courses.map(c => c.companyId),
+      ...allProducts.map(p => p.companyId),
+      ...allEvents.map(e => e.companyId),
+      ...allCourses.map(c => c.companyId),
       ...locations.map(l => l.companyId),
       ...registeredReps.map(r => r.companyId),
     ].filter(Boolean))];
@@ -244,7 +246,7 @@ export default function DoctorDashboard() {
       if (!cancelled) setCompanyLogos(logos);
     });
     return () => { cancelled = true; };
-  }, [products, events, courses, locations, registeredReps]);
+  }, [allProducts, allEvents, allCourses, locations, registeredReps]);
 
   const q = search.toLowerCase();
   const doctorInterests = doctorInterestList(user);
@@ -285,7 +287,8 @@ export default function DoctorDashboard() {
   });
   const productChips = productCategoryChips(products);
   const representatives = sortByDoctorInterests(
-    buildRepresentativeProfiles(events, products, courses, locations, user, registeredReps, companyLogos),
+    buildRepresentativeProfiles(events, products, courses, locations, user, registeredReps, companyLogos)
+      .filter(rep => matchesSegment(rep, segment) && matchesGeography(rep.regionKeys, macroRegion, stateFilter)),
     doctorInterests,
     rep => [
       rep.companyName,
@@ -296,10 +299,8 @@ export default function DoctorDashboard() {
       ...rep.events.map(e => e.category),
     ],
   );
-  const regionChips = representativeRegionFilters();
   const filtRepresentatives = representatives.filter(rep => {
     return matchesRepresentativeSearch(rep, search)
-      && matchesRepresentativeRegion(rep, regionFilter)
       && matchesRepresentativeCategory(rep, repCategory);
   });
   const companyMatches = buildCompanyMatches(events, products, courses, locations);
@@ -370,6 +371,8 @@ export default function DoctorDashboard() {
       notificationCount={pendingConnections.length}
       onNotificationClick={scrollToPendingConnections}
     >
+
+      <MarketScope segment={segment} region={macroRegion} state={stateFilter} onSegment={value => { setSelectedSegment(value); setOpenEvent(null); setOpenProduct(null); setOpenCourse(null); }} onRegion={value => { setMacroRegion(value); setStateFilter(stateAfterRegionChange(value, stateFilter)); }} onState={setStateFilter} />
 
       {tab !== 'home' && <PendingConnectionsInbox leads={pendingConnections} />}
 
@@ -443,7 +446,7 @@ export default function DoctorDashboard() {
             active={evFilter} onChange={setEvFilter}
           />
           {filtEvents.length === 0 && filtCourses.length === 0
-            ? <Empty text="Nenhum evento ou workshop disponível." hint="Novas oportunidades aparecerão aqui quando forem publicadas." />
+            ? <Empty text="Nenhum evento ou workshop encontrado para esses filtros." hint="Novas oportunidades aparecerão aqui quando forem publicadas." />
             : (
               <MarketGrid>
                 {filtEvents.map(e => <EventMarketCard key={e.id} ev={e} onOpen={() => setOpenEvent(e)} />)}
@@ -462,7 +465,7 @@ export default function DoctorDashboard() {
           <FilterBar chips={productChips} active={productFilter} onChange={setProductFilter} />
           {filtProducts.length === 0
             ? <Empty
-                text="Nenhum produto disponível ainda."
+                text="Nenhum produto encontrado para esses filtros."
                 hint="Empresas publicam novidades aqui em breve."
                 actionLabel="Atualizar interesses"
                 onAction={openProfileSettings}
@@ -477,12 +480,9 @@ export default function DoctorDashboard() {
           representatives={filtRepresentatives}
           category={repCategory}
           onCategoryChange={setRepCategory}
-          regionChips={regionChips}
-          regionFilter={regionFilter}
-          onRegionChange={setRegionFilter}
           search={search}
           onSearchChange={setSearch}
-          doctorRegion={doctorCityLabel(user) || user?.crmState || 'sua região'}
+          doctorRegion={[segment, stateFilter !== 'all' ? stateFilter : macroRegion !== 'all' ? macroRegion : 'Todo o Brasil'].filter(Boolean).join(' · ')}
         />
       )}
 
@@ -1129,9 +1129,6 @@ function RepresentativesView({
   category,
   onCategoryChange,
   representatives,
-  regionChips,
-  regionFilter,
-  onRegionChange,
   search,
   onSearchChange,
   doctorRegion,
@@ -1139,9 +1136,6 @@ function RepresentativesView({
   representatives: RepresentativeProfile[];
   category: string;
   onCategoryChange: (value: string) => void;
-  regionChips: [string, string][];
-  regionFilter: string;
-  onRegionChange: (value: string) => void;
   search: string;
   onSearchChange: (value: string) => void;
   doctorRegion: string;
@@ -1174,11 +1168,6 @@ function RepresentativesView({
       <MarketHead title="Representantes" subtitle={`Encontre representantes por região · ${doctorRegion}`} count={representatives.length} countWord="representante" />
       <SearchBar value={search} onChange={onSearchChange} placeholder="Nome, marca, produto ou cidade..." />
       <div className="tessy-representative-filters">
-        <label>Região de atendimento
-          <select value={regionFilter} onChange={event => onRegionChange(event.target.value)}>
-            {regionChips.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-        </label>
         <label>O que você procura?
           <select value={category} onChange={event => onCategoryChange(event.target.value)}>
             <option value="all">Todas as categorias</option>

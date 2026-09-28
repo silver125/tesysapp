@@ -33,6 +33,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
   const [profileOpen, setProfileOpen] = useState(false);
   const profileContentRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [profilePortal, setProfilePortal] = useState<HTMLElement | null>(null);
 
   const displayName = displayUserLabel(user);
   const code = companyInitials(displayName, '??');
@@ -152,7 +153,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
               className="tessy-header-profile"
               aria-label="Abrir menu do perfil"
               aria-expanded={profileOpen}
-              onClick={() => setProfileOpen(open => !open)}
+              onClick={() => { setProfilePortal(profileMenuRef.current); setProfileOpen(open => !open); }}
               style={{
                 width: 36,
                 height: 36,
@@ -260,7 +261,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                   Sair
                 </button>
               </div>
-            , user?.role === 'medico' ? document.body : (profileMenuRef.current ?? document.body))}
+            , user?.role === 'medico' ? document.body : (profilePortal ?? document.body))}
           </div>
         </div>
       </header>
