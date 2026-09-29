@@ -8,7 +8,7 @@ import ts from 'typescript';
 
 // Compile just the pure modules into an isolated CommonJS directory; no database is contacted.
 const output = mkdtempSync(join(tmpdir(), 'tessy-regressions-'));
-for (const file of ['segments', 'geography', 'representatives', 'uiHelpers', 'commercialConnect', 'leadConnections', 'leadInsert', 'dbSchema']) {
+for (const file of ['segments', 'geography', 'representatives', 'uiHelpers', 'commercialConnect', 'leadConnections', 'leadInsert', 'dbSchema', 'persistedUpdates', 'catalogRead']) {
   const source = readFileSync(new URL(`../src/lib/${file}.ts`, import.meta.url), 'utf8');
   const target = join(output, 'lib', `${file}.js`);
   mkdirSync(dirname(target), { recursive: true });
@@ -81,4 +81,50 @@ test('legacy insert must not strip doctor, company or representative identifiers
     assert.ok(result.error);
     assert.ok(calls.every(payload => column in payload));
   }
+});
+
+const { updateCompanyRecord, eventWebsitePatch, eventCapacityError } = require(join(output, 'lib/persistedUpdates.js'));
+const { readCatalogRows, isConfirmedEmptyCatalog } = require(join(output, 'lib/catalogRead.js'));
+
+test('edits require a persisted row, retain owner scope and use the database result', async () => {
+  const filters = [];
+  const saved = { id: 'event-1', title: 'Normalized by database' };
+  const query = { eq: (key, value) => { filters.push([key,value]); return query; }, select: async () => ({data:[saved],error:null}) };
+  const client = { from: () => ({ update: () => query }) };
+  assert.deepEqual(await updateCompanyRecord(client,'events','event-1','co',{title:'Draft'}),saved);
+  assert.deepEqual(filters,[['id','event-1'],['company_id','co']]);
+  query.select = async () => ({data:[],error:null});
+  await assert.rejects(updateCompanyRecord(client,'events','event-1','co',{}),/permissão/);
+  query.select = async () => ({data:null,error:{message:'connection failed'}});
+  await assert.rejects(updateCompanyRecord(client,'events','event-1','co',{}),/connection failed/);
+});
+test('clearing an event website differs from leaving it unchanged', () => {
+  assert.deepEqual(eventWebsitePatch(undefined),{});
+  assert.deepEqual(eventWebsitePatch('  '),{website:null});
+  assert.deepEqual(eventWebsitePatch('https://example.com'),{website:'https://example.com'});
+});
+test('event capacity rejects zero, fractions and reducing below existing interests', () => {
+  for (const input of ['',0,-1,2.5,'NaN','Infinity']) assert.ok(eventCapacityError(input));
+  assert.ok(eventCapacityError(4,5));
+  assert.equal(eventCapacityError(5,5),'');
+});
+test('failed catalog reads preserve unknown state instead of triggering empty-platform cleanup', () => {
+  const failed = readCatalogRows({data:null,error:{message:'offline'}},row=>row);
+  const empty = readCatalogRows({data:[],error:null},row=>row);
+  assert.equal(failed,null);
+  assert.deepEqual(empty,[]);
+  assert.equal(isConfirmedEmptyCatalog([empty,failed,empty]),false);
+  assert.equal(isConfirmedEmptyCatalog([empty,empty]),true);
+  assert.equal(isConfirmedEmptyCatalog([[{id:'one'}],empty]),false);
+});
+
+const { buildWhatsappLink } = require(join(output, 'lib/uiHelpers.js'));
+test('WhatsApp links normalize DDD 55, country codes and encoded messages', () => {
+  assert.equal(buildWhatsappLink('(11) 99999-9999'), 'https://wa.me/5511999999999');
+  assert.equal(buildWhatsappLink('(55) 99999-9999'), 'https://wa.me/5555999999999');
+  assert.equal(buildWhatsappLink('+55 (11) 99999-9999'), 'https://wa.me/5511999999999');
+  assert.equal(buildWhatsappLink('0055 11 99999-9999'), 'https://wa.me/5511999999999');
+  assert.equal(buildWhatsappLink('+1 415 555 2671'), 'https://wa.me/14155552671');
+  assert.equal(buildWhatsappLink('5511999999999', 'Olá & oi'), 'https://wa.me/5511999999999?text=Ol%C3%A1%20%26%20oi');
+  for (const value of [undefined, '', '123', 'sem telefone', '+55 123']) assert.equal(buildWhatsappLink(value), '');
 });

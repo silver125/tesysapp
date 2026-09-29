@@ -34,10 +34,20 @@ export function categoryTint(cat: string): [string, string] {
 }
 
 export function buildWhatsappLink(phone: string | undefined, message?: string) {
-  if (!phone) return '';
-  const clean = phone.replace(/\D/g, '');
-  if (clean.length < 10) return '';
-  const num = clean.startsWith('55') ? clean : `55${clean}`;
+  if (!phone || /[a-z]/i.test(phone)) return '';
+  const raw = phone.trim();
+  const international = raw.startsWith('+') || raw.startsWith('00');
+  const digits = raw.replace(/\D/g, '');
+  const clean = raw.startsWith('00') ? digits.slice(2) : digits;
+  let num: string;
+  if (!international && (clean.length === 10 || clean.length === 11)) {
+    // A local number with DDD 55 still needs the Brazilian country code.
+    num = `55${clean}`;
+  } else if (clean.startsWith('55') && (clean.length === 12 || clean.length === 13)) {
+    num = clean;
+  } else if (international && !clean.startsWith('55') && clean.length >= 10 && clean.length <= 15) {
+    num = clean;
+  } else return '';
   const msg = message ? `?text=${encodeURIComponent(message)}` : '';
   return `https://wa.me/${num}${msg}`;
 }

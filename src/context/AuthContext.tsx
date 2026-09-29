@@ -1,3 +1,5 @@
+import { updateCompanyRecord, eventWebsitePatch, eventCapacityError } from '../lib/persistedUpdates';
+import { readCatalogRows, isConfirmedEmptyCatalog } from '../lib/catalogRead';
 import { medicalSegment, requireCompanySegment } from '../lib/segments';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
@@ -481,18 +483,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('[Tessy] Erro ao carregar produtos:', prRes.error.message);
     }
 
-    const mappedEvents = (evRes.data ?? []).map(r => dbToEvent(r as Record<string, unknown>));
-    const mappedProducts = (prRes.data ?? []).map(r => dbToProduct(r as Record<string, unknown>));
-    const mappedCourses = (coRes.data ?? []).map(r => dbToCourse(r as Record<string, unknown>));
-    const mappedLocations = (loRes.data ?? []).map(r => dbToLocation(r as Record<string, unknown>));
-    const mappedReps = (reRes.data ?? []).map(r => dbToRepresentative(r as Record<string, unknown>));
-
-    const platformEmpty =
-      mappedProducts.length === 0
-      && mappedEvents.length === 0
-      && mappedCourses.length === 0
-      && mappedReps.length === 0
-      && mappedLocations.length === 0;
+    const mappedEvents = readCatalogRows(evRes, dbToEvent);
+    const mappedProducts = readCatalogRows(prRes, dbToProduct);
+    const mappedCourses = readCatalogRows(coRes, dbToCourse);
+    const mappedLocations = readCatalogRows(loRes, dbToLocation);
+    const mappedReps = readCatalogRows(reRes, dbToRepresentative);
+    const platformEmpty = isConfirmedEmptyCatalog([mappedEvents, mappedProducts, mappedCourses, mappedLocations, mappedReps]);
 
     if (platformEmpty) {
       clearLocalTessyData();
@@ -504,9 +500,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setEvents(mappedEvents);
+    if (mappedEvents) setEvents(mappedEvents);
     void Promise.all(
-      mappedEvents.map(async event => {
+      (mappedEvents ?? []).map(async event => {
         const count = await syncEventRegistrationCount(event.id);
         return count === null ? null : { id: event.id, count };
       }),
@@ -526,10 +522,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }));
     });
 
-    setProducts(mergeLocalProducts(mappedProducts, { role: user?.role, companyId: user?.id }));
-    setCourses(mappedCourses);
-    setLocations(mappedLocations);
-    setRepresentatives(mappedReps);
+    if (mappedProducts) setProducts(mergeLocalProducts(mappedProducts, { role: user?.role, companyId: user?.id }));
+    if (mappedCourses) setCourses(mappedCourses);
+    if (mappedLocations) setLocations(mappedLocations);
+    if (mappedReps) setRepresentatives(mappedReps);
   }, [user?.id, user?.role]);
 
   useEffect(() => {
@@ -973,6 +969,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const addEvent = async (data: Omit<Event, 'id' | 'createdAt' | 'registeredCount'>) => {
     assertSupabaseConfigured();
     const segment = requireCompanySegment(user, data.segment);
+    const capacityError = eventCapacityError(data.maxParticipants);
+    if (capacityError) throw new Error(capacityError);
     const rpcPayload = {
       segment,
       title: data.title,
@@ -1051,7 +1049,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user || user.role !== 'empresa') throw new Error('Apenas empresas podem editar eventos.');
     assertSupabaseConfigured();
     // Mapeia camelCase do app → snake_case do banco
-    const dbPatch: Record<string, unknown> = {};
+    const current = events.find(event => event.id === id);
+    if (patch.maxParticipants !== undefined) {
+      const capacityError = eventCapacityError(patch.maxParticipants, current?.registeredCount);
+      if (capacityError) throw new Error(capacityError);
+    }
+    const dbPatch: Record<string, unknown> = eventWebsitePatch(patch.website);
     if (patch.segment !== undefined) dbPatch.segment = requireCompanySegment(user, patch.segment);
     if (patch.title           !== undefined) dbPatch.title             = patch.title;
     if (patch.description     !== undefined) dbPatch.description       = patch.description;
@@ -1061,26 +1064,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (patch.category        !== undefined) dbPatch.category          = patch.category;
     if (patch.maxParticipants !== undefined) dbPatch.max_participants  = patch.maxParticipants;
     if (patch.companyWhatsapp !== undefined) dbPatch.company_whatsapp  = patch.companyWhatsapp;
-    if (patch.website         !== undefined) dbPatch.website           = patch.website ?? null;
     if (patch.imageUrl        !== undefined) dbPatch.image_url         = patch.imageUrl ?? null;
 
-    let result = await supabase.from('events').update(dbPatch).eq('id', id).eq('company_id', user.id);
-    if (result.error && isMissingDbColumnError(result.error, ['image_url'])) {
+    let saved: Record<string, unknown>;
+    try {
+      saved = await withTimeout(updateCompanyRecord(supabase, 'events', id, user.id, dbPatch), 12000, 'Atualizar evento');
+    } catch (error) {
+      if (!isMissingDbColumnError(error, ['image_url'])) throw error;
       const fallbackPatch = omitDbColumns(dbPatch, ['image_url']);
-      if (Object.keys(fallbackPatch).length > 0) {
-        console.warn('Coluna image_url ausente em events. Salvando edição sem imagem.', result.error.message);
-        result = await supabase.from('events').update(fallbackPatch).eq('id', id).eq('company_id', user.id);
-      } else {
-        console.warn('Coluna image_url ausente em events. Ignorando atualização isolada de imagem.', result.error.message);
-        setEvents(prev => prev.map(e => e.id === id ? { ...e, ...patch, imageUrl: e.imageUrl } as Event : e));
-        return;
-      }
+      if (Object.keys(fallbackPatch).length === 0) throw new Error('O banco ainda não permite salvar a imagem deste evento.');
+      saved = await withTimeout(updateCompanyRecord(supabase, 'events', id, user.id, fallbackPatch), 12000, 'Atualizar evento');
     }
-    const { error } = result;
-    if (error) throw new Error(error.message);
-
-    // Atualização otimista local
-    setEvents(prev => prev.map(e => e.id === id ? { ...e, ...patch } as Event : e));
+    setEvents(prev => prev.map(event => event.id === id ? dbToEvent(saved) : event));
   };
 
   // ── Registrar interesse em evento (incrementa registered_count) ──
@@ -1428,14 +1423,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (Object.keys(payload).length === 0) return;
 
-    const { error } = await withTimeout(
-      supabase.from('representatives').update(payload).eq('id', id).eq('company_id', user.id),
-      12000,
-      'Atualizar representante',
+    const saved = await withTimeout(
+      updateCompanyRecord(supabase, 'representatives', id, user.id, payload),
+      12000, 'Atualizar representante',
     );
-    if (error) throw new Error(error.message);
-
-    setRepresentatives(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
+    setRepresentatives(prev => prev.map(rep => rep.id === id ? dbToRepresentative(saved) : rep));
     await refreshData();
   };
 

@@ -1,6 +1,7 @@
-import { House, Package, Users, CalendarBlank, ChatCircleDots, EnvelopeSimple, Handshake, Trophy, ArrowRight, CaretDown } from '@phosphor-icons/react';
+import RepresentativeWhatsapp from '../../components/RepresentativeWhatsapp';
+import { House, Package, Users, CalendarBlank, WhatsappLogo, ChatCircleDots, EnvelopeSimple, Handshake, Trophy, ArrowRight, CaretDown } from '@phosphor-icons/react';
 import MarketScope from '../../components/MarketScope';
-import { medicalSegment, matchesSegment } from '../../lib/segments';
+import { medicalSegment, matchesSegment, normalized } from '../../lib/segments';
 import { matchesGeography, stateAfterRegionChange } from '../../lib/geography';
 import '../../components/company/companyOverview.css';
 import './doctorOverview.css';
@@ -13,7 +14,7 @@ import { useAuth } from '../../context/useAuth';
 import {
   CompanyMark, VerifiedBadge, Mono, BannerCard, Chip, ModalityBadge,
 } from '../../components/ui';
-import { categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
+import { buildWhatsappLink, categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
 import {
   buildRepresentativeProfiles,
   representativeInitials,
@@ -25,7 +26,6 @@ import {
   representativeOfferSummary,
   type RepresentativeProfile,
 } from '../../lib/representatives';
-import { connectWithRepresentative } from '../../lib/commercialConnect';
 import { buildHomeFeed, type HomeFeedItem } from '../../lib/homeFeed';
 import { formatLeadError } from '../../lib/leadErrors';
 import { getLevelProgress, getBadges, POINTS_PER_INTEREST, POINTS_PER_CONNECTION, countApprovedConnections } from '../../lib/gamification';
@@ -47,7 +47,7 @@ type CompanyMatch = {
 };
 
 function includesQ(value: string | undefined | null, q: string) {
-  return (value ?? '').toLowerCase().includes(q);
+  return normalized(value).includes(normalized(q));
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -298,6 +298,7 @@ export default function DoctorDashboard() {
 ;
   });
   const companyMatches = buildCompanyMatches(events, products, courses, locations);
+  const homeRepresentative = representatives.find(rep => buildWhatsappLink(rep.whatsapp)) ?? representatives[0];
   const homeFeed = buildHomeFeed(homeProductPool, homeEvents, homeWorkshops, representatives);
   const doctorLeads = leads.filter(lead => lead.doctorId === user?.id);
   const pendingConnections = doctorLeads.filter(lead => lead.connectionStatus === 'requested');
@@ -339,11 +340,12 @@ export default function DoctorDashboard() {
         <div className="doctor-home">
           <section className="doctor-welcome">
             <HomeGreeting />
-            <button className="doctor-primary" onClick={() => openTab('representatives')}>
-              <ChatCircleDots size={23} aria-hidden="true" />
-              <span>Falar com representante<small>Encontre alguém da sua especialidade</small></span>
-              <ArrowRight size={19} aria-hidden="true" />
-            </button>
+            {homeRepresentative ? <div className="doctor-home-contact">
+              <div className="doctor-home-contact__person"><RepAvatar rep={homeRepresentative} size={40} /><span><strong>{representativeDisplayName(homeRepresentative)}</strong><small>{homeRepresentative.companyName}</small></span><button type="button" onClick={() => openTab('representatives')}>Ver todos</button></div>
+              <RepresentativeWhatsapp rep={homeRepresentative} />
+            </div> : <button className="doctor-primary" onClick={() => openTab('representatives')}>
+              <ChatCircleDots size={23} aria-hidden="true" /><span>Encontrar representante</span><ArrowRight size={19} aria-hidden="true" />
+            </button>}
             <DoctorPointsBar points={user?.points ?? 0} connections={countApprovedConnections(doctorLeads)} />
           </section>
 
@@ -367,7 +369,7 @@ export default function DoctorDashboard() {
 
           {homeFeed.length > 0 && <section className="doctor-discover" aria-labelledby="doctor-discover-title">
             <div className="doctor-section-heading"><h2 id="doctor-discover-title">Na sua especialidade</h2><button onClick={() => openTab('products')}>Explorar <ArrowRight size={14} /></button></div>
-            <HomeCarousel>{homeFeed.slice(0, 3).map(item => <HomeFeedCard key={homeFeedKey(item)} item={item} onOpenProduct={setOpenProduct} onOpenEvent={setOpenEvent} onOpenCourse={setOpenCourse} onOpenRepresentatives={name => openTab('representatives', name)} />)}</HomeCarousel>
+            <HomeCarousel>{homeFeed.slice(0, 3).map(item => <HomeFeedCard key={homeFeedKey(item)} item={item} onOpenProduct={setOpenProduct} onOpenEvent={setOpenEvent} onOpenCourse={setOpenCourse} />)}</HomeCarousel>
           </section>}
         </div>
       )}
@@ -617,13 +619,11 @@ function HomeFeedCard({
   onOpenProduct,
   onOpenEvent,
   onOpenCourse,
-  onOpenRepresentatives,
 }: {
   item: HomeFeedItem;
   onOpenProduct: (p: Product) => void;
   onOpenEvent: (e: Event) => void;
   onOpenCourse: (c: Course) => void;
-  onOpenRepresentatives: (companyName: string) => void;
 }) {
   if (item.kind === 'product') {
     return <HomeProductCard product={item.product} onOpen={() => onOpenProduct(item.product)} />;
@@ -637,7 +637,6 @@ function HomeFeedCard({
   return (
     <HomeRepCard
       rep={item.rep}
-      onConnect={() => onOpenRepresentatives(item.rep.companyName)}
     />
   );
 }
@@ -667,32 +666,11 @@ function HomeCourseRow({ course, onOpen }: { course: Course; onOpen: () => void 
   );
 }
 
-function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect: () => void }) {
-  const { addLead } = useAuth();
-  const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState('');
-  const [error, setError] = useState('');
+function HomeRepCard({ rep }: { rep: RepresentativeProfile }) {
   const image = visualUrl(representativeDisplayImageUrl(rep));
   const displayName = representativeDisplayName(rep);
   const showCompany = rep.companyName.trim()
     && rep.companyName.trim().toLowerCase() !== displayName.trim().toLowerCase();
-
-  async function handleConnect() {
-    if (busy) return;
-    setBusy(true);
-    setError('');
-    setFeedback('');
-    try {
-      const result = await connectWithRepresentative(rep.companyId, rep.companyName, rep.whatsapp, addLead, rep.registered ? { id: rep.id, name: rep.repLabel } : undefined);
-      setFeedback(result.message);
-      if (!result.whatsappOpened) onConnect();
-    } catch (err) {
-      setError(formatLeadError(err instanceof Error ? err.message : ''));
-      onConnect();
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <article className="tessy-home-wide-card tessy-home-wide-card--action">
@@ -715,16 +693,8 @@ function HomeRepCard({ rep, onConnect }: { rep: RepresentativeProfile; onConnect
           {rep.regionLabel && <div className="tessy-home-card__info">{rep.regionLabel}</div>}
         </div>
         <div className="tessy-home-wide-card__footer">
-          <button type="button" className="tessy-home-btn-inline" onClick={() => { void handleConnect(); }} disabled={busy}>
-            {busy ? 'Enviando…' : feedback ? 'Interesse enviado ✓' : 'Avisar interesse'}
-          </button>
+          <RepresentativeWhatsapp rep={rep} />
         </div>
-        {feedback && !error && (
-          <div style={{ marginTop: 6, fontSize: 11, color: 'var(--success)', lineHeight: 1.35 }}>{feedback}</div>
-        )}
-        {error && (
-          <div style={{ marginTop: 6, fontSize: 11, color: 'var(--danger)', lineHeight: 1.35 }}>{error}</div>
-        )}
       </div>
     </article>
   );
@@ -985,58 +955,15 @@ function RepresentativesView({
   onSearchChange: (value: string) => void;
   doctorRegion: string;
 }) {
-  const { addLead, leads } = useAuth();
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const [successId, setSuccessId] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState('');
-
-  async function connectRep(rep: RepresentativeProfile) {
-    if (busyId) return;
-    setBusyId(rep.id);
-    setError('');
-    setSuccessId(null);
-    setSuccessMsg('');
-    try {
-      const result = await connectWithRepresentative(rep.companyId, rep.companyName, rep.whatsapp, addLead, rep.registered ? { id: rep.id, name: rep.repLabel } : undefined);
-      setSuccessId(rep.id);
-      setSuccessMsg(result.message);
-    } catch (err) {
-      setError(formatLeadError(err instanceof Error ? err.message : ''));
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
     <div>
       <MarketHead title="Representantes" subtitle={doctorRegion} count={representatives.length} countWord="representante" />
       <SearchBar value={search} onChange={onSearchChange} placeholder="Nome, marca, produto ou cidade..." />
-      {error && (
-        <div style={{
-          marginBottom: 12,
-          padding: '10px 12px',
-          borderRadius: 12,
-          background: 'rgba(242,92,84,0.08)',
-          border: '1px solid rgba(242,92,84,0.18)',
-          color: '#F25C54',
-          fontSize: 12,
-          lineHeight: 1.4,
-        }}>
-          {error}
-        </div>
-      )}
       {representatives.length === 0 ? (
         <Empty text="Nenhum representante encontrado." hint="Tente outra região, categoria ou termo de busca." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {representatives.map(rep => {
-            const contact = leads.find(lead => lead.companyId === rep.companyId
-              && lead.intent === 'representative_contact' && lead.itemType === 'company'
-              && (lead.itemId ?? '') === (rep.registered ? rep.id : ''));
-            const contactLabel = contact?.connectionStatus === 'approved' ? 'Conexão aprovada'
-              : contact?.connectionStatus === 'requested' ? 'Pedido de contato recebido'
-              : contact ? 'Interesse enviado' : 'Solicitar contato';
             return <article key={rep.id} style={{
               padding: 16,
               borderRadius: 20,
@@ -1061,23 +988,7 @@ function RepresentativesView({
                   </div>
                 </div>
               </div>
-              <button type="button" disabled={busyId !== null || Boolean(contact)} onClick={() => { void connectRep(rep); }} style={{
-                marginTop: 14,
-                width: '100%',
-                padding: '11px 12px',
-                borderRadius: 12,
-                border: '1.5px solid var(--accent)',
-                background: '#fff',
-                color: 'var(--accent)',
-                fontSize: 13,
-                fontWeight: 650,
-                cursor: busyId === rep.id ? 'not-allowed' : 'pointer',
-              }}>
-                {busyId === rep.id ? 'Enviando...' : contactLabel}
-              </button>
-              {successId === rep.id && successMsg && (
-                <div style={{ marginTop: 8, fontSize: 11.5, color: '#1EA97C', lineHeight: 1.35 }}>{successMsg}</div>
-              )}
+              <RepresentativeWhatsapp rep={rep} />
             </article>;
           })}
         </div>
@@ -1248,8 +1159,13 @@ function EventCard({ ev }: { ev: Event }) {
 
 /* ─── ProductCard ─── */
 function ProductCard({ product }: { product: Product }) {
-  const { user, addLead, leads } = useAuth();
+  const { user, addLead, leads, representatives: registeredReps } = useAuth();
+  const contactRep = registeredReps.find(rep => rep.companyId === product.companyId
+    && matchesSegment(rep, product.segment ?? product.category) && buildWhatsappLink(rep.whatsapp));
+  const contactHref = buildWhatsappLink(contactRep?.whatsapp || product.companyWhatsapp,
+    `Olá! Vi ${product.name} na Tessy e gostaria de saber mais.`);
   const [leadSent, setLeadSent] = useState(false);
+  const [sending, setSending] = useState(false);
   const [tint1] = categoryTint(product.category);
   const code = companyInitials(product.companyName);
   const intent = product.listingType === 'partnership' ? 'instagram_partnership' : 'sample_request';
@@ -1259,10 +1175,10 @@ function ProductCard({ product }: { product: Product }) {
   const [leadError, setLeadError] = useState('');
 
   async function sendProductInterest() {
-    if (interestSent) return;
+    if (interestSent || sending) return;
     if (!user?.whatsapp) { openProfileSettings(); return; }
     setLeadError('');
-    setLeadSent(true);
+    setSending(true);
     try {
       const result = await addLead({
         companyId: product.companyId,
@@ -1274,12 +1190,15 @@ function ProductCard({ product }: { product: Product }) {
         contactConsentVersion: 'product-contact-v1',
         message: 'Médico pediu amostra, material científico e condições comerciais.',
       });
+      setLeadSent(true);
       if (result.pointsAwarded > 0) {
         setLeadError('');
       }
     } catch (e) {
       setLeadSent(false);
       setLeadError(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
+    } finally {
+      setSending(false);
     }
   }
 
@@ -1360,9 +1279,12 @@ function ProductCard({ product }: { product: Product }) {
         {product.website && <div style={{ marginTop: 8 }}><WebsiteLink url={product.website} /></div>}
 
         <div style={{ marginTop: 14 }}>
-          <button
+          {contactHref ? <a className="doctor-whatsapp" href={contactHref} target="_blank" rel="noopener noreferrer"
+            onClick={() => { if (user?.whatsapp) void sendProductInterest(); }}>
+            <WhatsappLogo size={21} weight="fill" aria-hidden="true" /> WhatsApp direto
+          </a> : <button
             type="button"
-            disabled={interestSent}
+            disabled={interestSent || sending}
             onClick={() => { void sendProductInterest(); }}
             style={{
               width: '100%',
@@ -1372,10 +1294,10 @@ function ProductCard({ product }: { product: Product }) {
               fontSize: 14, fontWeight: 650,
               cursor: interestSent ? 'default' : 'pointer',
             }}>
-            {interestSent ? (existingInterest?.connectionStatus === 'approved' ? 'Conexão aceita' : 'Interesse enviado') : user?.whatsapp ? 'Quero conhecer' : 'Cadastrar WhatsApp'}
-          </button>
+            {sending ? 'Enviando…' : interestSent ? (existingInterest?.connectionStatus === 'approved' ? 'Conexão aceita' : 'Interesse enviado') : user?.whatsapp ? 'Quero conhecer' : 'Cadastrar WhatsApp'}
+          </button>}
           <p style={{ marginTop: 8, fontSize: 11.5, lineHeight: 1.35, color: 'var(--muted)' }}>
-            {interestSent ? (existingInterest?.connectionStatus === 'approved' ? 'A empresa já pode conversar com você.' : 'Aguarde o retorno da empresa.') : `Ao continuar, você autoriza a ${product.companyName} a falar com você pelo WhatsApp sobre este produto.`}
+            {contactHref && (interestSent || !user?.whatsapp) ? 'Converse diretamente pelo WhatsApp.' : interestSent ? (existingInterest?.connectionStatus === 'approved' ? 'A empresa já pode conversar com você.' : 'Aguarde o retorno da empresa.') : `Ao continuar, você autoriza a ${product.companyName} a falar com você pelo WhatsApp sobre este produto.`}
           </p>
         </div>
         {leadError && (
@@ -1391,6 +1313,7 @@ function CourseCard({ course }: { course: Course }) {
   const { addLead, leads } = useAuth();
   const [tint1, tint2] = categoryTint(course.category);
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
   const code = companyInitials(course.companyName);
   const displayDate = courseDisplayDate(course);
   const schedule = { date: displayDate, time: course.time };
@@ -1404,9 +1327,9 @@ function CourseCard({ course }: { course: Course }) {
   const [leadError, setLeadError] = useState('');
 
   async function sendCourseInterest() {
-    if (interestSent) return;
+    if (interestSent || sending) return;
     setLeadError('');
-    setSent(true);
+    setSending(true);
     try {
       await addLead({
         companyId: course.companyId,
@@ -1417,9 +1340,12 @@ function CourseCard({ course }: { course: Course }) {
         intent: 'course_interest',
         message: `Médico demonstrou interesse em ${course.title}.`,
       });
+      setSent(true);
     } catch (e) {
       setSent(false);
       setLeadError(e instanceof Error ? e.message : 'Erro ao registrar interesse.');
+    } finally {
+      setSending(false);
     }
   }
 
@@ -1473,7 +1399,7 @@ function CourseCard({ course }: { course: Course }) {
       <div style={{ marginTop: 14 }}>
         <button
           type="button"
-          disabled={interestSent}
+          disabled={interestSent || sending}
           onClick={() => {
             void sendCourseInterest();
           }}
@@ -1486,7 +1412,7 @@ function CourseCard({ course }: { course: Course }) {
             fontSize: 13, fontWeight: 560,
             cursor: interestSent ? 'not-allowed' : 'pointer',
           }}>
-          {interestSent ? 'Interesse enviado' : `Avisar empresa (+${POINTS_PER_INTEREST} pts)`}
+          {sending ? 'Enviando…' : interestSent ? 'Interesse enviado' : `Avisar empresa (+${POINTS_PER_INTEREST} pts)`}
         </button>
         {leadError && (
           <div style={{ marginTop: 8, fontSize: 12, color: '#F25C54', lineHeight: 1.35, textAlign: 'center' }}>{leadError}</div>

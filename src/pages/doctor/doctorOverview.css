@@ -78,3 +78,13 @@
   .tessy-app-shell--doctor .tessy-profile-menu--doctor { top: 52px !important; }
   .doctor-primary, .do-request-card > button { min-height: 44px; }
 }
+
+.doctor-whatsapp { display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; min-height: 46px; padding: 10px 12px; background: #137c45; color: #fff; border-radius: 9px; font-size: 14px; font-weight: 600; text-decoration: none; margin-top: 12px; }
+.doctor-whatsapp:hover { background: #106739; }
+.doctor-whatsapp:focus-visible { outline: 3px solid var(--accent-action); outline-offset: 3px; }
+.doctor-contact-unavailable { display: block; margin-top: 12px; padding: 10px 0; color: var(--ink-2); font-size: 12px; }
+.doctor-home-contact__person { display: flex; align-items: center; gap: 10px; }
+.doctor-home-contact__person > span { flex: 1; min-width: 0; }
+.doctor-home-contact__person strong { display: block; font-size: 13px; overflow-wrap: anywhere; }
+.doctor-home-contact__person small { display: block; margin-top: 3px; font-size: 11px; color: var(--ink-2); }
+.doctor-home-contact__person button { border: 0; background: transparent; color: var(--accent-action); padding: 8px 0 8px 4px; font-size: 12px; cursor: pointer; }

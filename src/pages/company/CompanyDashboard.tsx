@@ -1,3 +1,4 @@
+import { eventCapacityError } from '../../lib/persistedUpdates';
 import { openProfileSettings } from '../../lib/profileSettingsEvents';
 import { medicalSegment } from '../../lib/segments';
 import { runCompanyContactAction } from '../../lib/companyContactAction';
@@ -828,7 +829,8 @@ function CreateWizard({ onRegisterRepresentative, kind, setKind, skipTypeStep, i
       if (!ev.title.trim()) return 'Informe o título do evento.';
       if (!ev.date) return 'Selecione a data do evento.';
       if (!isEventDateInAllowedRange(ev.date)) return 'Selecione uma data entre 2026 e 2030.';
-      if (!Number.isInteger(Number(ev.maxParticipants)) || Number(ev.maxParticipants) < 1) return 'Informe um número inteiro de vagas maior que zero.';
+      const capacityError = eventCapacityError(ev.maxParticipants);
+      if (capacityError) return capacityError;
       if (!ev.location.trim()) return 'Informe o local do evento.';
     }
     if (kind === 'product') {
@@ -2308,6 +2310,7 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
   async function handleSave() {
     if (saving) return;
     if (!name.trim()) { setError('Informe o nome do representante.'); return; }
+    if (whatsapp.trim() && !buildWhatsappLink(whatsapp)) { setError('Informe um WhatsApp válido com DDD.'); return; }
     if (!company.segment) { setError('Defina o segmento médico da empresa em Editar perfil.'); return; }
     if (!specialty.trim()) { setError('Informe a área: skincare, tecnologias ou parcerias.'); return; }
     if (!stateUf.trim() && !region.trim()) { setError('Informe a UF ou a região de atendimento.'); return; }
@@ -2327,7 +2330,7 @@ function RepresentativesManager({ representatives, company, onAdd, onUpdate, onD
         region: region.trim() || undefined,
         city: city.trim() || undefined,
         state: stateUf.trim() || undefined,
-        whatsapp: rawWa ? (rawWa.startsWith('55') ? rawWa : `55${rawWa}`) : (company.whatsapp || undefined),
+        whatsapp: rawWa ? buildWhatsappLink(whatsapp).split('/').pop() : (company.whatsapp || undefined),
         email: email.trim() || undefined,
         bio: bio.trim() || undefined,
         photoUrl,
@@ -2746,6 +2749,7 @@ function EditEventModal({ event, onSave, onClose }: {
   }
 
   async function handleSave() {
+    if (saving) return;
     if (!title.trim())    { setErr('Informe o título do evento.'); return; }
     if (!date)            { setErr('Selecione a data.');           return; }
     if (!isEventDateInAllowedRange(date)) {
@@ -2753,11 +2757,9 @@ function EditEventModal({ event, onSave, onClose }: {
       return;
     }
     if (!location.trim()) { setErr('Informe o local.');            return; }
-    const max = Number(maxParticipants) || 100;
-    if (max < event.registeredCount) {
-      setErr(`Vagas não podem ser menores que o nº de inscritos (${event.registeredCount}).`);
-      return;
-    }
+    const capacityError = eventCapacityError(maxParticipants, event.registeredCount);
+    if (capacityError) { setErr(capacityError); return; }
+    const max = Number(maxParticipants);
     setErr('');
     setSaving(true);
     try {
@@ -2773,7 +2775,7 @@ function EditEventModal({ event, onSave, onClose }: {
         category,
         ...(segment && segment !== event.segment ? { segment } : {}),
         maxParticipants: max,
-        website:         normalizeUrl(website),
+        website:         normalizeUrl(website) ?? '',
         imageUrl:        nextImageUrl,
       });
     } catch (e) {
