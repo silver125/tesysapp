@@ -261,7 +261,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                   Sair
                 </button>
               </div>
-            , user?.role === 'medico' ? document.body : (profilePortal ?? document.body))}
+            , profilePortal ?? document.body)}
           </div>
         </div>
       </header>

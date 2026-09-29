@@ -1,4 +1,4 @@
-import { House, Package, Users, CalendarBlank, UserCircle, ChatCircleDots, EnvelopeSimple, Handshake, Trophy, ArrowRight, CaretDown } from '@phosphor-icons/react';
+import { House, Package, Users, CalendarBlank, ChatCircleDots, EnvelopeSimple, Handshake, Trophy, ArrowRight, CaretDown } from '@phosphor-icons/react';
 import MarketScope from '../../components/MarketScope';
 import { medicalSegment, matchesSegment } from '../../lib/segments';
 import { matchesGeography, stateAfterRegionChange } from '../../lib/geography';
@@ -55,7 +55,6 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'products', label: 'Produtos', icon: active => <Package size={23} weight={active ? 'fill' : 'regular'} /> },
   { key: 'representatives', label: 'Representantes', icon: active => <Users size={23} weight={active ? 'fill' : 'regular'} /> },
   { key: 'events', label: 'Eventos', icon: active => <CalendarBlank size={23} weight={active ? 'fill' : 'regular'} /> },
-  { key: 'profile', label: 'Perfil', icon: active => <UserCircle size={23} weight={active ? 'fill' : 'regular'} /> },
 ];
 
 const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
