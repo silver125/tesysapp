@@ -1,3 +1,4 @@
+import { House, Package, Users, CalendarBlank, UserCircle, ChatCircleDots, EnvelopeSimple, Handshake, Trophy, ArrowRight, CaretDown } from '@phosphor-icons/react';
 import MarketScope from '../../components/MarketScope';
 import { medicalSegment, matchesSegment } from '../../lib/segments';
 import { matchesGeography, stateAfterRegionChange } from '../../lib/geography';
@@ -19,19 +20,17 @@ import {
   representativeDisplayName,
   representativeDisplayImageUrl,
   representativeCompanyBadgeUrl,
-  matchesRepresentativeCategory,
+
   matchesRepresentativeSearch,
   representativeOfferSummary,
   type RepresentativeProfile,
 } from '../../lib/representatives';
 import { connectWithRepresentative } from '../../lib/commercialConnect';
 import { buildHomeFeed, type HomeFeedItem } from '../../lib/homeFeed';
-import { pickDoctorOpportunities, type DoctorOpportunity } from '../../lib/doctorRecommendations';
 import { formatLeadError } from '../../lib/leadErrors';
 import { getLevelProgress, getBadges, POINTS_PER_INTEREST, POINTS_PER_CONNECTION, countApprovedConnections } from '../../lib/gamification';
 import { FilterBar, MarketGrid, MarketCard, PhotoBadge, Sheet } from '../../components/market';
 import { fetchCompanyLogos } from '../../lib/companyBranding';
-import FirstVisitTip from '../../components/FirstVisitTip';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import type { Event, Product, Course, Lead, Location, User, LeadIntent, LeadItemType } from '../../types';
 
@@ -51,15 +50,12 @@ function includesQ(value: string | undefined | null, q: string) {
   return (value ?? '').toLowerCase().includes(q);
 }
 
-function DoctorNavIcon({ active, children }: { active: boolean; children: ReactNode }) {
-  return <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? 'var(--accent)' : '#6F7A90'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{children}</svg>;
-}
 const NAV_ITEMS: NavItem[] = [
-  { key: 'home', label: 'Início', icon: active => <DoctorNavIcon active={active}><path d="m3 10 9-7 9 7v11h-6v-7H9v7H3z"/></DoctorNavIcon> },
-  { key: 'products', label: 'Produtos', icon: active => <DoctorNavIcon active={active}><path d="m12 3 9 5v9l-9 5-9-5V8zM3 8l9 5 9-5M12 13v9M7.5 5.5l9 5"/></DoctorNavIcon> },
-  { key: 'representatives', label: 'Representantes', icon: active => <DoctorNavIcon active={active}><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0116 0v2M12 15v6"/></DoctorNavIcon> },
-  { key: 'events', label: 'Eventos', icon: active => <DoctorNavIcon active={active}><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h2M15 15h2"/></DoctorNavIcon> },
-  { key: 'profile', label: 'Perfil', icon: active => <DoctorNavIcon active={active}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M5.5 18a7 7 0 0113 0"/></DoctorNavIcon> },
+  { key: 'home', label: 'Início', icon: active => <House size={23} weight={active ? 'fill' : 'regular'} /> },
+  { key: 'products', label: 'Produtos', icon: active => <Package size={23} weight={active ? 'fill' : 'regular'} /> },
+  { key: 'representatives', label: 'Representantes', icon: active => <Users size={23} weight={active ? 'fill' : 'regular'} /> },
+  { key: 'events', label: 'Eventos', icon: active => <CalendarBlank size={23} weight={active ? 'fill' : 'regular'} /> },
+  { key: 'profile', label: 'Perfil', icon: active => <UserCircle size={23} weight={active ? 'fill' : 'regular'} /> },
 ];
 
 const MONTHS_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
@@ -218,7 +214,6 @@ export default function DoctorDashboard() {
   const [search, setSearch] = useState('');
   const [connectionView, setConnectionView] = useState<'requested' | 'approved'>('requested');
   const [evFilter, setEvFilter] = useState('all');
-  const [repCategory, setRepCategory] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
   const [openProduct, setOpenProduct] = useState<Product | null>(null);
   const [openEvent, setOpenEvent] = useState<Event | null>(null);
@@ -301,34 +296,15 @@ export default function DoctorDashboard() {
   );
   const filtRepresentatives = representatives.filter(rep => {
     return matchesRepresentativeSearch(rep, search)
-      && matchesRepresentativeCategory(rep, repCategory);
+;
   });
   const companyMatches = buildCompanyMatches(events, products, courses, locations);
   const homeFeed = buildHomeFeed(homeProductPool, homeEvents, homeWorkshops, representatives);
-  const marketplaceCounts = {
-    products: products.length,
-    events: upcomingEvents.length + courses.length,
-    workshops: courses.length,
-    reps: representatives.length,
-  };
-  const opportunities = pickDoctorOpportunities(
-    companyMatches,
-    homeProductPool,
-    homeEvents,
-    representatives,
-    user,
-    doctorInterests,
-    2,
-  );
-  const bestOpportunity = opportunities[0];
-  const nextOpportunity = opportunities[1];
-  const platformEmpty = products.length === 0 && events.length === 0 && courses.length === 0;
-  const homeQuiet = homeFeed.length === 0 && !bestOpportunity;
-
   const doctorLeads = leads.filter(lead => lead.doctorId === user?.id);
   const pendingConnections = doctorLeads.filter(lead => lead.connectionStatus === 'requested');
 
   function scrollToPendingConnections() {
+    setTab('home');
     setConnectionView('requested');
     window.requestAnimationFrame(() => document.getElementById('pending-connections')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
@@ -336,22 +312,6 @@ export default function DoctorDashboard() {
   function openTab(k: Tab, nextSearch = '') {
     setTab(k);
     setSearch(nextSearch);
-  }
-
-  function openOpportunity(item: DoctorOpportunity) {
-    if (item.kind === 'product' && item.product) {
-      setOpenProduct(item.product);
-      return;
-    }
-    if (item.kind === 'event' && item.event) {
-      setOpenEvent(item.event);
-      return;
-    }
-    if (item.kind === 'rep') {
-      openTab('representatives', item.companyName);
-      return;
-    }
-    openTab('representatives', item.companyName);
   }
 
   function goTab(k: string) {
@@ -364,7 +324,7 @@ export default function DoctorDashboard() {
 
   return (
     <Layout
-      wide={tab === 'home'}
+      wide={false}
       navItems={NAV_ITEMS}
       activeKey={tab}
       onNavChange={goTab}
@@ -372,67 +332,44 @@ export default function DoctorDashboard() {
       onNotificationClick={scrollToPendingConnections}
     >
 
-      <MarketScope segment={segment} region={macroRegion} state={stateFilter} onSegment={value => { setSelectedSegment(value); setOpenEvent(null); setOpenProduct(null); setOpenCourse(null); }} onRegion={value => { setMacroRegion(value); setStateFilter(stateAfterRegionChange(value, stateFilter)); }} onState={setStateFilter} />
+      {tab !== 'home' && <MarketScope segment={segment} region={macroRegion} state={stateFilter} onSegment={value => { setSelectedSegment(value); setOpenEvent(null); setOpenProduct(null); setOpenCourse(null); }} onRegion={value => { setMacroRegion(value); setStateFilter(stateAfterRegionChange(value, stateFilter)); }} onState={setStateFilter} />}
 
-      {tab !== 'home' && <PendingConnectionsInbox leads={pendingConnections} />}
 
       {/* ── HOME ── */}
       {tab === 'home' && (
-        <div className="company-overview doctor-overview">
-          <header className="co-header">
+        <div className="doctor-home">
+          <section className="doctor-welcome">
             <HomeGreeting />
-            <div className="co-actions">
-              <button className="co-primary" onClick={() => openTab('representatives')}>Buscar representantes ↗</button>
-              <button onClick={() => openTab('representatives')}>Ver representantes</button>
-            </div>
-          </header>
+            <button className="doctor-primary" onClick={() => openTab('representatives')}>
+              <ChatCircleDots size={23} aria-hidden="true" />
+              <span>Falar com representante<small>Encontre alguém da sua especialidade</small></span>
+              <ArrowRight size={19} aria-hidden="true" />
+            </button>
+            <DoctorPointsBar points={user?.points ?? 0} connections={countApprovedConnections(doctorLeads)} />
+          </section>
 
-          <div className="do-score-top"><DoctorPointsBar points={user?.points ?? 0} connections={countApprovedConnections(doctorLeads)} /></div>
-
-          <section className="co-section do-network" aria-labelledby="do-network-title">
-            <div className="co-section-heading"><h2 id="do-network-title">Sua rede</h2><button className="co-text-button" onClick={openProfileSettings}>Editar perfil →</button></div>
-            <div className="co-stages">
-              <button className="co-stage" aria-pressed={connectionView === 'requested'} onClick={scrollToPendingConnections}><span className="co-stage-index" aria-hidden="true">01</span><strong>{pendingConnections.length}</strong><span className="co-stage-label">Convites</span></button>
-              <button className="co-stage" aria-pressed={connectionView === 'approved'} onClick={() => { setConnectionView('approved'); document.getElementById('do-requests-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}><span className="co-stage-index" aria-hidden="true">02</span><strong>{countApprovedConnections(doctorLeads)}</strong><span className="co-stage-label">Conexões</span></button>
-              <button className="co-stage" onClick={() => openTab('events')}><span className="co-stage-index" aria-hidden="true">03</span><strong>{upcomingEvents.length}</strong><span className="co-stage-label">Eventos</span></button>
+          <section className="doctor-network" aria-labelledby="do-network-title">
+            <div className="doctor-section-heading"><h2 id="do-network-title">Sua rede</h2><button onClick={openProfileSettings}>Editar perfil</button></div>
+            <div className="doctor-network-grid">
+              <button aria-pressed={connectionView === 'requested'} onClick={scrollToPendingConnections}><EnvelopeSimple size={22} /><strong>{pendingConnections.length}</strong><span>Convites</span></button>
+              <button aria-pressed={connectionView === 'approved'} onClick={() => setConnectionView('approved')}><Handshake size={22} /><strong>{countApprovedConnections(doctorLeads)}</strong><span>Conexões</span></button>
+              <button onClick={() => openTab('events')}><CalendarBlank size={22} /><strong>{upcomingEvents.length}</strong><span>Eventos</span></button>
             </div>
           </section>
 
-          <section className="co-section do-requests" aria-labelledby="do-requests-title">
-            <div className="co-section-heading"><h2 id="do-requests-title">{connectionView === 'requested' ? 'Convites para você' : 'Suas conexões'}</h2></div>
-            {connectionView === 'requested' ? <>
-              <PendingConnectionsInbox leads={pendingConnections} />
-              {!user?.whatsapp && <SlimProfileBanner onFix={openProfileSettings} />}
-            </> : <div id="doctor-connections" className="do-approved">
+          <section className="doctor-inbox" aria-labelledby="do-requests-title">
+            <div className="doctor-section-heading"><h2 id="do-requests-title">{connectionView === 'requested' ? 'Convites para você' : 'Suas conexões'}</h2></div>
+            {connectionView === 'requested' ? <PendingConnectionsInbox leads={pendingConnections} /> : <div className="doctor-connections">
               {doctorLeads.some(lead => lead.connectionStatus === 'approved') ? doctorLeads.filter(lead => lead.connectionStatus === 'approved').map(lead => (
-                <button className="co-event" key={lead.id} onClick={() => openTab('representatives', lead.companyName)}><span><strong>{lead.companyName}</strong><small>{lead.itemName}</small></span><span aria-hidden="true">↗</span></button>
-              )) : <div className="co-empty"><p>Suas conexões aprovadas aparecerão aqui.</p><button onClick={() => openTab('representatives')}>Buscar representantes</button></div>}
+                <button key={lead.id} onClick={() => openTab('representatives', lead.companyName)}><Handshake size={24} /><span><strong>{lead.companyName}</strong><small>{lead.itemName}</small></span><ArrowRight size={18} /></button>
+              )) : <p className="doctor-empty">Suas conexões aparecerão aqui.</p>}
             </div>}
           </section>
 
-          <section className="co-section do-opportunities" aria-labelledby="do-opportunities-title">
-            <div className="co-section-heading"><h2 id="do-opportunities-title">Para você</h2><button className="co-text-button" onClick={() => openTab('products')}>Ver produtos →</button></div>
-            {[bestOpportunity, nextOpportunity].filter((item): item is DoctorOpportunity => Boolean(item)).map(item => (
-              <QuickDoctorOpportunity key={item.id} item={item} onOpen={() => openOpportunity(item)} />
-            ))}
-            {homeQuiet && <div className="co-empty"><h3>{platformEmpty ? 'Novas oportunidades aparecerão aqui.' : 'Explore novas conexões.'}</h3><p>{platformEmpty ? 'Complete seu perfil para receber sugestões quando as empresas publicarem.' : 'Ajuste seus interesses ou explore as empresas da Tessy.'}</p><button onClick={openProfileSettings}>Ajustar interesses</button></div>}
-
-          </section>
-
-          <section className="co-section do-discover" aria-labelledby="do-discover-title">
-            <div className="co-section-heading"><h2 id="do-discover-title">Explore sua rede</h2></div>
-            <HomeExploreNav counts={marketplaceCounts} onNavigate={openTab} />
-            <details className="do-details"><summary>Destaques da vitrine</summary>
-            {homeFeed.length > 0 ? <HomeCarousel>{homeFeed.map(item => <HomeFeedCard key={homeFeedKey(item)} item={item} onOpenProduct={setOpenProduct} onOpenEvent={setOpenEvent} onOpenCourse={setOpenCourse} onOpenRepresentatives={name => openTab('representatives', name)} />)}</HomeCarousel> : <p className="co-caption">Ainda não há destaques disponíveis.</p>}
-            </details>
-          </section>
-
-          <section className="co-section do-profile" aria-labelledby="do-profile-title">
-            <div className="co-section-heading"><h2 id="do-profile-title">Seu perfil na Tessy</h2><button className="co-text-button" onClick={openProfileSettings}>Atualizar →</button></div>
-            <details className="do-details"><summary>Sobre seu perfil</summary>
-              {user?.id && <FirstVisitTip userId={user.id} role="medico" />}
-            </details>
-          </section>
+          {homeFeed.length > 0 && <section className="doctor-discover" aria-labelledby="doctor-discover-title">
+            <div className="doctor-section-heading"><h2 id="doctor-discover-title">Na sua especialidade</h2><button onClick={() => openTab('products')}>Explorar <ArrowRight size={14} /></button></div>
+            <HomeCarousel>{homeFeed.slice(0, 3).map(item => <HomeFeedCard key={homeFeedKey(item)} item={item} onOpenProduct={setOpenProduct} onOpenEvent={setOpenEvent} onOpenCourse={setOpenCourse} onOpenRepresentatives={name => openTab('representatives', name)} />)}</HomeCarousel>
+          </section>}
         </div>
       )}
 
@@ -478,8 +415,6 @@ export default function DoctorDashboard() {
       {tab === 'representatives' && (
         <RepresentativesView
           representatives={filtRepresentatives}
-          category={repCategory}
-          onCategoryChange={setRepCategory}
           search={search}
           onSearchChange={setSearch}
           doctorRegion={[segment, stateFilter !== 'all' ? stateFilter : macroRegion !== 'all' ? macroRegion : 'Todo o Brasil'].filter(Boolean).join(' · ')}
@@ -546,7 +481,9 @@ function productCategoryChips(products: Product[]): [string, string][] {
 }
 
 function HomeGreeting() {
-  return <><h1>Painel do médico</h1><p>Conecte-se. Descubra. Amplie sua rede.</p></>;
+  const { user } = useAuth();
+  const name = user?.name?.trim().split(/\s+/)[0] || 'doutor(a)';
+  return <><h1>Olá, {name}</h1><p>Boas conexões começam aqui.</p></>;
 }
 
 function DoctorPointsBar({
@@ -561,44 +498,13 @@ function DoctorPointsBar({
   const unlockedBadges = badges.filter(b => b.unlocked);
 
   return <div className="do-points" aria-label="Sua pontuação">
-    <div className="do-score-line"><div><strong key={progress.points} className="do-score-number" aria-live="polite">{progress.points}<small> pts</small></strong><span>Nível {progress.level.index + 1} · {progress.level.name}</span></div><span className="do-score-target">{progress.isMax ? 'Nível máximo' : `Faltam ${progress.pointsForNextLevel} pts`}</span></div>
+    <div className="do-score-line"><div><strong key={progress.points} className="do-score-number" aria-live="polite">{progress.points}<small> pts</small></strong><span>Nível {progress.level.index + 1} · {progress.level.name}</span></div><Trophy size={30} weight="duotone" className="doctor-trophy" aria-hidden="true" /></div>
     <progress aria-label="Progresso para o próximo nível" value={progress.percent} max={100} />
-    <details className="do-details"><summary>Como somar pontos</summary><p>Novo interesse: +{POINTS_PER_INTEREST} pts. Conexão aprovada: +{POINTS_PER_CONNECTION} pts.</p><p>Ações repetidas não somam novamente.</p>
+    <details className="do-details"><summary>Como ganhar pontos <CaretDown size={12} aria-hidden="true" /></summary><p>Novo interesse: +{POINTS_PER_INTEREST} pts. Conexão aprovada: +{POINTS_PER_CONNECTION} pts.</p><p>Ações repetidas não somam novamente.</p>
       {unlockedBadges.length > 0 && <div className="do-badges">{unlockedBadges.map(badge => <span key={badge.id} title={badge.description}>{badge.label}</span>)}</div>}
       <button className="co-text-button" onClick={openHelp}>Ver regras →</button>
     </details>
   </div>;
-}
-
-function QuickDoctorOpportunity({ item, onOpen }: { item: DoctorOpportunity; onOpen: () => void }) {
-  const { user, leads, addLead } = useAuth();
-  const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [feedback, setFeedback] = useState('');
-  const [error, setError] = useState('');
-  const target = item.product || item.event;
-  const itemType = item.product ? 'product' : 'event';
-  const intent = item.product ? (item.product.listingType === 'partnership' ? 'instagram_partnership' : 'sample_request') : 'event_interest';
-  const existingInterest = target && leads.find(lead => lead.doctorId === user?.id && lead.itemType === itemType && lead.itemId === target.id && lead.intent === intent);
-  const interested = sent || Boolean(existingInterest);
-  async function expressInterest() {
-    if (!target || busy || interested) return;
-    if (item.product && !user?.whatsapp) { openProfileSettings(); return; }
-    setBusy(true); setError('');
-    try {
-      const result = await addLead({companyId:item.companyId, companyName:item.companyName, itemType, itemId:target.id, itemName:item.title, intent, ...(item.product ? {contactConsentVersion: 'product-contact-v1' as const} : {})});
-      setSent(true);
-      setFeedback(result.pointsAwarded > 0 ? `+${result.pointsAwarded} pontos · Interesse enviado` : 'Interesse registrado');
-    } catch { setError('Não foi possível enviar. Tente novamente.'); }
-    finally { setBusy(false); }
-  }
-  return <article className="do-opportunity do-quick-card">
-    <span>{item.kind === 'event' ? 'Evento' : item.kind === 'product' ? 'Produto' : item.kind === 'rep' ? 'Representante' : 'Empresa'}</span>
-    <h3>{item.title}</h3><p>{item.companyName}</p>
-    <div className="do-quick-actions"><button className="co-text-button" onClick={onOpen}>Ver detalhes</button>{target ? <button className="do-interest-button" disabled={busy || interested} onClick={() => void expressInterest()}>{busy ? 'Enviando…' : interested ? (existingInterest?.connectionStatus === 'approved' ? 'Conexão aceita' : 'Interesse enviado') : item.product ? (user?.whatsapp ? 'Quero conhecer' : 'Cadastrar WhatsApp') : `Tenho interesse · +${POINTS_PER_INTEREST} pts`}</button> : <button className="do-interest-button" onClick={onOpen}>Conhecer →</button>}</div>
-    {item.product && !interested && <p className="do-consent-note">Ao continuar, você autoriza a {item.companyName} a falar com você pelo WhatsApp sobre este produto.</p>}
-    {feedback && <p role="status" className="do-action-feedback">{feedback}</p>}{error && <p role="alert">{error}</p>}
-  </article>;
 }
 
 function HomeCarousel({ children }: { children: ReactNode }) {
@@ -734,39 +640,6 @@ function HomeFeedCard({
       rep={item.rep}
       onConnect={() => onOpenRepresentatives(item.rep.companyName)}
     />
-  );
-}
-
-function HomeExploreNav({
-  counts,
-  onNavigate,
-}: {
-  counts: { products: number; events: number; workshops: number; reps: number };
-  onNavigate: (tab: Tab) => void;
-}) {
-  const items: { tab: Tab; label: string; count: number }[] = [
-    { tab: 'events', label: 'Eventos', count: counts.events },
-    { tab: 'products', label: 'Produtos', count: counts.products },
-    { tab: 'representatives', label: 'Representantes', count: counts.reps },
-  ];
-
-  return (
-    <section style={{ marginBottom: 16 }}>
-      <p className="tessy-section-eyebrow">Acesso rápido</p>
-      <div className="tessy-explore-grid">
-        {items.map(entry => (
-          <button
-            key={entry.tab}
-            type="button"
-            onClick={() => onNavigate(entry.tab)}
-            className="tessy-explore-tile"
-          >
-            <div className="tessy-explore-tile__label">{entry.label}</div>
-            <div className="tessy-explore-tile__count">{entry.count}</div>
-          </button>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -991,17 +864,12 @@ function PendingConnectionsInbox({ leads }: { leads: Lead[] }) {
   const [showAll, setShowAll] = useState(false);
   if (leads.length === 0) {
     return (
-      <p id="pending-connections" className="tessy-pending-quiet">
-        Nenhuma solicitação pendente
-      </p>
+      <div id="pending-connections" className="doctor-empty"><EnvelopeSimple size={26} /><span>Tudo em dia. Novos convites aparecerão aqui.</span></div>
     );
   }
 
   return (
     <section id="pending-connections" style={{ marginBottom: 14, scrollMarginTop: 16 }}>
-      <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 700, color: '#C2410C' }}>
-        {leads.length} {leads.length === 1 ? 'solicitação pendente' : 'solicitações pendentes'}
-      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {(showAll ? leads : leads.slice(0, 2)).map(lead => (
           <PendingInboxBanner key={lead.id} lead={lead} total={1} onSeeAll={() => undefined} />
@@ -1021,7 +889,8 @@ function PendingInboxBanner({
   total: number;
   onSeeAll: () => void;
 }) {
-  const { user, approveConnection } = useAuth();
+  const { user, approveConnection, representatives } = useAuth();
+  const rep = representatives.find(item => item.id === lead.itemId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -1042,34 +911,15 @@ function PendingInboxBanner({
   }
 
   return <article className="do-request-card">
-    <h3>{lead.companyName} quer falar com você</h3>
-    <p>{lead.itemName || 'Oportunidade comercial'}</p><p className="do-consent-note">Ao aceitar, você libera seu WhatsApp para esta empresa.</p>
-    <button type="button" disabled={busy} onClick={() => void approveNow()}>{busy ? 'Aprovando…' : user?.whatsapp ? 'Aceitar conexão' : 'Cadastrar WhatsApp'}</button>
+    <div className="doctor-invite-person">
+      {rep?.photoUrl ? <img src={rep.photoUrl} alt="" /> : <CompanyMark code={companyInitials(lead.companyName)} tint="var(--accent-action)" size={44} />}
+      <div><h3>{lead.companyName} quer se conectar</h3><p>{rep?.name || lead.itemName || 'Representante'}</p></div>
+    </div>
+    <button type="button" disabled={busy} onClick={() => void approveNow()}>{busy ? 'Aceitando…' : user?.whatsapp ? 'Aceitar convite' : 'Cadastrar WhatsApp'}</button>
+    <p className="do-consent-note">Ao aceitar, você compartilha seu WhatsApp com esta empresa.</p>
     {total > 1 && <button type="button" onClick={onSeeAll}>Ver outras {total - 1} solicitações</button>}
     {error && <p role="alert">{error}</p>}
   </article>;
-}
-
-function SlimProfileBanner({ onFix }: { onFix: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onFix}
-      style={{
-        width: '100%',
-        marginBottom: 14,
-        padding: '11px 12px',
-        borderRadius: 14,
-        border: '1px solid rgba(245,130,32,0.22)',
-        background: 'rgba(245,130,32,0.08)',
-        textAlign: 'left',
-        cursor: 'pointer',
-      }}
-    >
-      <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--accent-ink)' }}>Cadastre seu WhatsApp</div>
-      <div style={{ marginTop: 2, fontSize: 11.5, color: 'var(--ink-2)' }}>Necessário para aprovar contatos comerciais em 1 toque.</div>
-    </button>
-  );
 }
 
 /* ─── Cards compactos de vitrine ─── */
@@ -1126,16 +976,12 @@ function CourseMarketCard({ course, onOpen }: { course: Course; onOpen: () => vo
 
 /* ─── Representatives view ─── */
 function RepresentativesView({
-  category,
-  onCategoryChange,
   representatives,
   search,
   onSearchChange,
   doctorRegion,
 }: {
   representatives: RepresentativeProfile[];
-  category: string;
-  onCategoryChange: (value: string) => void;
   search: string;
   onSearchChange: (value: string) => void;
   doctorRegion: string;
@@ -1165,18 +1011,8 @@ function RepresentativesView({
 
   return (
     <div>
-      <MarketHead title="Representantes" subtitle={`Encontre representantes por região · ${doctorRegion}`} count={representatives.length} countWord="representante" />
+      <MarketHead title="Representantes" subtitle={doctorRegion} count={representatives.length} countWord="representante" />
       <SearchBar value={search} onChange={onSearchChange} placeholder="Nome, marca, produto ou cidade..." />
-      <div className="tessy-representative-filters">
-        <label>O que você procura?
-          <select value={category} onChange={event => onCategoryChange(event.target.value)}>
-            <option value="all">Todas as categorias</option>
-            <option value="skincare">Skincare</option>
-            <option value="tecnologias">Tecnologias</option>
-            <option value="parcerias">Parcerias</option>
-          </select>
-        </label>
-      </div>
       {error && (
         <div style={{
           marginBottom: 12,
