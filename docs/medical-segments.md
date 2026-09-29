@@ -6,7 +6,7 @@ O catálogo médico aplica segmento, macrorregião e UF conjuntamente em todas a
 
 ## Implantação
 
-1. Aplicar `supabase/migrations/20260928133531_medical_segments.sql` antes do frontend. A migração adiciona colunas e validações, sem excluir registros. Os RPCs de publicação existentes continuam compatíveis: o trigger herda o segmento da empresa quando o INSERT não o informa.
+1. Aplicar `supabase/migrations/20260929191100_medical_segments.sql` antes do frontend. A migração adiciona colunas e validações, sem excluir registros. Os RPCs de publicação existentes continuam compatíveis: o trigger herda o segmento da empresa quando o INSERT não o informa.
 2. Orientar empresas existentes a escolher seu segmento em Editar perfil antes de publicar. Após a migração, publicações sem segmento válido da empresa são recusadas inclusive em clientes antigos.
 3. Revisar dados antigos: apenas categorias/especialidades exatamente reconhecidas recebem classificação automática. Eventos podem ser classificados em Editar evento e representantes em Gerenciar → Classificar em [segmento]. Produtos/cursos antigos com categoria genérica precisam de revisão administrativa para atribuir categoria e segmento, ou de uma nova publicação pelo proprietário. Não inferir a área médica de termos comerciais como “Estética” ou “Tecnologias”.
 4. Publicar o frontend e confirmar, com contas de teste, que Pediatria/PR não mostra Dermatologia/SP e que a empresa só publica no segmento do perfil.
