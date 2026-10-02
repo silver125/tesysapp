@@ -17,7 +17,7 @@ for (const file of ['segments', 'geography', 'representatives', 'uiHelpers', 'co
 const require = createRequire(import.meta.url);
 const regions = require(join(output, 'lib/representatives.js'));
 const { representativeLeadInput, connectWithRepresentative } = require(join(output, 'lib/commercialConnect.js'));
-const { groupCompanyContacts } = require(join(output, 'lib/leadConnections.js'));
+const { groupCompanyContacts, filterLeadsForCatalog } = require(join(output, 'lib/leadConnections.js'));
 const { insertLeadResilient } = require(join(output, 'lib/leadInsert.js'));
 after(() => rmSync(output, { recursive: true, force: true }));
 
@@ -127,4 +127,28 @@ test('WhatsApp links normalize DDD 55, country codes and encoded messages', () =
   assert.equal(buildWhatsappLink('+1 415 555 2671'), 'https://wa.me/14155552671');
   assert.equal(buildWhatsappLink('5511999999999', 'Olá & oi'), 'https://wa.me/5511999999999?text=Ol%C3%A1%20%26%20oi');
   for (const value of [undefined, '', '123', 'sem telefone', '+55 123']) assert.equal(buildWhatsappLink(value), '');
+});
+
+test('invitations follow the visible medical catalog and exclude deleted or unrelated items', () => {
+  const base = { companyId: 'co', doctorId: 'doc', connectionStatus: 'requested' };
+  const leads = [
+    { ...base, id: 'ped-rep', itemType: 'company', itemId: 'rep-ped' },
+    { ...base, id: 'derm-rep', itemType: 'company', itemId: 'rep-derm' },
+    { ...base, id: 'ped-event', itemType: 'event', itemId: 'event-ped' },
+    { ...base, id: 'deleted', itemType: 'event', itemId: 'removed-event' },
+    { ...base, id: 'ped-product', itemType: 'product', itemId: 'product-ped' },
+    { ...base, id: 'ped-course', itemType: 'course', itemId: 'course-ped' },
+    { ...base, id: 'unknown-company', itemType: 'company' },
+    { ...base, id: 'wrong-owner', companyId: 'other', itemType: 'company', itemId: 'rep-ped' },
+  ];
+  const catalog = {
+    representatives: [{ id: 'rep-ped', companyId: 'co', registered: true }],
+    events: [{ id: 'event-ped', companyId: 'co' }],
+    products: [{ id: 'product-ped', companyId: 'co' }],
+    courses: [{ id: 'course-ped', companyId: 'co' }],
+  };
+  assert.deepEqual(filterLeadsForCatalog(leads, catalog).map(l => l.id), ['ped-rep', 'ped-event', 'ped-product', 'ped-course']);
+  assert.deepEqual(filterLeadsForCatalog(leads, { events: [], products: [], courses: [], representatives: [] }), []);
+  const companyLead = [{ ...base, id: 'company', itemType: 'company' }];
+  assert.deepEqual(filterLeadsForCatalog(companyLead, { ...catalog, representatives: [{ id: 'co', companyId: 'co', registered: false }] }), companyLead);
 });

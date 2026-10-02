@@ -14,7 +14,6 @@
 .doctor-network-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .doctor-network-grid button { display: grid; grid-template-columns: auto auto; justify-content: center; align-content: center; gap: 6px 8px; padding: 16px 5px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
 .doctor-network-grid button:last-child { border-right: 0; }
-.doctor-network-grid button[aria-pressed="true"] { background: #fff3e9; color: var(--accent-action); }
 .doctor-network-grid strong { font-size: 21px; line-height: 22px; font-weight: 600; }
 .doctor-network-grid span { grid-column: 1 / -1; font-size: 11px; text-align: center; }
 .do-points { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-top: 14px; }
@@ -43,10 +42,6 @@
 .do-request-card button:disabled { opacity: .6; cursor: wait; }
 .doctor-empty { display: flex; align-items: center; gap: 12px; padding: 18px; border: 1px dashed var(--line); border-radius: 12px; font-size: 12px; line-height: 1.5; color: var(--ink-2); }
 .doctor-empty svg { flex-shrink: 0; }
-.doctor-connections > button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; text-align: left; color: var(--ink); cursor: pointer; }
-.doctor-connections > button > span { flex: 1; }
-.doctor-connections strong, .doctor-connections small { display: block; font-size: 13px; }
-.doctor-connections small { margin-top: 4px; font-size: 11px; color: var(--ink-2); }
 .doctor-home #pending-connections { scroll-margin-top: 90px; margin-bottom: 0 !important; }
 .doctor-home :is(button,summary):focus-visible { outline: 3px solid var(--accent-action); outline-offset: 3px; }
 .market-scope.market-scope--compact { padding: 0; margin: 0 0 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }

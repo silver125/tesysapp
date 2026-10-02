@@ -1,5 +1,6 @@
+import { filterLeadsForCatalog } from '../../lib/leadConnections';
 import RepresentativeWhatsapp from '../../components/RepresentativeWhatsapp';
-import { House, Package, Users, CalendarBlank, WhatsappLogo, ChatCircleDots, EnvelopeSimple, Handshake, Trophy, ArrowRight, CaretDown } from '@phosphor-icons/react';
+import { House, Package, Users, CalendarBlank, WhatsappLogo, ChatCircleDots, EnvelopeSimple, Trophy, ArrowRight, CaretDown } from '@phosphor-icons/react';
 import MarketScope from '../../components/MarketScope';
 import { medicalSegment, matchesSegment, normalized } from '../../lib/segments';
 import { matchesGeography, stateAfterRegionChange } from '../../lib/geography';
@@ -164,7 +165,7 @@ function buildCompanyMatches(events: Event[], products: Product[], courses: Cour
   events.forEach(e => ensureCompany(e.companyId, e.companyName, e.companyWhatsapp).events.push(e));
   products.forEach(p => ensureCompany(p.companyId, p.companyName, p.companyWhatsapp).products.push(p));
   courses.forEach(c => ensureCompany(c.companyId, c.companyName, c.companyWhatsapp).courses.push(c));
-  locations.forEach(l => ensureCompany(l.companyId, l.companyName, l.whatsapp).locations.push(l));
+  locations.forEach(l => companyMap.get(l.companyId)?.locations.push(l));
 
   return [...companyMap.values()].sort((a, b) =>
     (b.products.length * 3 + b.events.length * 2 + b.courses.length) -
@@ -211,7 +212,6 @@ export default function DoctorDashboard() {
     'home', 'products', 'events', 'representatives',
   ] as const);
   const [search, setSearch] = useState('');
-  const [connectionView, setConnectionView] = useState<'requested' | 'approved'>('requested');
   const [evFilter, setEvFilter] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
   const [openProduct, setOpenProduct] = useState<Product | null>(null);
@@ -301,11 +301,11 @@ export default function DoctorDashboard() {
   const homeRepresentative = representatives.find(rep => buildWhatsappLink(rep.whatsapp)) ?? representatives[0];
   const homeFeed = buildHomeFeed(homeProductPool, homeEvents, homeWorkshops, representatives);
   const doctorLeads = leads.filter(lead => lead.doctorId === user?.id);
-  const pendingConnections = doctorLeads.filter(lead => lead.connectionStatus === 'requested');
+  const pendingConnections = filterLeadsForCatalog(doctorLeads, { events, products, courses, representatives })
+    .filter(lead => lead.connectionStatus === 'requested');
 
   function scrollToPendingConnections() {
     setTab('home');
-    setConnectionView('requested');
     window.requestAnimationFrame(() => document.getElementById('pending-connections')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
@@ -352,19 +352,15 @@ export default function DoctorDashboard() {
           <section className="doctor-network" aria-labelledby="do-network-title">
             <div className="doctor-section-heading"><h2 id="do-network-title">Sua rede</h2><button onClick={openProfileSettings}>Editar perfil</button></div>
             <div className="doctor-network-grid">
-              <button aria-pressed={connectionView === 'requested'} onClick={scrollToPendingConnections}><EnvelopeSimple size={22} /><strong>{pendingConnections.length}</strong><span>Convites</span></button>
-              <button aria-pressed={connectionView === 'approved'} onClick={() => setConnectionView('approved')}><Handshake size={22} /><strong>{countApprovedConnections(doctorLeads)}</strong><span>Conexões</span></button>
+              <button onClick={scrollToPendingConnections}><EnvelopeSimple size={22} /><strong>{pendingConnections.length}</strong><span>Convites</span></button>
+              <button onClick={() => openTab('representatives')}><Users size={22} /><strong>{representatives.length}</strong><span>Representantes</span></button>
               <button onClick={() => openTab('events')}><CalendarBlank size={22} /><strong>{upcomingEvents.length}</strong><span>Eventos</span></button>
             </div>
           </section>
 
           <section className="doctor-inbox" aria-labelledby="do-requests-title">
-            <div className="doctor-section-heading"><h2 id="do-requests-title">{connectionView === 'requested' ? 'Convites para você' : 'Suas conexões'}</h2></div>
-            {connectionView === 'requested' ? <PendingConnectionsInbox leads={pendingConnections} /> : <div className="doctor-connections">
-              {doctorLeads.some(lead => lead.connectionStatus === 'approved') ? doctorLeads.filter(lead => lead.connectionStatus === 'approved').map(lead => (
-                <button key={lead.id} onClick={() => openTab('representatives', lead.companyName)}><Handshake size={24} /><span><strong>{lead.companyName}</strong><small>{lead.itemName}</small></span><ArrowRight size={18} /></button>
-              )) : <p className="doctor-empty">Suas conexões aparecerão aqui.</p>}
-            </div>}
+            <div className="doctor-section-heading"><h2 id="do-requests-title">Convites para você</h2></div>
+            <PendingConnectionsInbox leads={pendingConnections} />
           </section>
 
           {homeFeed.length > 0 && <section className="doctor-discover" aria-labelledby="doctor-discover-title">
