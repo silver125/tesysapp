@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TessyMark } from '../components/ui';
 
-const waitlistHref =
-  'mailto:contato@tessybr.com?subject=Acesso%20antecipado%20Tessy&body=Ol%C3%A1%2C%20quero%20acesso%20antecipado%20%C3%A0%20Tessy.';
+const contactHref =
+  'mailto:contato@tessybr.com?subject=D%C3%BAvida%20sobre%20a%20Tessy';
 
 const clients = [
   { name: 'Round Lab', src: '/clients/round-lab.svg' },
@@ -62,24 +62,28 @@ const steps = [
 
 const faqs = [
   [
-    'A Tessy é só para estética?',
-    'Não. A Tessy conecta médicos de diversas especialidades, como estética, dermatologia, cirurgia e outras áreas estratégicas. O foco é reunir oportunidades comerciais e de atualização com qualidade para a rotina médica, independentemente da especialidade.',
+    'Para quem é a Tessy?',
+    'Para médicos de diferentes especialidades e empresas que atendem o mercado médico. Aqui você encontra representantes, produtos, eventos e oportunidades de capacitação.',
   ],
   [
-    'Quem pode se cadastrar?',
-    'Médicos e representantes comerciais podem se cadastrar. Médicos informam CRM e especialidade; representantes cadastram suas marcas e regiões de atendimento.',
+    'Vou encontrar oportunidades da minha especialidade?',
+    'Sim. O catálogo é organizado por área médica, como Pediatria, Dermatologia e Cirurgia Plástica. Você pode escolher a especialidade e filtrar por região e estado para ver o que está disponível.',
   ],
   [
-    'O médico precisa pagar para usar?',
-    'O acesso inicial pode ser gratuito para perfis aprovados. Conforme a plataforma evolui, algumas funcionalidades poderão ter planos, sempre com transparência antes de qualquer cobrança.',
+    'Como falo com um representante?',
+    'Toque em “WhatsApp direto” no cartão do representante ou nos detalhes do produto. Quando há um número cadastrado, a conversa abre no WhatsApp, sem precisar aguardar uma aprovação na Tessy.',
   ],
   [
-    'Como empresas e marcas entram na Tessy?',
-    'Escolha “Sou representante” no cadastro. Depois de criar sua conta, complete o perfil do representante com área de atuação e regiões atendidas.',
+    'Quem pode receber meu WhatsApp?',
+    'Você autoriza o compartilhamento ao aceitar um convite de conexão ou solicitar contato sobre um produto. Ao abrir uma conversa no WhatsApp, o envio da mensagem fica por sua conta.',
   ],
   [
-    'Quando vou ter acesso?',
-    'Liberamos por fases, conforme perfil profissional e ordem da waitlist. Quem se cadastra agora entra na fila de convites com prioridade para as próximas aberturas.',
+    'Como cadastro minha empresa e meus representantes?',
+    'Escolha “Sou representante” no cadastro e informe o segmento médico da empresa. No painel, cadastre os representantes, as regiões atendidas e as oportunidades voltadas àquela área.',
+  ],
+  [
+    'Como começo a usar?',
+    'Crie sua conta e preencha seu perfil. Se for médico, informe seu CRM e sua especialidade. Caso seja solicitada a confirmação do e-mail, abra o link recebido e depois entre na plataforma.',
   ],
 ];
 
@@ -347,8 +351,8 @@ export default function Landing() {
             <div className="lv-cta-band__scrim" />
           </div>
           <div className="lv-container lv-cta-band__copy">
-            <p className="lv-eyebrow lv-eyebrow--light">Exclusividade</p>
-            <h2>Waitlist selecionada.</h2>
+            <p className="lv-eyebrow lv-eyebrow--light">Comece agora</p>
+            <h2>Sua próxima conexão começa aqui.</h2>
             <p>Cadastre-se como médico ou representante e encontre oportunidades por região.</p>
             <div className="lv-hero__cta">
               <Link
@@ -358,8 +362,8 @@ export default function Landing() {
               >
                 Criar conta
               </Link>
-              <a href={waitlistHref} className="lv-btn lv-btn--outline-light lv-btn--lg">
-                Solicitar convite
+              <a href={contactHref} className="lv-btn lv-btn--outline-light lv-btn--lg">
+                Fale com a Tessy
               </a>
             </div>
           </div>
@@ -375,7 +379,7 @@ export default function Landing() {
             <div className="lv-faq__list">
               {faqs.map(([q, a]) => (
                 <details key={q}>
-                  <summary>{q}</summary>
+                  <summary><span>{q}</span><span className="lv-faq__toggle" aria-hidden="true">+</span></summary>
                   <p>{a}</p>
                 </details>
               ))}
@@ -1083,6 +1087,12 @@ const css = `
 }
 
 .lv-faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  line-height: 1.4;
   cursor: pointer;
   font-weight: 650;
   color: var(--ink);
@@ -1090,10 +1100,13 @@ const css = `
 }
 
 .lv-faq summary::-webkit-details-marker { display: none; }
+.lv-faq summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 4px; }
+.lv-faq__toggle { color: var(--accent); font-size: 24px; font-weight: 400; flex-shrink: 0; line-height: 1; }
+.lv-faq details[open] .lv-faq__toggle { transform: rotate(45deg); }
 
 .lv-faq details p {
   margin: 10px 0 0;
-  color: var(--muted);
+  color: var(--ink-2);
   line-height: 1.5;
   font-size: 0.95rem;
 }
