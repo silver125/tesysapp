@@ -7,7 +7,7 @@ DO $$ DECLARE i integer; u uuid; company uuid='cf000000-0000-0000-0000-000000000
  l:=('cf100000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid;
  INSERT INTO auth.users(id,email,raw_user_meta_data) VALUES(u,'feedback-'||i||'@example.invalid','{"role":"medico"}');
  INSERT INTO public.profiles(id,role,name) VALUES(u,'medico','QA Doctor') ON CONFLICT(id) DO UPDATE SET role='medico';
- INSERT INTO public.leads(id,company_id,doctor_id,item_type,item_name,intent,connection_status) VALUES(l,company,u,'company','QA Contact','representative_contact',CASE WHEN i=6 THEN 'requested' ELSE 'approved' END);
+ INSERT INTO public.leads(id,company_id,doctor_id,item_type,item_name,intent,connection_status) VALUES(l,company,u,'company','QA Contact',CASE WHEN i=6 THEN 'event_registration' ELSE 'representative_contact' END,CASE WHEN i=6 THEN 'requested' WHEN i=1 THEN 'none' ELSE 'approved' END);
  PERFORM set_config('request.jwt.claim.sub',u::text,true);SET LOCAL ROLE authenticated;
  IF i=6 THEN
   BEGIN PERFORM public.save_connection_feedback(l,true,true); RAISE EXCEPTION 'TEST FAILED pending accepted';EXCEPTION WHEN OTHERS THEN IF SQLERRM LIKE 'TEST FAILED%' THEN RAISE; END IF; END;
@@ -37,4 +37,4 @@ DO $$ DECLARE i integer; u uuid; company uuid='cf000000-0000-0000-0000-000000000
  BEGIN PERFORM public.company_feedback_summary();RAISE EXCEPTION 'TEST FAILED anonymous aggregate';EXCEPTION WHEN insufficient_privilege THEN NULL;END;
  RESET ROLE;
 END $$;
-SELECT 'PASS approved-only, isolation, update, delete, aggregate threshold, anonymous denial' result;
+SELECT 'PASS recorded-direct-contact, isolation, update, delete, aggregate threshold, anonymous denial' result;

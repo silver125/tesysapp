@@ -37,11 +37,12 @@ export default function ConnectionHistory({leads,feedback,loading,error,onReload
     {(expanded?filtered:filtered.slice(0,3)).map(lead=>{
       const rating=feedback.find(f=>f.lead_id===lead.id);
       const approved=lead.connectionStatus==='approved';
+      const eligible=approved||lead.intent==='representative_contact';
       return <article key={lead.id} className="connection-history-row">
         <div className="connection-history-meta"><strong>{lead.companyName}</strong><time dateTime={lead.createdAt}>{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</time></div>
-        <p>{lead.itemName}</p><small>{approved?'Conexão aprovada':lead.connectionStatus==='requested'?'Aguardando aprovação':'Interesse registrado'}</small>
+        <p>{lead.itemName}</p><small>{approved?'Conexão aprovada':lead.connectionStatus==='requested'?'Convite pendente':'Interesse registrado'}</small>
         {rating&&<p className="connection-rating">{!rating.received_reply?'Ainda sem retorno':rating.useful?'Conversa útil':'Conversa não foi útil'}</p>}
-        <div className="connection-history-actions"><button onClick={()=>onOpen(lead.companyName)}>Ver contato</button>{approved&&<button disabled={busy||loading||Boolean(error)} onClick={()=>{setEditing(editing===lead.id?null:lead.id);setNotice('');setSaveError('');}}>{rating?'Editar avaliação':'Avaliar contato'}</button>}</div>
+        <div className="connection-history-actions"><button onClick={()=>onOpen(lead.companyName)}>Ver contato</button>{eligible&&<button disabled={busy||loading||Boolean(error)} onClick={()=>{setEditing(editing===lead.id?null:lead.id);setNotice('');setSaveError('');}}>{rating?'Editar avaliação':'Avaliar contato'}</button>}</div>
         {editing===lead.id&&<fieldset disabled={busy}>
           <legend>Você conversou com a empresa?</legend>
           <p className="co-caption">Só avalie o que aconteceu. Sua resposta individual é privada; empresas recebem estatísticas de grupos com pelo menos 5 médicos.</p>
