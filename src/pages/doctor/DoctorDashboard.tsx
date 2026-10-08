@@ -4,6 +4,9 @@ import { House, Package, Users, CalendarBlank, WhatsappLogo, ChatCircleDots, Env
 import MarketScope from '../../components/MarketScope';
 import { medicalSegment, matchesSegment, normalized } from '../../lib/segments';
 import { matchesGeography, stateAfterRegionChange } from '../../lib/geography';
+import ConnectionHistory from '../../components/ConnectionHistory';
+import { useConnectionFeedback } from '../../hooks/useConnectionFeedback';
+import { rankWithFeedback } from '../../lib/connectionFeedback';
 import '../../components/company/companyOverview.css';
 import './doctorOverview.css';
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
@@ -242,13 +245,14 @@ export default function DoctorDashboard() {
     return () => { cancelled = true; };
   }, [allProducts, allEvents, allCourses, locations, registeredReps]);
 
+  const connectionFeedback = useConnectionFeedback(user?.id);
   const q = search.toLowerCase();
   const doctorInterests = doctorInterestList(user);
-  const rankedProducts = sortByDoctorInterests(
+  const rankedProducts = rankWithFeedback(sortByDoctorInterests(
     products,
     doctorInterests,
     p => [p.name, p.category, p.description, p.availableFor],
-  );
+  ), connectionFeedback.items);
   const upcomingEvents = events.filter(isUpcomingEvent);
   const homeProductPool = (() => {
     const recommended = rankedProducts.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
@@ -367,6 +371,8 @@ export default function DoctorDashboard() {
             <div className="doctor-section-heading"><h2 id="doctor-discover-title">Na sua especialidade</h2><button onClick={() => openTab('products')}>Explorar <ArrowRight size={14} /></button></div>
             <HomeCarousel>{homeFeed.slice(0, 3).map(item => <HomeFeedCard key={homeFeedKey(item)} item={item} onOpenProduct={setOpenProduct} onOpenEvent={setOpenEvent} onOpenCourse={setOpenCourse} />)}</HomeCarousel>
           </section>}
+          <ConnectionHistory leads={doctorLeads} feedback={connectionFeedback.items} loading={connectionFeedback.loading} error={connectionFeedback.error} onReload={connectionFeedback.reload} onOpen={company=>openTab('representatives',company)} />
+
         </div>
       )}
 
