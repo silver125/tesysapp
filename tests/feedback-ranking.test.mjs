@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import {readFileSync} from 'node:fs';
+const compiled=ts.transpileModule(readFileSync(new URL('../src/lib/connectionFeedback.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022}}).outputText;
+const {rankWithFeedback}=await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const items=[{id:1,companyId:'a'},{id:2,companyId:'b'},{id:3,companyId:'c'}];
+const rating=(company_id,useful,updated_at='2026-10-01')=>({lead_id:company_id,company_id,useful,received_reply:useful!==null,updated_at});
+test('personal feedback promotes useful contacts and demotes unhelpful ones without hiding options',()=>{assert.deepEqual(rankWithFeedback(items,[rating('a',false),rating('c',true)]).map(i=>i.id),[3,2,1]);assert.equal(items[0].id,1);});
+test('latest feedback wins; no reply or deleted feedback does not penalize recommendations',()=>{assert.deepEqual(rankWithFeedback(items,[rating('a',false),rating('a',null,'2026-10-02')]),items);assert.deepEqual(rankWithFeedback(items,[]),items);});

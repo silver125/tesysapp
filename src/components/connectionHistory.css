@@ -1,0 +1,13 @@
+.connection-history input { width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--line);font:inherit;background:#fff;margin:12px 0; }
+.connection-history-row { border-top:1px solid var(--line);padding:16px 0; }
+.connection-history-row p { margin:6px 0;font-size:13px; }
+.connection-history-meta { display:flex;justify-content:space-between;gap:12px;align-items:baseline; }
+.connection-history-meta time,.connection-history-row small { font-size:11px;color:var(--ink-2); }
+.connection-history-actions { display:flex;gap:8px;flex-wrap:wrap;margin-top:10px; }
+.connection-history-actions button,.connection-history>p button { padding:10px 12px;min-height:44px;border:1px solid var(--line);background:#fff;color:var(--ink);font:inherit;font-size:12px;cursor:pointer; }
+.connection-history-actions button:disabled { opacity:.5;cursor:wait; }
+.connection-history fieldset { margin:12px 0 0;padding:12px;border:1px solid var(--line); }
+.connection-history legend { font-size:13px;font-weight:600; }
+.connection-rating { color:var(--accent-ink); }
+
+.doctor-overview .connection-history { grid-column: 1 / -1; }

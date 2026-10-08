@@ -1,3 +1,6 @@
+import ConnectionHistory from '../../components/ConnectionHistory';
+import { useConnectionFeedback } from '../../hooks/useConnectionFeedback';
+import { rankWithFeedback } from '../../lib/connectionFeedback';
 import '../../components/company/companyOverview.css';
 import './doctorOverview.css';
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
@@ -246,13 +249,14 @@ export default function DoctorDashboard() {
     return () => { cancelled = true; };
   }, [products, events, courses, locations, registeredReps]);
 
+  const connectionFeedback = useConnectionFeedback(user?.id);
   const q = search.toLowerCase();
   const doctorInterests = doctorInterestList(user);
-  const rankedProducts = sortByDoctorInterests(
+  const rankedProducts = rankWithFeedback(sortByDoctorInterests(
     products,
     doctorInterests,
     p => [p.name, p.category, p.description, p.availableFor],
-  );
+  ), connectionFeedback.items);
   const upcomingEvents = events.filter(isUpcomingEvent);
   const homeProductPool = (() => {
     const recommended = rankedProducts.filter(p => matchesDoctorProfile(user, p.name, p.category, p.description, p.availableFor));
@@ -407,14 +411,19 @@ export default function DoctorDashboard() {
             </div>}
           </section>
 
+
+
           <section className="co-section do-opportunities" aria-labelledby="do-opportunities-title">
             <div className="co-section-heading"><h2 id="do-opportunities-title">Para você</h2><button className="co-text-button" onClick={() => openTab('products')}>Ver produtos →</button></div>
+            {connectionFeedback.items.some(item=>item.useful!==null)&&<p className="co-caption">Seus interesses, especialidade e avaliações ajudam a ordenar estas sugestões.</p>}
             {[bestOpportunity, nextOpportunity].filter((item): item is DoctorOpportunity => Boolean(item)).map(item => (
               <QuickDoctorOpportunity key={item.id} item={item} onOpen={() => openOpportunity(item)} />
             ))}
             {homeQuiet && <div className="co-empty"><h3>{platformEmpty ? 'Novas oportunidades aparecerão aqui.' : 'Explore novas conexões.'}</h3><p>{platformEmpty ? 'Complete seu perfil para receber sugestões quando as empresas publicarem.' : 'Ajuste seus interesses ou explore as empresas da Tessy.'}</p><button onClick={openProfileSettings}>Ajustar interesses</button></div>}
 
           </section>
+
+          <ConnectionHistory leads={doctorLeads} feedback={connectionFeedback.items} loading={connectionFeedback.loading} error={connectionFeedback.error} onReload={connectionFeedback.reload} onOpen={company=>openTab('representatives',company)} />
 
           <section className="co-section do-discover" aria-labelledby="do-discover-title">
             <div className="co-section-heading"><h2 id="do-discover-title">Explore sua rede</h2></div>

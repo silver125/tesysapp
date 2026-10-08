@@ -50,8 +50,10 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
         setProfileOpen(false);
       }
     }
+    const handleKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setProfileOpen(false); };
     document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleKey);
+    return () => { document.removeEventListener('mousedown', handleOutside); document.removeEventListener('keydown', handleKey); };
   }, [profileOpen]);
 
   const menuButtonStyle = {
@@ -173,7 +175,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
               {!user?.avatarUrl && <CompanyMark code={code} tint={tint} size={32} radius={999} />}
             </button>
             {profileOpen && createPortal(
-              <div ref={profileContentRef} className={`tessy-profile-menu${user?.role === 'medico' ? ' tessy-profile-menu--doctor' : ''}`} style={{
+              <div ref={profileContentRef} className={`tessy-profile-menu${user?.role === 'medico' ? ' tessy-profile-menu--doctor' : ' tessy-profile-menu--company'}`} style={{
                 position: 'absolute',
                 top: 44,
                 right: 0,
@@ -260,7 +262,7 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                   Sair
                 </button>
               </div>
-            , user?.role === 'medico' ? document.body : (profileMenuRef.current ?? document.body))}
+            , document.body)}
           </div>
         </div>
       </header>

@@ -1,3 +1,4 @@
+import CompanyFeedbackInsights from './CompanyFeedbackInsights';
 import { useState } from 'react';
 import { runCompanyContactAction } from '../../lib/companyContactAction';
 import type { Course, Event, Lead, Product, User } from '../../types';
@@ -112,6 +113,8 @@ export default function CompanyOverview(props: Props) {
         </article>;
       })}</div> : <div className="co-empty"><h3>{contacts.length ? 'Pedidos enviados. Próximo passo: aprovação.' : 'Sua próxima conexão começa com uma oportunidade.'}</h3><p>{contacts.length ? 'Acompanhe os pedidos enquanto os médicos avaliam suas solicitações.' : 'Publique um produto, parceria, evento ou workshop. Os médicos interessados aparecerão aqui.'}</p><button onClick={() => contacts.length ? onConnections('requested') : onPublish()}>{contacts.length ? 'Acompanhar pedidos' : 'Criar oportunidade'}</button></div>}
     </section>
+
+    {user?.id && <CompanyFeedbackInsights companyId={user.id} />}
 
     <section className="co-section" aria-labelledby="co-results">
       <div className="co-section-heading"><h2 id="co-results">O que aproxima médicos</h2><label className="co-period">Período<select value={period} onChange={event => setPeriod(event.target.value)}><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o período</option></select></label></div>

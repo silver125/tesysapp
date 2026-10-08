@@ -1406,3 +1406,5 @@ body:has(.tessy-app-shell--company) *::after {
 .tessy-app-shell--doctor .tessy-nav-btn { width: 100%; max-width: none; height: 60px; gap: 5px !important; padding: 6px 0 !important; }
 .tessy-app-shell--doctor .tessy-nav-btn > svg { display: block; width: 24px; height: 24px; flex: 0 0 24px; }
 .tessy-app-shell--doctor .tessy-nav-btn:focus-visible { outline: 2px solid #ff4f00; outline-offset: -2px; }
+
+.tessy-profile-menu--company { position: fixed !important; top: 76px !important; right: max(16px,calc((100vw - 1120px)/2 + 16px)) !important; max-height: calc(100dvh - 170px); overflow-y: auto; }
