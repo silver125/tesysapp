@@ -152,3 +152,24 @@ test('invitations follow the visible medical catalog and exclude deleted or unre
   const companyLead = [{ ...base, id: 'company', itemType: 'company' }];
   assert.deepEqual(filterLeadsForCatalog(companyLead, { ...catalog, representatives: [{ id: 'co', companyId: 'co', registered: false }] }), companyLead);
 });
+
+test('ten companies retain separate leads, opportunities and permissions for the same doctor', () => {
+  const leads = Array.from({length:10}, (_,i) => ['p1','p2'].map((itemId,j) => ({id:`${i}-${j}`,companyId:`c${i}`,doctorId:'d',itemType:'product',itemId,intent:'sample_request',connectionStatus:j?'none':'approved',createdAt:'2026-10-10'}))).flat();
+  const result=groupCompanyContacts(leads);
+  assert.equal(result.length,20);
+  for(let i=0;i<10;i++) {
+    const own=result.filter(l=>l.companyId===`c${i}`);
+    assert.equal(own.length,2);
+    assert.equal(own.find(l=>l.itemId==='p2').connectionStatus,'none');
+  }
+});
+test('shortlist limits ten companies without allowing a large company to occupy every slot', () => {
+  const profiles=Array.from({length:10},(_,i)=>Array.from({length:4},(_,j)=>({id:`${i}-${j}`,companyId:`c${i}`,whatsapp:'11999999999',regionKeys:i===0?['RJ']:['SP']}))).flat();
+  const list=regions.selectContactShortlist(profiles,'SP');
+  assert.equal(list.length,3);
+  assert.equal(new Set(list.map(r=>r.companyId)).size,3);
+  assert.ok(list.every(r=>r.companyId!=='c0'));
+  assert.equal(regions.selectContactShortlist(profiles,'AC').length,0);
+  assert.equal(regions.selectContactShortlist(profiles.map(p=>({...p,whatsapp:''})),'SP').length,0);
+  assert.equal(profiles.length,40);
+});

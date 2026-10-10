@@ -317,3 +317,18 @@ export function representativeCompanyBadgeUrl(profile: RepresentativeProfile): s
   }
   return undefined;
 }
+
+/** Small, diverse shortlist from the already specialty-filtered catalog. Never invent coverage. */
+export function selectContactShortlist(profiles: RepresentativeProfile[], state: string, limit = 3): RepresentativeProfile[] {
+  if (limit <= 0) return [];
+  const seen = new Set<string>();
+  const result: RepresentativeProfile[] = [];
+  for (const profile of profiles) {
+    if (!profile.whatsapp?.trim() || !matchesGeography(profile.regionKeys, 'all', state)) continue;
+    if (seen.has(profile.companyId)) continue;
+    seen.add(profile.companyId);
+    result.push(profile);
+    if (result.length >= limit) break;
+  }
+  return result;
+}

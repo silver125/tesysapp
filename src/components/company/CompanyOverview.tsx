@@ -88,7 +88,7 @@ export default function CompanyOverview(props: Props) {
 
     <section className="co-section" aria-labelledby="co-connections">
       <div className="co-section-heading"><h2 id="co-connections">Seus contatos</h2><button className="co-text-button" onClick={() => onConnections('all')}>Ver contatos →</button></div>
-      <p className="co-caption">Encontre quem demonstrou interesse e continue a conversa.</p>
+      <p className="co-caption">Cada oportunidade mantém seu próprio registro. Um médico pode aparecer em mais de uma.</p>
       <div className="co-stages">
         {connectionStages.map((stage, index) => <button key={stage.key} onClick={() => onConnections(stage.key)} className="co-stage">
           <span className="co-stage-index" aria-hidden="true">0{index + 1}</span>

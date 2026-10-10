@@ -3,7 +3,7 @@ import RepresentativeWhatsapp from '../../components/RepresentativeWhatsapp';
 import { House, Package, Users, CalendarBlank, WhatsappLogo, ChatCircleDots, EnvelopeSimple, Trophy, ArrowRight, CaretDown } from '@phosphor-icons/react';
 import MarketScope from '../../components/MarketScope';
 import { medicalSegment, matchesSegment, normalized } from '../../lib/segments';
-import { matchesGeography, stateAfterRegionChange } from '../../lib/geography';
+import { BRAZIL_STATES, matchesGeography, stateAfterRegionChange } from '../../lib/geography';
 import ConnectionHistory from '../../components/ConnectionHistory';
 import { useConnectionFeedback } from '../../hooks/useConnectionFeedback';
 import { rankWithFeedback } from '../../lib/connectionFeedback';
@@ -21,6 +21,7 @@ import {
 import { buildWhatsappLink, categoryTint, companyInitials, companyTint } from '../../lib/uiHelpers';
 import {
   buildRepresentativeProfiles,
+  selectContactShortlist,
   representativeInitials,
   representativeDisplayName,
   representativeDisplayImageUrl,
@@ -303,8 +304,13 @@ export default function DoctorDashboard() {
 ;
   });
   const companyMatches = buildCompanyMatches(events, products, courses, locations);
-  const homeRepresentative = representatives.find(rep => buildWhatsappLink(rep.whatsapp));
-  const homeFeed = buildHomeFeed(homeProductPool, homeEvents, homeWorkshops, representatives);
+  const homeState = stateFilter !== 'all' ? stateFilter : user?.crmState && BRAZIL_STATES[user.crmState.toUpperCase()] ? user.crmState.toUpperCase() : 'all';
+  const homeRepresentatives = selectContactShortlist(representatives.filter(rep => Boolean(buildWhatsappLink(rep.whatsapp))), homeState);
+  function exploreRepresentatives() {
+    setStateFilter(homeState);
+    openTab('representatives');
+  }
+  const homeFeed = buildHomeFeed(homeProductPool, homeEvents, homeWorkshops, []);
   const doctorLeads = leads.filter(lead => lead.doctorId === user?.id);
   const pendingConnections = filterLeadsForCatalog(doctorLeads, { events, products, courses, representatives })
     .filter(lead => lead.connectionStatus === 'requested');
@@ -346,12 +352,18 @@ export default function DoctorDashboard() {
         <div className="doctor-home">
           <section className="doctor-welcome">
             <HomeGreeting />
-            {homeRepresentative ? <div className="doctor-home-contact">
-              <div className="doctor-home-contact__person"><RepAvatar rep={homeRepresentative} size={40} /><span><strong>{representativeDisplayName(homeRepresentative)}</strong><small>{homeRepresentative.companyName}</small></span><button type="button" onClick={() => openTab('representatives')}>Ver todos</button></div>
-              <RepresentativeWhatsapp rep={homeRepresentative} />
-            </div> : <button className="doctor-primary" onClick={() => openTab('representatives')}>
+            <button className="doctor-primary" onClick={exploreRepresentatives}>
               <ChatCircleDots size={23} aria-hidden="true" /><span>Encontrar representante</span><ArrowRight size={19} aria-hidden="true" />
-            </button>}
+            </button>
+          </section>
+
+          <section className="doctor-contact-options" aria-labelledby="contact-options-title">
+            <div className="doctor-section-heading"><h2 id="contact-options-title">Com quem conversar</h2><button onClick={exploreRepresentatives}>Ver todos</button></div>
+            <p className="co-caption">{homeState === 'all' ? 'Escolha sua região em “Ver todos”.' : `Atendimento em ${homeState} · UF informada no seu perfil. Altere em “Ver todos”.`}</p>
+            {homeRepresentatives.length ? homeRepresentatives.map(rep => <article className="doctor-contact-option" key={rep.id}>
+              <div><strong>{representativeDisplayName(rep)}</strong><span>{rep.companyName}</span><small>{rep.specialty} · {rep.regionLabel}</small></div>
+              <RepresentativeWhatsapp rep={rep} />
+            </article>) : <p className="co-caption">Ainda não há contatos com WhatsApp nessa área. Veja outras regiões ou volte depois.</p>}
 
           </section>
 
