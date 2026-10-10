@@ -126,28 +126,6 @@ export default function Layout({ children, navItems, activeKey, onNavChange, not
                 )}
               </button>
             )}
-            {user?.role === 'medico' && (
-              <div
-                title="Pontos Tessy: ganhe ao avisar interesse. Conexões aprovadas valem +50."
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '5px 10px',
-                  borderRadius: 999,
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,130,32,0.10))',
-                  border: '1px solid rgba(245,130,32,0.18)',
-                  fontSize: 11.5,
-                  fontWeight: 650,
-                  color: 'var(--accent-ink)',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 4px 12px rgba(245,130,32,0.10)',
-                }}
-              >
-                <span style={{ fontSize: 11, lineHeight: 1 }}>★</span>
-                <span>{user.points ?? 0}</span>
-              </div>
-            )}
             <button
               type="button"
               className="tessy-header-profile"

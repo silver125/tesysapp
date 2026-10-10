@@ -78,7 +78,7 @@ export default function CompanyOverview(props: Props) {
   return <div className="company-overview">
     <header className="co-header">
       <h1>Painel da empresa</h1>
-      <p>Acompanhe médicos interessados e dê o próximo passo em cada relacionamento.</p>
+      <p>Apresente quem pode ajudar. Uma conversa com um médico pode ser o começo de uma parceria.</p>
       <div className="co-actions">
         <button className="co-primary" onClick={() => onManage('representatives')}>Cadastrar representante</button>
         <button onClick={onPublish}>Publicar oportunidade <span aria-hidden="true">↗</span></button>
@@ -87,8 +87,8 @@ export default function CompanyOverview(props: Props) {
     </header>
 
     <section className="co-section" aria-labelledby="co-connections">
-      <div className="co-section-heading"><h2 id="co-connections">Sua rede, em movimento</h2><button className="co-text-button" onClick={() => onConnections('all')}>Ver contatos →</button></div>
-      <p className="co-caption">Situação atual dos contatos. Um médico pode ter contatos distintos com representantes.</p>
+      <div className="co-section-heading"><h2 id="co-connections">Seus contatos</h2><button className="co-text-button" onClick={() => onConnections('all')}>Ver contatos →</button></div>
+      <p className="co-caption">Encontre quem demonstrou interesse e continue a conversa.</p>
       <div className="co-stages">
         {connectionStages.map((stage, index) => <button key={stage.key} onClick={() => onConnections(stage.key)} className="co-stage">
           <span className="co-stage-index" aria-hidden="true">0{index + 1}</span>
@@ -114,6 +114,7 @@ export default function CompanyOverview(props: Props) {
       })}</div> : <div className="co-empty"><h3>{contacts.length ? 'Pedidos enviados. Próximo passo: aprovação.' : 'Sua próxima conexão começa com uma oportunidade.'}</h3><p>{contacts.length ? 'Acompanhe os pedidos enquanto os médicos avaliam suas solicitações.' : 'Publique um produto, parceria, evento ou workshop. Os médicos interessados aparecerão aqui.'}</p><button onClick={() => contacts.length ? onConnections('requested') : onPublish()}>{contacts.length ? 'Acompanhar pedidos' : 'Criar oportunidade'}</button></div>}
     </section>
 
+    <details className="co-secondary"><summary>Resultados e opiniões</summary>
     {user?.id && <CompanyFeedbackInsights companyId={user.id} />}
 
     <section className="co-section" aria-labelledby="co-results">
@@ -123,11 +124,14 @@ export default function CompanyOverview(props: Props) {
       {publications.length ? <ol className="co-ranking">{publications.slice(0, 5).map(item => <li key={`${item.type}-${item.id}`}><div><span>{item.label}</span><h3>{item.name}</h3><div className="co-bar" aria-hidden="true"><i style={{ width: `${item.count / Math.max(1, publications[0].count) * 100}%` }} /></div></div><strong aria-label={`${item.count} médicos interessados`}>{item.count}</strong></li>)}</ol> : <div className="co-empty"><p>Os resultados aparecerão depois que você publicar sua primeira oportunidade.</p><button onClick={onPublish}>Publicar oportunidade</button></div>}
     </section>
 
+    </details>
+    <details className="co-secondary"><summary>Perfil da empresa e representantes</summary>
     <section className="co-section" aria-labelledby="co-company"><div className="co-section-heading"><h2 id="co-company">Prepare sua empresa para conectar</h2><span>{done}/{checklist.length}</span></div><progress aria-label="Configuração da empresa" value={done} max={checklist.length} />
       <div className="co-checklist">{checklist.map(step => <button key={step.label} onClick={step.action}><span>{step.label}</span><span>{step.done ? 'Concluído · Editar' : 'Completar →'}</span></button>)}</div>
       <div className="co-actions"><button className="co-primary" onClick={() => onManage('representatives')}>Cadastrar representante</button></div>
     </section>
 
+    </details>
     <section className="co-section" aria-labelledby="co-agenda"><div className="co-section-heading"><h2 id="co-agenda">Próximos eventos</h2><span className="co-caption">Em ordem de data</span></div>
       {upcoming.length ? upcoming.map(event => <button className="co-event" key={event.id} onClick={() => props.onEvent(event.id)}><span className="co-event-date">{dateLabel(event.date)}</span><span><strong>{event.title}</strong><small>{event.time || 'Horário a confirmar'} · {event.location}</small><small>{event.registeredCount} de {event.maxParticipants} vagas preenchidas</small></span><span aria-hidden="true">↗</span></button>) : <p className="co-caption">Nenhum evento futuro publicado. Crie uma oportunidade para reunir médicos.</p>}
     </section>

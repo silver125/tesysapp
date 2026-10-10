@@ -245,6 +245,7 @@ export default function DoctorDashboard() {
     return () => { cancelled = true; };
   }, [allProducts, allEvents, allCourses, locations, registeredReps]);
 
+  const [showInbox, setShowInbox] = useState(false);
   const connectionFeedback = useConnectionFeedback(user?.id);
   const q = search.toLowerCase();
   const doctorInterests = doctorInterestList(user);
@@ -302,7 +303,7 @@ export default function DoctorDashboard() {
 ;
   });
   const companyMatches = buildCompanyMatches(events, products, courses, locations);
-  const homeRepresentative = representatives.find(rep => buildWhatsappLink(rep.whatsapp)) ?? representatives[0];
+  const homeRepresentative = representatives.find(rep => buildWhatsappLink(rep.whatsapp));
   const homeFeed = buildHomeFeed(homeProductPool, homeEvents, homeWorkshops, representatives);
   const doctorLeads = leads.filter(lead => lead.doctorId === user?.id);
   const pendingConnections = filterLeadsForCatalog(doctorLeads, { events, products, courses, representatives })
@@ -310,6 +311,7 @@ export default function DoctorDashboard() {
 
   function scrollToPendingConnections() {
     setTab('home');
+    setShowInbox(true);
     window.requestAnimationFrame(() => document.getElementById('pending-connections')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
@@ -350,28 +352,31 @@ export default function DoctorDashboard() {
             </div> : <button className="doctor-primary" onClick={() => openTab('representatives')}>
               <ChatCircleDots size={23} aria-hidden="true" /><span>Encontrar representante</span><ArrowRight size={19} aria-hidden="true" />
             </button>}
-            <DoctorPointsBar points={user?.points ?? 0} connections={countApprovedConnections(doctorLeads)} />
+
           </section>
 
           <section className="doctor-network" aria-labelledby="do-network-title">
-            <div className="doctor-section-heading"><h2 id="do-network-title">Sua rede</h2><button onClick={openProfileSettings}>Editar perfil</button></div>
+            <div className="doctor-section-heading"><h2 id="do-network-title">Explore suas conexões</h2></div>
             <div className="doctor-network-grid">
-              <button onClick={scrollToPendingConnections}><EnvelopeSimple size={22} /><strong>{pendingConnections.length}</strong><span>Convites</span></button>
               <button onClick={() => openTab('representatives')}><Users size={22} /><strong>{representatives.length}</strong><span>Representantes</span></button>
+              <button onClick={scrollToPendingConnections}><EnvelopeSimple size={22} /><strong>{pendingConnections.length}</strong><span>Convites</span></button>
               <button onClick={() => openTab('events')}><CalendarBlank size={22} /><strong>{upcomingEvents.length}</strong><span>Eventos</span></button>
             </div>
           </section>
 
-          <section className="doctor-inbox" aria-labelledby="do-requests-title">
+          {(pendingConnections.length > 0 || showInbox) && <section className="doctor-inbox" aria-labelledby="do-requests-title">
             <div className="doctor-section-heading"><h2 id="do-requests-title">Convites para você</h2></div>
             <PendingConnectionsInbox leads={pendingConnections} />
-          </section>
+          </section>}
 
           {homeFeed.length > 0 && <section className="doctor-discover" aria-labelledby="doctor-discover-title">
             <div className="doctor-section-heading"><h2 id="doctor-discover-title">Na sua especialidade</h2><button onClick={() => openTab('products')}>Explorar <ArrowRight size={14} /></button></div>
             <HomeCarousel>{homeFeed.slice(0, 3).map(item => <HomeFeedCard key={homeFeedKey(item)} item={item} onOpenProduct={setOpenProduct} onOpenEvent={setOpenEvent} onOpenCourse={setOpenCourse} />)}</HomeCarousel>
           </section>}
+          <details className="doctor-secondary"><summary>Meus contatos</summary>
           <ConnectionHistory leads={doctorLeads} feedback={connectionFeedback.items} loading={connectionFeedback.loading} error={connectionFeedback.error} onReload={connectionFeedback.reload} onOpen={company=>openTab('representatives',company)} />
+          </details>
+          <details className="doctor-secondary"><summary>Minha atividade na Tessy</summary><DoctorPointsBar points={user?.points ?? 0} connections={countApprovedConnections(doctorLeads)} /></details>
 
         </div>
       )}
@@ -486,7 +491,7 @@ function productCategoryChips(products: Product[]): [string, string][] {
 function HomeGreeting() {
   const { user } = useAuth();
   const name = user?.name?.trim().split(/\s+/)[0] || 'doutor(a)';
-  return <><h1>Olá, {name}</h1><p>Boas conexões começam aqui.</p></>;
+  return <><h1>Olá, {name}</h1><p>Encontre um representante e converse sobre o que você busca.</p></>;
 }
 
 function DoctorPointsBar({

@@ -83,3 +83,8 @@
 .doctor-home-contact__person strong { display: block; font-size: 13px; overflow-wrap: anywhere; }
 .doctor-home-contact__person small { display: block; margin-top: 3px; font-size: 11px; color: var(--ink-2); }
 .doctor-home-contact__person button { border: 0; background: transparent; color: var(--accent-action); padding: 8px 0 8px 4px; font-size: 12px; cursor: pointer; }
+
+.doctor-secondary { border-top: 1px solid var(--line); padding-top: 4px; }
+.doctor-secondary > summary { cursor: pointer; padding: 16px 0; min-height: 48px; font-size: 15px; font-weight: 600; }
+.doctor-secondary > summary:focus-visible { outline: 2px solid var(--accent-action); outline-offset: 3px; }
+.doctor-home .doctor-welcome,.doctor-home .doctor-network-grid,.doctor-home .doctor-primary,.doctor-home .do-points { border-radius: 0; }

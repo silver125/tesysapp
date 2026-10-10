@@ -28,8 +28,8 @@ export default function ConnectionHistory({leads,feedback,loading,error,onReload
     catch{setSaveError('Não foi possível remover. Tente novamente.');}finally{setBusy(false);}
   }
   return <section className="co-section connection-history" aria-labelledby="connection-history-title">
-    <div className="co-section-heading"><h2 id="connection-history-title">Meu histórico</h2><span>{leads.length} registros</span></div>
-    <p className="co-caption">Reencontre contatos e avalie sua experiência. A conversa no WhatsApp não é registrada aqui.</p>
+    <div className="co-section-heading"><h2 id="connection-history-title">Contatos e interesses</h2><span>{leads.length} registros</span></div>
+    <p className="co-caption">Retome uma conversa quando quiser. Suas mensagens ficam no WhatsApp.</p>
     {leads.length>0&&<input type="search" aria-label="Buscar no histórico" placeholder="Empresa ou oportunidade" value={query} onChange={e=>{setQuery(e.target.value);setExpanded(false);}} />}
     {error&&<p role="alert">{error} <button onClick={onReload}>Tentar novamente</button></p>}
     {notice&&<p role="status">{notice}</p>}{saveError&&<p role="alert">{saveError}</p>}
@@ -42,12 +42,12 @@ export default function ConnectionHistory({leads,feedback,loading,error,onReload
         <div className="connection-history-meta"><strong>{lead.companyName}</strong><time dateTime={lead.createdAt}>{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</time></div>
         <p>{lead.itemName}</p><small>{approved?'Conexão aprovada':lead.connectionStatus==='requested'?'Convite pendente':'Interesse registrado'}</small>
         {rating&&<p className="connection-rating">{!rating.received_reply?'Ainda sem retorno':rating.useful?'Conversa útil':'Conversa não foi útil'}</p>}
-        <div className="connection-history-actions"><button onClick={()=>onOpen(lead.companyName)}>Ver contato</button>{eligible&&<button disabled={busy||loading||Boolean(error)} onClick={()=>{setEditing(editing===lead.id?null:lead.id);setNotice('');setSaveError('');}}>{rating?'Editar avaliação':'Avaliar contato'}</button>}</div>
+        <div className="connection-history-actions"><button onClick={()=>onOpen(lead.companyName)}>Ver contato</button>{eligible&&<button disabled={busy||loading||Boolean(error)} onClick={()=>{setEditing(editing===lead.id?null:lead.id);setNotice('');setSaveError('');}}>{rating?'Editar avaliação':'Dar opinião'}</button>}</div>
         {editing===lead.id&&<fieldset disabled={busy}>
-          <legend>Você conversou com a empresa?</legend>
-          <p className="co-caption">Só avalie o que aconteceu. Sua resposta individual é privada; empresas recebem estatísticas de grupos com pelo menos 5 médicos.</p>
+          <legend>Esse contato foi útil?</legend>
+          <p className="co-caption">Opcional. Sua resposta individual é privada. Empresas veem apenas resultados agrupados.</p>
           <div className="connection-history-actions">
-            <button onClick={()=>void save(lead,true,true)}>Sim, foi útil</button><button onClick={()=>void save(lead,true,false)}>Sim, não foi útil</button><button onClick={()=>void save(lead,false,null)}>Ainda sem retorno</button>
+            <button onClick={()=>void save(lead,true,true)}>Sim</button><button onClick={()=>void save(lead,true,false)}>Não</button><button onClick={()=>void save(lead,false,null)}>Ainda sem retorno</button>
             {rating&&<button onClick={()=>void remove(lead.id)}>Remover avaliação</button>}
           </div>{busy&&<p role="status">Salvando…</p>}
         </fieldset>}

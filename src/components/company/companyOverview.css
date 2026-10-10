@@ -75,3 +75,8 @@
   .co-stage small { font-size: 12px; }
   .company-overview > :last-child { grid-column: 1 / -1; }
 }
+
+.co-secondary { grid-column: 1 / -1; border-top: 1px solid var(--line); }
+.co-secondary > summary { padding: 18px 0; min-height: 48px; cursor: pointer; font-size: 15px; font-weight: 600; }
+.co-secondary > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.co-secondary > .co-section { margin-bottom: 20px; }

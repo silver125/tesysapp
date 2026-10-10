@@ -5,16 +5,6 @@ import { TessyMark } from '../components/ui';
 const contactHref =
   'mailto:contato@tessybr.com?subject=D%C3%BAvida%20sobre%20a%20Tessy';
 
-const clients = [
-  { name: 'Round Lab', src: '/clients/round-lab.svg' },
-  { name: 'TIRTIR', src: '/clients/tirtir.svg' },
-  { name: 'd’Alba', src: '/clients/dalba.svg' },
-  { name: 'VT Cosmetics', src: '/clients/vt-cosmetics.svg' },
-  { name: 'Torriden', src: '/clients/torriden.svg' },
-  { name: 'SKIN1004', src: '/clients/skin1004.svg' },
-  { name: 'Dr. Althea', src: '/clients/dr-althea.svg' },
-];
-
 const features = [
   {
     title: 'Representantes',
@@ -36,7 +26,7 @@ const features = [
   },
   {
     title: 'Produtos',
-    text: 'Tecnologias e soluções curadas para a prática médica.',
+    text: 'Tecnologias e soluções para a prática médica.',
     icon: 'produtos',
     tone: 'orange',
   },
@@ -50,13 +40,13 @@ const steps = [
   },
   {
     n: '02',
-    title: 'Explore oportunidades',
-    text: 'Busque skincare, tecnologias e parcerias por região.',
+    title: 'Encontre um representante',
+    text: 'Filtre por especialidade e região para encontrar quem pode ajudar.',
   },
   {
     n: '03',
-    title: 'Converse quando fizer sentido',
-    text: 'Avise interesse e converse quando fizer sentido para você.',
+    title: 'Comece uma conversa',
+    text: 'Abra o WhatsApp do representante e conte o que você procura.',
   },
 ];
 
@@ -155,7 +145,7 @@ export default function Landing() {
 
           <nav className="lv-nav__links" aria-label="Principal">
             <Link to="/para-empresas">Para empresas</Link>
-            <a href="#clientes">Clientes</a>
+            <a href="#proposito">Nosso propósito</a>
             <a href="#recursos">Recursos</a>
             <a href="#como-funciona">Como funciona</a>
             <a href="#faq">FAQ</a>
@@ -186,7 +176,7 @@ export default function Landing() {
         {menuOpen && (
           <div className="lv-drawer">
             <Link to="/para-empresas" onClick={() => setMenuOpen(false)}>Para empresas</Link>
-            <a href="#clientes" onClick={() => setMenuOpen(false)}>Clientes</a>
+            <a href="#proposito" onClick={() => setMenuOpen(false)}>Nosso propósito</a>
             <a href="#recursos" onClick={() => setMenuOpen(false)}>Recursos</a>
             <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
             <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
@@ -206,12 +196,12 @@ export default function Landing() {
             <div className="lv-hero__copy">
               <p className="lv-badge">Médicos e representantes por região</p>
               <h1>
-                Médico, crie sua conta
-                <span> na Tessy.</span>
+                Uma conversa pode abrir
+                <span> novos caminhos na medicina.</span>
               </h1>
               <p className="lv-lead">
-                Encontre representantes de farmacêuticas, produtos, tecnologias e parcerias
-                que atendem à sua região.
+                Encontre representantes da sua especialidade e região. Converse sobre produtos,
+                ideias e parcerias que façam sentido para sua carreira.
               </p>
               <div className="lv-hero__cta">
                 <Link to="/cadastro?perfil=medico" className="lv-btn lv-btn--primary lv-btn--lg">
@@ -222,9 +212,9 @@ export default function Landing() {
                 </Link>
               </div>
               <ul className="lv-hero__pills">
-                <li>Sem grupos</li>
-                <li>Curadoria por especialidade</li>
-                <li>Contato no momento certo</li>
+                <li>Você escolhe com quem conversar</li>
+                <li>Busca por especialidade</li>
+                <li>WhatsApp direto</li>
               </ul>
             </div>
 
@@ -241,30 +231,23 @@ export default function Landing() {
               </div>
               <div className="lv-float lv-float--a">
                 <span>Representante</span>
-                <strong>Agenda disponível hoje</strong>
+                <strong>Encontre quem atende sua região</strong>
               </div>
               <div className="lv-float lv-float--b">
-                <span>Evento</span>
-                <strong>Workshop na sua região</strong>
+                <span>Conexão</span>
+                <strong>Uma conversa, novos caminhos</strong>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Clients / brands that already joined */}
-        <section className="lv-clients" id="clientes" aria-label="Empresas que já aderiram">
+        <section className="lv-section lv-purpose" id="proposito" aria-labelledby="tessy-purpose-title">
           <div className="lv-container">
-            <div className="lv-clients__head">
-              <p className="lv-eyebrow">Empresas que já aderiram</p>
-              <h2>Marcas na Tessy.</h2>
-            </div>
-          </div>
-          <div className="lv-clients__rail" role="list">
-            {[...clients, ...clients].map((c, i) => (
-              <div className="lv-clients__item" role="listitem" key={`${c.name}-${i}`}>
-                <img src={c.src} alt={c.name} loading="lazy" decoding="async" />
-              </div>
-            ))}
+            <p className="lv-eyebrow">Por que a Tessy existe</p>
+            <h2 id="tessy-purpose-title">Seu caminho merece novas conexões.</h2>
+            <p>A medicina exige muito. Encontrar pessoas que possam caminhar com você deveria ser simples.</p>
+            <p>A Tessy aproxima médicos, representantes e empresas para que uma primeira conversa possa se tornar uma reunião, uma parceria ou uma nova oportunidade profissional. Para quem está começando e para quem quer descobrir novos caminhos.</p>
+            <p>O médico traz sua experiência e seus projetos. O representante aproxima soluções, pessoas e possibilidades. Nossa parte é facilitar esse encontro. O que vem depois é construído por vocês.</p>
           </div>
         </section>
 
@@ -273,10 +256,9 @@ export default function Landing() {
           <div className="lv-container">
             <div className="lv-section__head">
               <p className="lv-eyebrow">O que você encontra</p>
-              <h2>Tudo em um só lugar.</h2>
+              <h2>Encontre pessoas. Descubra possibilidades.</h2>
               <p>
-                Em vez de grupos, mensagens soltas ou indicações perdidas, a Tessy
-                organiza oportunidades para a sua prática.
+                Comece pelo representante. Explore produtos, encontros e formações quando fizerem sentido para você.
               </p>
             </div>
 
@@ -309,9 +291,9 @@ export default function Landing() {
             </div>
             <div className="lv-showcase__copy">
               <p className="lv-eyebrow">Para médicos</p>
-              <h2>Conexões que fazem sentido.</h2>
+              <h2>Sua carreira, suas escolhas.</h2>
               <p>
-                Veja conexões alinhadas à sua especialidade, região e rotina.
+                Você não precisa ter uma rede pronta para começar. Encontre quem atende sua área e apresente o que você busca.
               </p>
               <ul className="lv-checklist">
                 <li>Produtos para sua área</li>
@@ -392,7 +374,7 @@ export default function Landing() {
         <div className="lv-container lv-footer__inner">
           <div>
             <strong>Tessy.app</strong>
-            <p>A nova infraestrutura comercial da saúde.</p>
+            <p>Pessoas que abrem caminhos na medicina.</p>
             <a href="mailto:contato@tessybr.com">contato@tessybr.com</a>
           </div>
           <nav aria-label="Rodapé">
@@ -414,6 +396,11 @@ export default function Landing() {
 }
 
 const css = `
+.lv .lv-purpose { background: #F7F7F8; border-block: 1px solid #e4e4e7; }
+.lv .lv-purpose .lv-container { max-width: 850px; }
+.lv .lv-purpose h2 { font-size: clamp(28px,4vw,44px); line-height: 1.15; text-align: left; }
+.lv .lv-purpose p:not(.lv-eyebrow) { font-size: 17px; line-height: 1.7; color: #4b5563; }
+
 .lv {
   --ink: #1c1f26;
   --ink-2: #4a505c;

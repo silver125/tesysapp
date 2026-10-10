@@ -11,11 +11,11 @@ import { COMPANY_MEETING_HREF, TESSY_CONTACT_EMAIL } from '../lib/inviteLinks';
 const CAMPAIGN_RESULTS = {
   enabled: false,
   period: '', // ex.: 'Jan–Mar 2026'
-  campaign: '', // ex.: 'Presença estratégica — marca parceira'
+  campaign: '', // ex.: 'Conversa direta — marca parceira'
   items: [
     // Exemplos (ocultos enquanto enabled=false):
     // { value: '+240%', label: 'em oportunidades comerciais' },
-    // { value: '4x', label: 'mais leads qualificados' },
+    // { value: 'Conexão', label: 'mais leads qualificados' },
     // { value: '3x', label: 'mais interações com médicos' },
     // { value: '+X', label: 'médicos alcançados' },
   ] as Array<{ value: string; label: string }>,
@@ -25,14 +25,14 @@ const CAMPAIGN_RESULTS = {
 const PHOTO_METRICS = [
   {
     id: 'touchpoints',
-    value: '4x',
-    label: 'mais pontos de contato',
+    value: 'Conexão',
+    label: 'com médicos da sua área',
     detail: 'Perfil, conteúdo, eventos e soluções em destaque.',
   },
   {
     id: 'audience',
-    value: '100%',
-    label: 'público médico',
+    value: 'Diálogo',
+    label: 'entre pessoas',
     detail: 'Comunicação direcionada a uma audiência profissional qualificada.',
   },
 ] as const;
@@ -44,8 +44,8 @@ const POSSIBILITIES = [
     mark: '01',
   },
   {
-    title: 'Conteúdo patrocinado',
-    text: 'Publique conteúdos relevantes no feed da comunidade.',
+    title: 'Representantes',
+    text: 'Cadastre quem atende cada região e facilite o contato direto.',
     mark: '02',
   },
   {
@@ -63,18 +63,18 @@ const POSSIBILITIES = [
 const STEPS = [
   {
     n: '01',
-    title: 'Entendemos sua empresa',
-    text: 'Conhecemos os objetivos, soluções e público da marca.',
+    title: 'Apresente sua empresa',
+    text: 'Informe sua área médica e o que sua empresa oferece.',
   },
   {
     n: '02',
-    title: 'Criamos uma estratégia',
-    text: 'Definimos os melhores formatos de presença na Tessy.',
+    title: 'Cadastre seus representantes',
+    text: 'Adicione as regiões atendidas e um WhatsApp de contato.',
   },
   {
     n: '03',
-    title: 'Conectamos sua marca',
-    text: 'Sua empresa passa a aparecer de maneira estratégica para médicos.',
+    title: 'Comece a conversar',
+    text: 'Converse com médicos interessados e construam o próximo passo juntos.',
   },
 ] as const;
 
@@ -222,13 +222,13 @@ export default function ForCompanies() {
               começa aqui
             </h1>
             <p className="fc-lead">
-              Posicione sua empresa diante de uma comunidade médica qualificada e transforme
-              visibilidade em novas conexões e oportunidades de negócio.
+              Encontre médicos que querem conhecer suas soluções. Apresente seus representantes,
+              escute o que cada profissional busca e construam oportunidades juntos.
             </p>
             <div className="fc-hero__cta">
-              <MeetingLink className="fc-btn fc-btn--primary fc-btn--lg">
-                Agende uma conversa
-              </MeetingLink>
+              <Link to="/cadastro?perfil=representante" className="fc-btn fc-btn--primary fc-btn--lg">
+                Cadastrar minha empresa
+              </Link>
               <a href="#possibilidades" className="fc-btn fc-btn--soft fc-btn--lg">
                 Conheça as possibilidades
               </a>
@@ -237,11 +237,11 @@ export default function ForCompanies() {
         </section>
 
         {/* Dual visual block */}
-        <section className="fc-dual" aria-label="Presença estratégica">
+        <section className="fc-dual" aria-label="Conversa direta">
           <div className="fc-container fc-dual__grid">
             <article className="fc-dark" data-reveal>
-              <p className="fc-kicker fc-kicker--on-dark">Presença estratégica</p>
-              <h2>Sua empresa no centro das decisões médicas.</h2>
+              <p className="fc-kicker fc-kicker--on-dark">Conversa direta</p>
+              <h2>Seu representante, mais perto de quem precisa.</h2>
               <p>
                 Apresente sua marca, soluções, eventos e conteúdos dentro de um ambiente
                 profissional criado para médicos.
@@ -255,7 +255,7 @@ export default function ForCompanies() {
               <div className="fc-dark__panel">
                 <strong>Mais visibilidade para sua marca</strong>
                 <p>
-                  Conteúdos patrocinados, eventos, soluções em destaque e presença institucional
+                  Representantes, produtos, eventos e canais de contato
                   dentro da Tessy.
                 </p>
               </div>
@@ -318,7 +318,7 @@ export default function ForCompanies() {
           <div className="fc-container">
             <div className="fc-section__head" data-reveal>
               <p className="fc-kicker">Como funciona</p>
-              <h2>Do primeiro contato à presença estratégica.</h2>
+              <h2>Cadastre, apresente, converse.</h2>
             </div>
             <div className="fc-steps">
               {STEPS.map(s => (
@@ -365,8 +365,8 @@ export default function ForCompanies() {
             <p className="fc-kicker fc-kicker--on-dark">Agendamento</p>
             <h2>Sua empresa mais próxima do público médico.</h2>
             <p>
-              A Tessy aproxima sua empresa de um público médico qualificado por meio de conteúdos,
-              eventos, soluções em destaque e experiências estratégicas.
+              A Tessy facilita o encontro entre quem oferece soluções e médicos que procuram novos caminhos.
+              A parceria começa com uma conversa e cresce com confiança.
             </p>
             <p className="fc-final__extra">
               Quer descobrir como sua empresa pode fazer parte da Tessy? Agende uma conversa com
